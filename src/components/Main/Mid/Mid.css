@@ -1,0 +1,50 @@
+.mid{
+    grid-area: mid;
+    margin: 15px 0;
+}
+
+.mid .health{
+    font-size: 13px;
+}
+
+.mid .health-box svg{
+    margin-right: 15px;
+}
+
+.mid .health-box{
+    display: flex;
+    align-items: center;
+    margin: 15px 0 5px 0;
+}
+
+.mid .capacity{
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.mid .capacity-box{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mid .capacity-box .box{
+    margin: 5px 10px;
+    text-align: center;
+}
+
+.mid .utilization{
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.mid .utilization .box{
+    font-size: 14px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.mid .utilization .box p{
+    margin: 10px 0;
+}

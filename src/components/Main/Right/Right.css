@@ -1,0 +1,77 @@
+.right{
+    grid-area: right;
+    margin: 15px 17px 0px 0px;
+}
+
+.right .events{
+    display: flex;
+    justify-content: space-between;
+}
+
+.right .events .card-text,.right .events a{
+    font-size: 13px;
+}
+
+.right .section .card-subtitle{
+    font-size: 13px;
+    margin-bottom: 3px;
+    margin-top: 4px;
+}
+
+.right .profile{
+    display: flex;
+    /* justify-content: space-between; */
+    align-items: center;
+}
+
+.right .profile-icon{
+    background-color: #4ebaff;
+    border-radius: 15px;
+    padding: 0 4px;
+    font-size: 13px;
+    color: white;
+    margin: 0 2px;
+}
+
+.right .content{
+    margin-top: 4px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.right .consumers-card{
+    margin: 10px 0;
+}
+
+.right .dropdown-toggle{
+    padding: 3px 0px;
+    width: 115px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.right .consumers-card .card-subtitle{
+    margin-top: 15px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.right .dropdown{
+    display: flex;
+    justify-content: space-around;
+    margin: 10px 0;
+}
+
+.right .cpu-time{
+    margin-top: 10px;
+}
+
+.right .cpu-time a{
+    font-size: 13px;
+}
+
+/* Bootstrap */
+.right .css-1bhivts {
+    width: 70%!important;
+}
