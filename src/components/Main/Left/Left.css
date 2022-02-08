@@ -1,0 +1,19 @@
+.left{
+    grid-area: left;
+    margin: 15px 0 0 17px;
+}
+
+.left .card-subtitle{
+    font-size: 15px;
+}
+.left .card-text{
+    font-size: 13px;
+}
+
+.left .inventory{
+    margin: 20px 0;
+}
+
+.left .inventory .card-subtitle{
+    margin: 15px 0;
+}
