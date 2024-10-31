@@ -1,0 +1,15 @@
+{
+  "short_name": "Volcano Dashboard",
+  "name": "Volcano Dashboard",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
