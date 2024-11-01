@@ -19,7 +19,7 @@ kc.loadFromDefault();
 
 const k8sApi = kc.makeApiClient(CustomObjectsApi);
 
-app.get("/jobvolcanos", async (req, res) => {
+app.get("/api/jobs", async (req, res) => {
   try {
     const searchTerm = req.query.search || "";
     const page = parseInt(req.query.page) || 1;
@@ -67,7 +67,7 @@ app.get("/jobvolcanos", async (req, res) => {
 });
 
 // 添加获取单个job的接口
-app.get("/jobvolcanos/:namespace/:name", async (req, res) => {
+app.get("/api/jobs/:namespace/:name", async (req, res) => {
   try {
     const { namespace, name } = req.params;
     const response = await k8sApi.getNamespacedCustomObject(
@@ -88,7 +88,7 @@ app.get("/jobvolcanos/:namespace/:name", async (req, res) => {
 });
 
 // 在 server.js 中添加获取 YAML 的路由
-app.get("/jobvolcanos/:namespace/:name/yaml", async (req, res) => {
+app.get("/api/jobs/:namespace/:name/yaml", async (req, res) => {
   try {
     const { namespace, name } = req.params;
     const response = await k8sApi.getNamespacedCustomObject(
@@ -335,7 +335,7 @@ const verifyVolcanoSetup = async () => {
 
 
 // Update your server startup
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, async () => {
   const volcanoReady = await verifyVolcanoSetup();
   if (volcanoReady) {

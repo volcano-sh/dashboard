@@ -21,7 +21,6 @@ import DeviceHubIcon from "@mui/icons-material/DeviceHub";
 // 使用相对路径导入 Logo
 import volcanoLogo from '../assets/volcano-icon-color.svg';
 
-
 const Layout = () => {
   // Hooks 必须在组件函数内部使用
   const location = useLocation();
