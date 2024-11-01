@@ -63,7 +63,7 @@ const Jobs = () => {
     async (currentPage, currentRowsPerPage) => {
       setLoading(true);
       try {
-        const response = await axios.get("http://localhost:3000/jobvolcanos", {
+        const response = await axios.get("/api/jobs", {
           params: {
             search: searchTerm,
             page: currentPage,
@@ -102,7 +102,7 @@ const Jobs = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:3000/jobvolcanos/${job.metadata.namespace}/${job.metadata.name}/yaml`,
+        `/api/jobs/${job.metadata.namespace}/${job.metadata.name}/yaml`,
         {
           // 确保接收纯文本响应
           responseType: "text",

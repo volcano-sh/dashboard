@@ -29,9 +29,9 @@ const Dashboard = () => {
     setError(null);
     try {
       const [jobsRes, queuesRes, podsRes] = await Promise.all([
-        fetch("http://localhost:3000/jobvolcanos?limit=1000"),
-        fetch("http://localhost:3000/api/queues?limit=1000"),
-        fetch("http://localhost:3000/api/pods?limit=1000"),
+        fetch("/api/jobs?limit=1000"),
+        fetch("/api/queues?limit=1000"),
+        fetch("/api/pods?limit=1000"),
       ]);
 
       if (!jobsRes.ok) throw new Error(`Jobs API error: ${jobsRes.status}`);

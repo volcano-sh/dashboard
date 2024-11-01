@@ -129,7 +129,7 @@ const Pods = () => {
         `Fetching pods with page=${page}, limit=${rowsPerPage}, search=${searchText}`
       );
       const response = await fetch(
-        `http://localhost:3000/api/pods?page=${page}&limit=${rowsPerPage}&search=${searchText}`
+        `/api/pods?page=${page}&limit=${rowsPerPage}&search=${searchText}`
       );
 
       if (!response.ok) {
