@@ -11,8 +11,8 @@ const getServerPort = () => {
   // API端点配置
   export const API_ENDPOINTS = {
     jobs: {
-      list: `${API_CONFIG.baseURL}/jobvolcanos`,
-      detail: (namespace, name) => `${API_CONFIG.baseURL}/jobvolcanos/${namespace}/${name}`
+      list: `${API_CONFIG.baseURL}/api/jobs`,
+      detail: (namespace, name) => `${API_CONFIG.baseURL}/jobs/${namespace}/${name}`
     },
     queues: {
       list: `${API_CONFIG.baseURL}/api/queues`

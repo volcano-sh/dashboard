@@ -146,7 +146,7 @@ const Queues = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:3000/api/queues");
+        const response = await fetch("/api/queues");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -187,7 +187,7 @@ const Queues = () => {
     setError(null);
     try {
       const response = await fetch(
-        `http://localhost:3000/api/queues?page=${page}&limit=${rowsPerPage}&search=${searchText}`
+        `/api/queues?page=${page}&limit=${rowsPerPage}&search=${searchText}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
