@@ -11,9 +11,9 @@ import {
     Legend,
     Filler
   } from 'chart.js';
-  
 
-  // 注册所有需要的组件
+
+// Register all required components
   ChartJS.register(
     ArcElement,
     CategoryScale,

@@ -91,16 +91,16 @@ const JobStatusPieChart = ({ data }) => {
                     flexDirection: "row",
                     justifyContent: "space-between",
                     alignItems: "flex-start",
-                    flexWrap: "wrap", // 使内容在屏幕较窄时自动换行
-                    gap: 2, // 适当的间距
+                    flexWrap: "wrap",
+                    gap: 2,
                     width: "100%",
                 }}
             >
                 <Box
                     sx={{
                         flex: 1,
-                        minWidth: "250px", // 保证图表不会过小
-                        height: "300px", // 固定高度，以便适应各种屏幕
+                        minWidth: "250px", // Ensure that the chart is not too small
+                        height: "300px", // Fixed height to adapt to various screens
                         position: "relative",
                         display: "flex",
                         alignItems: "center",
@@ -131,11 +131,11 @@ const JobStatusPieChart = ({ data }) => {
                 <Box
                     sx={{
                         flex: 1,
-                        minWidth: "250px", // 保证图例不会过小
+                        minWidth: "250px",
                         display: "flex",
                         flexDirection: "column",
-                        justifyContent: "flex-start", // 图例顶部对齐
-                        alignItems: "flex-start", // 左对齐
+                        justifyContent: "flex-start",
+                        alignItems: "flex-start",
                         textAlign: "left",
                     }}
                 >
