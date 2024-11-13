@@ -23,12 +23,13 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search} from "@mui/icons-material";
+import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
 import axios from "axios";
 import {calculateAge, fetchAllNamespaces} from "./utils";
 
 const Pods = () => {
     const [pods, setPods] = useState([]);
+    const [cachedPods, setCachedPods] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
@@ -50,7 +51,7 @@ const Pods = () => {
         rowsPerPage: 10,
     });
     const [totalPods, setTotalPods] = useState(0);
-    const [sortDirection, setSortDirection] = useState("desc");
+    const [sortDirection, setSortDirection] = useState("");
 
     const fetchPods = useCallback(async () => {
         setLoading(true);
@@ -61,11 +62,8 @@ const Pods = () => {
                 `/api/pods`,
                 {
                     params: {
-                        page: pagination.page,
-                        limit: pagination.rowsPerPage,
                         search: searchText,
                         namespace: filters.namespace,
-                        queue: filters.queue,
                         status: filters.status,
                     },
                 }
@@ -76,20 +74,26 @@ const Pods = () => {
             }
 
             const data = response.data;
-            setPods(data.items || []);
+            setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0); // 更新 totalPods
         } catch (err) {
             setError("Failed to fetch pods: " + err.message);
-            setPods([]);
+            setCachedPods([]);
         } finally {
             setLoading(false);
         }
-    }, [pagination, searchText, filters]);
+    }, [searchText, filters]);
 
     useEffect(() => {
         fetchPods();
         fetchAllNamespaces().then(setAllNamespaces);
     }, [fetchPods]);
+
+    useEffect(() => {
+        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
+        const endIndex = startIndex + pagination.rowsPerPage;
+        setPods(cachedPods.slice(startIndex, endIndex));
+    }, [cachedPods, pagination]);
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -175,7 +179,6 @@ const Pods = () => {
         setFilters((prev) => ({...prev, [filterType]: value}));
         setAnchorEl((prev) => ({...prev, [filterType]: null}));
         setPagination((prev) => ({...prev, page: 1}));
-        fetchPods();
     }, [fetchPods]);
 
     const uniqueStatuses = useMemo(() => {
@@ -198,7 +201,7 @@ const Pods = () => {
     }, [filteredPods, sortDirection]);
 
     const toggleSortDirection = useCallback(() => {
-        setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     }, []);
 
     return (
@@ -293,7 +296,15 @@ const Pods = () => {
                                 <Button
                                     size="small"
                                     onClick={toggleSortDirection}
-                                    startIcon={sortDirection === "desc" ? <ArrowDownward/> : <ArrowUpward/>}
+                                    startIcon={
+                                        sortDirection === "desc" ? (
+                                            <ArrowDownward/>
+                                        ) : sortDirection === "asc" ? (
+                                            <ArrowUpward/>
+                                        ) : (
+                                            <UnfoldMore/>
+                                        )
+                                    }
                                     sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
                                 >
                                     Sort

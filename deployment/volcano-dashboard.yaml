@@ -18,14 +18,14 @@ spec:
     spec:
       serviceAccountName: volcano-dashboard
       containers:
-        - image: volcanosh/vc-dashboard-frontend:v0.1
+        - image: volcanosh/vc-dashboard-frontend:latest
           imagePullPolicy: Always
           name: frontend
           ports:
             - containerPort: 80
               name: frontend
               protocol: TCP
-        - image: volcanosh/vc-dashboard-backend:v0.1
+        - image: volcanosh/vc-dashboard-backend:latest
           imagePullPolicy: Always
           name: backend
           ports:
@@ -77,6 +77,14 @@ rules:
       - ""
     resources:
       - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
     verbs:
       - get
       - list

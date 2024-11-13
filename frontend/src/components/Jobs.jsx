@@ -23,12 +23,13 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search} from "@mui/icons-material";
+import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
 import axios from "axios";
 import {fetchAllNamespaces, fetchAllQueues} from "./utils";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
+    const [cachedJobs, setCachedJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
@@ -53,7 +54,7 @@ const Jobs = () => {
         rowsPerPage: 10,
     });
     const [totalJobs, setTotalJobs] = useState(0);
-    const [sortDirection, setSortDirection] = useState("desc");
+    const [sortDirection, setSortDirection] = useState("");
 
     const fetchJobs = useCallback(async () => {
         setLoading(true);
@@ -64,8 +65,6 @@ const Jobs = () => {
                 `/api/jobs`,
                 {
                     params: {
-                        page: pagination.page,
-                        limit: pagination.rowsPerPage,
                         search: searchText,
                         namespace: filters.namespace,
                         queue: filters.queue,
@@ -79,21 +78,27 @@ const Jobs = () => {
             }
 
             const data = response.data;
-            setJobs(data.items || []);
-            setTotalJobs(data.totalCount || 0); // 更新 totalJobs
+            setCachedJobs(data.items || []);
+            setTotalJobs(data.totalCount || 0); // update totalJobs
         } catch (err) {
             setError("Failed to fetch jobs: " + err.message);
-            setJobs([]);
+            setCachedJobs([]);
         } finally {
             setLoading(false);
         }
-    }, [pagination, searchText, filters]);
+    }, [searchText, filters]);
 
     useEffect(() => {
         fetchJobs();
         fetchAllNamespaces().then(setAllNamespaces);
         fetchAllQueues().then(setAllQueues);
     }, [fetchJobs]);
+
+    useEffect(() => {
+        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
+        const endIndex = startIndex + pagination.rowsPerPage;
+        setJobs(cachedJobs.slice(startIndex, endIndex));
+    }, [cachedJobs, pagination]);
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -179,7 +184,6 @@ const Jobs = () => {
         setFilters((prev) => ({...prev, [filterType]: value}));
         setAnchorEl((prev) => ({...prev, [filterType]: null}));
         setPagination((prev) => ({...prev, page: 1}));
-        fetchJobs();
     }, [fetchJobs]);
 
     const uniqueStatuses = useMemo(() => {
@@ -202,7 +206,7 @@ const Jobs = () => {
     }, [filteredJobs, sortDirection]);
 
     const toggleSortDirection = useCallback(() => {
-        setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     }, []);
 
     return (
@@ -323,7 +327,15 @@ const Jobs = () => {
                                 <Button
                                     size="small"
                                     onClick={toggleSortDirection}
-                                    startIcon={sortDirection === "desc" ? <ArrowDownward/> : <ArrowUpward/>}
+                                    startIcon={
+                                        sortDirection === "desc" ? (
+                                            <ArrowDownward/>
+                                        ) : sortDirection === "asc" ? (
+                                            <ArrowUpward/>
+                                        ) : (
+                                            <UnfoldMore/>
+                                        )
+                                    }
                                     sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
                                 >
                                     Sort
