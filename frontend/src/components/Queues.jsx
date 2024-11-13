@@ -172,7 +172,6 @@ const Queues = () => {
         setFilters((prev) => ({...prev, [filterType]: value}));
         setAnchorEl((prev) => ({...prev, [filterType]: null}));
         setPagination((prev) => ({...prev, page: 1}));
-        fetchQueues();
     }, [fetchQueues]);
 
     const uniqueStates = useMemo(() => {

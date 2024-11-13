@@ -16,12 +16,10 @@ app.get("/api/jobs", async (req, res) => {
     try {
         const namespace = req.query.namespace || "";
         const searchTerm = req.query.search || "";
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
         const queueFilter = req.query.queue || "";
         const statusFilter = req.query.status || "";
 
-        console.log('Fetching jobs with params:', {page, limit, searchTerm, namespace, queueFilter});
+        console.log('Fetching jobs with params:', {namespace, searchTerm, queueFilter, statusFilter});
 
         let response;
         if (namespace === "" || namespace === "All") {
@@ -61,17 +59,9 @@ app.get("/api/jobs", async (req, res) => {
             );
         }
 
-        const totalCount = filteredJobs.length;
-        const startIndex = (page - 1) * limit;
-        const endIndex = Math.min(startIndex + limit, totalCount);
-        const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
-
         res.json({
-            items: paginatedJobs,
-            totalCount: totalCount,
-            page: page,
-            limit: limit,
-            totalPages: Math.ceil(totalCount / limit)
+            items: filteredJobs,
+            totalCount: filteredJobs.length,
         });
     } catch (err) {
         console.error("Error fetching jobs:", err);
@@ -186,6 +176,8 @@ app.get("/api/queues", async (req, res) => {
         const searchTerm = req.query.search || "";
         const stateFilter = req.query.state || "";
 
+        console.log('Fetching queues with params:', {page, limit, searchTerm, stateFilter});
+
         const response = await k8sApi.listClusterCustomObject(
             "scheduling.volcano.sh",
             "v1beta1",
@@ -230,7 +222,6 @@ app.get("/api/queues", async (req, res) => {
 // get all ns
 app.get("/api/namespaces", async (req, res) => {
     try {
-
         const response = await k8sCoreApi.listNamespace()
 
         res.json({
@@ -246,54 +237,47 @@ app.get("/api/namespaces", async (req, res) => {
 });
 
 app.get('/api/pods', async (req, res) => {
-    const namespace = req.query.namespace || "";
-    const searchTerm = req.query.search || "";
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const statusFilter = req.query.status || "";
+    try {
+        const namespace = req.query.namespace || "";
+        const searchTerm = req.query.search || "";
+        const statusFilter = req.query.status || "";
 
-    let response;
-    if (
-        namespace === "" || namespace === "All") {
-        response = await k8sCoreApi.listPodForAllNamespaces();
-    } else {
-        response = await k8sCoreApi.listNamespacedPod(namespace);
+        console.log('Fetching pods with params:', {namespace, searchTerm, statusFilter});
+
+        let response;
+        if (
+            namespace === "" || namespace === "All") {
+            response = await k8sCoreApi.listPodForAllNamespaces();
+        } else {
+            response = await k8sCoreApi.listNamespacedPod(namespace);
+        }
+
+        let filteredPods = response.body.items || [];
+
+        // Apply search filter
+        if (searchTerm) {
+            filteredPods = filteredPods.filter(pod =>
+                pod.metadata.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        if (statusFilter && statusFilter !== "All") {
+            filteredPods = filteredPods.filter((pod) =>
+                pod.status.phase === statusFilter
+            );
+        }
+
+        res.json({
+            items: filteredPods,
+            totalCount: filteredPods.length,
+        });
+    } catch (err) {
+        console.error("Error fetching pods:", err);
+        res.status(500).json({
+            error: "Failed to fetch pods",
+            details: err.message
+        });
     }
-
-    let filteredPods = response.body.items || [];
-
-    // Apply search filter
-    if (searchTerm) {
-        filteredPods = filteredPods.filter(pod =>
-            pod.metadata.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }
-
-    if (statusFilter && statusFilter !== "All") {
-        filteredPods = filteredPods.filter((pod) =>
-            pod.status.phase === statusFilter
-        );
-    }
-
-    // Calculate the total
-    const totalCount = filteredPods.length;
-
-
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = Math.min(startIndex + limit, totalCount);
-    const paginatedPods = filteredPods.slice(startIndex, endIndex);
-
-    console.log(`Page: ${page}, Limit: ${limit}, Total: ${totalCount}`);
-    console.log(`Showing pods from ${startIndex} to ${endIndex}`);
-
-    res.json({
-        items: paginatedPods,
-        totalCount: totalCount,
-        page: page,
-        limit: limit,
-        totalPages: Math.ceil(totalCount / limit)
-    });
 });
 
 // Get details of a specific Pod

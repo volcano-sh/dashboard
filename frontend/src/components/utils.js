@@ -1,5 +1,3 @@
-import {Error} from "@mui/icons-material";
-
 export const fetchAllNamespaces = async () => {
     try {
         const response = await fetch(`/api/namespaces`);
