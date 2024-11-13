@@ -31,10 +31,10 @@ const SearchField = ({ value, onChange, onClear }) => {
       }}
       sx={{
         '& .MuiInputBase-root': {
-          pr: 0, // 移除右侧内边距，防止清除按钮改变输入框宽度
+          pr: 0, // Remove the right padding to prevent the clear button from changing the width of the input box
         },
         '& .MuiInputBase-input': {
-          pr: 4, // 为清除按钮预留空间
+          pr: 4, // Reserve space for clear button
         },
       }}
     />

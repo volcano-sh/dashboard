@@ -11,7 +11,7 @@ import Jobs from "./components/Jobs";
 import Queues from "./components/Queues";
 import Pods from "./components/Pods";
 import { ThemeProvider } from "@mui/material/styles";
-import { theme } from "./theme"; // 导入主题
+import { theme } from "./theme"; // import theme
 
 function App() {
   return (
