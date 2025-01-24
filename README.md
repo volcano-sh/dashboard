@@ -22,7 +22,7 @@ Login one node of your kubernetes cluster and execute the following command to i
 ```shell
 kubectl create ns volcano-system
 
-kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/main/deployment/volcano-dashboard.yaml
+kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/release-0.1/deployment/volcano-dashboard.yaml
 ```
 
 Then use the following command to map the traffic to node.
