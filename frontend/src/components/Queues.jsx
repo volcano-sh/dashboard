@@ -22,6 +22,7 @@ import {
     TextField,
     Typography,
     useTheme,
+    InputAdornment,
 } from "@mui/material";
 import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
 import axios from "axios";
@@ -256,34 +257,40 @@ const Queues = () => {
                     mb: 2
                 }}
             >
-                <Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
-                    <TextField
-                        placeholder="Search queues"
-                        variant="outlined"
+               <Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
+    <TextField
+        placeholder="Search queues"
+        variant="outlined"
+        size="small"
+        value={searchText}
+        sx={{ width: 200 }}  
+        onChange={handleSearch}
+        InputProps={{
+            startAdornment: (
+                <InputAdornment position="start">
+                    <IconButton
                         size="small"
-                        value={searchText}
-                        onChange={handleSearch}
-                        InputProps={{
-                            endAdornment: searchText && (
-                                <IconButton
-                                    size="small"
-                                    onClick={handleClearSearch}
-                                    sx={{padding: "4px"}}
-                                >
-                                    <Clear/>
-                                </IconButton>
-                            ),
-                        }}
-                    />
-                    <Button
-                        variant="contained"
-                        color="primary"
                         onClick={() => fetchQueues()}
-                        startIcon={<Search/>}
+                        sx={{padding: "4px"}}
+                        
                     >
-                        SEARCH BY QUEUE NAME
-                    </Button>
-                </Box>
+                        <Search/>
+                    </IconButton>
+                </InputAdornment>
+            ),
+            endAdornment: searchText && (
+                <IconButton
+                    size="small"
+                    onClick={handleClearSearch}
+                    sx={{padding: "4px"}}
+                >
+                    <Clear/>
+                </IconButton>
+            ),
+        }}
+    />
+</Box>
+
                 <Button
                     variant="contained"
                     color="primary"
@@ -407,7 +414,7 @@ const Queues = () => {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                    < /TableBody>
+                    </TableBody>
                 </Table>
             </TableContainer>
             <Box

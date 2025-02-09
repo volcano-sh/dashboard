@@ -22,7 +22,7 @@ import {
     TextField,
     Typography,
     useTheme,
-} from "@mui/material";
+    InputAdornment} from "@mui/material";
 import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
 import axios from "axios";
 import {fetchAllNamespaces, fetchAllQueues} from "./utils";
@@ -226,34 +226,39 @@ const Jobs = () => {
                     mb: 2
                 }}
             >
-                <Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
-                    <TextField
-                        placeholder="Search jobs"
-                        variant="outlined"
+<Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
+    <TextField
+        placeholder="Search jobs"
+        variant="outlined"
+        size="small"
+        value={searchText}
+        onChange={handleSearch}
+        sx={{ width: 200 }}  // Adjust the width as needed
+        InputProps={{
+            startAdornment: (
+                <InputAdornment position="start">
+                    <IconButton
                         size="small"
-                        value={searchText}
-                        onChange={handleSearch}
-                        InputProps={{
-                            endAdornment: searchText && (
-                                <IconButton
-                                    size="small"
-                                    onClick={handleClearSearch}
-                                    sx={{padding: "4px"}}
-                                >
-                                    <Clear/>
-                                </IconButton>
-                            ),
-                        }}
-                    />
-                    <Button
-                        variant="contained"
-                        color="primary"
                         onClick={() => fetchJobs()}
-                        startIcon={<Search/>}
+                        sx={{padding: "4px"}}
                     >
-                        SEARCH BY JOB NAME
-                    </Button>
-                </Box>
+                        <Search/>
+                    </IconButton>
+                </InputAdornment>
+            ),
+            endAdornment: searchText && (
+                <IconButton
+                    size="small"
+                    onClick={handleClearSearch}
+                    sx={{padding: "4px"}}
+                >
+                    <Clear/>
+                </IconButton>
+            ),
+        }}
+    />
+</Box>
+
                 <Button
                     variant="contained"
                     color="primary"
