@@ -371,7 +371,7 @@ const Queues = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {sortedQueues
+                    {sortedQueues
                             .map((queue) => (
                                 <TableRow
                                     hover
@@ -407,7 +407,7 @@ const Queues = () => {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                    < /TableBody>
+                        </TableBody>
                 </Table>
             </TableContainer>
             <Box
