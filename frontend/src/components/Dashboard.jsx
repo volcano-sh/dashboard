@@ -9,17 +9,12 @@ import {
   CircularProgress,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-
 import StatCard from "./Charts/StatCard";
 import JobStatusPieChart from "./Charts/JobStatusPieChart";
 import QueueResourcesBarChart from "./Charts/QueueResourcesBarChart";
 
 const Dashboard = () => {
-  const [dashboardData, setDashboardData] = useState({
-    jobs: [],
-    queues: [],
-    pods: [],
-  });
+  const [dashboardData, setDashboardData] = useState({ jobs: [], queues: [], pods: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -50,7 +45,6 @@ const Dashboard = () => {
         pods: podsData.items || [],
       });
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
       setError(error.message);
     } finally {
       setRefreshing(false);
@@ -58,136 +52,61 @@ const Dashboard = () => {
     }
   };
 
-  const handleRefresh = () => {
-    fetchAllData();
-  };
-
   useEffect(() => {
     fetchAllData();
   }, []);
 
   return (
-    <Box
-      sx={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        p: 3,
-      }}
-    >
+    <Box sx={{ height: "100vh", p: 3, bgcolor: "#f4f6f8" }}>
       {error && (
-        <Paper
-          sx={{
-            p: 2,
-            mb: 2,
-            bgcolor: "error.light",
-            color: "error.contrastText",
-          }}
-        >
+        <Paper sx={{ p: 2, mb: 2, bgcolor: "error.light", color: "error.contrastText" }}>
           <Typography>{error}</Typography>
         </Paper>
       )}
 
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4">Volcano Dashboard</Typography>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: "bold",
+            background: "linear-gradient(45deg, #ff9800, #ff5722)",
+            WebkitBackgroundClip: "text",
+            color: "transparent",
+          }}
+        >
+          Volcano Dashboard
+        </Typography>
         <Tooltip title="Refresh Data">
-          <IconButton onClick={handleRefresh} disabled={refreshing}>
-            <RefreshIcon />
+          <IconButton onClick={fetchAllData} disabled={refreshing}>
+            <RefreshIcon sx={{ color: "#ff9800", transition: "0.3s", '&:hover': { color: "#ff5722" } }} />
           </IconButton>
         </Tooltip>
       </Box>
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard title="Total Jobs" value={dashboardData.jobs?.length || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Active Queues"
-            value={
-              dashboardData.queues?.filter((q) => q.status?.state === "Open")
-                ?.length || 0
-            }
-          />
+          <StatCard title="Active Queues" value={dashboardData.queues?.filter(q => q.status?.state === "Open")?.length || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Running Pods"
-            value={
-              dashboardData.pods?.filter((p) => p.status?.phase === "Running")
-                ?.length || 0
-            }
-          />
+          <StatCard title="Running Pods" value={dashboardData.pods?.filter(p => p.status?.phase === "Running")?.length || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Complete Rate"
-            value={`${calculateSuccessRate(dashboardData.jobs)}%`}
-          />
+          <StatCard title="Complete Rate" value={`${calculateSuccessRate(dashboardData.jobs)}%`} />
         </Grid>
       </Grid>
 
-      <Grid container spacing={3} sx={{ flex: 1, minHeight: 0, mb: 3 }}>
+      <Grid container spacing={3} sx={{ mt: 3 }}>
         <Grid item xs={12} md={6}>
-          <Paper
-            sx={{
-              height: "calc(100vh - 250px)",
-              display: "flex",
-              flexDirection: "column",
-              p: 2,
-            }}
-          >
-            {isLoading ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  flex: 1,
-                }}
-              >
-                <CircularProgress />
-              </Box>
-            ) : (
-              <Box sx={{ height: "100%" }}>
-                <JobStatusPieChart data={dashboardData.jobs} />
-              </Box>
-            )}
+          <Paper sx={{ height: "400px", p: 2, boxShadow: 3, borderRadius: 2 }}>
+            {isLoading ? <LoadingIndicator /> : <JobStatusPieChart data={dashboardData.jobs} />}
           </Paper>
         </Grid>
-
         <Grid item xs={12} md={6}>
-          <Paper
-            sx={{
-              height: "calc(100vh - 250px)",
-              display: "flex",
-              flexDirection: "column",
-              p: 2,
-            }}
-          >
-            {isLoading ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  flex: 1,
-                }}
-              >
-                <CircularProgress />
-              </Box>
-            ) : (
-              <Box sx={{ height: "100%" }}>
-                <QueueResourcesBarChart data={dashboardData.queues} />
-              </Box>
-            )}
+          <Paper sx={{ height: "400px", p: 2, boxShadow: 3, borderRadius: 2 }}>
+            {isLoading ? <LoadingIndicator /> : <QueueResourcesBarChart data={dashboardData.queues} />}
           </Paper>
         </Grid>
       </Grid>
@@ -195,18 +114,16 @@ const Dashboard = () => {
   );
 };
 
+const LoadingIndicator = () => (
+  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+    <CircularProgress />
+  </Box>
+);
+
 const calculateSuccessRate = (jobs) => {
   if (!jobs || jobs.length === 0) return 0;
-  const completed = jobs.filter(
-    (job) => job.status?.succeeded || job.status?.state?.phase === "Completed"
-  ).length;
-  const finished = jobs.filter(
-    (job) =>
-      job.status?.succeeded ||
-      job.status?.failed ||
-      job.status?.state?.phase === "Completed" ||
-      job.status?.state?.phase === "Failed"
-  ).length;
+  const completed = jobs.filter(job => job.status?.succeeded || job.status?.state?.phase === "Completed").length;
+  const finished = jobs.filter(job => job.status?.succeeded || job.status?.failed || job.status?.state?.phase === "Completed" || job.status?.state?.phase === "Failed").length;
   return finished === 0 ? 0 : Math.round((completed / finished) * 100);
 };
 
