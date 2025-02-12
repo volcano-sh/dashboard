@@ -32,16 +32,32 @@ kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0
 
 Access the dashboard by navigate to `http://$YOUR_NODE_IP:8080` in your browser.
 
+If running locally navigate to `http://localhost:8080`
+
 
 ## Development
-
-You can build the volcano dashboard images locally. Please use the following command to build docker images of volcano dashboard.
 
 Clone the repo.
 
 ```shell
 git clone https://github.com/volcano-sh/dashboard.git
 ```
+
+### Locally
+
+Follow the prerequisites to install volcano first
+
+```shell
+npm install
+```
+
+```shell
+npm run dev
+```
+
+
+### Inside kubernetes cluster
+You can build the volcano dashboard images locally. Please use the following command to build docker images of volcano dashboard.
 
 Build images.
 ```shell
@@ -52,3 +68,7 @@ docker build -t backend:dev . -f deployment/build/backend/Dockerfile
 ```
 
 After that you can replace the images in `volcano-dashboard.yaml` to verify the result.
+
+```shell
+kubectl apply -f deployment/volcano-dashboard.yaml
+```
