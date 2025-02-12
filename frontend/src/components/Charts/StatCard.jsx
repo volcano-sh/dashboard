@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Box, Paper, Typography } from '@mui/material';
 
 const StatCard = ({ title, value, icon }) => (

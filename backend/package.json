@@ -5,6 +5,7 @@
   "license": "Unlicense",
   "main": "dist/index.js",
   "scripts": {
+    "dev": "nodemon src/server.js",
     "build": "babel src -d dist",
     "prepare": "npm run build",
     "test": "mocha --require @babel/register --recursive"
@@ -44,6 +45,7 @@
     "@babel/register": "^7.0.0",
     "expect.js": "^0.3.1",
     "mocha": "^8.0.1",
+    "nodemon": "^3.1.9",
     "sinon": "^7.2.0"
   },
   "files": [
