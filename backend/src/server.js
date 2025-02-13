@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
-import { CoreV1Api, CustomObjectsApi, KubeConfig, } from "@kubernetes/client-node";
+import {CoreV1Api, CustomObjectsApi, KubeConfig,} from "@kubernetes/client-node";
 import yaml from "js-yaml";
 
 const app = express();
-app.use(cors({ origin: '*' }));
+app.use(cors({origin: '*'}));
 
 const kc = new KubeConfig();
 kc.loadFromDefault();
@@ -19,7 +19,7 @@ app.get("/api/jobs", async (req, res) => {
         const queueFilter = req.query.queue || "";
         const statusFilter = req.query.status || "";
 
-        console.log('Fetching jobs with params:', { namespace, searchTerm, queueFilter, statusFilter });
+        console.log('Fetching jobs with params:', {namespace, searchTerm, queueFilter, statusFilter});
 
         let response;
         if (namespace === "" || namespace === "All") {
@@ -75,7 +75,7 @@ app.get("/api/jobs", async (req, res) => {
 // Add an interface to obtain a single job
 app.get("/api/jobs/:namespace/:name", async (req, res) => {
     try {
-        const { namespace, name } = req.params;
+        const {namespace, name} = req.params;
         const response = await k8sApi.getNamespacedCustomObject(
             "batch.volcano.sh",
             "v1alpha1",
@@ -96,7 +96,7 @@ app.get("/api/jobs/:namespace/:name", async (req, res) => {
 // Add a route to obtain YAML in server.js
 app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
     try {
-        const { namespace, name } = req.params;
+        const {namespace, name} = req.params;
         const response = await k8sApi.getNamespacedCustomObject(
             "batch.volcano.sh",
             "v1alpha1",
@@ -135,7 +135,7 @@ app.get("/api/queues/:name", async (req, res) => {
         res.json(response.body);
     } catch (error) {
         console.error("Error fetching queue details:", error);
-        res.status(500).json({ error: "Failed to fetch queue details" });
+        res.status(500).json({error: "Failed to fetch queue details"});
     }
 });
 
@@ -176,7 +176,7 @@ app.get("/api/queues", async (req, res) => {
         const searchTerm = req.query.search || "";
         const stateFilter = req.query.state || "";
 
-        console.log('Fetching queues with params:', { page, limit, searchTerm, stateFilter });
+        console.log('Fetching queues with params:', {page, limit, searchTerm, stateFilter});
 
         const response = await k8sApi.listClusterCustomObject(
             "scheduling.volcano.sh",
@@ -242,7 +242,7 @@ app.get('/api/pods', async (req, res) => {
         const searchTerm = req.query.search || "";
         const statusFilter = req.query.status || "";
 
-        console.log('Fetching pods with params:', { namespace, searchTerm, statusFilter });
+        console.log('Fetching pods with params:', {namespace, searchTerm, statusFilter});
 
         let response;
         if (
@@ -283,7 +283,7 @@ app.get('/api/pods', async (req, res) => {
 // Get details of a specific Pod
 app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
     try {
-        const { namespace, name } = req.params;
+        const {namespace, name} = req.params;
         const response = await k8sCoreApi.readNamespacedPod(name, namespace);
 
         // Convert JSON to formatted YAML
@@ -333,7 +333,7 @@ app.get("/api/all-jobs", async (req, res) => {
         });
     } catch (err) {
         console.error("Error fetching all jobs:", err);
-        res.status(500).json({ error: "Failed to fetch all jobs" });
+        res.status(500).json({error: "Failed to fetch all jobs"});
     }
 });
 
@@ -361,7 +361,7 @@ app.get("/api/all-queues", async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching all queues:", error);
-        res.status(500).json({ error: "Failed to fetch all queues" });
+        res.status(500).json({error: "Failed to fetch all queues"});
     }
 });
 
@@ -375,7 +375,7 @@ app.get("/api/all-pods", async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching all pods:', error);
-        res.status(500).json({ error: 'Failed to fetch all pods' });
+        res.status(500).json({error: 'Failed to fetch all pods'});
     }
 });
 
