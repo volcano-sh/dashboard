@@ -13,8 +13,6 @@ const k8sApi = kc.makeApiClient(CustomObjectsApi);
 const k8sCoreApi = kc.makeApiClient(CoreV1Api);
 
 app.get("/api/jobs", async (req, res) => {
-    console.log("hello");
-
     try {
         const namespace = req.query.namespace || "";
         const searchTerm = req.query.search || "";
