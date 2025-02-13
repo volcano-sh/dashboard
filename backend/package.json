@@ -5,8 +5,8 @@
   "license": "Unlicense",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "build": "babel src -d dist",
+    "dev": "nodemon",
+    "build": "babel src --extensions \".ts,.js\" -d dist",
     "prepare": "npm run build",
     "test": "mocha --require @babel/register --recursive"
   },
@@ -15,7 +15,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@babel/cli": "^7.0.0",
     "@kubernetes/client-node": "^0.21.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -24,7 +23,8 @@
     "superagent": "^5.3.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
+    "@babel/cli": "^7.26.4",
+    "@babel/core": "^7.26.8",
     "@babel/plugin-proposal-class-properties": "^7.0.0",
     "@babel/plugin-proposal-decorators": "^7.0.0",
     "@babel/plugin-proposal-do-expressions": "^7.0.0",
@@ -42,11 +42,14 @@
     "@babel/plugin-syntax-dynamic-import": "^7.0.0",
     "@babel/plugin-syntax-import-meta": "^7.0.0",
     "@babel/preset-env": "^7.0.0",
+    "@babel/preset-typescript": "^7.26.0",
     "@babel/register": "^7.0.0",
     "expect.js": "^0.3.1",
     "mocha": "^8.0.1",
     "nodemon": "^3.1.9",
-    "sinon": "^7.2.0"
+    "sinon": "^7.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
   },
   "files": [
     "dist"
