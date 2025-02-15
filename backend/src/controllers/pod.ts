@@ -1,8 +1,9 @@
+import { Request, Response } from "express";
 import { k8sCoreApi } from "../config/kubernetes.js";
 import yaml from "js-yaml";
 
 // Get all Pods (no pagination)
-export const getAllPods = async (req, res) => {
+export const getAllPods = async (req: Request, res: Response) => {
     try {
         const response = await k8sCoreApi.listPodForAllNamespaces();
         res.json({
@@ -15,7 +16,12 @@ export const getAllPods = async (req, res) => {
     }
 }
 
-export const getPods = async (req, res) => {
+interface PodQueryParams {
+    namespace?: string;
+    search?: string;
+    status?: string;
+}
+export const getPods = async (req: Request<{}, {}, {}, PodQueryParams>, res: Response) => {
     try {
         const namespace = req.query.namespace || "";
         const searchTerm = req.query.search || "";
@@ -36,13 +42,13 @@ export const getPods = async (req, res) => {
         // Apply search filter
         if (searchTerm) {
             filteredPods = filteredPods.filter(pod =>
-                pod.metadata.name.toLowerCase().includes(searchTerm.toLowerCase())
+                pod.metadata?.name?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         if (statusFilter && statusFilter !== "All") {
             filteredPods = filteredPods.filter((pod) =>
-                pod.status.phase === statusFilter
+                pod.status?.phase === statusFilter
             );
         }
 
@@ -54,13 +60,13 @@ export const getPods = async (req, res) => {
         console.error("Error fetching pods:", err);
         res.status(500).json({
             error: "Failed to fetch pods",
-            details: err.message
+            details: (err as Error).message
         });
     }
 }
 
 // Get details of a specific Pod
-export const getPodYamlByName = async (req, res) => {
+export const getPodYamlByName = async (req: Request, res: Response) => {
     try {
         const { namespace, name } = req.params;
         const response = await k8sCoreApi.readNamespacedPod(name, namespace);
@@ -81,7 +87,7 @@ export const getPodYamlByName = async (req, res) => {
         console.error("Error fetching job YAML:", error);
         res.status(500).json({
             error: "Failed to fetch job YAML",
-            details: error.message
+            details: (error as Error).message
         });
     }
 }
