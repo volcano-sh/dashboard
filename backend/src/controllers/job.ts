@@ -1,7 +1,7 @@
+import { Request, Response } from "express";
 import { k8sApi } from "../config/kubernetes";
 import http from 'http';
 import yaml from "js-yaml";
-import { Request, Response } from "express";
 import IJob from "../types/job";
 
 interface IResponse {
@@ -83,7 +83,7 @@ export const getJobs = async (req: Request<{}, {}, {}, JobQueryParams>, res: Res
 
         if (searchTerm) {
             filteredJobs = filteredJobs.filter((job) =>
-                (job.metadata?.name as string).toLowerCase().includes(searchTerm.toLowerCase())
+                job.metadata?.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 

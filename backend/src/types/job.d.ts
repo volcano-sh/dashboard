@@ -2,6 +2,7 @@ export default interface IJob {
     apiVersion?: string
     kind?: string
     metadata?: {
+        name: string
         [k: string]: unknown
     }
     spec?: {
