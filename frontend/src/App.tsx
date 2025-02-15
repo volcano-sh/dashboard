@@ -4,7 +4,7 @@ import {
   Route,
   Routes,
   Navigate,
-} from "react-router-dom";
+} from "react-router";
 import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
 import Jobs from "./components/Jobs";
@@ -30,5 +30,6 @@ function App() {
     </ThemeProvider>
   );
 }
+
 
 export default App;
