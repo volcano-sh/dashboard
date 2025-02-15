@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
-import { jobRouter, namespaceRouter, podRouter, queueRouter } from "./routes/index.js";
+import { jobRouter, namespaceRouter, podRouter, queueRouter } from "./routes/index";
 
 const app = express();
+
 app.use(cors({ origin: '*' }));
 
 app.use("/api", jobRouter);
