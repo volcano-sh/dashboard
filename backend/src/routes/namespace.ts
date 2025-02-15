@@ -1,5 +1,5 @@
 import express from "express";
-import { getNamespaces } from "../controllers/namespace.js";
+import { getNamespaces } from "../controllers/namespace";
 
 const router = express.Router();
 

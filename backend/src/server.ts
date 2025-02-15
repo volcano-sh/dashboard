@@ -1,5 +1,5 @@
-import { k8sApi } from "./config/kubernetes.js";
-import app from "./app.js";
+import { k8sApi } from "./config/kubernetes";
+import app from "./app";
 
 const verifyVolcanoSetup = async () => {
     try {

@@ -13,7 +13,7 @@
   "browser": {
     "fs": false
   },
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
     "@kubernetes/client-node": "^0.21.0",
     "cors": "^2.8.5",
