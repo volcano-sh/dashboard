@@ -12,7 +12,7 @@ const API_CONFIG = {
 export const API_ENDPOINTS = {
     jobs: {
         list: `${API_CONFIG.baseURL}/api/jobs`,
-        detail: (namespace, name) => `${API_CONFIG.baseURL}/jobs/${namespace}/${name}`
+        detail: (namespace: string, name: string) => `${API_CONFIG.baseURL}/jobs/${namespace}/${name}`
     },
     queues: {
         list: `${API_CONFIG.baseURL}/api/queues`
@@ -23,4 +23,3 @@ export const API_ENDPOINTS = {
 };
 
 export default API_CONFIG;
-  

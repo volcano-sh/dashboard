@@ -13,7 +13,7 @@ import Pods from "./components/Pods";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme"; // import theme
 
-function App() {
+const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <Router>

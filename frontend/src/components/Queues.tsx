@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Box,
     Button,
@@ -13,6 +13,7 @@ import {
     Pagination,
     Paper,
     Select,
+    SelectChangeEvent,
     Table,
     TableBody,
     TableCell,
@@ -24,14 +25,15 @@ import {
     useTheme,
     InputAdornment,
 } from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
+import { ArrowDownward, ArrowUpward, Clear, FilterList, Refresh, Search, UnfoldMore } from "@mui/icons-material";
 import axios from "axios";
-import {parseCPU, parseMemoryToMi} from "./utils";
+import { parseCPU, parseMemoryToMi } from "./utils";
+import { IQueue } from "../types";
 
 const Queues = () => {
-    const [queues, setQueues] = useState([]);
+    const [queues, setQueues] = useState<IQueue[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
     const [filters, setFilters] = useState({
         status: "All",
     });
@@ -50,7 +52,10 @@ const Queues = () => {
     const [totalQueues, setTotalQueues] = useState(0);
     const [sortDirection, setSortDirection] = useState("desc");
 
-    const [sortConfig, setSortConfig] = useState({
+    const [sortConfig, setSortConfig] = useState<{
+        field: string | null;
+        direction: "asc" | "desc";
+    }>({
         field: null,
         direction: "asc",
     });
@@ -76,11 +81,11 @@ const Queues = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = response.data;
+            const data = response.data as { items: IQueue[]; totalCount: number };
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0); // 更新 totalQueues
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            setError("Failed to fetch queues: " + (err as Error).message);
             setQueues([]);
         } finally {
             setLoading(false);
@@ -91,32 +96,32 @@ const Queues = () => {
         fetchQueues();
     }, [fetchQueues]);
 
-    const handleSearch = (event) => {
+    const handleSearch = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setSearchText(event.target.value);
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     };
 
     const handleClearSearch = () => {
         setSearchText("");
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         fetchQueues();
     };
 
     const handleRefresh = useCallback(() => {
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
         fetchQueues();
     }, [fetchQueues]);
 
-    const handleQueueClick = useCallback(async (queue) => {
+    const handleQueueClick = useCallback(async (queue: IQueue) => {
         try {
             setLoading(true);
             const response = await axios.get(
-                `/api/queue/${queue.metadata.name}/yaml`,
-                {responseType: "text"}
+                `/api/queue/${queue.metadata?.name}/yaml`,
+                { responseType: "text" }
             );
 
-            const formattedYaml = response.data
+            const formattedYaml = (response.data as string)
                 .split("\n")
                 .map((line) => {
                     const keyMatch = line.match(/^(\s*)([^:\s]+):/);
@@ -129,12 +134,12 @@ const Queues = () => {
                 })
                 .join("\n");
 
-            setSelectedQueueName(queue.metadata.name);
+            setSelectedQueueName(queue.metadata?.name!);
             setSelectedQueueYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            setError("Failed to fetch queue YAML: " + (err as Error).message);
         } finally {
             setLoading(false);
         }
@@ -144,15 +149,15 @@ const Queues = () => {
         setOpenDialog(false);
     }, []);
 
-    const handleChangePage = useCallback((event, newPage) => {
-        setPagination((prev) => ({...prev, page: newPage}));
+    const handleChangePage = useCallback((_: unknown, newPage: number) => {
+        setPagination((prev) => ({ ...prev, page: newPage }));
     }, []);
 
-    const handleChangeRowsPerPage = useCallback((event) => {
-        setPagination((prev) => ({...prev, rowsPerPage: parseInt(event.target.value, 10), page: 1}));
+    const handleChangeRowsPerPage = useCallback((event: SelectChangeEvent<number>) => {
+        setPagination((prev) => ({ ...prev, rowsPerPage: parseInt(event.target.value as string, 10), page: 1 }));
     }, []);
 
-    const getStateColor = useCallback((status) => {
+    const getStateColor = useCallback((status: string) => {
         switch (status) {
             case "Open":
                 return theme.palette.success.main;
@@ -165,46 +170,46 @@ const Queues = () => {
         }
     }, [theme]);
 
-    const handleFilterClick = useCallback((filterType, event) => {
-        setAnchorEl((prev) => ({...prev, [filterType]: event.currentTarget}));
+    const handleFilterClick = useCallback((filterType: string, event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
     }, []);
 
-    const handleFilterClose = useCallback((filterType, value) => {
-        setFilters((prev) => ({...prev, [filterType]: value}));
-        setAnchorEl((prev) => ({...prev, [filterType]: null}));
-        setPagination((prev) => ({...prev, page: 1}));
+    const handleFilterClose = useCallback((filterType: string, value: string) => {
+        setFilters((prev) => ({ ...prev, [filterType]: value }));
+        setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     }, [fetchQueues]);
 
     const uniqueStates = useMemo(() => {
-        return ["All", ...new Set(queues.map((queue) => queue.status?.state).filter(Boolean))];
+        return ["All", ...new Set(queues.map((queue) => queue.status?.state!).filter(Boolean))];
     }, [queues]);
 
-    const sortQueues = useCallback((queues, config) => {
+    const sortQueues = useCallback((queues: IQueue[], config: typeof sortConfig) => {
         if (!config.field) return queues;
 
         return [...queues].sort((a, b) => {
-            let aValue, bValue;
+            let aValue: number, bValue: number;
 
             switch (config.field) {
                 case "cpu":
-                    aValue = parseCPU(a.status?.allocated?.cpu || "0");
-                    bValue = parseCPU(b.status?.allocated?.cpu || "0");
+                    aValue = parseCPU(a.status?.allocated?.cpu as string || "0");
+                    bValue = parseCPU(b.status?.allocated?.cpu as string || "0");
                     break;
                 case "memory":
-                    aValue = parseMemoryToMi(a.status?.allocated?.memory || 0);
-                    bValue = parseMemoryToMi(b.status?.allocated?.memory || 0);
+                    aValue = parseMemoryToMi(a.status?.allocated?.memory as string || "0");
+                    bValue = parseMemoryToMi(b.status?.allocated?.memory as string || "0");
                     break;
                 case "pods":
                     aValue = Number(a.status?.allocated?.pods) || 0;
                     bValue = Number(b.status?.allocated?.pods) || 0;
                     break;
                 case "creationTime":
-                    aValue = new Date(a.metadata.creationTimestamp).getTime();
-                    bValue = new Date(b.metadata.creationTimestamp).getTime();
+                    aValue = new Date(a.metadata?.creationTimestamp!).getTime();
+                    bValue = new Date(b.metadata?.creationTimestamp!).getTime();
                     break;
                 default:
-                    aValue = a[config.field];
-                    bValue = b[config.field];
+                    aValue = a[config.field!] as number;
+                    bValue = b[config.field!] as number;
             }
 
             if (config.direction === "asc") {
@@ -218,7 +223,7 @@ const Queues = () => {
         return sortQueues(queues, sortConfig);
     }, [queues, sortConfig, sortQueues]);
 
-    const handleSort = (field) => {
+    const handleSort = (field: string) => {
         setSortConfig((prevConfig) => ({
             field,
             direction:
@@ -229,7 +234,7 @@ const Queues = () => {
     };
 
     const allocatedFields = useMemo(() => {
-        const fields = new Set();
+        const fields = new Set<string>();
         queues.forEach((queue) => {
             if (queue.status?.allocated) {
                 Object.keys(queue.status.allocated).forEach((key) => {
@@ -241,9 +246,9 @@ const Queues = () => {
     }, [queues]);
 
     return (
-        <Box sx={{bgcolor: "background.default", minHeight: "100vh", p: 3}}>
+        <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{mt: 2, color: theme.palette.error.main}}>
+                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
@@ -257,44 +262,44 @@ const Queues = () => {
                     mb: 2
                 }}
             >
-               <Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
-    <TextField
-        placeholder="Search queues"
-        variant="outlined"
-        size="small"
-        value={searchText}
-        sx={{ width: 200 }}  
-        onChange={handleSearch}
-        InputProps={{
-            startAdornment: (
-                <InputAdornment position="start">
-                    <IconButton
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                    <TextField
+                        placeholder="Search queues"
+                        variant="outlined"
                         size="small"
-                        onClick={() => fetchQueues()}
-                        sx={{padding: "4px"}}
-                        
-                    >
-                        <Search/>
-                    </IconButton>
-                </InputAdornment>
-            ),
-            endAdornment: searchText && (
-                <IconButton
-                    size="small"
-                    onClick={handleClearSearch}
-                    sx={{padding: "4px"}}
-                >
-                    <Clear/>
-                </IconButton>
-            ),
-        }}
-    />
-</Box>
+                        value={searchText}
+                        sx={{ width: 200 }}
+                        onChange={handleSearch}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => fetchQueues()}
+                                        sx={{ padding: "4px" }}
+
+                                    >
+                                        <Search />
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchText && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearSearch}
+                                    sx={{ padding: "4px" }}
+                                >
+                                    <Clear />
+                                </IconButton>
+                            ),
+                        }}
+                    />
+                </Box>
 
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<Refresh/>}
+                    startIcon={<Refresh />}
                     onClick={handleRefresh}
                 >
                     Refresh Queue Status
@@ -302,19 +307,19 @@ const Queues = () => {
             </Box>
             <TableContainer
                 component={Paper}
-                sx={{maxHeight: "calc(100vh - 200px)", overflow: "auto"}}
+                sx={{ maxHeight: "calc(100vh - 200px)", overflow: "auto" }}
             >
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">Name</Typography>
                             </TableCell>
 
                             {/* get allocated field dynamically */}
                             {allocatedFields.map((field) => (
                                 <TableCell key={field}>
-                                    <Box sx={{display: "flex", alignItems: "center"}}>
+                                    <Box sx={{ display: "flex", alignItems: "center" }}>
                                         <Typography variant="h6">{`Allocated ${field}`}</Typography>
                                         <IconButton
                                             size="small"
@@ -322,51 +327,51 @@ const Queues = () => {
                                         >
                                             {sortConfig.field === field ? (
                                                 sortConfig.direction === "asc" ? (
-                                                    <ArrowUpward/>
+                                                    <ArrowUpward />
                                                 ) : (
-                                                    <ArrowDownward/>
+                                                    <ArrowDownward />
                                                 )
                                             ) : (
-                                                <UnfoldMore/>
+                                                <UnfoldMore />
                                             )}
                                         </IconButton>
                                     </Box>
                                 </TableCell>
                             ))}
 
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">Creation Time</Typography>
                                 <Button
                                     size="small"
                                     onClick={() => handleSort("creationTime")}
                                     startIcon={sortConfig.field === "creationTime" ? (
                                         sortConfig.direction === "asc" ? (
-                                            <ArrowUpward/>
+                                            <ArrowUpward />
                                         ) : (
-                                            <ArrowDownward/>
+                                            <ArrowDownward />
                                         )
                                     ) : (
-                                        <UnfoldMore/>
+                                        <UnfoldMore />
                                     )}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    sx={{ textTransform: "none", padding: 0, minWidth: "auto" }}
                                 >
                                     Sort
                                 </Button>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">State</Typography>
                                 <Button
                                     size="small"
-                                    startIcon={<FilterList/>}
+                                    startIcon={<FilterList />}
                                     onClick={(e) => handleFilterClick("status", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    sx={{ textTransform: "none", padding: 0, minWidth: "auto" }}
                                 >
                                     Filter: {filters.status}
                                 </Button>
                                 <Menu
                                     anchorEl={anchorEl.status}
                                     open={Boolean(anchorEl.status)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, status: null}))}
+                                    onClose={() => setAnchorEl((prev) => ({ ...prev, status: null }))}
                                 >
                                     {uniqueStates.map((status) => (
                                         <MenuItem key={status} onClick={() => handleFilterClose("status", status)}>
@@ -382,10 +387,10 @@ const Queues = () => {
                             .map((queue) => (
                                 <TableRow
                                     hover
-                                    key={queue.metadata.name}
+                                    key={queue.metadata?.name}
                                     onClick={() => handleQueueClick(queue)}
                                     sx={{
-                                        "&:nth-of-type(odd)": {bgcolor: "action.hover"},
+                                        "&:nth-of-type(odd)": { bgcolor: "action.hover" },
                                         "&:hover": {
                                             bgcolor: "action.hover",
                                             color: "primary.main",
@@ -394,19 +399,19 @@ const Queues = () => {
                                         cursor: "pointer",
                                     }}
                                 >
-                                    <TableCell>{queue.metadata.name}</TableCell>
+                                    <TableCell>{queue.metadata?.name}</TableCell>
                                     {allocatedFields.map((field) => (
                                         <TableCell key={field}>
                                             {queue.status?.allocated?.[field] || "0"}
                                         </TableCell>
                                     ))}
-                                    <TableCell>{new Date(queue.metadata.creationTimestamp).toLocaleString()}</TableCell>
+                                    <TableCell>{new Date(queue.metadata?.creationTimestamp as string).toLocaleString()}</TableCell>
                                     <TableCell>
                                         <Chip
                                             label={queue.status ? queue.status.state : "Unknown"}
                                             sx={{
                                                 bgcolor: getStateColor(
-                                                    queue.status ? queue.status.state : "Unknown"
+                                                    queue.status ? queue.status.state! : "Unknown"
                                                 ),
                                                 color: "common.white",
                                             }}
@@ -435,8 +440,8 @@ const Queues = () => {
                     <MenuItem value={20}>20 per page</MenuItem>
                 </Select>
                 <Box
-                    sx={{display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, mb: 2}}>
-                    <Typography variant="body2" sx={{mr: 2}}>
+                    sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, mb: 2 }}>
+                    <Typography variant="body2" sx={{ mr: 2 }}>
                         Total Queues: {totalQueues}
                     </Typography>
                     <Pagination
@@ -485,7 +490,7 @@ const Queues = () => {
                             },
                         }}
                     >
-                        <pre dangerouslySetInnerHTML={{__html: selectedQueueYaml}}/>
+                        <pre dangerouslySetInnerHTML={{ __html: selectedQueueYaml }} />
                     </Box>
                 </DialogContent>
                 <DialogActions>

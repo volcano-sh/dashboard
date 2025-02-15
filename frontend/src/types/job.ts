@@ -3,7 +3,7 @@ export default interface IJob {
     kind?: string
     metadata?: {
         name: string
-        [k: string]: unknown
+        [k: string]: string
     }
     spec?: {
         maxRetry?: number
