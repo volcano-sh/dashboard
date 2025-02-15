@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllPods, getPodYamlByName, getPods } from "../controllers/pod.js";
+import { getAllPods, getPodYamlByName, getPods } from "../controllers/pod";
 
 const router = express.Router();
 
