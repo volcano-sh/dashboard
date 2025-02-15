@@ -8,6 +8,7 @@
     "dev": "nodemon",
     "build": "babel src --extensions \".ts,.js\" -d dist",
     "prepare": "npm run build",
+    "preview": "node dist/server.js",
     "test": "mocha --require @babel/register --recursive"
   },
   "browser": {
