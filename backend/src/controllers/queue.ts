@@ -2,12 +2,13 @@ import { Request, Response } from "express";
 import { k8sApi } from "../config/kubernetes.js";
 import yaml from "js-yaml";
 import http from 'http';
-import { IQueue } from "../types/queue.js";
+import { IQueue } from "../types/index.js";
 
 interface IResponse {
     response: http.IncomingMessage; body: { items: IQueue[] }
 }
-// Get all Queues (no pagination)
+// @desc   Get all Queues (no pagination)
+// @route  GET /api/all-queues
 export const getAllQueues = async (req: Request, res: Response) => {
     try {
         const response = await k8sApi.listClusterCustomObject(
@@ -30,7 +31,8 @@ interface QueueQueryParams {
     search?: string;
     state?: string;
 }
-// Get all Volcano Queues
+// @desc   Get all queues with pagination and filters
+// @route  GET /api/queues
 export const getQueues = async (req: Request<{}, {}, {}, QueueQueryParams>, res: Response) => {
     try {
         const page = parseInt(req.query.page || '1');
@@ -81,7 +83,9 @@ export const getQueues = async (req: Request<{}, {}, {}, QueueQueryParams>, res:
     }
 }
 
-// Get details of a specific Queue
+// @desc   Get details of a specific Queue
+// @route  GET /api/queues/:name
+
 export const getQueueByName = async (req: Request, res: Response) => {
     try {
         const response = await k8sApi.getClusterCustomObject(
@@ -97,6 +101,8 @@ export const getQueueByName = async (req: Request, res: Response) => {
     }
 }
 
+// @desc   Get YAML of a specific Queue
+// @route  GET /api/queues/:name/yaml
 export const getQueueYamlByName = async (req: Request, res: Response) => {
     try {
 

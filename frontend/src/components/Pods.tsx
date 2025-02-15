@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Box,
     Button,
@@ -13,6 +13,7 @@ import {
     Pagination,
     Paper,
     Select,
+    SelectChangeEvent,
     Table,
     TableBody,
     TableCell,
@@ -23,20 +24,25 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
+import { ArrowDownward, ArrowUpward, Clear, FilterList, Refresh, Search, UnfoldMore } from "@mui/icons-material";
 import axios from "axios";
-import {calculateAge, fetchAllNamespaces} from "./utils";
+import { calculateAge, fetchAllNamespaces } from "./utils";
+import { IPod } from "../types";
 
 const Pods = () => {
-    const [pods, setPods] = useState([]);
-    const [cachedPods, setCachedPods] = useState([]);
+    const [pods, setPods] = useState<IPod[]>([]);
+    const [cachedPods, setCachedPods] = useState<IPod[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
-    const [filters, setFilters] = useState({
-        status: "All",
-        namespace: "default",
-    });
+    const [error, setError] = useState<string | null>(null);
+    const [allNamespaces, setAllNamespaces] = useState<string[]>([]);
+    const [filters, setFilters] = useState<
+        {
+            status: string;
+            namespace: string;
+        }>({
+            status: "All",
+            namespace: "default",
+        });
     const [selectedPodYaml, setSelectedPodYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [anchorEl, setAnchorEl] = useState({
@@ -73,11 +79,11 @@ const Pods = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = response.data;
+            const data = response.data as { items: IPod[]; totalCount: number };
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0); // 更新 totalPods
         } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
+            setError("Failed to fetch pods: " + (err as Error).message);
             setCachedPods([]);
         } finally {
             setLoading(false);
@@ -85,8 +91,12 @@ const Pods = () => {
     }, [searchText, filters]);
 
     useEffect(() => {
-        fetchPods();
-        fetchAllNamespaces().then(setAllNamespaces);
+        const fetchData = async () => {
+            await fetchPods();
+            const namespaces = await fetchAllNamespaces();
+            setAllNamespaces(namespaces);
+        };
+        fetchData();
     }, [fetchPods]);
 
     useEffect(() => {
@@ -95,32 +105,32 @@ const Pods = () => {
         setPods(cachedPods.slice(startIndex, endIndex));
     }, [cachedPods, pagination]);
 
-    const handleSearch = (event) => {
+    const handleSearch = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setSearchText(event.target.value);
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     };
 
     const handleClearSearch = () => {
         setSearchText("");
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         fetchPods();
     };
 
     const handleRefresh = useCallback(() => {
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
         fetchPods();
     }, [fetchPods]);
 
-    const handlePodClick = useCallback(async (pod) => {
+    const handlePodClick = useCallback(async (pod: IPod) => {
         try {
             setLoading(true);
             const response = await axios.get(
-                `/api/pod/${pod.metadata.namespace}/${pod.metadata.name}/yaml`,
-                {responseType: "text"}
+                `/api/pod/${pod.metadata?.namespace}/${pod.metadata?.name}/yaml`,
+                { responseType: "text" }
             );
 
-            const formattedYaml = response.data
+            const formattedYaml = (response.data as string)
                 .split("\n")
                 .map((line) => {
                     const keyMatch = line.match(/^(\s*)([^:\s]+):/);
@@ -133,12 +143,12 @@ const Pods = () => {
                 })
                 .join("\n");
 
-            setSelectedPodName(pod.metadata.name);
+            setSelectedPodName(pod.metadata?.name!);
             setSelectedPodYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch pod YAML:", err);
-            setError("Failed to fetch pod YAML: " + err.message);
+            setError("Failed to fetch pod YAML: " + (err as Error).message);
         } finally {
             setLoading(false);
         }
@@ -148,15 +158,15 @@ const Pods = () => {
         setOpenDialog(false);
     }, []);
 
-    const handleChangePage = useCallback((event, newPage) => {
-        setPagination((prev) => ({...prev, page: newPage}));
+    const handleChangePage = useCallback((_: unknown, newPage: number) => {
+        setPagination((prev) => ({ ...prev, page: newPage }));
     }, []);
 
-    const handleChangeRowsPerPage = useCallback((event) => {
-        setPagination((prev) => ({...prev, rowsPerPage: parseInt(event.target.value, 10), page: 1}));
+    const handleChangeRowsPerPage = useCallback((event: SelectChangeEvent<number>) => {
+        setPagination((prev) => ({ ...prev, rowsPerPage: parseInt(event.target.value as string, 10), page: 1 }));
     }, []);
 
-    const getStatusColor = useCallback((status) => {
+    const getStatusColor = useCallback((status: string) => {
         switch (status) {
             case "Failed":
                 return theme.palette.error.main;
@@ -171,31 +181,35 @@ const Pods = () => {
         }
     }, [theme]);
 
-    const handleFilterClick = useCallback((filterType, event) => {
-        setAnchorEl((prev) => ({...prev, [filterType]: event.currentTarget}));
+    const handleFilterClick = useCallback((filterType: string, event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
     }, []);
 
-    const handleFilterClose = useCallback((filterType, value) => {
-        setFilters((prev) => ({...prev, [filterType]: value}));
-        setAnchorEl((prev) => ({...prev, [filterType]: null}));
-        setPagination((prev) => ({...prev, page: 1}));
+    const handleFilterClose = useCallback((filterType: string, value: string) => {
+        setFilters((prev) => ({ ...prev, [filterType]: value }));
+        setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     }, [fetchPods]);
 
     const uniqueStatuses = useMemo(() => {
-        return ["All", ...new Set(pods.map((pod) => pod.status?.phase).filter(Boolean))];
+        return ["All", ...new Set(pods.map((pod) => pod.status?.phase!).filter(Boolean))];
     }, [pods]);
 
     const filteredPods = useMemo(() => {
+        console.log("pods", pods);
         return pods.filter((pod) => {
             const statusMatch = filters.status === "All" || (pod.status && pod.status.phase === filters.status);
+            // @ts-ignore
             const queueMatch = filters.queue === "All" || pod.spec.queue === filters.queue;
             return statusMatch && queueMatch;
         });
     }, [pods, filters]);
 
     const sortedPods = useMemo(() => {
+        console.log("filteredPods", filteredPods);
+
         return [...filteredPods].sort((a, b) => {
-            const compareResult = new Date(b.metadata.creationTimestamp) - new Date(a.metadata.creationTimestamp);
+            const compareResult = new Date(b.metadata?.creationTimestamp!).getTime() - new Date(a.metadata?.creationTimestamp!).getTime();
             return sortDirection === "desc" ? compareResult : -compareResult;
         });
     }, [filteredPods, sortDirection]);
@@ -205,9 +219,9 @@ const Pods = () => {
     }, []);
 
     return (
-        <Box sx={{bgcolor: "background.default", minHeight: "100vh", p: 3}}>
+        <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{mt: 2, color: theme.palette.error.main}}>
+                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
@@ -221,7 +235,7 @@ const Pods = () => {
                     mb: 2
                 }}
             >
-                <Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                     <TextField
                         placeholder="Search pods"
                         variant="outlined"
@@ -233,9 +247,9 @@ const Pods = () => {
                                 <IconButton
                                     size="small"
                                     onClick={handleClearSearch}
-                                    sx={{padding: "4px"}}
+                                    sx={{ padding: "4px" }}
                                 >
-                                    <Clear/>
+                                    <Clear />
                                 </IconButton>
                             ),
                         }}
@@ -244,7 +258,7 @@ const Pods = () => {
                         variant="contained"
                         color="primary"
                         onClick={() => fetchPods()}
-                        startIcon={<Search/>}
+                        startIcon={<Search />}
                     >
                         SEARCH BY POD NAME
                     </Button>
@@ -252,7 +266,7 @@ const Pods = () => {
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<Refresh/>}
+                    startIcon={<Refresh />}
                     onClick={handleRefresh}
                 >
                     Refresh Pod Status
@@ -260,79 +274,79 @@ const Pods = () => {
             </Box>
             <TableContainer
                 component={Paper}
-                sx={{maxHeight: "calc(100vh - 200px)", overflow: "auto"}}
+                sx={{ maxHeight: "calc(100vh - 200px)", overflow: "auto" }}
             >
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">Name</Typography>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">Namespace</Typography>
                                 <Button
                                     size="small"
-                                    startIcon={<FilterList/>}
+                                    startIcon={<FilterList />}
                                     onClick={(e) => handleFilterClick("namespace", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    sx={{ textTransform: "none", padding: 0, minWidth: "auto" }}
                                 >
                                     Filter: {filters.namespace}
                                 </Button>
                                 <Menu
                                     anchorEl={anchorEl.namespace}
                                     open={Boolean(anchorEl.namespace)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, namespace: null}))}
+                                    onClose={() => setAnchorEl((prev) => ({ ...prev, namespace: null }))}
                                 >
                                     {allNamespaces.map((namespace) => (
                                         <MenuItem key={namespace}
-                                                  onClick={() => handleFilterClose("namespace", namespace)}>
+                                            onClick={() => handleFilterClose("namespace", namespace)}>
                                             {namespace}
                                         </MenuItem>
                                     ))}
                                 </Menu>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">Creation Time</Typography>
                                 <Button
                                     size="small"
                                     onClick={toggleSortDirection}
                                     startIcon={
                                         sortDirection === "desc" ? (
-                                            <ArrowDownward/>
+                                            <ArrowDownward />
                                         ) : sortDirection === "asc" ? (
-                                            <ArrowUpward/>
+                                            <ArrowUpward />
                                         ) : (
-                                            <UnfoldMore/>
+                                            <UnfoldMore />
                                         )
                                     }
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    sx={{ textTransform: "none", padding: 0, minWidth: "auto" }}
                                 >
                                     Sort
                                 </Button>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">Status</Typography>
                                 <Button
                                     size="small"
-                                    startIcon={<FilterList/>}
+                                    startIcon={<FilterList />}
                                     onClick={(e) => handleFilterClick("status", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    sx={{ textTransform: "none", padding: 0, minWidth: "auto" }}
                                 >
                                     Filter: {filters.status}
                                 </Button>
                                 <Menu
                                     anchorEl={anchorEl.status}
                                     open={Boolean(anchorEl.status)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, status: null}))}
+                                    onClose={() => setAnchorEl((prev) => ({ ...prev, status: null }))}
                                 >
                                     {uniqueStatuses.map((status) => (
-                                        <MenuItem key={status} onClick={() => handleFilterClose("status", status)}>
+                                        <MenuItem key={status} onClick={() => handleFilterClose("status", status!)}>
                                             {status}
                                         </MenuItem>
                                     ))}
                                 </Menu>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell sx={{ backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120 }}>
                                 <Typography variant="h6">Age</Typography>
                             </TableCell>
                         </TableRow>
@@ -340,9 +354,9 @@ const Pods = () => {
                     <TableBody>
                         {sortedPods.map((pod) => (
                             <TableRow
-                                key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                key={`${pod.metadata?.namespace}-${pod.metadata?.name}`}
                                 sx={{
-                                    "&:nth-of-type(odd)": {bgcolor: "action.hover"},
+                                    "&:nth-of-type(odd)": { bgcolor: "action.hover" },
                                     "&:hover": {
                                         bgcolor: "action.hover",
                                         color: "primary.main",
@@ -352,21 +366,21 @@ const Pods = () => {
                                 }}
                                 onClick={() => handlePodClick(pod)}
                             >
-                                <TableCell>{pod.metadata.name}</TableCell>
-                                <TableCell>{pod.metadata.namespace}</TableCell>
-                                <TableCell>{new Date(pod.metadata.creationTimestamp).toLocaleString()}</TableCell>
+                                <TableCell>{pod.metadata?.name}</TableCell>
+                                <TableCell>{pod.metadata?.namespace}</TableCell>
+                                <TableCell>{new Date(pod.metadata?.creationTimestamp!).toLocaleString()}</TableCell>
                                 <TableCell>
                                     <Chip
                                         label={pod.status ? pod.status.phase : "Unknown"}
                                         sx={{
                                             bgcolor: getStatusColor(
-                                                pod.status ? pod.status.phase : "Unknown"
+                                                pod.status ? pod.status.phase! : "Unknown"
                                             ),
                                             color: "common.white",
                                         }}
                                     />
                                 </TableCell>
-                                <TableCell> {calculateAge(pod.metadata.creationTimestamp)}</TableCell>
+                                <TableCell> {calculateAge(pod.metadata?.creationTimestamp!)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -389,8 +403,8 @@ const Pods = () => {
                     <MenuItem value={10}>10 per page</MenuItem>
                     <MenuItem value={20}>20 per page</MenuItem>
                 </Select>
-                <Box sx={{display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, mb: 2}}>
-                    <Typography variant="body2" sx={{mr: 2}}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, mb: 2 }}>
+                    <Typography variant="body2" sx={{ mr: 2 }}>
                         Total Pods: {totalPods}
                     </Typography>
                     <Pagination
@@ -438,7 +452,7 @@ const Pods = () => {
                             },
                         }}
                     >
-                        <pre dangerouslySetInnerHTML={{__html: selectedPodYaml}}/>
+                        <pre dangerouslySetInnerHTML={{ __html: selectedPodYaml }} />
                     </Box>
                 </DialogContent>
                 <DialogActions>

@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { k8sCoreApi } from "../config/kubernetes.js";
 
 // get all ns
+// @desc   Get all namespaces
+// @route  GET /api/namespaces
 export const getNamespaces = async (req: Request, res: Response) => {
     try {
         const response = await k8sCoreApi.listNamespace()

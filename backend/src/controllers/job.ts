@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { k8sApi } from "../config/kubernetes";
 import http from 'http';
 import yaml from "js-yaml";
-import IJob from "../types/job";
+import { IJob } from "../types";
 
 interface IResponse {
     response: http.IncomingMessage; body: { items: IJob[] }
@@ -17,8 +17,8 @@ function getJobState(job: IJob) {
     if (job.status?.Pending) return 'Pending';
     return job.status || 'Unknown';
 }
-
-// Get all Jobs (no pagination)
+// @desc   Get all Jobs (no pagination)
+// @route  GET /api/all-jobs
 export const getAllJobs = async (req: Request, res: Response) => {
     try {
         const response = await k8sApi.listClusterCustomObject(
@@ -52,6 +52,9 @@ interface JobQueryParams {
     queue?: string;
     status?: string;
 }
+
+// @desc   Get jobs with pagination and filters
+// @route  GET /api/jobs
 export const getJobs = async (req: Request<{}, {}, {}, JobQueryParams>, res: Response) => {
     try {
         const namespace = req.query.namespace || "";
@@ -113,7 +116,8 @@ export const getJobs = async (req: Request<{}, {}, {}, JobQueryParams>, res: Res
     }
 }
 
-// Add an interface to obtain a single job
+// @desc   Get a job by name
+// @route  GET /api/jobs/:namespace/:name
 export const getJobByName = async (req: Request, res: Response) => {
     try {
         const { namespace, name } = req.params;
@@ -138,7 +142,9 @@ interface JobParams {
     namespace: string;
     name: string;
 }
-// Add a route to obtain YAML in server.js
+
+// @desc   Get a job YAML by name
+// @route  GET /api/job/:namespace/:name/yaml
 export const getJobYamlByName = async (req: Request<JobParams>, res: Response) => {
     try {
         const { namespace, name } = req.params;

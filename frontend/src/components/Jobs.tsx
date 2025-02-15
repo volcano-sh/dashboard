@@ -13,6 +13,7 @@ import {
     Pagination,
     Paper,
     Select,
+    SelectChangeEvent,
     Table,
     TableBody,
     TableCell,
@@ -23,17 +24,18 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import { ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore } from "@mui/icons-material";
+import { ArrowDownward, ArrowUpward, Clear, FilterList, Refresh, Search, UnfoldMore } from "@mui/icons-material";
 import axios from "axios";
 import { fetchAllNamespaces, fetchAllQueues } from "./utils";
+import { IJob } from "../types";
 
 const Jobs = () => {
-    const [jobs, setJobs] = useState([]);
-    const [cachedJobs, setCachedJobs] = useState([]);
+    const [jobs, setJobs] = useState<IJob[]>([]);
+    const [cachedJobs, setCachedJobs] = useState<IJob[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
-    const [allQueues, setAllQueues] = useState([]);
+    const [error, setError] = useState<string | null>(null);
+    const [allNamespaces, setAllNamespaces] = useState<string[]>([]);
+    const [allQueues, setAllQueues] = useState<string[]>([]);
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "default",
@@ -77,11 +79,11 @@ const Jobs = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = response.data;
+            const data = response.data as { items: IJob[]; totalCount: number };
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0); // update totalJobs
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            setError("Failed to fetch jobs: " + (err as Error).message);
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -89,9 +91,19 @@ const Jobs = () => {
     }, [searchText, filters]);
 
     useEffect(() => {
-        fetchJobs();
-        fetchAllNamespaces().then(setAllNamespaces);
-        fetchAllQueues().then(setAllQueues);
+        const fetchData = async () => {
+            try {
+                await fetchJobs();
+                const namespaces = await fetchAllNamespaces();
+                setAllNamespaces(namespaces);
+                const queues = await fetchAllQueues();
+                setAllQueues(queues);
+            } catch (error) {
+                console.error("Error fetching namespaces:", error);
+            }
+        };
+
+        fetchData();
     }, [fetchJobs]);
 
     useEffect(() => {
@@ -100,7 +112,7 @@ const Jobs = () => {
         setJobs(cachedJobs.slice(startIndex, endIndex));
     }, [cachedJobs, pagination]);
 
-    const handleSearch = (event) => {
+    const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
     };
@@ -117,15 +129,15 @@ const Jobs = () => {
         fetchJobs();
     }, [fetchJobs]);
 
-    const handleJobClick = useCallback(async (job) => {
+    const handleJobClick = useCallback(async (job: IJob) => {
         try {
             setLoading(true);
             const response = await axios.get(
-                `/api/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
+                `/api/job/${job.metadata?.namespace}/${job.metadata?.name}/yaml`,
                 { responseType: "text" }
             );
 
-            const formattedYaml = response.data
+            const formattedYaml = (response.data as string)
                 .split("\n")
                 .map((line) => {
                     const keyMatch = line.match(/^(\s*)([^:\s]+):/);
@@ -138,12 +150,12 @@ const Jobs = () => {
                 })
                 .join("\n");
 
-            setSelectedJobName(job.metadata.name);
+            setSelectedJobName(job.metadata?.name!);
             setSelectedJobYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            setError("Failed to fetch job YAML: " + (err as Error).message);
         } finally {
             setLoading(false);
         }
@@ -153,15 +165,15 @@ const Jobs = () => {
         setOpenDialog(false);
     }, []);
 
-    const handleChangePage = useCallback((event, newPage) => {
+    const handleChangePage = useCallback((_: unknown, newPage: number) => {
         setPagination((prev) => ({ ...prev, page: newPage }));
     }, []);
 
-    const handleChangeRowsPerPage = useCallback((event) => {
-        setPagination((prev) => ({ ...prev, rowsPerPage: parseInt(event.target.value, 10), page: 1 }));
+    const handleChangeRowsPerPage = useCallback((event: SelectChangeEvent<number>) => {
+        setPagination((prev) => ({ ...prev, rowsPerPage: parseInt(event.target.value as string, 10), page: 1 }));
     }, []);
 
-    const getStatusColor = useCallback((status) => {
+    const getStatusColor = useCallback((status: string) => {
         switch (status) {
             case "Failed":
                 return theme.palette.error.main;
@@ -176,31 +188,31 @@ const Jobs = () => {
         }
     }, [theme]);
 
-    const handleFilterClick = useCallback((filterType, event) => {
+    const handleFilterClick = useCallback((filterType: string, event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
     }, []);
 
-    const handleFilterClose = useCallback((filterType, value) => {
+    const handleFilterClose = useCallback((filterType: string, value: string) => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
         setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, [fetchJobs]);
 
     const uniqueStatuses = useMemo(() => {
-        return ["All", ...new Set(jobs.map((job) => job.status?.state.phase).filter(Boolean))];
+        return ["All", ...new Set(jobs.map((job) => job.status?.state?.phase!).filter(Boolean))];
     }, [jobs]);
 
     const filteredJobs = useMemo(() => {
         return jobs.filter((job) => {
-            const statusMatch = filters.status === "All" || (job.status && job.status.state.phase === filters.status);
-            const queueMatch = filters.queue === "All" || job.spec.queue === filters.queue;
+            const statusMatch = filters.status === "All" || (job.status && job.status.state?.phase === filters.status);
+            const queueMatch = filters.queue === "All" || job.spec?.queue === filters.queue;
             return statusMatch && queueMatch;
         });
     }, [jobs, filters]);
 
     const sortedJobs = useMemo(() => {
         return [...filteredJobs].sort((a, b) => {
-            const compareResult = new Date(b.metadata.creationTimestamp) - new Date(a.metadata.creationTimestamp);
+            const compareResult = new Date(b.metadata?.creationTimestamp!).getTime() - new Date(a.metadata?.creationTimestamp!).getTime();
             return sortDirection === "desc" ? compareResult : -compareResult;
         });
     }, [filteredJobs, sortDirection]);
@@ -368,7 +380,7 @@ const Jobs = () => {
                     <TableBody>
                         {sortedJobs.map((job) => (
                             <TableRow
-                                key={`${job.metadata.namespace}-${job.metadata.name}`}
+                                key={`${job.metadata?.namespace}-${job.metadata?.name}`}
                                 sx={{
                                     "&:nth-of-type(odd)": { bgcolor: "action.hover" },
                                     "&:hover": {
@@ -380,16 +392,16 @@ const Jobs = () => {
                                 }}
                                 onClick={() => handleJobClick(job)}
                             >
-                                <TableCell>{job.metadata.name}</TableCell>
-                                <TableCell>{job.metadata.namespace}</TableCell>
-                                <TableCell>{job.spec.queue || "N/A"}</TableCell>
-                                <TableCell>{new Date(job.metadata.creationTimestamp).toLocaleString()}</TableCell>
+                                <TableCell>{job.metadata?.name}</TableCell>
+                                <TableCell>{job.metadata?.namespace}</TableCell>
+                                <TableCell>{job.spec?.queue || "N/A"}</TableCell>
+                                <TableCell>{new Date(job.metadata?.creationTimestamp!).toLocaleString()}</TableCell>
                                 <TableCell>
                                     <Chip
-                                        label={job.status ? job.status.state.phase : "Unknown"}
+                                        label={job.status ? job.status.state?.phase : "Unknown"}
                                         sx={{
                                             bgcolor: getStatusColor(
-                                                job.status ? job.status.state.phase : "Unknown"
+                                                job.status ? job.status.state?.phase! : "Unknown"
                                             ),
                                             color: "common.white",
                                         }}
