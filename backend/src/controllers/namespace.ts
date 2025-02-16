@@ -6,7 +6,7 @@ import { k8sCoreApi } from "../config/kubernetes.js";
 // @route  GET /api/namespaces
 export const getNamespaces = async (req: Request, res: Response) => {
     try {
-        const response = await k8sCoreApi.listNamespace()
+        const response = await k8sCoreApi.listNamespace();
 
         res.json({
             items: response.body.items
@@ -15,7 +15,7 @@ export const getNamespaces = async (req: Request, res: Response) => {
         console.error("Error fetching namespaces:", error);
         res.status(500).json({
             error: "Failed to fetch namespaces",
-            details: (error as Error).message,
+            details: (error as Error).message
         });
     }
-}
+};

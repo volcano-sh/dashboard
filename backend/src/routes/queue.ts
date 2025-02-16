@@ -1,5 +1,10 @@
 import express from "express";
-import { getAllQueues, getQueueByName, getQueueYamlByName, getQueues } from "../controllers/queue.js";
+import {
+    getAllQueues,
+    getQueueByName,
+    getQueueYamlByName,
+    getQueues
+} from "../controllers/queue.js";
 
 const router = express.Router();
 

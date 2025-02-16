@@ -11,7 +11,7 @@ const verifyVolcanoSetup = async () => {
         );
         return true;
     } catch (error) {
-        console.error('Volcano verification failed:', error);
+        console.error("Volcano verification failed:", error);
         return false;
     }
 };
@@ -23,6 +23,6 @@ app.listen(PORT, async () => {
     if (volcanoReady) {
         console.log(`Server running on port ${PORT} with Volcano support`);
     } else {
-        console.error('Server started but Volcano support is not available');
+        console.error("Server started but Volcano support is not available");
     }
 });

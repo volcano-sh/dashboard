@@ -1,4 +1,8 @@
-import { CoreV1Api, CustomObjectsApi, KubeConfig } from "@kubernetes/client-node";
+import {
+    CoreV1Api,
+    CustomObjectsApi,
+    KubeConfig
+} from "@kubernetes/client-node";
 
 const kc = new KubeConfig();
 kc.loadFromDefault();
