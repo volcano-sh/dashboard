@@ -1,6 +1,6 @@
 // Prioritize using the port in the environment variable, if not, use the default port 3001
 const getServerPort = () => {
-    return process.env.APP_SERVER_PORT || '3001';
+    return process.env.APP_SERVER_PORT || "3001";
 };
 
 // Build API base URL
@@ -12,7 +12,8 @@ const API_CONFIG = {
 export const API_ENDPOINTS = {
     jobs: {
         list: `${API_CONFIG.baseURL}/api/jobs`,
-        detail: (namespace: string, name: string) => `${API_CONFIG.baseURL}/jobs/${namespace}/${name}`
+        detail: (namespace: string, name: string) =>
+            `${API_CONFIG.baseURL}/jobs/${namespace}/${name}`
     },
     queues: {
         list: `${API_CONFIG.baseURL}/api/queues`

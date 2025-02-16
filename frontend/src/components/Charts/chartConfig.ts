@@ -10,11 +10,10 @@ import {
     Tooltip,
     Legend,
     Filler
-  } from 'chart.js';
-
+} from "chart.js";
 
 // Register all required components
-  ChartJS.register(
+ChartJS.register(
     ArcElement,
     CategoryScale,
     LinearScale,
@@ -25,4 +24,4 @@ import {
     Tooltip,
     Legend,
     Filler
-  );
+);

@@ -10,7 +10,10 @@ export const fetchAllNamespaces = async () => {
 
         const data = response.data as { items: INamespace[] };
 
-        return ["All", ...new Set(data.items.map(item => item.metadata?.name!))];
+        return [
+            "All",
+            ...new Set(data.items.map((item) => item.metadata?.name!))
+        ];
     } catch (error) {
         console.error("Error fetching namespaces:", error);
         return [];
@@ -25,11 +28,14 @@ export const fetchAllQueues = async () => {
         }
 
         const data = response.data as {
-            items: IQueue[],
-            totalCount: number
-        }
+            items: IQueue[];
+            totalCount: number;
+        };
 
-        return ["All", ...new Set(data.items.map(item => item.metadata?.name!))];
+        return [
+            "All",
+            ...new Set(data.items.map((item) => item.metadata?.name!))
+        ];
     } catch (error) {
         console.error("Error fetching queues:", error);
         return [];
@@ -39,7 +45,9 @@ export const fetchAllQueues = async () => {
 export const calculateAge = (creationTimestamp: Date) => {
     const created = new Date(creationTimestamp);
     const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - created.getTime()) / 1000);
+    const diffInSeconds = Math.floor(
+        (now.getTime() - created.getTime()) / 1000
+    );
 
     if (diffInSeconds < 60) {
         return `${diffInSeconds}s`;
@@ -66,8 +74,8 @@ export const parseCPU = (cpu: string) => {
 export const parseMemoryToMi = (memoryStr: string) => {
     if (!memoryStr) return 0;
     const value = parseInt(memoryStr);
-    if (memoryStr.includes('Gi')) return value * 1024;
-    if (memoryStr.includes('Mi')) return value;
-    if (memoryStr.includes('Ki')) return value / 1024;
+    if (memoryStr.includes("Gi")) return value * 1024;
+    if (memoryStr.includes("Mi")) return value;
+    if (memoryStr.includes("Ki")) return value / 1024;
     return value / 1024 / 1024; // default Bi
 };

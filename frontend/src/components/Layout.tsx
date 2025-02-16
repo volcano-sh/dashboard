@@ -10,16 +10,16 @@ import {
     ListItemIcon,
     ListItemText,
     Toolbar,
-    Typography,
+    Typography
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import CloudIcon from '@mui/icons-material/Cloud';
-import HomeIcon from '@mui/icons-material/Home';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import CloudIcon from "@mui/icons-material/Cloud";
+import HomeIcon from "@mui/icons-material/Home";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import WorkspacesIcon from "@mui/icons-material/Workspaces";
 
 // use relative path to load Logo
-import volcanoLogo from '../assets/volcano-icon-color.svg';
+import volcanoLogo from "../assets/volcano-icon-color.svg";
 
 const Layout = () => {
     // Hooks must be used inside component functions
@@ -39,7 +39,7 @@ const Layout = () => {
         { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
         { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
         { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
+        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" }
     ];
 
     return (
@@ -48,7 +48,7 @@ const Layout = () => {
                 position="fixed"
                 sx={{
                     zIndex: (theme) => theme.zIndex.drawer + 1,
-                    bgcolor: headerGrey,
+                    bgcolor: headerGrey
                 }}
             >
                 <Toolbar>
@@ -67,7 +67,7 @@ const Layout = () => {
                         component="div"
                         sx={{
                             color: "#ffffff",
-                            fontWeight: 500,
+                            fontWeight: 500
                         }}
                     >
                         Volcano Dashboard
@@ -87,8 +87,8 @@ const Layout = () => {
                         transition: "width 0.2s",
                         overflowX: "hidden",
                         display: "flex",
-                        flexDirection: "column",
-                    },
+                        flexDirection: "column"
+                    }
                 }}
             >
                 <Toolbar />
@@ -100,18 +100,22 @@ const Layout = () => {
                                 key={item.text}
                                 component={Link}
                                 to={item.path}
-                                className={location.pathname === item.path ? "active" : ""}
+                                className={
+                                    location.pathname === item.path
+                                        ? "active"
+                                        : ""
+                                }
                                 sx={{
                                     "&.active": {
                                         bgcolor: "rgba(0, 0, 0, 0.08)",
                                         "& .MuiListItemIcon-root": {
-                                            color: volcanoOrange,
+                                            color: volcanoOrange
                                         },
                                         "& .MuiListItemText-primary": {
                                             color: volcanoOrange,
-                                            fontWeight: 500,
-                                        },
-                                    },
+                                            fontWeight: 500
+                                        }
+                                    }
                                 }}
                             >
                                 <ListItemIcon>{item.icon}</ListItemIcon>
@@ -129,7 +133,7 @@ const Layout = () => {
                         justifyContent: "center",
                         alignItems: "center",
                         mt: "auto",
-                        mb: 1,
+                        mb: 1
                         // borderTop: "1px solid rgba(0, 0, 0, 0.12)",
                     }}
                 >
@@ -140,7 +144,7 @@ const Layout = () => {
                             maxWidth: open ? "115%" : "60px",
                             height: "auto",
                             transition: "max-width 0.2s",
-                            marginBottom: "1px",
+                            marginBottom: "1px"
                         }}
                     />
                     {/* {open && (

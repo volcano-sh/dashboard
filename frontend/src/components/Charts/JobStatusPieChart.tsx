@@ -37,7 +37,7 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
         {
             Completed: 0,
             Running: 0,
-            Failed: 0,
+            Failed: 0
         }
     );
 
@@ -45,7 +45,7 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
     const colors = {
         Completed: "#4caf50",
         Running: "#2196f3",
-        Failed: "#f44336",
+        Failed: "#f44336"
     };
 
     const chartData = {
@@ -57,9 +57,9 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
                 borderColor: "white",
                 borderWidth: 2,
                 hoverBorderColor: "white",
-                hoverBorderWidth: 3,
-            },
-        ],
+                hoverBorderWidth: 3
+            }
+        ]
     };
 
     const options = {
@@ -68,12 +68,12 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
         cutout: "70%",
         plugins: {
             legend: {
-                display: false,
+                display: false
             },
             tooltip: {
-                enabled: false,
-            },
-        },
+                enabled: false
+            }
+        }
     };
 
     const hasData = Object.values(statusCounts).some((count) => count > 0);
@@ -83,7 +83,7 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
             sx={{
                 height: "100%",
                 display: "flex",
-                flexDirection: "column",
+                flexDirection: "column"
             }}
         >
             <Typography variant="h6" align="center" sx={{ mb: 1 }}>
@@ -98,7 +98,7 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
                     alignItems: "flex-start",
                     flexWrap: "wrap",
                     gap: 2,
-                    width: "100%",
+                    width: "100%"
                 }}
             >
                 <Box
@@ -109,14 +109,14 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
                         position: "relative",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
+                        justifyContent: "center"
                     }}
                 >
                     <Doughnut
                         data={chartData}
                         options={{
                             ...options,
-                            maintainAspectRatio: false,
+                            maintainAspectRatio: false
                         }}
                     />
                     <Typography
@@ -126,7 +126,7 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
                             top: "50%",
                             left: "50%",
                             transform: "translate(-50%, -50%)",
-                            textAlign: "center",
+                            textAlign: "center"
                         }}
                     >
                         {total}
@@ -141,7 +141,7 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
                         flexDirection: "column",
                         justifyContent: "flex-start",
                         alignItems: "flex-start",
-                        textAlign: "left",
+                        textAlign: "left"
                     }}
                 >
                     {Object.entries(statusCounts).map(([status, count]) => (
@@ -150,7 +150,7 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
                             sx={{
                                 display: "flex",
                                 alignItems: "center",
-                                mb: 1.5,
+                                mb: 1.5
                             }}
                         >
                             <Box
@@ -158,15 +158,23 @@ const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
                                     width: 12,
                                     height: 12,
                                     borderRadius: "50%",
-                                    backgroundColor: colors[status as keyof typeof colors],
-                                    mr: 1,
+                                    backgroundColor:
+                                        colors[status as keyof typeof colors],
+                                    mr: 1
                                 }}
                             />
-                            <Typography variant="body2" sx={{ mr: 2, minWidth: 70 }}>
+                            <Typography
+                                variant="body2"
+                                sx={{ mr: 2, minWidth: 70 }}
+                            >
                                 {status}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                {count} ({total > 0 ? ((count / total) * 100).toFixed(1) : 0}%)
+                                {count} (
+                                {total > 0
+                                    ? ((count / total) * 100).toFixed(1)
+                                    : 0}
+                                %)
                             </Typography>
                         </Box>
                     ))}
