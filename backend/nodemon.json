@@ -1,0 +1,6 @@
+{
+    "watch": ["src"],
+    "ext": "ts,js",
+    "ignore": ["node_modules"],
+    "exec": "tsc --noEmit && tsx ./src/server.ts"
+}
