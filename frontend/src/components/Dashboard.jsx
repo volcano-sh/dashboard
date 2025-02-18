@@ -4,11 +4,8 @@ import {
   Grid,
   Paper,
   Typography,
-  IconButton,
-  Tooltip,
   CircularProgress,
 } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/Refresh";
 
 import StatCard from "./Charts/StatCard";
 import JobStatusPieChart from "./Charts/JobStatusPieChart";
@@ -34,10 +31,6 @@ const Dashboard = () => {
         fetch("/api/pods?limit=1000"),
       ]);
 
-      if (!jobsRes.ok) throw new Error(`Jobs API error: ${jobsRes.status}`);
-      if (!queuesRes.ok) throw new Error(`Queues API error: ${queuesRes.status}`);
-      if (!podsRes.ok) throw new Error(`Pods API error: ${podsRes.status}`);
-
       const [jobsData, queuesData, podsData] = await Promise.all([
         jobsRes.json(),
         queuesRes.json(),
@@ -50,7 +43,6 @@ const Dashboard = () => {
         pods: podsData.items || [],
       });
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
       setError(error.message);
     } finally {
       setRefreshing(false);
@@ -96,40 +88,100 @@ const Dashboard = () => {
           mb: 3,
         }}
       >
-        <Typography variant="h4">Volcano Dashboard</Typography>
-        <Tooltip title="Refresh Data">
-          <IconButton onClick={handleRefresh} disabled={refreshing}>
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
+        {/* Add any header components or buttons here if necessary */}
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Total Jobs" value={dashboardData.jobs?.length || 0} />
+          <StatCard
+            title="Total Jobs"
+            value={dashboardData.jobs?.length || 0}
+            icon={<img
+              src="/job2.png"
+              alt="Jobs Icon"
+              style={{ width: 100, height: 100 }}
+            />
+            }
+            sx={{
+              width: "100%",
+              height: "250px",
+              borderRadius: "16px",
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.3)", // More visible shadow
+              transition: "transform 0.3s ease-out, box-shadow 0.3s ease-out",
+              "&:hover": {
+                transform: "scale(1.05)",
+                boxShadow: "0 15px 30px rgba(0, 0, 0, 0.5)", // Stronger shadow on hover
+              },
+            }}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Active Queues"
-            value={
-              dashboardData.queues?.filter((q) => q.status?.state === "Open")
-                ?.length || 0
+            value={dashboardData.queues?.filter((q) => q.status?.state === "Open")?.length || 0}
+            icon={<img
+              src="/queues.png"
+              alt="Jobs Icon"
+              style={{ width: 100, height: 100 }}
+            />
             }
+            sx={{
+              width: "100%",
+              height: "250px",
+              borderRadius: "16px",
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.3)", // More visible shadow
+              transition: "transform 0.3s ease-out, box-shadow 0.3s ease-out",
+              "&:hover": {
+                transform: "scale(1.05)",
+                boxShadow: "0 15px 30px rgba(0, 0, 0, 0.5)", // Stronger shadow on hover
+              },
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Running Pods"
-            value={
-              dashboardData.pods?.filter((p) => p.status?.phase === "Running")
-                ?.length || 0
+            value={dashboardData.pods?.filter((p) => p.status?.phase === "Running")?.length || 0}
+            icon={<img
+              src="/connect.png"
+              alt="Jobs Icon"
+              style={{ width: 100, height: 100 }}
+            />
             }
+            sx={{
+              width: "100%",
+              height: "250px",
+              borderRadius: "16px",
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.3)", // More visible shadow
+              transition: "transform 0.3s ease-out, box-shadow 0.3s ease-out",
+              "&:hover": {
+                transform: "scale(1.05)",
+                boxShadow: "0 15px 30px rgba(0, 0, 0, 0.5)", // Stronger shadow on hover
+              },
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Complete Rate"
             value={`${calculateSuccessRate(dashboardData.jobs)}%`}
+            icon={<img
+              src="/complete.png"
+              alt="Jobs Icon"
+              style={{ width: 100, height: 100 }}
+            />
+            }
+            sx={{
+              width: "100%",
+              height: "250px",
+              borderRadius: "16px",
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.3)", // More visible shadow
+              transition: "transform 0.3s ease-out, box-shadow 0.3s ease-out",
+              "&:hover": {
+                transform: "scale(1.05)",
+                boxShadow: "0 15px 30px rgba(0, 0, 0, 0.5)", // Stronger shadow on hover
+              },
+            }}
           />
         </Grid>
       </Grid>

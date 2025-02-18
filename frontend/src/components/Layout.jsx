@@ -1,80 +1,36 @@
-import React, {useState} from "react";
-import {Link, Outlet, useLocation} from "react-router-dom";
+import React, { useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import {
-    AppBar,
     Box,
     Drawer,
-    IconButton,
     List,
     ListItem,
     ListItemIcon,
     ListItemText,
-    Toolbar,
     Typography,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import CloudIcon from '@mui/icons-material/Cloud';
-import HomeIcon from '@mui/icons-material/Home';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import WorkspacesIcon from '@mui/icons-material/Workspaces';
-
-// use relative path to load Logo
+import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
+import WorkspacesOutlinedIcon from '@mui/icons-material/WorkspacesOutlined';
 import volcanoLogo from '../assets/volcano-icon-color.svg';
 
 const Layout = () => {
-    // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
 
-    // constants can be kept outside the component
-    const volcanoOrange = "#E34C26"; // orange red theme
-    const headerGrey = "#424242"; // dark gray top stripe
+    const volcanoOrange = "#E34C26";
     const drawerWidth = 240;
 
-    const handleDrawerToggle = () => {
-        setOpen(!open);
-    };
-
     const menuItems = [
-        {text: "Dashboard", icon: <HomeIcon/>, path: "/dashboard"},
-        {text: "Jobs", icon: <AssignmentIcon/>, path: "/jobs"},
-        {text: "Queues", icon: <CloudIcon/>, path: "/queues"},
-        {text: "Pods", icon: <WorkspacesIcon/>, path: "/pods"},
+        { text: "Dashboard", icon: <HomeOutlinedIcon />, path: "/dashboard" },
+        { text: "Jobs", icon: <AssignmentOutlinedIcon />, path: "/jobs" },
+        { text: "Queues", icon: <CloudOutlinedIcon />, path: "/queues" },
+        { text: "Pods", icon: <WorkspacesOutlinedIcon />, path: "/pods" },
     ];
 
     return (
-        <Box sx={{display: "flex"}}>
-            <AppBar
-                position="fixed"
-                sx={{
-                    zIndex: (theme) => theme.zIndex.drawer + 1,
-                    bgcolor: headerGrey,
-                }}
-            >
-                <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="toggle drawer"
-                        onClick={handleDrawerToggle}
-                        edge="start"
-                        sx={{mr: 2, color: "white"}}
-                    >
-                        <MenuIcon/>
-                    </IconButton>
-                    <Typography
-                        variant="h6"
-                        noWrap
-                        component="div"
-                        sx={{
-                            color: "#ffffff",
-                            fontWeight: 500,
-                        }}
-                    >
-                        Volcano Dashboard
-                    </Typography>
-                </Toolbar>
-            </AppBar>
-
+        <Box sx={{ display: "flex" }}>
             <Drawer
                 variant="permanent"
                 sx={{
@@ -83,44 +39,39 @@ const Layout = () => {
                     [`& .MuiDrawer-paper`]: {
                         width: open ? drawerWidth : 60,
                         boxSizing: "border-box",
-                        backgroundColor: "#f5f5f5",
-                        transition: "width 0.2s",
+                        backgroundColor: "#white",
+                        transition: "width 0.5s",
                         overflowX: "hidden",
                         display: "flex",
                         flexDirection: "column",
+                        borderRadius: "15px",
+                        "& .MuiList-root": {
+                            "&:hover .MuiListItem-root": {
+                                opacity: 0.5,
+                                transform: "scale(0.95)",
+                                transition: "all 0.3s ease-out",
+                            },
+                            "& .MuiListItem-root:hover": {
+                                opacity: 1,
+                                transform: "scale(1.05)",
+                                backgroundColor: "rgba(230, 58, 15, 0.1)", 
+                                transition: "all 0.3s ease-out",
+                                "& .MuiListItemIcon-root": {
+                                    color: volcanoOrange,
+                                    transform: "scale(1.1)",
+                                    transition: "all 0.3s ease-out",
+                                },
+                                "& .MuiListItemText-primary": {
+                                    color: volcanoOrange,
+                                    fontWeight: 600,
+                                    transform: "translateX(10px)",
+                                    transition: "all 0.3s ease-out",
+                                },
+                            },
+                        },
                     },
                 }}
             >
-                <Toolbar/>
-                <Box sx={{overflow: "auto", flexGrow: 1}}>
-                    <List>
-                        {menuItems.map((item) => (
-                            <ListItem
-                                button
-                                key={item.text}
-                                component={Link}
-                                to={item.path}
-                                className={location.pathname === item.path ? "active" : ""}
-                                sx={{
-                                    "&.active": {
-                                        bgcolor: "rgba(0, 0, 0, 0.08)",
-                                        "& .MuiListItemIcon-root": {
-                                            color: volcanoOrange,
-                                        },
-                                        "& .MuiListItemText-primary": {
-                                            color: volcanoOrange,
-                                            fontWeight: 500,
-                                        },
-                                    },
-                                }}
-                            >
-                                <ListItemIcon>{item.icon}</ListItemIcon>
-                                {open && <ListItemText primary={item.text}/>}
-                            </ListItem>
-                        ))}
-                    </List>
-                </Box>
-                {/* Logo and text part */}
                 <Box
                     sx={{
                         p: 1,
@@ -130,40 +81,92 @@ const Layout = () => {
                         alignItems: "center",
                         mt: "auto",
                         mb: 1,
-                        // borderTop: "1px solid rgba(0, 0, 0, 0.12)",
                     }}
                 >
-                    <img
-                        src={volcanoLogo}
-                        alt="Volcano Logo"
-                        style={{
-                            maxWidth: open ? "115%" : "60px",
-                            height: "auto",
-                            transition: "max-width 0.2s",
-                            marginBottom: "1px",
-                        }}
-                    />
-                    {/* {open && (
-            <Typography
-              sx={{
-                fontWeight: 700,
-                color: "#000",
-                fontSize: "1.4rem",
-                letterSpacing: "0.1em",
-                mt: -6,
-              }}
-            >
-              VOLCANO
-            </Typography>
-          )} */}
+                    <Box sx={{ display: "flex", alignItems: "center",marginTop:"10px" }}>
+                        <img
+                            src={volcanoLogo}
+                            alt="Volcano Logo"
+                            style={{
+                                maxWidth: "45px",
+                                height: "auto",
+                                transition: "max-width 0.2s",
+                                marginBottom: "1px",
+                                marginRight: "5px",
+                            }}
+                        />
+                        <Typography
+                            sx={{
+                                fontWeight: 700,
+                                color: volcanoOrange,
+                                fontSize: "1.6rem",
+                                letterSpacing: "0.1em",
+                                fontFamily: "'Ubuntu', sans-serif",
+                                marginRight: "50px",
+                            }}
+                        >
+                            Volcano
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Box sx={{ overflow: "auto", flexGrow: 1}}>
+                    <List>
+                        {menuItems.map((item) => (
+                          <ListItem
+                          button
+                          key={item.text}
+                          component={Link}
+                          to={item.path}
+                          sx={{
+                              transition: "all 0.3s ease-out",
+                              margin: "8px 0",
+                              borderRadius: "0px 30px 30px 0px",
+                              "&.active": {
+                                  bgcolor: "rgba(224, 55, 13, 0.1)",
+                                  "& .MuiListItemIcon-root": {
+                                      color: volcanoOrange,
+                                  },
+                                  "& .MuiListItemText-primary": {
+                                      color: volcanoOrange,
+                                      fontWeight: 500,
+                                  },
+                              },
+                              "&:hover": {
+                                  borderRadius: "0px 30px 30px 0px", // Adjusted border-radius for one side (left side)
+                                  backgroundColor: "rgba(230, 58, 15, 0.1)", // Optional: change background color on hover
+                                  transform: "scale(1.05)", // Optional: scale effect for hover
+                              },
+                          }}
+                          className={location.pathname === item.path ? "active" : ""}
+                      >
+                                <ListItemIcon
+                                    sx={{
+                                        transition: "all 0.3s ease-out",
+                                        minWidth: "40px",
+                                    }}
+                                >
+                                    {item.icon}
+                                </ListItemIcon>
+                                {open && (
+                                    <ListItemText
+                                        primary={item.text}
+                                        sx={{
+                                            transition: "all 0.3s ease-out",
+                                            color: "grey", 
+                                            "& .MuiTypography-root": {
+                                                transition: "all 0.3s ease-out",
+                                            },
+                                        }}
+                                    />
+                                )}
+                            </ListItem>
+                        ))}
+                    </List>
                 </Box>
             </Drawer>
-            <Box
-                component="main"
-                sx={{flexGrow: 1, p: 3, backgroundColor: "white"}}
-            >
-                <Toolbar/>
-                <Outlet/>
+            <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: "white" }}>
+                <Outlet />
             </Box>
         </Box>
     );
