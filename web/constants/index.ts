@@ -22,20 +22,20 @@ export const navItems: NavItem[] = [
         icon: "Notepad",
         href: `/jobs`,
         label: "Jobs",
-        disable: true
+        disable: false
     },
     {
         title: "Queues",
         icon: "Cloud",
         href: `/queues`,
         label: "Queues",
-        disable: true
+        disable: false
     },
     {
         title: "Pods",
         icon: "Waypoint",
         href: `/pods`,
         label: "Pods",
-        disable: true
+        disable: false
     },
 ]

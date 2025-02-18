@@ -8,7 +8,7 @@ export default function Home() {
     <div className="flex">
     <Sidebar />
     <main className="w-full flex-1 overflow-hidden">
-    <ScrollArea className="h-[calc(100dvh-52px)]">
+    <ScrollArea className="h-[calc(100dvh)]">
       <section className="container grid items-center gap-6 pb-6 pt-12">
         <div className="flex max-w-[980px] flex-col items-start gap-2 mx-auto">
           <h1 className="text-xl font-semibold text-purple text-center">

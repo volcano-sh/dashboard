@@ -2,6 +2,7 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {Alert, AlertTitle, AlertDescription} from "@/components/ui/alert";
 import { RocketIcon } from "lucide-react";
+import JobStatusPieChart from "./pie-chart";
 
 const categories = {
     "Total Jobs": 100,
@@ -33,7 +34,7 @@ export const DashboardUtils = () => {
                 Jobs are running in the background. You can continue to work while we process your data.
             </AlertDescription>
             </Alert>
-            <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-4">
+            <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt-4">
             {Object?.entries(categories).map(([title, value], index) => (
                 <DashboardCard
                 key={index}
@@ -42,10 +43,9 @@ export const DashboardUtils = () => {
                 />
             ))}
             </section>
-            {/* <section className="grid gap-2 grid-col-1 md:grid-cols-2 mt-4 w-full">
-                <DisputeBarChart />
-                <DisputeChart />
-            </section> */}
+            <section className="grid gap-2 grid-col-1 md:grid-cols-2 mt-4 w-full">
+                <JobStatusPieChart />
+            </section>
         </div>
 
     )
