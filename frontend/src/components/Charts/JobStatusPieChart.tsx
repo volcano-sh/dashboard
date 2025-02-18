@@ -2,10 +2,11 @@ import React from "react";
 import { Box, Typography, Grid } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
+import { IJob } from "../../types";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
-const JobStatusPieChart = ({ data }) => {
+const JobStatusPieChart = ({ data }: { data: IJob[] }) => {
     if (!data || !Array.isArray(data)) {
         return (
             <Box sx={{ height: 300, width: "100%", position: "relative" }}>
@@ -13,8 +14,12 @@ const JobStatusPieChart = ({ data }) => {
             </Box>
         );
     }
-
-    const statusCounts = data.reduce(
+    interface IStatusCounts {
+        Completed: number;
+        Running: number;
+        Failed: number;
+    }
+    const statusCounts = data.reduce<IStatusCounts>(
         (acc, job) => {
             const status = job.status;
             if (status?.succeeded) {
@@ -153,7 +158,7 @@ const JobStatusPieChart = ({ data }) => {
                                     width: 12,
                                     height: 12,
                                     borderRadius: "50%",
-                                    backgroundColor: colors[status],
+                                    backgroundColor: colors[status as keyof typeof colors],
                                     mr: 1,
                                 }}
                             />

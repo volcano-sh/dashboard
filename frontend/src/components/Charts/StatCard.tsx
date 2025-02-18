@@ -1,7 +1,12 @@
 import React from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, SvgIconProps, Typography } from '@mui/material';
 
-const StatCard = ({ title, value, icon }) => (
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  icon?: React.ReactElement<SvgIconProps>;
+}
+const StatCard = ({ title, value, icon }: StatCardProps) => (
   <Paper sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
     <Box>
       <Typography variant="subtitle2" color="textSecondary">

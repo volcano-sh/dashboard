@@ -13,16 +13,24 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import StatCard from "./Charts/StatCard";
 import JobStatusPieChart from "./Charts/JobStatusPieChart";
 import QueueResourcesBarChart from "./Charts/QueueResourcesBarChart";
+import IJob from "../types/job"
+import IQueue from "../types/queue"
+import type { V1Pod } from "@kubernetes/client-node";
 
 const Dashboard = () => {
-  const [dashboardData, setDashboardData] = useState({
+  const [dashboardData, setDashboardData] = useState<{
+    jobs: IJob[],
+    queues: IQueue[],
+    pods: V1Pod[],
+  }>({
     jobs: [],
     queues: [],
     pods: [],
   });
+
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<null | string>(null);
 
   const fetchAllData = async () => {
     setRefreshing(true);
@@ -51,7 +59,7 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      setError(error.message);
+      setError((error as Error).message);
     } finally {
       setRefreshing(false);
       setIsLoading(false);
@@ -195,7 +203,7 @@ const Dashboard = () => {
   );
 };
 
-const calculateSuccessRate = (jobs) => {
+const calculateSuccessRate = (jobs: IJob[]) => {
   if (!jobs || jobs.length === 0) return 0;
   const completed = jobs.filter(
     (job) => job.status?.succeeded || job.status?.state?.phase === "Completed"

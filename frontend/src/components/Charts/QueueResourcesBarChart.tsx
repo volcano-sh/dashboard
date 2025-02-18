@@ -1,16 +1,18 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {Box, FormControl, MenuItem, Select, Typography} from '@mui/material';
-import {Bar} from 'react-chartjs-2';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, FormControl, MenuItem, Select, Typography } from '@mui/material';
+import { Bar } from 'react-chartjs-2';
 import './chartConfig';
+import { IQueue } from '../../types';
+import { ChartOptions } from 'chart.js';
 
-const QueueResourcesBarChart = ({data}) => {
+const QueueResourcesBarChart = ({ data }: { data: IQueue[] }) => {
     const [selectedResource, setSelectedResource] = useState('');
 
     // Obtain resource type options dynamically
     const resourceOptions = useMemo(() => {
         if (!data || data.length === 0) return [];
 
-        const resourceTypes = new Set();
+        const resourceTypes = new Set<string>();
 
         // Traverse the queue data and obtain all resource types
         data.forEach(queue => {
@@ -32,7 +34,7 @@ const QueueResourcesBarChart = ({data}) => {
         }
     }, [resourceOptions, selectedResource]);
 
-    const convertMemoryToGi = (memoryStr) => {
+    const convertMemoryToGi = (memoryStr?: string) => {
         if (!memoryStr) return 0;
         const value = parseInt(memoryStr);
         if (memoryStr.includes('Gi')) return value;
@@ -41,7 +43,7 @@ const QueueResourcesBarChart = ({data}) => {
         return value; // default unit Gi
     };
 
-    const convertCPUToCores = (cpuStr) => {
+    const convertCPUToCores = (cpuStr?: string) => {
         if (!cpuStr) return 0;
         const value = parseInt(cpuStr);
         if (typeof cpuStr === 'number') {
@@ -51,19 +53,19 @@ const QueueResourcesBarChart = ({data}) => {
     };
 
     // Process queue data and convert memory and CPU units
-    const processData = (data) => {
+    const processData = (data: IQueue[]) => {
         return data.reduce((acc, queue) => {
-            const name = queue.metadata.name;
+            const name = queue.metadata?.name!;
             const allocated = queue.status?.allocated || {};
             const capability = queue.spec?.capability || {};
 
             // Handle memory unit conversion
-            const allocatedMemory = convertMemoryToGi(allocated.memory);
-            const capabilityMemory = convertMemoryToGi(capability.memory);
+            const allocatedMemory = convertMemoryToGi(allocated.memory as string);
+            const capabilityMemory = convertMemoryToGi(capability.memory as string);
 
             // Handle CPU unit conversion
-            const allocatedCPU = convertCPUToCores(allocated.cpu);
-            const capabilityCPU = convertCPUToCores(capability.cpu);
+            const allocatedCPU = convertCPUToCores(allocated.cpu as string);
+            const capabilityCPU = convertCPUToCores(capability.cpu as string);
 
             acc[name] = {
                 allocated: {
@@ -91,7 +93,7 @@ const QueueResourcesBarChart = ({data}) => {
         datasets: [
             {
                 label: `${selectedResource.toUpperCase()} Allocated`,
-                data: Object.values(processedData).map(q => q.allocated[selectedResource] || 0
+                data: Object.values(processedData).map(q => (q as any).allocated[selectedResource] || 0
                 ),
                 backgroundColor: '#2196f3',
                 borderColor: '#1976d2',
@@ -99,7 +101,7 @@ const QueueResourcesBarChart = ({data}) => {
             },
             {
                 label: `${selectedResource.toUpperCase()} Capacity`,
-                data: Object.values(processedData).map(q => q.capability[selectedResource] || 0
+                data: Object.values(processedData).map(q => (q as any).capability[selectedResource] || 0
                 ),
                 backgroundColor: '#4caf50',
                 borderColor: '#388e3c',
@@ -124,7 +126,7 @@ const QueueResourcesBarChart = ({data}) => {
         }
     };
 
-    const options = {
+    const options: ChartOptions<'bar'> = {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
@@ -133,9 +135,9 @@ const QueueResourcesBarChart = ({data}) => {
                     autoSkip: false,
                     maxRotation: 45,
                     minRotation: 45,
-                    font: {size: 10}
+                    font: { size: 10 }
                 },
-                grid: {display: false}
+                grid: { display: false }
             },
             y: {
                 beginAtZero: true,
@@ -152,20 +154,20 @@ const QueueResourcesBarChart = ({data}) => {
                 labels: {
                     boxWidth: 12,
                     padding: 8,
-                    font: {size: 11}
+                    font: { size: 11 }
                 }
             }
         },
         layout: {
-            padding: {bottom: 20}
+            padding: { bottom: 20 }
         }
     };
 
     return (
-        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Queue Resources</Typography>
-                <FormControl size="small" sx={{minWidth: 150}}>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
                     <Select
                         value={selectedResource}
                         onChange={(e) => setSelectedResource(e.target.value)}
@@ -179,11 +181,11 @@ const QueueResourcesBarChart = ({data}) => {
                 </FormControl>
             </Box>
 
-            <Box sx={{flex: 1, minHeight: 0, height: 'calc(100% - 100px)'}}>
+            <Box sx={{ flex: 1, minHeight: 0, height: 'calc(100% - 100px)' }}>
                 {Object.keys(processedData).length > 0 ? (
-                    <Bar data={chartData} options={options} style={{maxHeight: '100%'}}/>
+                    <Bar data={chartData} options={options} style={{ maxHeight: '100%' }} />
                 ) : (
-                    <Typography align="center" color="text.secondary" sx={{mt: 4}}>
+                    <Typography align="center" color="text.secondary" sx={{ mt: 4 }}>
                         No data available for selected resource type
                     </Typography>
                 )}
