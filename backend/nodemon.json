@@ -6,5 +6,5 @@
     "ignore": [
         "node_modules"
     ],
-    "exec": "tsc --noEmit && tsx ./src/server.ts"
+    "exec": "tsx ./src/server.js"
 }
