@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { TextField, InputAdornment, IconButton } from '@mui/material';
-import { Clear } from '@mui/icons-material';
+import React, { useState } from "react";
+import { TextField, InputAdornment, IconButton } from "@mui/material";
+import { Clear } from "@mui/icons-material";
 
 const SearchField = ({ value, onChange, onClear }) => {
   const [showClearButton, setShowClearButton] = useState(false);
@@ -21,7 +21,7 @@ const SearchField = ({ value, onChange, onClear }) => {
               <IconButton
                 size="small"
                 onClick={onClear}
-                sx={{ visibility: showClearButton ? 'visible' : 'hidden' }}
+                sx={{ visibility: showClearButton ? "visible" : "hidden" }}
               >
                 <Clear />
               </IconButton>
@@ -30,16 +30,15 @@ const SearchField = ({ value, onChange, onClear }) => {
         ),
       }}
       sx={{
-        '& .MuiInputBase-root': {
+        "& .MuiInputBase-root": {
           pr: 0, // Remove the right padding to prevent the clear button from changing the width of the input box
         },
-        '& .MuiInputBase-input': {
+        "& .MuiInputBase-input": {
           pr: 4, // Reserve space for clear button
         },
       }}
     />
   );
 };
-
 
 export default SearchField;

@@ -35,7 +35,8 @@ const Dashboard = () => {
       ]);
 
       if (!jobsRes.ok) throw new Error(`Jobs API error: ${jobsRes.status}`);
-      if (!queuesRes.ok) throw new Error(`Queues API error: ${queuesRes.status}`);
+      if (!queuesRes.ok)
+        throw new Error(`Queues API error: ${queuesRes.status}`);
       if (!podsRes.ok) throw new Error(`Pods API error: ${podsRes.status}`);
 
       const [jobsData, queuesData, podsData] = await Promise.all([
@@ -106,7 +107,10 @@ const Dashboard = () => {
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Total Jobs" value={dashboardData.jobs?.length || 0} />
+          <StatCard
+            title="Total Jobs"
+            value={dashboardData.jobs?.length || 0}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard

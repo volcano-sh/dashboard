@@ -9,7 +9,13 @@
   "scripts": {
     "backend": "npm run dev -w backend",
     "frontend": "npm run dev -w frontend",
-    "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\""
+    "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "{frontend/src,backend/src}/**/*.{js,jsx,ts,tsx.json}": [
+      "prettier --write"
+    ]
   },
   "eslintConfig": {
     "extends": [
@@ -30,6 +36,9 @@
     ]
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.1"
   }
 }
