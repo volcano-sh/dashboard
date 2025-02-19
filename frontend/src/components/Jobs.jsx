@@ -1,31 +1,45 @@
-import React, {useCallback, useEffect, useMemo, useState} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Box,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Menu,
-    MenuItem,
-    Pagination,
-    Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
-    useTheme,
-    InputAdornment} from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  InputAdornment,
+  Menu,
+  MenuItem,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import {
+  Search,
+  Clear,
+  Refresh,
+  FilterList,
+  ArrowDownward,
+  ArrowUpward,
+  UnfoldMore,
+} from "@mui/icons-material";
 import axios from "axios";
-import {fetchAllNamespaces, fetchAllQueues} from "./utils";
+import { fetchAllNamespaces, fetchAllQueues } from "./utils";
+
+const brandColor = "#eb301a";
+const brandColorLight = "#FDF5F3"; // Light background shade
+const brandColorHover = "#F7694A"; // Slightly lighter for hover states
+
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -210,299 +224,295 @@ const Jobs = () => {
     }, []);
 
     return (
-        <Box sx={{bgcolor: "background.default", minHeight: "100vh", p: 3}}>
-            {error && (
-                <Box sx={{mt: 2, color: theme.palette.error.main}}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
-            <Typography variant="h4" gutterBottom align="left">
-                Volcano Jobs Status
-            </Typography>
+        <Box sx={{ bgcolor: brandColorLight, minHeight: "100vh", p: 3 }}>
+          <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
             <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2
-                }}
+              sx={{
+                background: `linear-gradient(45deg, ${brandColor} 30%, ${brandColorHover} 90%)`,
+                p: 3,
+                borderTopLeftRadius: 8,
+                borderTopRightRadius: 8,
+              }}
             >
-<Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
-    <TextField
-        placeholder="Search jobs"
-        variant="outlined"
-        size="small"
-        value={searchText}
-        onChange={handleSearch}
-        sx={{ width: 200 }}  // Adjust the width as needed
-        InputProps={{
-            startAdornment: (
-                <InputAdornment position="start">
-                    <IconButton
-                        size="small"
-                        onClick={() => fetchJobs()}
-                        sx={{padding: "4px"}}
-                    >
-                        <Search/>
-                    </IconButton>
-                </InputAdornment>
-            ),
-            endAdornment: searchText && (
-                <IconButton
-                    size="small"
-                    onClick={handleClearSearch}
-                    sx={{padding: "4px"}}
-                >
-                    <Clear/>
-                </IconButton>
-            ),
-        }}
-    />
-</Box>
-
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<Refresh/>}
-                    onClick={handleRefresh}
-                >
-                    Refresh Job Status
-                </Button>
+              <Typography variant="h4" sx={{ color: "white", fontWeight: "bold" }}>
+                Volcano Jobs Dashboard
+              </Typography>
             </Box>
-            <TableContainer
+    
+            <CardContent>
+              {error && (
+                <Box sx={{ mb: 2, p: 2, bgcolor: "#FFEBE6", borderRadius: 1 }}>
+                  <Typography color="error">{error}</Typography>
+                </Box>
+              )}
+    
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+                <TextField
+                  placeholder="Search jobs"
+                  variant="outlined"
+                  size="small"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  sx={{
+                    width: 300,
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": {
+                        borderColor: brandColor,
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: brandColor,
+                      },
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search sx={{ color: brandColor }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchText && (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setSearchText("")}>
+                          <Clear />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+    
+                <Button
+                  variant="contained"
+                  onClick={handleRefresh}
+                  sx={{
+                    bgcolor: brandColor,
+                    "&:hover": {
+                      bgcolor: brandColorHover,
+                    },
+                  }}
+                  startIcon={<Refresh />}
+                >
+                  Refresh Status
+                </Button>
+              </Box>
+    
+              <TableContainer
                 component={Paper}
-                sx={{maxHeight: "calc(100vh - 200px)", overflow: "auto"}}
-            >
-                <Table stickyHeader>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
-                                <Typography variant="h6">Name</Typography>
-                            </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
-                                <Typography variant="h6">Namespace</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList/>}
-                                    onClick={(e) => handleFilterClick("namespace", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
-                                >
-                                    Filter: {filters.namespace}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.namespace}
-                                    open={Boolean(anchorEl.namespace)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, namespace: null}))}
-                                >
-                                    {allNamespaces.map((namespace) => (
-                                        <MenuItem key={namespace}
-                                                  onClick={() => handleFilterClose("namespace", namespace)}>
-                                            {namespace}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
-                                <Typography variant="h6">Queue</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList/>}
-                                    onClick={(e) => handleFilterClick("queue", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
-                                >
-                                    Filter: {filters.queue}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.queue}
-                                    open={Boolean(anchorEl.queue)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, queue: null}))}
-                                >
-                                    {allQueues.map((queue) => (
-                                        <MenuItem
-                                            key={queue}
-                                            onClick={() => handleFilterClose("queue", queue)}
-                                            selected={queue === filters.queue}
-                                        >
-                                            {queue}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
-                                <Typography variant="h6">Creation Time</Typography>
-                                <Button
-                                    size="small"
-                                    onClick={toggleSortDirection}
-                                    startIcon={
-                                        sortDirection === "desc" ? (
-                                            <ArrowDownward/>
-                                        ) : sortDirection === "asc" ? (
-                                            <ArrowUpward/>
-                                        ) : (
-                                            <UnfoldMore/>
-                                        )
-                                    }
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
-                                >
-                                    Sort
-                                </Button>
-                            </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
-                                <Typography variant="h6">Status</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList/>}
-                                    onClick={(e) => handleFilterClick("status", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
-                                >
-                                    Filter: {filters.status}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.status}
-                                    open={Boolean(anchorEl.status)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, status: null}))}
-                                >
-                                    {uniqueStatuses.map((status) => (
-                                        <MenuItem key={status} onClick={() => handleFilterClose("status", status)}>
-                                            {status}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {sortedJobs.map((job) => (
-                            <TableRow
-                                key={`${job.metadata.namespace}-${job.metadata.name}`}
-                                sx={{
-                                    "&:nth-of-type(odd)": {bgcolor: "action.hover"},
-                                    "&:hover": {
-                                        bgcolor: "action.hover",
-                                        color: "primary.main",
-                                        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-                                    },
-                                    cursor: "pointer",
-                                }}
-                                onClick={() => handleJobClick(job)}
-                            >
-                                <TableCell>{job.metadata.name}</TableCell>
-                                <TableCell>{job.metadata.namespace}</TableCell>
-                                <TableCell>{job.spec.queue || "N/A"}</TableCell>
-                                <TableCell>{new Date(job.metadata.creationTimestamp).toLocaleString()}</TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={job.status ? job.status.state.phase : "Unknown"}
-                                        sx={{
-                                            bgcolor: getStatusColor(
-                                                job.status ? job.status.state.phase : "Unknown"
-                                            ),
-                                            color: "common.white",
-                                        }}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <Box
                 sx={{
-                    mt: 2,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                  maxHeight: "calc(100vh - 300px)",
+                  borderRadius: 2,
+                  boxShadow: 1,
                 }}
-            >
-                <Select
+              >
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      {["Name", "Namespace", "Queue", "Creation Time", "Status"].map((header, index) => (
+                        <TableCell
+                          key={header}
+                          sx={{
+                            bgcolor: brandColorLight,
+                            fontWeight: "bold",
+                            borderBottom: 2,
+                            borderBottomColor: brandColor,
+                          }}
+                        >
+                          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            {header}
+                            {header !== "Name" && (
+                              <IconButton
+                                size="small"
+                                onClick={(e) => 
+                                  header === "Creation Time" 
+                                    ? toggleSortDirection()
+                                    : handleFilterClick(header.toLowerCase(), e)
+                                }
+                              >
+                                {header === "Creation Time" ? (
+                                  sortDirection === "desc" ? (
+                                    <ArrowDownward sx={{ color: brandColor }} />
+                                  ) : sortDirection === "asc" ? (
+                                    <ArrowUpward sx={{ color: brandColor }} />
+                                  ) : (
+                                    <UnfoldMore sx={{ color: brandColor }} />
+                                  )
+                                ) : (
+                                  <FilterList sx={{ color: brandColor }} />
+                                )}
+                              </IconButton>
+                            )}
+                          </Box>
+                          {header !== "Name" && header !== "Creation Time" && (
+                            <Menu
+                              anchorEl={anchorEl[header.toLowerCase()]}
+                              open={Boolean(anchorEl[header.toLowerCase()])}
+                              onClose={() => setAnchorEl((prev) => ({ ...prev, [header.toLowerCase()]: null }))}
+                            >
+                              {(header === "Namespace" 
+                                ? allNamespaces 
+                                : header === "Queue" 
+                                ? allQueues 
+                                : uniqueStatuses
+                              ).map((item) => (
+                                <MenuItem
+                                  key={item}
+                                  onClick={() => handleFilterClose(header.toLowerCase(), item)}
+                                >
+                                  {item}
+                                </MenuItem>
+                              ))}
+                            </Menu>
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedJobs.map((job) => (
+                      <TableRow
+                        key={`${job.metadata.namespace}-${job.metadata.name}`}
+                        onClick={() => handleJobClick(job)}
+                        sx={{
+                          cursor: "pointer",
+                          "&:hover": {
+                            bgcolor: brandColorLight,
+                            transition: "background-color 0.2s",
+                          },
+                        }}
+                      >
+                        <TableCell>{job.metadata.name}</TableCell>
+                        <TableCell>{job.metadata.namespace}</TableCell>
+                        <TableCell>{job.spec.queue || "N/A"}</TableCell>
+                        <TableCell>
+                          {new Date(job.metadata.creationTimestamp).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={job.status ? job.status.state.phase : "Unknown"}
+                            sx={{
+                              bgcolor:
+                                job.status?.state.phase === "Running"
+                                  ? brandColor
+                                  : job.status?.state.phase === "Failed"
+                                  ? "#FF4444"
+                                  : job.status?.state.phase === "Completed"
+                                  ? "#4CAF50"
+                                  : "#757575",
+                              color: "white",
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+    
+              <Box
+                sx={{
+                  mt: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <TextField
+                    select
                     value={pagination.rowsPerPage}
                     onChange={handleChangeRowsPerPage}
                     size="small"
-                >
+                    sx={{ width: 120 }}
+                  >
                     <MenuItem value={5}>5 per page</MenuItem>
                     <MenuItem value={10}>10 per page</MenuItem>
                     <MenuItem value={20}>20 per page</MenuItem>
-                </Select>
-                <Box sx={{display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, mb: 2}}>
-                    <Typography variant="body2" sx={{mr: 2}}>
-                        Total Jobs: {totalJobs}
-                    </Typography>
-                    <Pagination
-                        count={Math.ceil(totalJobs / pagination.rowsPerPage)}
-                        page={pagination.page}
-                        onChange={handleChangePage}
-                        color="primary"
-                        showFirstButton
-                        showLastButton
-                    />
+                  </TextField>
+                  <Typography variant="body2">
+                    Total Jobs: {totalJobs}
+                  </Typography>
                 </Box>
-            </Box>
-            <Dialog
-                open={openDialog}
-                onClose={handleCloseDialog}
-                maxWidth={false}
-                fullWidth
-                PaperProps={{
-                    sx: {
-                        width: "80%",
-                        maxWidth: "800px",
-                        maxHeight: "90vh",
-                        m: 2,
-                        bgcolor: "background.paper",
-                    },
-                }}
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    disabled={pagination.page === 1}
+                    onClick={() => handleChangePage(null, pagination.page - 1)}
+                    sx={{ 
+                      color: brandColor, 
+                      borderColor: brandColor,
+                      '&:hover': {
+                        borderColor: brandColorHover,
+                        color: brandColorHover
+                      }
+                    }}
+                  >
+                    Previous
+                  </Button>
+                  <Typography variant="body2" sx={{ alignSelf: "center" }}>
+                    Page {pagination.page} of {Math.ceil(totalJobs / pagination.rowsPerPage)}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    disabled={pagination.page >= Math.ceil(totalJobs / pagination.rowsPerPage)}
+                    onClick={() => handleChangePage(null, pagination.page + 1)}
+                    sx={{ 
+                      color: brandColor, 
+                      borderColor: brandColor,
+                      '&:hover': {
+                        borderColor: brandColorHover,
+                        color: brandColorHover
+                      }
+                    }}
+                  >
+                    Next
+                  </Button>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+    
+          <Dialog
+            open={openDialog}
+            onClose={handleCloseDialog}
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogTitle
+              sx={{
+                bgcolor: brandColorLight,
+                borderBottom: `2px solid ${brandColor}`,
+              }}
             >
-                <DialogTitle>Job YAML - {selectedJobName}</DialogTitle>
-                <DialogContent>
-                    <Box
-                        sx={{
-                            mt: 2,
-                            mb: 2,
-                            fontFamily: "monospace",
-                            fontSize: "1.2rem",
-                            whiteSpace: "pre-wrap",
-                            overflow: "auto",
-                            maxHeight: "calc(90vh - 150px)",
-                            bgcolor: "grey.50",
-                            p: 2,
-                            borderRadius: 1,
-                            "& .yaml-key": {
-                                fontWeight: 700,
-                                color: "#000",
-                            },
-                        }}
-                    >
-                        <pre dangerouslySetInnerHTML={{__html: selectedJobYaml}}/>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            mt: 2,
-                            width: "100%",
-                            px: 2,
-                            pb: 2,
-                        }}
-                    >
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleCloseDialog}
-                            sx={{
-                                minWidth: "100px",
-                                "&:hover": {
-                                    bgcolor: "primary.dark",
-                                },
-                            }}
-                        >
-                            Close
-                        </Button>
-                    </Box>
-                </DialogActions>
-            </Dialog>
+              Job YAML - {selectedJobName}
+            </DialogTitle>
+            <DialogContent sx={{ mt: 2 }}>
+              <pre
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  padding: "16px",
+                  borderRadius: "4px",
+                  overflow: "auto",
+                }}
+                dangerouslySetInnerHTML={{ __html: selectedJobYaml }}
+              />
+            </DialogContent>
+            <DialogActions sx={{ p: 2 }}>
+              <Button
+                onClick={handleCloseDialog}
+                variant="contained"
+                sx={{
+                  bgcolor: brandColor,
+                  "&:hover": {
+                    bgcolor: brandColorHover,
+                  },
+                }}
+              >
+                Close
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
-    );
-};
-
-export default Jobs;
+      );
+    };
+    
+    export default Jobs;
+    
