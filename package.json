@@ -1,35 +1,43 @@
 {
-  "name": "volcano-dashboard",
-  "version": "0.1.0",
-  "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
-  "scripts": {
-    "backend": "npm run dev -w backend",
-    "frontend": "npm run dev -w frontend",
-    "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\""
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
+    "name": "volcano-dashboard",
+    "version": "0.1.0",
+    "private": true,
+    "workspaces": [
+        "frontend",
+        "backend"
     ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.2"
-  }
+    "scripts": {
+        "backend": "npm run dev -w backend",
+        "frontend": "npm run dev -w frontend",
+        "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\"",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "lint-staged": {
+        "**/*.{js,jsx,ts,tsx,json,md}": "prettier --write"
+    },
+    "eslintConfig": {
+        "extends": [
+            "react-app",
+            "react-app/jest"
+        ]
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2",
+        "husky": "^9.1.7",
+        "lint-staged": "^15.4.3",
+        "prettier": "^3.5.1"
+    }
 }
