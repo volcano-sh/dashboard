@@ -4,7 +4,7 @@ import {
   Route,
   Routes,
   Navigate,
-} from "react-router-dom";
+} from "react-router";
 import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
 import Jobs from "./components/Jobs";
@@ -13,7 +13,7 @@ import Pods from "./components/Pods";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme"; // import theme
 
-function App() {
+const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <Router>
@@ -30,5 +30,6 @@ function App() {
     </ThemeProvider>
   );
 }
+
 
 export default App;
