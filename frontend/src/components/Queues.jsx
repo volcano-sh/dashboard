@@ -23,8 +23,21 @@ import {
     Typography,
     useTheme,
     InputAdornment,
+    Tooltip,
+    CircularProgress,
+    DialogContentText,
 } from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
+import {
+    ArrowDownward, 
+    ArrowUpward, 
+    Clear, 
+    Error, 
+    FilterList, 
+    Refresh, 
+    Search, 
+    UnfoldMore, 
+    Delete
+} from "@mui/icons-material";
 import axios from "axios";
 import {parseCPU, parseMemoryToMi} from "./utils";
 
@@ -49,6 +62,10 @@ const Queues = () => {
     });
     const [totalQueues, setTotalQueues] = useState(0);
     const [sortDirection, setSortDirection] = useState("desc");
+    // New state for delete confirmation dialog
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [queueToDelete, setQueueToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const [sortConfig, setSortConfig] = useState({
         field: null,
@@ -78,7 +95,7 @@ const Queues = () => {
 
             const data = response.data;
             setQueues(data.items || []);
-            setTotalQueues(data.totalCount || 0); // 更新 totalQueues
+            setTotalQueues(data.totalCount || 0);
         } catch (err) {
             setError("Failed to fetch queues: " + err.message);
             setQueues([]);
@@ -107,6 +124,42 @@ const Queues = () => {
         setSearchText("");
         fetchQueues();
     }, [fetchQueues]);
+
+    // New function to handle queue deletion
+    const handleDeleteQueue = useCallback(async () => {
+        if (!queueToDelete) return;
+        
+        setDeleteLoading(true);
+        try {
+            const response = await axios.delete(`/api/queue/${queueToDelete}`);
+            
+            if (response.status !== 200) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Successfully deleted, refresh the queue list
+            fetchQueues();
+            setDeleteDialogOpen(false);
+            setQueueToDelete(null);
+        } catch (err) {
+            setError(`Failed to delete queue ${queueToDelete}: ${err.message}`);
+        } finally {
+            setDeleteLoading(false);
+        }
+    }, [queueToDelete, fetchQueues]);
+
+    // Function to open delete confirmation dialog
+    const openDeleteDialog = useCallback((e, queueName) => {
+        e.stopPropagation(); // Prevent row click event
+        setQueueToDelete(queueName);
+        setDeleteDialogOpen(true);
+    }, []);
+
+    // Function to close delete confirmation dialog
+    const closeDeleteDialog = useCallback(() => {
+        setDeleteDialogOpen(false);
+        setQueueToDelete(null);
+    }, []);
 
     const handleQueueClick = useCallback(async (queue) => {
         try {
@@ -173,7 +226,7 @@ const Queues = () => {
         setFilters((prev) => ({...prev, [filterType]: value}));
         setAnchorEl((prev) => ({...prev, [filterType]: null}));
         setPagination((prev) => ({...prev, page: 1}));
-    }, [fetchQueues]);
+    }, []);
 
     const uniqueStates = useMemo(() => {
         return ["All", ...new Set(queues.map((queue) => queue.status?.state).filter(Boolean))];
@@ -258,38 +311,38 @@ const Queues = () => {
                 }}
             >
                <Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
-    <TextField
-        placeholder="Search queues"
-        variant="outlined"
-        size="small"
-        value={searchText}
-        sx={{ width: 200 }}  
-        onChange={handleSearch}
-        InputProps={{
-            startAdornment: (
-                <InputAdornment position="start">
-                    <IconButton
-                        size="small"
-                        onClick={() => fetchQueues()}
-                        sx={{padding: "4px"}}
-                        
-                    >
-                        <Search/>
-                    </IconButton>
-                </InputAdornment>
-            ),
-            endAdornment: searchText && (
-                <IconButton
-                    size="small"
-                    onClick={handleClearSearch}
-                    sx={{padding: "4px"}}
-                >
-                    <Clear/>
-                </IconButton>
-            ),
-        }}
-    />
-</Box>
+                   <TextField
+                       placeholder="Search queues"
+                       variant="outlined"
+                       size="small"
+                       value={searchText}
+                       sx={{ width: 200 }}  
+                       onChange={handleSearch}
+                       InputProps={{
+                           startAdornment: (
+                               <InputAdornment position="start">
+                                   <IconButton
+                                       size="small"
+                                       onClick={() => fetchQueues()}
+                                       sx={{padding: "4px"}}
+                                       
+                                   >
+                                       <Search/>
+                                   </IconButton>
+                               </InputAdornment>
+                           ),
+                           endAdornment: searchText && (
+                               <IconButton
+                                   size="small"
+                                   onClick={handleClearSearch}
+                                   sx={{padding: "4px"}}
+                               >
+                                   <Clear/>
+                               </IconButton>
+                           ),
+                       }}
+                   />
+               </Box>
 
                 <Button
                     variant="contained"
@@ -375,6 +428,10 @@ const Queues = () => {
                                     ))}
                                 </Menu>
                             </TableCell>
+                            {/* New Action column for delete button */}
+                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 80}}>
+                                <Typography variant="h6">Actions</Typography>
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -411,6 +468,21 @@ const Queues = () => {
                                                 color: "common.white",
                                             }}
                                         />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tooltip title="Delete Queue">
+                                            <IconButton
+                                                color="error"
+                                                onClick={(e) => openDeleteDialog(e, queue.metadata.name)}
+                                                sx={{
+                                                    "&:hover": {
+                                                        backgroundColor: "rgba(211, 47, 47, 0.04)",
+                                                    },
+                                                }}
+                                            >
+                                                <Delete />
+                                            </IconButton>
+                                        </Tooltip>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -450,6 +522,7 @@ const Queues = () => {
                 </Box>
             </Box>
 
+            {/* Queue YAML Dialog */}
             <Dialog
                 open={openDialog}
                 onClose={handleCloseDialog}
@@ -513,6 +586,41 @@ const Queues = () => {
                             Close
                         </Button>
                     </Box>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={closeDeleteDialog}
+                aria-labelledby="delete-dialog-title"
+                aria-describedby="delete-dialog-description"
+            >
+                <DialogTitle id="delete-dialog-title">
+                    Confirm Queue Deletion
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="delete-dialog-description">
+                        Are you sure you want to delete the queue "{queueToDelete}"? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={closeDeleteDialog} 
+                        color="primary"
+                        disabled={deleteLoading}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleDeleteQueue}
+                        color="error"
+                        variant="contained"
+                        disabled={deleteLoading}
+                        startIcon={deleteLoading ? <CircularProgress size={20} /> : <Delete />}
+                    >
+                        {deleteLoading ? "Deleting..." : "Delete"}
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Box>
