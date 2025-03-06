@@ -11,7 +11,9 @@
         "frontend": "npm run dev -w frontend",
         "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\"",
         "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "format:check": "prettier --check .",
+        "test:frontend": "npm run test -w frontend",
+        "test:backend": "npm run test -w backend"
     },
     "lint-staged": {
         "**/*.{js,jsx,ts,tsx,json,md}": "prettier --write"
@@ -38,6 +40,17 @@
         "concurrently": "^9.1.2",
         "husky": "^9.1.7",
         "lint-staged": "^15.4.3",
-        "prettier": "^3.5.1"
+        "prettier": "^3.5.3",
+        "vitest": "^3.0.8"
+    },
+    "dependencies": {
+        "@fortawesome/free-solid-svg-icons": "^6.7.2",
+        "@fortawesome/react-fontawesome": "github:fortawesome/react-fontawesome",
+        "@monaco-editor/react": "^4.7.0",
+        "@mui/icons-material": "^6.4.8",
+        "@mui/material": "^6.4.8",
+        "bootstrap": "^5.3.3",
+        "fortawesome": "^0.0.1-security",
+        "react-bootstrap": "^2.10.9"
     }
 }

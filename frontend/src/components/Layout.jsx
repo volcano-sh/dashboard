@@ -11,6 +11,7 @@ import {
     ListItemText,
     Toolbar,
     Typography,
+    Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -76,6 +77,7 @@ const Layout = () => {
             </AppBar>
 
             <Drawer
+                data-testid="sidebar-drawer"
                 variant="permanent"
                 sx={{
                     width: open ? drawerWidth : 60,
@@ -92,36 +94,56 @@ const Layout = () => {
                 }}
             >
                 <Toolbar />
-                <Box sx={{ overflow: "auto", flexGrow: 1 }}>
+                <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
                     <List>
-                        {menuItems.map((item) => (
-                            <ListItem
-                                button
-                                key={item.text}
-                                component={Link}
-                                to={item.path}
-                                className={
-                                    location.pathname === item.path
-                                        ? "active"
-                                        : ""
-                                }
-                                sx={{
-                                    "&.active": {
-                                        bgcolor: "rgba(0, 0, 0, 0.08)",
-                                        "& .MuiListItemIcon-root": {
-                                            color: volcanoOrange,
+                        {menuItems.map((item) => {
+                            const listItem = (
+                                <ListItem
+                                    key={item.text}
+                                    component={Link}
+                                    to={item.path}
+                                    className={
+                                        location.pathname === item.path
+                                            ? "active"
+                                            : ""
+                                    }
+                                    sx={{
+                                        "&.active": {
+                                            bgcolor: "rgba(0, 0, 0, 0.08)",
+                                            "& .MuiListItemIcon-root": {
+                                                color: volcanoOrange,
+                                            },
+                                            "& .MuiListItemText-primary": {
+                                                color: volcanoOrange,
+                                                fontWeight: 500,
+                                            },
                                         },
-                                        "& .MuiListItemText-primary": {
-                                            color: volcanoOrange,
-                                            fontWeight: 500,
+                                        "&:hover": {
+                                            backgroundColor:
+                                                "rgba(0, 0, 0, 0.1)",
                                         },
-                                    },
-                                }}
-                            >
-                                <ListItemIcon>{item.icon}</ListItemIcon>
-                                {open && <ListItemText primary={item.text} />}
-                            </ListItem>
-                        ))}
+                                    }}
+                                >
+                                    <ListItemIcon>{item.icon}</ListItemIcon>
+                                    {open && (
+                                        <ListItemText primary={item.text} />
+                                    )}
+                                </ListItem>
+                            );
+                            return !open ? (
+                                <Tooltip
+                                    key={item.text}
+                                    title={item.text}
+                                    placement="right"
+                                >
+                                    {listItem}
+                                </Tooltip>
+                            ) : (
+                                <React.Fragment key={item.text}>
+                                    {listItem}
+                                </React.Fragment>
+                            );
+                        })}
                     </List>
                 </Box>
                 {/* Logo and text part */}
@@ -141,7 +163,7 @@ const Layout = () => {
                         src={volcanoLogo}
                         alt="Volcano Logo"
                         style={{
-                            maxWidth: open ? "115%" : "60px",
+                            maxWidth: open ? "150px" : "60px",
                             height: "auto",
                             transition: "max-width 0.2s",
                             marginBottom: "1px",
