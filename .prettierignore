@@ -4,3 +4,4 @@ backend/node_modules
 backend/dist
 deployment/
 docs/
+*.md

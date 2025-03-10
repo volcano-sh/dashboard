@@ -1,5 +1,5 @@
-import React, {useState} from "react";
-import {Link, Outlet, useLocation} from "react-router-dom";
+import React, { useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import {
     AppBar,
     Box,
@@ -13,13 +13,13 @@ import {
     Typography,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import CloudIcon from '@mui/icons-material/Cloud';
-import HomeIcon from '@mui/icons-material/Home';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import CloudIcon from "@mui/icons-material/Cloud";
+import HomeIcon from "@mui/icons-material/Home";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import WorkspacesIcon from "@mui/icons-material/Workspaces";
 
 // use relative path to load Logo
-import volcanoLogo from '../assets/volcano-icon-color.svg';
+import volcanoLogo from "../assets/volcano-icon-color.svg";
 
 const Layout = () => {
     // Hooks must be used inside component functions
@@ -36,14 +36,14 @@ const Layout = () => {
     };
 
     const menuItems = [
-        {text: "Dashboard", icon: <HomeIcon/>, path: "/dashboard"},
-        {text: "Jobs", icon: <AssignmentIcon/>, path: "/jobs"},
-        {text: "Queues", icon: <CloudIcon/>, path: "/queues"},
-        {text: "Pods", icon: <WorkspacesIcon/>, path: "/pods"},
+        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
+        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
+        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
+        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
     ];
 
     return (
-        <Box sx={{display: "flex"}}>
+        <Box sx={{ display: "flex" }}>
             <AppBar
                 position="fixed"
                 sx={{
@@ -57,9 +57,9 @@ const Layout = () => {
                         aria-label="toggle drawer"
                         onClick={handleDrawerToggle}
                         edge="start"
-                        sx={{mr: 2, color: "white"}}
+                        sx={{ mr: 2, color: "white" }}
                     >
-                        <MenuIcon/>
+                        <MenuIcon />
                     </IconButton>
                     <Typography
                         variant="h6"
@@ -91,8 +91,8 @@ const Layout = () => {
                     },
                 }}
             >
-                <Toolbar/>
-                <Box sx={{overflow: "auto", flexGrow: 1}}>
+                <Toolbar />
+                <Box sx={{ overflow: "auto", flexGrow: 1 }}>
                     <List>
                         {menuItems.map((item) => (
                             <ListItem
@@ -100,7 +100,11 @@ const Layout = () => {
                                 key={item.text}
                                 component={Link}
                                 to={item.path}
-                                className={location.pathname === item.path ? "active" : ""}
+                                className={
+                                    location.pathname === item.path
+                                        ? "active"
+                                        : ""
+                                }
                                 sx={{
                                     "&.active": {
                                         bgcolor: "rgba(0, 0, 0, 0.08)",
@@ -115,7 +119,7 @@ const Layout = () => {
                                 }}
                             >
                                 <ListItemIcon>{item.icon}</ListItemIcon>
-                                {open && <ListItemText primary={item.text}/>}
+                                {open && <ListItemText primary={item.text} />}
                             </ListItem>
                         ))}
                     </List>
@@ -160,10 +164,10 @@ const Layout = () => {
             </Drawer>
             <Box
                 component="main"
-                sx={{flexGrow: 1, p: 3, backgroundColor: "white"}}
+                sx={{ flexGrow: 1, p: 3, backgroundColor: "white" }}
             >
-                <Toolbar/>
-                <Outlet/>
+                <Toolbar />
+                <Outlet />
             </Box>
         </Box>
     );
