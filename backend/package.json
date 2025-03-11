@@ -8,7 +8,8 @@
         "dev": "nodemon src/server.js",
         "build": "babel src -d dist",
         "prepare": "npm run build",
-        "test": "mocha --require @babel/register --recursive"
+        "test": "vitest",
+        "test:ui": "vitest --ui"
     },
     "browser": {
         "fs": false
@@ -46,7 +47,8 @@
         "expect.js": "^0.3.1",
         "mocha": "^11.1.0",
         "nodemon": "^3.1.9",
-        "sinon": "^7.2.0"
+        "sinon": "^7.2.0",
+        "supertest": "^7.0.0"
     },
     "files": [
         "dist"
