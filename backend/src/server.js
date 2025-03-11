@@ -9,12 +9,15 @@ import yaml from "js-yaml";
 
 export const app = express();
 app.use(cors({ origin: "*" }));
+app.use(express.json()); // Add JSON parsing middleware
 
 const kc = new KubeConfig();
 kc.loadFromDefault();
 
 const k8sApi = kc.makeApiClient(CustomObjectsApi);
 const k8sCoreApi = kc.makeApiClient(CoreV1Api);
+
+// ==================== JOBS ENDPOINTS ====================
 
 app.get("/api/jobs", async (req, res) => {
     try {
@@ -84,7 +87,7 @@ app.get("/api/jobs", async (req, res) => {
     }
 });
 
-// Add an interface to obtain a single job
+// Get a single job
 app.get("/api/jobs/:namespace/:name", async (req, res) => {
     try {
         const { namespace, name } = req.params;
@@ -105,7 +108,7 @@ app.get("/api/jobs/:namespace/:name", async (req, res) => {
     }
 });
 
-// Add a route to obtain YAML in server.js
+// Get job YAML
 app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
     try {
         const { namespace, name } = req.params;
@@ -134,6 +137,386 @@ app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
         });
     }
 });
+
+// Create a new job
+app.post("/api/jobs/:namespace", async (req, res) => {
+    try {
+        const { namespace } = req.params;
+        const jobSpec = req.body;
+
+        const response = await k8sApi.createNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            body: jobSpec,
+        });
+
+        res.status(201).json({
+            message: "Job created successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        console.error("Error creating job:", error);
+        res.status(500).json({
+            error: "Failed to create job",
+            details: error.message,
+        });
+    }
+});
+
+// Update a job
+app.patch("/api/jobs/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const patchData = req.body;
+
+        const options = {
+            headers: { "Content-Type": "application/merge-patch+json" },
+        };
+
+        const response = await k8sApi.patchNamespacedCustomObject(
+            "batch.volcano.sh",
+            "v1alpha1",
+            namespace,
+            "jobs",
+            name,
+            patchData,
+            undefined,
+            undefined,
+            undefined,
+            options,
+        );
+
+        res.json({ message: "Job updated successfully", data: response.body });
+    } catch (error) {
+        console.error("Error updating job:", error);
+        res.status(500).json({ error: "Failed to update job" });
+    }
+});
+
+// Delete a job
+app.delete("/api/jobs/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+
+        const response = await k8sApi.deleteNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        res.json({
+            message: "Job deleted successfully",
+            data: response.body,
+        });
+    } catch (err) {
+        const statusCode = err?.statusCode || err?.response?.statusCode || 500;
+        let message = "An unexpected error occurred.";
+
+        try {
+            const rawBody = err?.body || err?.response?.body;
+            const parsedBody =
+                typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
+
+            if (parsedBody?.message) {
+                message = parsedBody.message;
+            }
+        } catch (parseErr) {
+            console.error("Error parsing Kubernetes error body:", parseErr);
+            message = err?.message || message;
+        }
+
+        // Print the full error object for debugging
+        console.error("Full Kubernetes Error Object:", err);
+
+        res.status(statusCode).json({
+            error: "Kubernetes Error",
+            details: message,
+        });
+    }
+});
+
+// Get all Jobs (no pagination)
+app.get("/api/all-jobs", async (req, res) => {
+    try {
+        const response = await k8sApi.listClusterCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            plural: "jobs",
+            pretty: true,
+        });
+
+        const jobs = response.items.map((job) => ({
+            ...job,
+            status: {
+                state: job.status?.state || getJobState(job),
+                phase:
+                    job.status?.phase || job.spec?.minAvailable
+                        ? "Running"
+                        : "Unknown",
+            },
+        }));
+
+        res.json({
+            items: jobs,
+            totalCount: jobs.length,
+        });
+    } catch (err) {
+        console.error("Error fetching all jobs:", err);
+        res.status(500).json({ error: "Failed to fetch all jobs" });
+    }
+});
+
+// ==================== PODS ENDPOINTS ====================
+
+app.get("/api/pods", async (req, res) => {
+    try {
+        const namespace = req.query.namespace || "";
+        const searchTerm = req.query.search || "";
+        const statusFilter = req.query.status || "";
+
+        console.log("Fetching pods with params:", {
+            namespace,
+            searchTerm,
+            statusFilter,
+        });
+
+        let response;
+        if (namespace === "" || namespace === "All") {
+            response = await k8sCoreApi.listPodForAllNamespaces();
+        } else {
+            response = await k8sCoreApi.listNamespacedPod({ namespace });
+        }
+
+        let filteredPods = response.items || [];
+
+        // Improved search filter to search in both name and namespace
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            filteredPods = filteredPods.filter((pod) => {
+                const podName = pod.metadata.name.toLowerCase();
+                const podNamespace = pod.metadata.namespace.toLowerCase();
+                return (
+                    podName.includes(searchLower) ||
+                    podNamespace.includes(searchLower)
+                );
+            });
+        }
+
+        // Status filter
+        if (statusFilter && statusFilter !== "All") {
+            filteredPods = filteredPods.filter(
+                (pod) => pod.status.phase === statusFilter,
+            );
+        }
+
+        // Sort pods by creation timestamp (newest first)
+        filteredPods.sort((a, b) => {
+            return (
+                new Date(b.metadata.creationTimestamp) -
+                new Date(a.metadata.creationTimestamp)
+            );
+        });
+
+        res.json({
+            items: filteredPods,
+            totalCount: filteredPods.length,
+        });
+    } catch (err) {
+        console.error("Error fetching pods:", err);
+        res.status(500).json({
+            error: "Failed to fetch pods",
+            details: err.message,
+        });
+    }
+});
+
+// Get a single pod
+app.get("/api/pods/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const response = await k8sCoreApi.readNamespacedPod({
+            name,
+            namespace,
+        });
+        res.json(response);
+    } catch (error) {
+        console.error("Error fetching pod:", error);
+        res.status(500).json({
+            error: "Failed to fetch pod",
+            details: error.message,
+        });
+    }
+});
+
+// Get pod YAML
+app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const response = await k8sCoreApi.readNamespacedPod({
+            name,
+            namespace,
+        });
+
+        // Convert JSON to formatted YAML
+        const formattedYaml = yaml.dump(response, {
+            indent: 2,
+            lineWidth: -1,
+            noRefs: true,
+            sortKeys: false,
+        });
+
+        //Set the content type to text/yaml and send the response
+        res.setHeader("Content-Type", "text/yaml");
+        res.send(formattedYaml);
+    } catch (error) {
+        console.error("Error fetching pod YAML:", error);
+        res.status(500).json({
+            error: "Failed to fetch pod YAML",
+            details: error.message,
+        });
+    }
+});
+
+// Create a new pod
+app.post("/api/pods/:namespace", async (req, res) => {
+    try {
+        const { namespace } = req.params;
+        const podSpec = req.body;
+
+        const response = await k8sCoreApi.createNamespacedPod({
+            namespace,
+            body: podSpec,
+        });
+
+        res.status(201).json({
+            message: "Pod created successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        console.error("Error creating pod:", error);
+        res.status(500).json({
+            error: "Failed to create pod",
+            details: error.message,
+        });
+    }
+});
+
+// Update a pod
+app.patch("/api/pods/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const patchData = req.body;
+
+        const response = await k8sCoreApi.patchNamespacedPod({
+            name,
+            namespace,
+            body: patchData,
+            headers: { "Content-Type": "application/merge-patch+json" },
+        });
+
+        res.json({
+            message: "Pod updated successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        console.error("Error updating pod:", error);
+        res.status(500).json({
+            error: "Failed to update pod",
+            details: error.message,
+        });
+    }
+});
+
+// Delete a pod
+app.delete("/api/pods/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+
+        const response = await k8sCoreApi.deleteNamespacedPod({
+            name,
+            namespace,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        res.json({
+            message: "Pod deleted successfully",
+            data: response.body,
+        });
+    } catch (err) {
+        const statusCode = err?.statusCode || err?.response?.statusCode || 500;
+        let message = "An unexpected error occurred.";
+
+        try {
+            const rawBody = err?.body || err?.response?.body;
+
+            const parsedBody =
+                typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
+
+            if (parsedBody?.message) {
+                message = parsedBody.message;
+            }
+        } catch (parseErr) {
+            console.error("Error parsing Kubernetes error body:", parseErr);
+            message = err?.message || message;
+        }
+
+        return res.status(statusCode).json({
+            error: "Kubernetes Error",
+            details: message,
+        });
+    }
+});
+
+// Get pod logs
+app.get("/api/pods/:namespace/:name/logs", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const { container, tailLines = 100, follow = false } = req.query;
+
+        const logOptions = {
+            name,
+            namespace,
+            tailLines: parseInt(tailLines),
+            follow: follow === "true",
+        };
+
+        if (container) {
+            logOptions.container = container;
+        }
+
+        const response = await k8sCoreApi.readNamespacedPodLog(logOptions);
+
+        res.setHeader("Content-Type", "text/plain");
+        res.send(response.body);
+    } catch (error) {
+        console.error("Error fetching pod logs:", error);
+        res.status(500).json({
+            error: "Failed to fetch pod logs",
+            details: error.message,
+        });
+    }
+});
+
+// Get all Pods (no pagination)
+app.get("/api/all-pods", async (req, res) => {
+    try {
+        const response = await k8sCoreApi.listPodForAllNamespaces();
+        res.json({
+            items: response.items,
+            totalCount: response.items.length,
+        });
+    } catch (error) {
+        console.error("Error fetching all pods:", error);
+        res.status(500).json({ error: "Failed to fetch all pods" });
+    }
+});
+
+// ==================== QUEUES ENDPOINTS ====================
 
 // Get details of a specific Queue
 app.get("/api/queues/:name", async (req, res) => {
@@ -173,9 +556,9 @@ app.get("/api/queue/:name/yaml", async (req, res) => {
         res.setHeader("Content-Type", "text/yaml");
         res.send(formattedYaml);
     } catch (error) {
-        console.error("Error fetching job YAML:", error);
+        console.error("Error fetching queue YAML:", error);
         res.status(500).json({
-            error: "Failed to fetch job YAML",
+            error: "Failed to fetch queue YAML",
             details: error.message,
         });
     }
@@ -239,141 +622,119 @@ app.get("/api/queues", async (req, res) => {
     }
 });
 
-// get all ns
-app.get("/api/namespaces", async (req, res) => {
+// Create a new queue
+app.post("/api/queues", async (req, res) => {
     try {
-        const response = await k8sCoreApi.listNamespace();
+        const queueSpec = req.body;
 
-        res.json({
-            items: response.items,
+        const response = await k8sApi.createClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            body: queueSpec,
+        });
+
+        res.status(201).json({
+            message: "Queue created successfully",
+            data: response.body,
         });
     } catch (error) {
-        console.error("Error fetching namespaces:", error);
+        console.error("Error creating queue:", error);
         res.status(500).json({
-            error: "Failed to fetch namespaces",
+            error: "Failed to create queue",
             details: error.message,
         });
     }
 });
 
-app.get("/api/pods", async (req, res) => {
+// Update a queue - Fixed endpoint path
+app.patch("/api/queues/:name", async (req, res) => {
     try {
-        const namespace = req.query.namespace || "";
-        const searchTerm = req.query.search || "";
-        const statusFilter = req.query.status || "";
+        const { name } = req.params;
+        const patchData = req.body;
 
-        console.log("Fetching pods with params:", {
-            namespace,
-            searchTerm,
-            statusFilter,
-        });
+        const options = {
+            headers: { "Content-Type": "application/merge-patch+json" },
+        };
 
-        let response;
-        if (namespace === "" || namespace === "All") {
-            response = await k8sCoreApi.listPodForAllNamespaces();
-        } else {
-            response = await k8sCoreApi.listNamespacedPod({ namespace });
-        }
-
-        let filteredPods = response.items || [];
-
-        // Apply search filter
-        if (searchTerm) {
-            filteredPods = filteredPods.filter((pod) =>
-                pod.metadata.name
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase()),
-            );
-        }
-
-        if (statusFilter && statusFilter !== "All") {
-            filteredPods = filteredPods.filter(
-                (pod) => pod.status.phase === statusFilter,
-            );
-        }
-
-        res.json({
-            items: filteredPods,
-            totalCount: filteredPods.length,
-        });
-    } catch (err) {
-        console.error("Error fetching pods:", err);
-        res.status(500).json({
-            error: "Failed to fetch pods",
-            details: err.message,
-        });
-    }
-});
-
-// Get details of a specific Pod
-app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
-    try {
-        const { namespace, name } = req.params;
-        const response = await k8sCoreApi.readNamespacedPod({
+        const response = await k8sApi.patchClusterCustomObject(
+            "scheduling.volcano.sh",
+            "v1beta1",
+            "queues",
             name,
-            namespace,
-        });
-
-        // Convert JSON to formatted YAML
-        const formattedYaml = yaml.dump(response, {
-            indent: 2,
-            lineWidth: -1,
-            noRefs: true,
-            sortKeys: false,
-        });
-
-        //Set the content type to text/yaml and send the response
-        res.setHeader("Content-Type", "text/yaml");
-        res.send(formattedYaml);
-    } catch (error) {
-        console.error("Error fetching job YAML:", error);
-        res.status(500).json({
-            error: "Failed to fetch job YAML",
-            details: error.message,
-        });
-    }
-});
-
-// Get all Jobs (no pagination)
-app.get("/api/all-jobs", async (req, res) => {
-    try {
-        const response = await k8sApi.listClusterCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            plural: "jobs", // 修改这里：从 "jobs" 改为 "vcjobs"
-            pretty: true,
-        });
-
-        const jobs = response.items.map((job) => ({
-            ...job,
-            status: {
-                state: job.status?.state || getJobState(job),
-                phase:
-                    job.status?.phase || job.spec?.minAvailable
-                        ? "Running"
-                        : "Unknown",
-            },
-        }));
+            patchData,
+            undefined,
+            undefined,
+            undefined,
+            options,
+        );
 
         res.json({
-            items: jobs,
-            totalCount: jobs.length,
+            message: "Queue updated successfully",
+            data: response.body,
         });
-    } catch (err) {
-        console.error("Error fetching all jobs:", err);
-        res.status(500).json({ error: "Failed to fetch all jobs" });
+    } catch (error) {
+        console.error("Error updating queue:", error);
+        res.status(500).json({ error: "Failed to update queue" });
     }
 });
 
-// Auxiliary function: determine the status based on the job status
-function getJobState(job) {
-    if (job.status?.state) return job.status.state;
-    if (job.status === "Running") return "Running";
-    if (job.status === "Completed") return "Completed";
-    if (job.status === "Failed") return "Failed";
-    if (job.status === "Pending") return "Running";
-    return job.status || "Unknown";
-}
+// Delete a queue
+app.delete("/api/queues/:name", async (req, res) => {
+    const { name } = req.params;
+    const queueName = name.toLowerCase();
+
+    try {
+        await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: queueName,
+        });
+
+        const { body } = await k8sApi.deleteClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: queueName,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return res.json({ message: "Queue deleted successfully", data: body });
+    } catch (err) {
+        const statusCode = err?.statusCode || err?.response?.statusCode || 500;
+
+        let message = "An unexpected error occurred.";
+
+        try {
+            const rawBody = err?.body || err?.response?.body;
+
+            // 🔹 Print the raw error body from Kubernetes
+            console.error("Kubernetes Error Raw Body:", rawBody);
+
+            const parsedBody =
+                typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
+
+            // 🔹 Print the parsed error body
+            console.error("Kubernetes Error Parsed Body:", parsedBody);
+
+            if (parsedBody?.message) {
+                message = parsedBody.message;
+            }
+        } catch (parseErr) {
+            console.error("Error parsing Kubernetes error body:", parseErr);
+            message = err?.message || message;
+        }
+
+        // 🔹 Also print the full error object for debugging
+        console.error("Full Kubernetes Error Object:", err);
+
+        return res.status(statusCode).json({
+            error: "Kubernetes Error",
+            details: message,
+        });
+    }
+});
 
 // Get all Queues (no pagination)
 app.get("/api/all-queues", async (req, res) => {
@@ -393,20 +754,38 @@ app.get("/api/all-queues", async (req, res) => {
     }
 });
 
-// Get all Pods (no pagination)
-app.get("/api/all-pods", async (req, res) => {
+// ==================== NAMESPACES ENDPOINTS ====================
+
+// get all namespaces
+app.get("/api/namespaces", async (req, res) => {
     try {
-        const response = await k8sCoreApi.listPodForAllNamespaces();
+        const response = await k8sCoreApi.listNamespace();
+
         res.json({
             items: response.items,
-            totalCount: response.items.length,
         });
     } catch (error) {
-        console.error("Error fetching all pods:", error);
-        res.status(500).json({ error: "Failed to fetch all pods" });
+        console.error("Error fetching namespaces:", error);
+        res.status(500).json({
+            error: "Failed to fetch namespaces",
+            details: error.message,
+        });
     }
 });
 
+// ==================== UTILITY FUNCTIONS ====================
+
+// Auxiliary function: determine the status based on the job status
+function getJobState(job) {
+    if (job.status?.state) return job.status.state;
+    if (job.status === "Running") return "Running";
+    if (job.status === "Completed") return "Completed";
+    if (job.status === "Failed") return "Failed";
+    if (job.status === "Pending") return "Running";
+    return job.status || "Unknown";
+}
+
+// Verify Volcano setup
 const verifyVolcanoSetup = async () => {
     try {
         // Verify CRD access

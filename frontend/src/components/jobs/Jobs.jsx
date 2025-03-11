@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
 import axios from "axios";
-import TitleComponent from "../Titlecomponent";
+import TitleComponent from "../Reusable-components/Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
-import SearchBar from "../Searchbar";
+import SearchBar from "../Reusable-components/Searchbar";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);

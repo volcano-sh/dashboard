@@ -5,6 +5,7 @@ import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
 import { calculateSuccessRate } from "./utils";
+import TitleComponent from "../Reusable-components/Titlecomponent";
 
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState({

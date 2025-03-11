@@ -1,31 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import axios from "axios";
-import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
-import SearchBar from "../Searchbar";
+import { parseCPU, parseMemoryToMi } from "../utils";
+import SearchBar from "../Reusable-components/Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
-import TitleComponent from "../Titlecomponent";
+import TitleComponent from "../Reusable-components/Titlecomponent";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filters, setFilters] = useState({
-        status: "All",
-    });
+    const [filters, setFilters] = useState({ status: "All" });
     const [selectedQueueYaml, setSelectedQueueYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
-    const [anchorEl, setAnchorEl] = useState({
-        status: null,
-    });
+    const [anchorEl, setAnchorEl] = useState({ status: null });
     const [searchText, setSearchText] = useState("");
     const [selectedQueueName, setSelectedQueueName] = useState("");
-    const [pagination, setPagination] = useState({
-        page: 1,
-        rowsPerPage: 10,
-    });
+    const [pagination, setPagination] = useState({ page: 1, rowsPerPage: 10 });
     const [totalQueues, setTotalQueues] = useState(0);
     const [sortConfig, setSortConfig] = useState({
         field: null,
@@ -35,7 +28,6 @@ const Queues = () => {
     const fetchQueues = useCallback(async () => {
         setLoading(true);
         setError(null);
-
         try {
             const response = await axios.get(`/api/queues`, {
                 params: {
@@ -65,16 +57,19 @@ const Queues = () => {
         fetchQueues();
     }, [fetchQueues]);
 
-    const handleSearch = (event) => {
+    const handleSearch = useCallback((event) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
-    };
+    }, []);
 
-    const handleClearSearch = () => {
+    const handleClearSearch = useCallback(() => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
+
+    useEffect(() => {
         fetchQueues();
-    };
+    }, [searchText, pagination.page, filters]);
 
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -225,7 +220,7 @@ const Queues = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={loading}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                 />

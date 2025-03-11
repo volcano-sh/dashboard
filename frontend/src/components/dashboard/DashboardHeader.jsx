@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, IconButton, Tooltip } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import TitleComponent from "../Titlecomponent";
+import TitleComponent from "../Reusable-components/Titlecomponent";
 
 const DashboardHeader = ({ onRefresh, refreshing }) => {
     return (

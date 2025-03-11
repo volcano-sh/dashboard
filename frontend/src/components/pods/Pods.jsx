@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
 import axios from "axios";
-import SearchBar from "../Searchbar";
-import TitleComponent from "../Titlecomponent";
+import SearchBar from "../Reusable-components/Searchbar";
+import TitleComponent from "../Reusable-components/Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
