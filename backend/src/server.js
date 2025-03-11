@@ -3,8 +3,13 @@ import cors from "cors";
 import {CoreV1Api, CustomObjectsApi, KubeConfig,} from "@kubernetes/client-node";
 import yaml from "js-yaml";
 
+
 const app = express();
-app.use(cors({origin: '*'}));
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
+
 
 const kc = new KubeConfig();
 kc.loadFromDefault();
@@ -219,6 +224,34 @@ app.get("/api/queues", async (req, res) => {
     }
 });
 
+// Delete a specific Queue
+app.delete("/api/queue/:name", async (req, res) => {
+    const queueName = req.params.name;
+    console.log(`DELETE request received for queue: ${queueName}`);
+    
+    try {
+        console.log(`Attempting to delete queue: ${queueName}`);
+        
+        const response = await k8sApi.deleteClusterCustomObject(
+            "scheduling.volcano.sh",
+            "v1beta1",
+            "queues",
+            queueName
+        );
+        
+        console.log(`Queue ${queueName} deleted successfully, response:`, response.body);
+        res.status(200).json({
+            message: `Queue ${queueName} deleted successfully`,
+            details: response.body
+        });
+    } catch (error) {
+        console.error(`Error deleting queue ${queueName}:`, error);
+        res.status(500).json({
+            error: `Failed to delete queue ${queueName}`,
+            details: error.message
+        });
+    }
+});
 // get all ns
 app.get("/api/namespaces", async (req, res) => {
     try {
@@ -235,6 +268,68 @@ app.get("/api/namespaces", async (req, res) => {
         });
     }
 });
+
+app.use('/api/queue/:name', (req, res, next) => {
+    const contentType = req.headers['content-type'];
+    
+    if (req.method === 'PUT' && contentType === 'text/yaml') {
+        let data = '';
+        req.on('data', chunk => {
+            data += chunk;
+        });
+        
+        req.on('end', () => {
+            try {
+                // Parse YAML to JSON object
+                req.body = yaml.load(data);
+                next();
+            } catch (err) {
+                res.status(400).json({
+                    error: 'Invalid YAML format',
+                    details: err.message
+                });
+            }
+        });
+    } else {
+        next();
+    }
+});
+
+// Edit (Update) a specific Queue
+app.put("/api/queue/:name", async (req, res) => {
+    const queueName = req.params.name;
+    const updatedQueueData = req.body; // Expecting JSON body with updated queue spec
+
+    console.log(`PUT request received for updating queue: ${queueName}`);
+
+    try {
+        const response = await k8sApi.patchClusterCustomObject(
+            "scheduling.volcano.sh",
+            "v1beta1",
+            "queues",
+            queueName,
+            updatedQueueData,
+            undefined,
+            undefined,
+            undefined,
+            { headers: { "Content-Type": "application/merge-patch+json" } }
+        );
+
+        console.log(`Queue ${queueName} updated successfully`);
+        res.status(200).json({
+            message: `Queue ${queueName} updated successfully`,
+            details: response.body
+        });
+    } catch (error) {
+        console.error(`Error updating queue ${queueName}:`, error);
+        res.status(500).json({
+            error: `Failed to update queue ${queueName}`,
+            details: error.message
+        });
+    }
+});
+
+// Delete a specific Queue
 
 app.get('/api/pods', async (req, res) => {
     try {

@@ -1,32 +1,11 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {
-    Box,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Menu,
-    MenuItem,
-    Pagination,
-    Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
-    useTheme,
-    InputAdornment,
-} from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
+import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Menu, MenuItem, Pagination, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, useTheme, InputAdornment, Tooltip, CircularProgress, DialogContentText, Tabs, Tab } from "@mui/material";
+import { ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore, Delete, Edit, MoreVert, Code } from "@mui/icons-material";
 import axios from "axios";
 import {parseCPU, parseMemoryToMi} from "./utils";
+import { Editor } from "@monaco-editor/react";
+import yaml from 'js-yaml';
+import { Cancel, Save } from "@mui/icons-material";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -49,6 +28,21 @@ const Queues = () => {
     });
     const [totalQueues, setTotalQueues] = useState(0);
     const [sortDirection, setSortDirection] = useState("desc");
+    // New state for delete confirmation dialog
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [queueToDelete, setQueueToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    // New state for action menu
+    const [actionMenuAnchorEl, setActionMenuAnchorEl] = useState(null);
+    const [selectedQueue, setSelectedQueue] = useState(null);
+
+    // New state for edit dialog
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [currentEditMode, setCurrentEditMode] = useState('yaml'); // 'yaml' or 'json'
+    const [editedContent, setEditedContent] = useState('');
+    const [originalContent, setOriginalContent] = useState('');
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [editError, setEditError] = useState(null);
 
     const [sortConfig, setSortConfig] = useState({
         field: null,
@@ -61,7 +55,7 @@ const Queues = () => {
 
         try {
             const response = await axios.get(
-                `/api/queues`,
+                "/api/queues",
                 {
                     params: {
                         page: pagination.page,
@@ -107,6 +101,196 @@ const Queues = () => {
         setSearchText("");
         fetchQueues();
     }, [fetchQueues]);
+
+    // Function to handle queue deletion
+    const handleDeleteQueue = useCallback(async () => {
+        if (!queueToDelete) return;
+        
+        console.log(`Attempting to delete queue: ${queueToDelete}`);
+        setDeleteLoading(true);
+        
+        try {
+            const response = await axios.delete(`/api/queue/${queueToDelete}`);
+            
+            
+            if (response.status !== 200) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            fetchQueues();
+            setDeleteDialogOpen(false);
+            setQueueToDelete(null);
+        } catch (err) {
+            setError(`Failed to delete queue ${queueToDelete}: ${err.message}`);
+        } finally {
+            setDeleteLoading(false);
+        }
+    }, [queueToDelete, fetchQueues]);
+
+    // Function to open delete confirmation dialog
+    const openDeleteDialog = useCallback((queueName) => {
+        setQueueToDelete(queueName);
+        setDeleteDialogOpen(true);
+        setActionMenuAnchorEl(null); // Close the action menu
+    }, []);
+
+    // Function to close delete confirmation dialog
+    const closeDeleteDialog = useCallback(() => {
+        setDeleteDialogOpen(false);
+        setQueueToDelete(null);
+    }, []);
+
+    // Function to convert YAML to JSON
+    const yamlToJson = useCallback((yamlContent) => {
+        try {
+            const jsonObject = yaml.load(yamlContent);
+            return JSON.stringify(jsonObject, null, 2);
+        } catch (err) {
+            console.error("Failed to convert YAML to JSON:", err);
+            setEditError("Failed to convert YAML to JSON: " + err.message);
+            return "";
+        }
+    }, []);
+
+    // Function to convert JSON to YAML
+    const jsonToYaml = useCallback((jsonContent) => {
+        try {
+            const jsonObject = JSON.parse(jsonContent);
+            return yaml.dump(jsonObject);
+        } catch (err) {
+            console.error("Failed to convert JSON to YAML:", err);
+            setEditError("Failed to convert JSON to YAML: " + err.message);
+            return "";
+        }
+    }, []);
+
+    // Function to handle edit action
+    const handleEditQueue = useCallback(async (queueName) => {
+        setActionMenuAnchorEl(null); // Close the action menu
+        setEditError(null);
+        setUpdateLoading(false);
+        
+        try {
+            setLoading(true);
+            const response = await axios.get(
+                `/api/queue/${queueName}/yaml`,
+                {responseType: "text"}
+            );
+            
+            const yamlContent = response.data;
+            setSelectedQueueName(queueName);
+            setOriginalContent(yamlContent);
+            setEditedContent(yamlContent);
+            setCurrentEditMode('yaml');
+            setEditDialogOpen(true);
+        } catch (err) {
+            console.error("Failed to fetch queue YAML for editing:", err);
+            setError("Failed to fetch queue YAML for editing: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Function to handle tab change in the edit dialog
+    const handleTabChange = useCallback((event, newValue) => {
+        if (newValue === currentEditMode) return;
+        
+        try {
+            if (newValue === 'json') {
+                // Convert current YAML to JSON
+                const jsonContent = yamlToJson(editedContent);
+                setEditedContent(jsonContent);
+            } else {
+                // Convert current JSON to YAML
+                const yamlContent = jsonToYaml(editedContent);
+                setEditedContent(yamlContent);
+            }
+            setCurrentEditMode(newValue);
+            setEditError(null);
+        } catch (err) {
+            console.error(`Failed to convert between formats:`, err);
+            setEditError(`Failed to convert between formats: ${err.message}`);
+        }
+    }, [currentEditMode, editedContent, yamlToJson, jsonToYaml]);
+
+    // Function to handle editor content change
+    const handleEditorChange = useCallback((value) => {
+        setEditedContent(value);
+    }, []);
+
+    // Function to validate edited content
+    const validateContent = useCallback(() => {
+        try {
+            if (currentEditMode === 'yaml') {
+                yaml.load(editedContent);
+            } else {
+                JSON.parse(editedContent);
+            }
+            return true;
+        } catch (err) {
+            setEditError(`Invalid ${currentEditMode.toUpperCase()}: ${err.message}`);
+            return false;
+        }
+    }, [currentEditMode, editedContent]);
+
+    // Function to handle update action
+    const handleUpdateQueue = useCallback(async () => {
+        if (!validateContent()) return;
+        
+        setUpdateLoading(true);
+        setEditError(null);
+        
+        try {
+            // Prepare the content for update (always send YAML to the backend)
+            let contentToUpdate = editedContent;
+            if (currentEditMode === 'json') {
+                contentToUpdate = jsonToYaml(editedContent);
+            }
+            
+            const response = await axios.put(
+                `/api/queue/${selectedQueueName}`,
+                contentToUpdate,
+                {
+                    headers: {
+                        'Content-Type': 'text/yaml'
+                    }
+                }
+            );
+            
+            if (response.status !== 200) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            console.log(`Queue ${selectedQueueName} updated successfully`);
+            fetchQueues();
+            setEditDialogOpen(false);
+        } catch (err) {
+            console.error(`Error updating queue:`, err);
+            setEditError(`Failed to update queue: ${err.message}`);
+        } finally {
+            setUpdateLoading(false);
+        }
+    }, [selectedQueueName, editedContent, currentEditMode, validateContent, jsonToYaml, fetchQueues]);
+
+    // Function to close edit dialog
+    const closeEditDialog = useCallback(() => {
+        setEditDialogOpen(false);
+        setEditedContent('');
+        setOriginalContent('');
+        setEditError(null);
+    }, []);
+
+    // New function to open action menu
+    const handleActionMenuOpen = useCallback((e, queue) => {
+        e.stopPropagation(); // Prevent row click event
+        setSelectedQueue(queue);
+        setActionMenuAnchorEl(e.currentTarget);
+    }, []);
+
+    // New function to close action menu
+    const handleActionMenuClose = useCallback(() => {
+        setActionMenuAnchorEl(null);
+    }, []);
 
     const handleQueueClick = useCallback(async (queue) => {
         try {
@@ -240,7 +424,13 @@ const Queues = () => {
         return Array.from(fields).sort();
     }, [queues]);
 
-    return (
+    // Get kubectl command preview
+    const kubectlCommand = useMemo(() => {
+        if (!selectedQueueName) return '';
+        return `kubectl apply -f ${selectedQueueName}.yaml`;
+    }, [selectedQueueName]);
+
+return (
         <Box sx={{bgcolor: "background.default", minHeight: "100vh", p: 3}}>
             {error && (
                 <Box sx={{mt: 2, color: theme.palette.error.main}}>
@@ -375,6 +565,10 @@ const Queues = () => {
                                     ))}
                                 </Menu>
                             </TableCell>
+                            {/* Action column for dropdown menu */}
+                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 80}}>
+                                <Typography variant="h6">Actions</Typography>
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -411,6 +605,20 @@ const Queues = () => {
                                                 color: "common.white",
                                             }}
                                         />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tooltip title="Queue Actions">
+                                            <IconButton
+                                                onClick={(e) => handleActionMenuOpen(e, queue)}
+                                                sx={{
+                                                    "&:hover": {
+                                                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                                                    },
+                                                }}
+                                            >
+                                                <MoreVert />
+                                            </IconButton>
+                                        </Tooltip>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -449,6 +657,38 @@ const Queues = () => {
                     />
                 </Box>
             </Box>
+
+            {/* Action Menu */}
+            <Menu
+                anchorEl={actionMenuAnchorEl}
+                open={Boolean(actionMenuAnchorEl)}
+                onClose={handleActionMenuClose}
+            >
+                <MenuItem 
+                    onClick={() => handleEditQueue(selectedQueue?.metadata.name)}
+                    sx={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: 1,
+                        minWidth: "120px"
+                        
+                    }}
+                >
+                    <Edit fontSize="small" color="primary" />
+                    <Typography variant="body2">Edit</Typography>
+                </MenuItem>
+                <MenuItem 
+                    onClick={() => openDeleteDialog(selectedQueue?.metadata.name)}
+                    sx={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: 1,
+                    }}
+                >
+                    <Delete fontSize="small" color="error" />
+                    <Typography variant="body2">Delete</Typography>
+                </MenuItem>
+            </Menu>
 
             <Dialog
                 open={openDialog}
@@ -511,6 +751,131 @@ const Queues = () => {
                             }}
                         >
                             Close
+                        </Button>
+                    </Box>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={closeDeleteDialog}
+                aria-labelledby="delete-dialog-title"
+                aria-describedby="delete-dialog-description"
+            >
+                <DialogTitle id="delete-dialog-title">
+                    Confirm Queue Deletion
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="delete-dialog-description">
+                        Are you sure you want to delete the queue "{queueToDelete}"? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={closeDeleteDialog} 
+                        color="primary"
+                        disabled={deleteLoading}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleDeleteQueue}
+                        color="error"
+                        variant="contained"
+                        disabled={deleteLoading}
+                        startIcon={deleteLoading ? <CircularProgress size={20} /> : <Delete />}
+                    >
+                        {deleteLoading ? "Deleting..." : "Delete"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Queue Dialog */}
+            <Dialog
+                open={editDialogOpen}
+                onClose={closeEditDialog}
+                maxWidth={false}
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        width: "80%",
+                        maxWidth: "900px",
+                        maxHeight: "90vh",
+                        m: 2,
+                        bgcolor: "background.paper",
+                    },
+                }}
+            >
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography variant="h6">Edit Queue - {selectedQueueName}</Typography>
+                        <Tabs 
+                            value={currentEditMode} 
+                            onChange={handleTabChange}
+                            indicatorColor="primary"
+                            textColor="primary"
+                        >
+                            <Tab 
+                                value="yaml" 
+                                label="YAML" 
+                                icon={<Code />} 
+                                iconPosition="start"
+                            />
+                            <Tab 
+                                value="json" 
+                                label="JSON" 
+                                icon={<Code />} 
+                                iconPosition="start"
+                            />
+                        </Tabs>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {editError && (
+                        <Box sx={{ mt: 1, mb: 2, p: 1, bgcolor: theme.palette.error.light, borderRadius: 1 }}>
+                            <Typography color="error" variant="body2">{editError}</Typography>
+                        </Box>
+                    )}
+                    <Box sx={{ height: 'calc(60vh - 100px)', mt: 2 }}>
+                        <Editor
+                            height="100%"
+                            language={currentEditMode === 'yaml' ? 'yaml' : 'json'}
+                            value={editedContent}
+                            onChange={handleEditorChange}
+                            theme="vs-dark"
+                            options={{
+                                minimap: { enabled: false },
+                                scrollBeyondLastLine: false,
+                                wordWrap: 'on',
+                                automaticLayout: true,
+                                fontFamily: "'Fira Code', 'Consolas', monospace",
+                                fontSize: 14,
+                                tabSize: 2,
+                            }}
+                        />
+                    </Box>
+                    
+                </DialogContent>
+                <DialogActions>
+                    <Box sx={{ display: 'flex', gap: 2, p: 2 }}>
+                        <Button
+                            onClick={closeEditDialog}
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<Cancel />}
+                            disabled={updateLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleUpdateQueue}
+                            variant="contained"
+                            color="primary"
+                            startIcon={updateLoading ? <CircularProgress size={20} /> : <Save />}
+                            disabled={updateLoading || !!editError}
+                        >
+                            {updateLoading ? "Updating..." : "Update Queue"}
                         </Button>
                     </Box>
                 </DialogActions>
