@@ -9,12 +9,11 @@ import {
     Title,
     Tooltip,
     Legend,
-    Filler
-  } from 'chart.js';
-
+    Filler,
+} from "chart.js";
 
 // Register all required components
-  ChartJS.register(
+ChartJS.register(
     ArcElement,
     CategoryScale,
     LinearScale,
@@ -24,5 +23,5 @@ import {
     Title,
     Tooltip,
     Legend,
-    Filler
-  );
+    Filler,
+);

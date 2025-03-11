@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Box,
     Button,
@@ -22,10 +22,20 @@ import {
     TextField,
     Typography,
     useTheme,
-    InputAdornment} from "@mui/material";
-import {ArrowDownward, ArrowUpward, Clear, Error, FilterList, Refresh, Search, UnfoldMore} from "@mui/icons-material";
+    InputAdornment,
+} from "@mui/material";
+import {
+    ArrowDownward,
+    ArrowUpward,
+    Clear,
+    Error,
+    FilterList,
+    Refresh,
+    Search,
+    UnfoldMore,
+} from "@mui/icons-material";
 import axios from "axios";
-import {fetchAllNamespaces, fetchAllQueues} from "./utils";
+import { fetchAllNamespaces, fetchAllQueues } from "./utils";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -61,17 +71,14 @@ const Jobs = () => {
         setError(null);
 
         try {
-            const response = await axios.get(
-                `/api/jobs`,
-                {
-                    params: {
-                        search: searchText,
-                        namespace: filters.namespace,
-                        queue: filters.queue,
-                        status: filters.status,
-                    },
-                }
-            );
+            const response = await axios.get(`/api/jobs`, {
+                params: {
+                    search: searchText,
+                    namespace: filters.namespace,
+                    queue: filters.queue,
+                    status: filters.status,
+                },
+            });
 
             if (response.status !== 200) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -102,17 +109,17 @@ const Jobs = () => {
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     };
 
     const handleClearSearch = () => {
         setSearchText("");
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         fetchJobs();
     };
 
     const handleRefresh = useCallback(() => {
-        setPagination((prev) => ({...prev, page: 1}));
+        setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
         fetchJobs();
     }, [fetchJobs]);
@@ -122,7 +129,7 @@ const Jobs = () => {
             setLoading(true);
             const response = await axios.get(
                 `/api/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
-                {responseType: "text"}
+                { responseType: "text" },
             );
 
             const formattedYaml = response.data
@@ -154,53 +161,73 @@ const Jobs = () => {
     }, []);
 
     const handleChangePage = useCallback((event, newPage) => {
-        setPagination((prev) => ({...prev, page: newPage}));
+        setPagination((prev) => ({ ...prev, page: newPage }));
     }, []);
 
     const handleChangeRowsPerPage = useCallback((event) => {
-        setPagination((prev) => ({...prev, rowsPerPage: parseInt(event.target.value, 10), page: 1}));
+        setPagination((prev) => ({
+            ...prev,
+            rowsPerPage: parseInt(event.target.value, 10),
+            page: 1,
+        }));
     }, []);
 
-    const getStatusColor = useCallback((status) => {
-        switch (status) {
-            case "Failed":
-                return theme.palette.error.main;
-            case "Pending":
-                return theme.palette.warning.main;
-            case "Running":
-                return theme.palette.success.main;
-            case "Completed":
-                return theme.palette.info.main;
-            default:
-                return theme.palette.grey[500];
-        }
-    }, [theme]);
+    const getStatusColor = useCallback(
+        (status) => {
+            switch (status) {
+                case "Failed":
+                    return theme.palette.error.main;
+                case "Pending":
+                    return theme.palette.warning.main;
+                case "Running":
+                    return theme.palette.success.main;
+                case "Completed":
+                    return theme.palette.info.main;
+                default:
+                    return theme.palette.grey[500];
+            }
+        },
+        [theme],
+    );
 
     const handleFilterClick = useCallback((filterType, event) => {
-        setAnchorEl((prev) => ({...prev, [filterType]: event.currentTarget}));
+        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
     }, []);
 
-    const handleFilterClose = useCallback((filterType, value) => {
-        setFilters((prev) => ({...prev, [filterType]: value}));
-        setAnchorEl((prev) => ({...prev, [filterType]: null}));
-        setPagination((prev) => ({...prev, page: 1}));
-    }, [fetchJobs]);
+    const handleFilterClose = useCallback(
+        (filterType, value) => {
+            setFilters((prev) => ({ ...prev, [filterType]: value }));
+            setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+            setPagination((prev) => ({ ...prev, page: 1 }));
+        },
+        [fetchJobs],
+    );
 
     const uniqueStatuses = useMemo(() => {
-        return ["All", ...new Set(jobs.map((job) => job.status?.state.phase).filter(Boolean))];
+        return [
+            "All",
+            ...new Set(
+                jobs.map((job) => job.status?.state.phase).filter(Boolean),
+            ),
+        ];
     }, [jobs]);
 
     const filteredJobs = useMemo(() => {
         return jobs.filter((job) => {
-            const statusMatch = filters.status === "All" || (job.status && job.status.state.phase === filters.status);
-            const queueMatch = filters.queue === "All" || job.spec.queue === filters.queue;
+            const statusMatch =
+                filters.status === "All" ||
+                (job.status && job.status.state.phase === filters.status);
+            const queueMatch =
+                filters.queue === "All" || job.spec.queue === filters.queue;
             return statusMatch && queueMatch;
         });
     }, [jobs, filters]);
 
     const sortedJobs = useMemo(() => {
         return [...filteredJobs].sort((a, b) => {
-            const compareResult = new Date(b.metadata.creationTimestamp) - new Date(a.metadata.creationTimestamp);
+            const compareResult =
+                new Date(b.metadata.creationTimestamp) -
+                new Date(a.metadata.creationTimestamp);
             return sortDirection === "desc" ? compareResult : -compareResult;
         });
     }, [filteredJobs, sortDirection]);
@@ -210,9 +237,9 @@ const Jobs = () => {
     }, []);
 
     return (
-        <Box sx={{bgcolor: "background.default", minHeight: "100vh", p: 3}}>
+        <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{mt: 2, color: theme.palette.error.main}}>
+                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
@@ -223,46 +250,46 @@ const Jobs = () => {
                 sx={{
                     display: "flex",
                     justifyContent: "space-between",
-                    mb: 2
+                    mb: 2,
                 }}
             >
-<Box sx={{display: "flex", gap: 1, alignItems: "center"}}>
-    <TextField
-        placeholder="Search jobs"
-        variant="outlined"
-        size="small"
-        value={searchText}
-        onChange={handleSearch}
-        sx={{ width: 200 }}  // Adjust the width as needed
-        InputProps={{
-            startAdornment: (
-                <InputAdornment position="start">
-                    <IconButton
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                    <TextField
+                        placeholder="Search jobs"
+                        variant="outlined"
                         size="small"
-                        onClick={() => fetchJobs()}
-                        sx={{padding: "4px"}}
-                    >
-                        <Search/>
-                    </IconButton>
-                </InputAdornment>
-            ),
-            endAdornment: searchText && (
-                <IconButton
-                    size="small"
-                    onClick={handleClearSearch}
-                    sx={{padding: "4px"}}
-                >
-                    <Clear/>
-                </IconButton>
-            ),
-        }}
-    />
-</Box>
+                        value={searchText}
+                        onChange={handleSearch}
+                        sx={{ width: 200 }} // Adjust the width as needed
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => fetchJobs()}
+                                        sx={{ padding: "4px" }}
+                                    >
+                                        <Search />
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchText && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearSearch}
+                                    sx={{ padding: "4px" }}
+                                >
+                                    <Clear />
+                                </IconButton>
+                            ),
+                        }}
+                    />
+                </Box>
 
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<Refresh/>}
+                    startIcon={<Refresh />}
                     onClick={handleRefresh}
                 >
                     Refresh Job Status
@@ -270,56 +297,108 @@ const Jobs = () => {
             </Box>
             <TableContainer
                 component={Paper}
-                sx={{maxHeight: "calc(100vh - 200px)", overflow: "auto"}}
+                sx={{ maxHeight: "calc(100vh - 200px)", overflow: "auto" }}
             >
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell
+                                sx={{
+                                    backgroundColor: "background.paper",
+                                    padding: "8px 16px",
+                                    minWidth: 120,
+                                }}
+                            >
                                 <Typography variant="h6">Name</Typography>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell
+                                sx={{
+                                    backgroundColor: "background.paper",
+                                    padding: "8px 16px",
+                                    minWidth: 120,
+                                }}
+                            >
                                 <Typography variant="h6">Namespace</Typography>
                                 <Button
                                     size="small"
-                                    startIcon={<FilterList/>}
-                                    onClick={(e) => handleFilterClick("namespace", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    startIcon={<FilterList />}
+                                    onClick={(e) =>
+                                        handleFilterClick("namespace", e)
+                                    }
+                                    sx={{
+                                        textTransform: "none",
+                                        padding: 0,
+                                        minWidth: "auto",
+                                    }}
                                 >
                                     Filter: {filters.namespace}
                                 </Button>
                                 <Menu
                                     anchorEl={anchorEl.namespace}
                                     open={Boolean(anchorEl.namespace)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, namespace: null}))}
+                                    onClose={() =>
+                                        setAnchorEl((prev) => ({
+                                            ...prev,
+                                            namespace: null,
+                                        }))
+                                    }
                                 >
                                     {allNamespaces.map((namespace) => (
-                                        <MenuItem key={namespace}
-                                                  onClick={() => handleFilterClose("namespace", namespace)}>
+                                        <MenuItem
+                                            key={namespace}
+                                            onClick={() =>
+                                                handleFilterClose(
+                                                    "namespace",
+                                                    namespace,
+                                                )
+                                            }
+                                        >
                                             {namespace}
                                         </MenuItem>
                                     ))}
                                 </Menu>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell
+                                sx={{
+                                    backgroundColor: "background.paper",
+                                    padding: "8px 16px",
+                                    minWidth: 120,
+                                }}
+                            >
                                 <Typography variant="h6">Queue</Typography>
                                 <Button
                                     size="small"
-                                    startIcon={<FilterList/>}
-                                    onClick={(e) => handleFilterClick("queue", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    startIcon={<FilterList />}
+                                    onClick={(e) =>
+                                        handleFilterClick("queue", e)
+                                    }
+                                    sx={{
+                                        textTransform: "none",
+                                        padding: 0,
+                                        minWidth: "auto",
+                                    }}
                                 >
                                     Filter: {filters.queue}
                                 </Button>
                                 <Menu
                                     anchorEl={anchorEl.queue}
                                     open={Boolean(anchorEl.queue)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, queue: null}))}
+                                    onClose={() =>
+                                        setAnchorEl((prev) => ({
+                                            ...prev,
+                                            queue: null,
+                                        }))
+                                    }
                                 >
                                     {allQueues.map((queue) => (
                                         <MenuItem
                                             key={queue}
-                                            onClick={() => handleFilterClose("queue", queue)}
+                                            onClick={() =>
+                                                handleFilterClose(
+                                                    "queue",
+                                                    queue,
+                                                )
+                                            }
                                             selected={queue === filters.queue}
                                         >
                                             {queue}
@@ -327,42 +406,79 @@ const Jobs = () => {
                                     ))}
                                 </Menu>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
-                                <Typography variant="h6">Creation Time</Typography>
+                            <TableCell
+                                sx={{
+                                    backgroundColor: "background.paper",
+                                    padding: "8px 16px",
+                                    minWidth: 120,
+                                }}
+                            >
+                                <Typography variant="h6">
+                                    Creation Time
+                                </Typography>
                                 <Button
                                     size="small"
                                     onClick={toggleSortDirection}
                                     startIcon={
                                         sortDirection === "desc" ? (
-                                            <ArrowDownward/>
+                                            <ArrowDownward />
                                         ) : sortDirection === "asc" ? (
-                                            <ArrowUpward/>
+                                            <ArrowUpward />
                                         ) : (
-                                            <UnfoldMore/>
+                                            <UnfoldMore />
                                         )
                                     }
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    sx={{
+                                        textTransform: "none",
+                                        padding: 0,
+                                        minWidth: "auto",
+                                    }}
                                 >
                                     Sort
                                 </Button>
                             </TableCell>
-                            <TableCell sx={{backgroundColor: "background.paper", padding: "8px 16px", minWidth: 120}}>
+                            <TableCell
+                                sx={{
+                                    backgroundColor: "background.paper",
+                                    padding: "8px 16px",
+                                    minWidth: 120,
+                                }}
+                            >
                                 <Typography variant="h6">Status</Typography>
                                 <Button
                                     size="small"
-                                    startIcon={<FilterList/>}
-                                    onClick={(e) => handleFilterClick("status", e)}
-                                    sx={{textTransform: "none", padding: 0, minWidth: "auto"}}
+                                    startIcon={<FilterList />}
+                                    onClick={(e) =>
+                                        handleFilterClick("status", e)
+                                    }
+                                    sx={{
+                                        textTransform: "none",
+                                        padding: 0,
+                                        minWidth: "auto",
+                                    }}
                                 >
                                     Filter: {filters.status}
                                 </Button>
                                 <Menu
                                     anchorEl={anchorEl.status}
                                     open={Boolean(anchorEl.status)}
-                                    onClose={() => setAnchorEl((prev) => ({...prev, status: null}))}
+                                    onClose={() =>
+                                        setAnchorEl((prev) => ({
+                                            ...prev,
+                                            status: null,
+                                        }))
+                                    }
                                 >
                                     {uniqueStatuses.map((status) => (
-                                        <MenuItem key={status} onClick={() => handleFilterClose("status", status)}>
+                                        <MenuItem
+                                            key={status}
+                                            onClick={() =>
+                                                handleFilterClose(
+                                                    "status",
+                                                    status,
+                                                )
+                                            }
+                                        >
                                             {status}
                                         </MenuItem>
                                     ))}
@@ -375,11 +491,14 @@ const Jobs = () => {
                             <TableRow
                                 key={`${job.metadata.namespace}-${job.metadata.name}`}
                                 sx={{
-                                    "&:nth-of-type(odd)": {bgcolor: "action.hover"},
+                                    "&:nth-of-type(odd)": {
+                                        bgcolor: "action.hover",
+                                    },
                                     "&:hover": {
                                         bgcolor: "action.hover",
                                         color: "primary.main",
-                                        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                                        boxShadow:
+                                            "0px 4px 6px rgba(0, 0, 0, 0.1)",
                                     },
                                     cursor: "pointer",
                                 }}
@@ -388,13 +507,23 @@ const Jobs = () => {
                                 <TableCell>{job.metadata.name}</TableCell>
                                 <TableCell>{job.metadata.namespace}</TableCell>
                                 <TableCell>{job.spec.queue || "N/A"}</TableCell>
-                                <TableCell>{new Date(job.metadata.creationTimestamp).toLocaleString()}</TableCell>
+                                <TableCell>
+                                    {new Date(
+                                        job.metadata.creationTimestamp,
+                                    ).toLocaleString()}
+                                </TableCell>
                                 <TableCell>
                                     <Chip
-                                        label={job.status ? job.status.state.phase : "Unknown"}
+                                        label={
+                                            job.status
+                                                ? job.status.state.phase
+                                                : "Unknown"
+                                        }
                                         sx={{
                                             bgcolor: getStatusColor(
-                                                job.status ? job.status.state.phase : "Unknown"
+                                                job.status
+                                                    ? job.status.state.phase
+                                                    : "Unknown",
                                             ),
                                             color: "common.white",
                                         }}
@@ -422,8 +551,16 @@ const Jobs = () => {
                     <MenuItem value={10}>10 per page</MenuItem>
                     <MenuItem value={20}>20 per page</MenuItem>
                 </Select>
-                <Box sx={{display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, mb: 2}}>
-                    <Typography variant="body2" sx={{mr: 2}}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mt: 2,
+                        mb: 2,
+                    }}
+                >
+                    <Typography variant="body2" sx={{ mr: 2 }}>
                         Total Jobs: {totalJobs}
                     </Typography>
                     <Pagination
@@ -471,7 +608,11 @@ const Jobs = () => {
                             },
                         }}
                     >
-                        <pre dangerouslySetInnerHTML={{__html: selectedJobYaml}}/>
+                        <pre
+                            dangerouslySetInnerHTML={{
+                                __html: selectedJobYaml,
+                            }}
+                        />
                     </Box>
                 </DialogContent>
                 <DialogActions>
