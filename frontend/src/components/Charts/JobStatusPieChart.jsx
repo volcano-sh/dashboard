@@ -33,7 +33,7 @@ const JobStatusPieChart = ({ data }) => {
             Completed: 0,
             Running: 0,
             Failed: 0,
-        }
+        },
     );
 
     const total = Object.values(statusCounts).reduce((a, b) => a + b, 0);
@@ -157,11 +157,18 @@ const JobStatusPieChart = ({ data }) => {
                                     mr: 1,
                                 }}
                             />
-                            <Typography variant="body2" sx={{ mr: 2, minWidth: 70 }}>
+                            <Typography
+                                variant="body2"
+                                sx={{ mr: 2, minWidth: 70 }}
+                            >
                                 {status}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                {count} ({total > 0 ? ((count / total) * 100).toFixed(1) : 0}%)
+                                {count} (
+                                {total > 0
+                                    ? ((count / total) * 100).toFixed(1)
+                                    : 0}
+                                %)
                             </Typography>
                         </Box>
                     ))}
