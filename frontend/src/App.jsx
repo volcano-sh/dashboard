@@ -6,7 +6,7 @@ import {
     Navigate,
 } from "react-router-dom";
 import Layout from "./components/Layout";
-import Dashboard from "./components/Dashboard";
+import Dashboard from "./components/dashboard/Dashboard";
 import Jobs from "./components/jobs/Jobs";
 import Queues from "./components/queues/Queues";
 import Pods from "./components/pods/Pods";
