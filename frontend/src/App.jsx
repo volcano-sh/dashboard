@@ -12,6 +12,7 @@ import Queues from "./components/queues/Queues";
 import Pods from "./components/pods/Pods";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme"; 
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
     return (
