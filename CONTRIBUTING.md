@@ -39,39 +39,39 @@ If running locally navigate to `http://localhost:8080`
 1. First of all, `fork` this repo.
 2. Next -> clone your branch.
 
-   ```bash
-   git clone https://github.com/<your-user-name>/dashboard.git
-   ```
+```bash
+git clone https://github.com/<your-user-name>/dashboard.git
+```
 
-   `note`: replace `<your-user-name>` with your github username.
+`note`: replace `<your-user-name>` with your github username.
 
 3. Move to cloned dir and if you want to make changes to our codebase then create new branch
 
-   ```bash
-   cd dashboard/
+```bash
+cd dashboard/
 
-   git checkout -b <your-branch-name>
-   ```
+git checkout -b <your-branch-name>
+```
 
 4. Install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#install--update-script)
 
 5. Use similar version
 
-   ```bash
-   nvm use
-   ```
+```bash
+nvm use
+```
 
 6. Install the dependencies
 
-   ```bash
-   npm ci
-   ```
+```bash
+npm ci
+```
 
 7. Run the `dev` script
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 
 ### Inside kubernetes cluster
 
@@ -96,9 +96,9 @@ kubectl apply -f deployment/volcano-dashboard.yaml
 
 - Run prettier to format the code before commiting changes:
 
-  ```bash
-  npm run format
-  ```
+```bash
+npm run format
+```
 
 ## Submitting Pull Requests
 
@@ -110,32 +110,32 @@ How to [signoff](https://git-scm.com/docs/git-commit#Documentation/git-commit.tx
 
 1. Commit Your Changes
 
-   ```bash
-   git commit -s -m "Your commit message here"
-   ```
+```bash
+git commit -s -m "Your commit message here"
+```
 
 2. Verify Your Commit
 
-   To check if your commit includes a sign-off, run:
+To check if your commit includes a sign-off, run:
 
-   ```bash
-   git log -1
-   ```
+```bash
+git log -1
+```
 
-   You should see a line like:
+You should see a line like:
 
-   ```bash
-   Signed-off-by: Your Name <your.email@example.com>
-   ```
+```bash
+Signed-off-by: Your Name <your.email@example.com>
+```
 
-   If you forgot to sign off, amend the commit with:
+If you forgot to sign off, amend the commit with:
 
-   ```bash
-   git commit --amend -s
-   ```
+```bash
+git commit --amend -s
+```
 
 3. Push Your Changes
 
-   ```bash
-   git push origin <your-branch>
-   ```
+```bash
+git push origin <your-branch>
+```
