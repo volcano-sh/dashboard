@@ -24,7 +24,7 @@ export const fetchJobs = async (
         });
     }
 
-    let filteredJobs = response.body.items || [];
+    let filteredJobs = response.items || [];
 
     if (searchTerm) {
         filteredJobs = filteredJobs.filter((job: any) =>
@@ -83,7 +83,7 @@ export const fetchQueues = async (searchTerm: string, stateFilter: string) => {
         plural: "queues"
     });
 
-    let filteredQueues = response.body.items || [];
+    let filteredQueues = response.items || [];
 
     if (searchTerm) {
         filteredQueues = filteredQueues.filter((queue: any) =>

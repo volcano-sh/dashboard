@@ -35,7 +35,7 @@ export const jobsRouter = router({
                 plural: "jobs",
                 name
             });
-            return response.body;
+            return response;
         }),
     getJobYaml: procedure
         .input(getJobInputSchema)

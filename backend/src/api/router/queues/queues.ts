@@ -15,7 +15,7 @@ export const queueRouter = router({
                 plural: "queues",
                 name,
             });
-            return response.body;
+            return response;
         }),
     getQueueYaml: procedure
         .input(getQueueInputSchema) 
@@ -70,8 +70,8 @@ export const queueRouter = router({
             plural: "queues",
         });
         return {
-            items: response.body.items,
-            totalCount: response.body.items.length,
+            items: response.items,
+            totalCount: response.items.length,
         };
     }),
 });
