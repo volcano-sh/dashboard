@@ -3,7 +3,7 @@ import { Box, Typography } from "@mui/material";
 import axios from "axios";
 import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
 import SearchBar from "../Searchbar";
-import QueueTable from "./QueueTable";
+import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent"; 
