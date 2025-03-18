@@ -8,7 +8,8 @@
     "dev": "nodemon",
     "build": "babel src --extensions \".ts,.js\" -d dist",
     "prepare": "npm run build",
-    "test": "mocha --require @babel/register --recursive"
+    "test": "mocha --require @babel/register --recursive",
+    "generate:types": "tsx ./src/types/generate.ts"
   },
   "browser": {
     "fs": false
@@ -49,6 +50,7 @@
     "expect.js": "^0.3.1",
     "mocha": "^11.1.0",
     "nodemon": "^3.1.9",
+    "openapi-typescript": "^7.6.1",
     "sinon": "^7.2.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
