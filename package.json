@@ -7,9 +7,9 @@
         "backend"
     ],
     "scripts": {
-        "backend": "npm run dev -w backend",
-        "frontend": "npm run dev -w frontend",
-        "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\"",
+        "dev": "concurrently -n server,client \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+        "build": "concurrently -n server,client \"npm run build -w backend\" \"npm run build -w frontend\"",
+        "preview": "concurrently -n server,client \"npm run preview -w backend\" \"npm run preview -w frontend\"",
         "format": "prettier --write .",
         "format:check": "prettier --check ."
     },
