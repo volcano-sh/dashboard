@@ -1,29 +1,30 @@
 import { Request, Response } from "express";
-import { k8sApi } from "../config/kubernetes.js";
+import { k8sApi } from "../config/kubernetes";
 import yaml from "js-yaml";
-import http from 'http';
-import { IQueue } from "../types/queue.js";
+import http from "http";
+import { IQueue } from "../types/index";
 
 interface IResponse {
-    response: http.IncomingMessage; body: { items: IQueue[] }
+    response: http.IncomingMessage;
+    body: { items: IQueue[] };
 }
 // Get all Queues (no pagination)
 export const getAllQueues = async (req: Request, res: Response) => {
     try {
-        const response = await k8sApi.listClusterCustomObject(
+        const response = (await k8sApi.listClusterCustomObject(
             "scheduling.volcano.sh",
             "v1beta1",
-            "queues"
-        ) as IResponse;
+            "queues",
+        )) as IResponse;
         res.json({
             items: response.body.items,
-            totalCount: response.body.items.length
+            totalCount: response.body.items.length,
         });
     } catch (error) {
         console.error("Error fetching all queues:", error);
         res.status(500).json({ error: "Failed to fetch all queues" });
     }
-}
+};
 interface QueueQueryParams {
     page?: string;
     limit?: string;
@@ -31,32 +32,42 @@ interface QueueQueryParams {
     state?: string;
 }
 // Get all Volcano Queues
-export const getQueues = async (req: Request<{}, {}, {}, QueueQueryParams>, res: Response) => {
+export const getQueues = async (
+    req: Request<{}, {}, {}, QueueQueryParams>,
+    res: Response,
+) => {
     try {
-        const page = parseInt(req.query.page || '1');
-        const limit = parseInt(req.query.limit || '10');
+        const page = parseInt(req.query.page || "1");
+        const limit = parseInt(req.query.limit || "10");
         const searchTerm = req.query.search || "";
         const stateFilter = req.query.state || "";
 
-        console.log('Fetching queues with params:', { page, limit, searchTerm, stateFilter });
+        console.log("Fetching queues with params:", {
+            page,
+            limit,
+            searchTerm,
+            stateFilter,
+        });
 
-        const response = await k8sApi.listClusterCustomObject(
+        const response = (await k8sApi.listClusterCustomObject(
             "scheduling.volcano.sh",
             "v1beta1",
-            "queues"
-        ) as IResponse;
+            "queues",
+        )) as IResponse;
 
         let filteredQueues = response.body.items || [];
 
         if (searchTerm) {
             filteredQueues = filteredQueues.filter((queue) =>
-                queue.metadata?.name.toLowerCase().includes(searchTerm.toLowerCase())
+                queue.metadata?.name
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase()),
             );
         }
 
         if (stateFilter && stateFilter !== "All") {
-            filteredQueues = filteredQueues.filter((pod) =>
-                pod.status?.state === stateFilter
+            filteredQueues = filteredQueues.filter(
+                (pod) => pod.status?.state === stateFilter,
             );
         }
 
@@ -70,7 +81,7 @@ export const getQueues = async (req: Request<{}, {}, {}, QueueQueryParams>, res:
             totalCount: totalCount,
             page: page,
             limit: limit,
-            totalPages: Math.ceil(totalCount / limit)
+            totalPages: Math.ceil(totalCount / limit),
         });
     } catch (error) {
         console.error("Error fetching queues:", error);
@@ -79,7 +90,7 @@ export const getQueues = async (req: Request<{}, {}, {}, QueueQueryParams>, res:
             details: (error as Error).message,
         });
     }
-}
+};
 
 // Get details of a specific Queue
 export const getQueueByName = async (req: Request, res: Response) => {
@@ -88,40 +99,39 @@ export const getQueueByName = async (req: Request, res: Response) => {
             "scheduling.volcano.sh",
             "v1beta1",
             "queues",
-            req.params.name
+            req.params.name,
         );
         res.json(response.body);
     } catch (error) {
         console.error("Error fetching queue details:", error);
         res.status(500).json({ error: "Failed to fetch queue details" });
     }
-}
+};
 
 export const getQueueYamlByName = async (req: Request, res: Response) => {
     try {
-
         const response = await k8sApi.getClusterCustomObject(
             "scheduling.volcano.sh",
             "v1beta1",
             "queues",
-            req.params.name
+            req.params.name,
         );
 
         const formattedYaml = yaml.dump(response.body, {
             indent: 2,
             lineWidth: -1,
             noRefs: true,
-            sortKeys: false
+            sortKeys: false,
         });
 
         // Set the content type to text/yaml and send the response
-        res.setHeader('Content-Type', 'text/yaml');
+        res.setHeader("Content-Type", "text/yaml");
         res.send(formattedYaml);
     } catch (error) {
         console.error("Error fetching job YAML:", error);
         res.status(500).json({
             error: "Failed to fetch job YAML",
-            details: (error as Error).message
+            details: (error as Error).message,
         });
     }
-}
+};

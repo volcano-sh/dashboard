@@ -1,3 +1,9 @@
-import { components } from "./job";
+import { components as components_job } from "./job";
+import { components as components_queue } from "./queue";
 
-export type IJob = components["schemas"]["Job"];
+export type IJob = Omit<components_job["schemas"]["Job"], "metadata"> & {
+    metadata?: Record<string, string>;
+};
+export type IQueue = Omit<components_queue["schemas"]["Queue"], "metadata"> & {
+    metadata?: Record<string, string>;
+};
