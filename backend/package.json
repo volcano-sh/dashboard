@@ -5,15 +5,16 @@
     "license": "Unlicense",
     "main": "dist/index.js",
     "scripts": {
-        "dev": "nodemon src/server.js",
-        "build": "babel src -d dist",
+        "dev": "nodemon",
+        "build": "tsc --noEmit && babel src --extensions \".ts,.js\" -d dist",
         "prepare": "npm run build",
-        "test": "mocha --require @babel/register --recursive"
+        "test": "mocha --require @babel/register --recursive",
+        "generate:types": "bash ./src/types/generate.sh"
     },
     "browser": {
         "fs": false
     },
-    "type": "module",
+    "type": "commonjs",
     "dependencies": {
         "@babel/cli": "^7.0.0",
         "@kubernetes/client-node": "^1.0.0",
@@ -42,11 +43,17 @@
         "@babel/plugin-transform-numeric-separator": "^7.25.9",
         "@babel/plugin-transform-optional-chaining": "^7.25.9",
         "@babel/preset-env": "^7.0.0",
+        "@babel/preset-typescript": "^7.26.0",
         "@babel/register": "^7.0.0",
+        "@types/cors": "^2.8.17",
+        "@types/express": "^5.0.0",
         "expect.js": "^0.3.1",
         "mocha": "^11.1.0",
         "nodemon": "^3.1.9",
-        "sinon": "^7.2.0"
+        "openapi-typescript": "^7.6.1",
+        "sinon": "^7.2.0",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.3"
     },
     "files": [
         "dist"
