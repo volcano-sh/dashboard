@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import axios from "axios";
 import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
-import QueueToolbar from "./QueueToolbar";
+import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
+import TitleComponent from "../Titlecomponent";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -216,39 +217,19 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <Typography
-                variant="h4"
-                align="center"
-                className="fw-bold d-block text-center w-100 py-3 mb-4 border-bottom border-top rounded mx-auto"
-                sx={{
-                    color: "#dc3545",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                    maxWidth: "80%",
-                    boxShadow: "0 4px 6px rgba(220, 53, 69, 0.1)",
-                    position: "relative",
-                    "&::after": {
-                        content: '""',
-                        position: "absolute",
-                        width: "30%",
-                        height: "3px",
-                        backgroundColor: "#dc3545",
-                        bottom: "-3px",
-                        left: "35%",
-                    },
-                }}
-            >
-                Volcano Queues Status
-            </Typography>
-
-            <QueueToolbar
-                searchText={searchText}
-                handleSearch={handleSearch}
-                handleClearSearch={handleClearSearch}
-                handleRefresh={handleRefresh}
-                fetchQueues={fetchQueues}
-            />
-
+            <TitleComponent text="Volcano Queues Status" />;
+            <Box>
+                <SearchBar
+                    searchText={searchText}
+                    handleSearch={handleSearch}
+                    handleClearSearch={handleClearSearch}
+                    handleRefresh={handleRefresh}
+                    fetchData={fetchQueues}
+                    isRefreshing={false} // Update if needed
+                    placeholder="Search queues..."
+                    refreshLabel="Refresh Queues"
+                />
+            </Box>
             <QueueTable
                 sortedQueues={sortedQueues}
                 allocatedFields={allocatedFields}
@@ -262,14 +243,12 @@ const Queues = () => {
                 handleFilterClose={handleFilterClose}
                 setAnchorEl={setAnchorEl}
             />
-
             <QueuePagination
                 pagination={pagination}
                 totalQueues={totalQueues}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 handleChangePage={handleChangePage}
             />
-
             <QueueYamlDialog
                 openDialog={openDialog}
                 handleCloseDialog={handleCloseDialog}
