@@ -6,7 +6,7 @@
     "main": "dist/index.js",
     "scripts": {
         "dev": "nodemon",
-        "build": "babel src --extensions \".ts,.js\" -d dist",
+        "build": "tsc --noEmit && babel src --extensions \".ts,.js\" -d dist",
         "prepare": "npm run build",
         "test": "mocha --require @babel/register --recursive",
         "generate:types": "bash ./src/types/generate.sh"

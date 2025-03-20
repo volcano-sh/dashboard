@@ -5,36 +5,35 @@ import yaml from "js-yaml";
 import { IJob } from "../types/index";
 
 interface IResponse {
-    response: http.IncomingMessage;
-    body: { items: IJob[] };
+    items: IJob[];
 }
 
 // Auxiliary function: determine the status based on the job status
 function getJobState(job: IJob) {
-    if (job.status?.state) return job.status.state;
-    if (job.status?.Running) return "Running";
-    if (job.status?.Completed) return "Completed";
-    if (job.status?.Failed) return "Failed";
-    if (job.status?.Pending) return "Pending";
+    if (job.status === "Running") return "Running";
+    if (job.status === "Completed") return "Completed";
+    if (job.status === "Failed") return "Failed";
+    if (job.status === "Pending") return "Running";
     return job.status || "Unknown";
 }
 
-// Get all Jobs (no pagination)
+// @desc Get all Jobs (no pagination)
+// @route GET /all-jobs
 export const getAllJobs = async (req: Request, res: Response) => {
     try {
-        const response = (await k8sApi.listClusterCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
-            "jobs", // 修改这里：从 "jobs" 改为 "vcjobs"
-            "true",
-        )) as IResponse;
+        const response: IResponse = await k8sApi.listClusterCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            plural: "jobs", // 修改这里：从 "jobs" 改为 "vcjobs"
+            pretty: "true",
+        });
 
-        const jobs = response.body.items.map((job) => ({
+        const jobs = response.items.map((job) => ({
             ...job,
             status: {
                 state: job.status?.state || getJobState(job),
                 phase:
-                    job.status?.phase || job.spec?.minAvailable
+                    job.status?.state?.phase || job.spec?.minAvailable
                         ? "Running"
                         : "Unknown",
             },
@@ -56,6 +55,9 @@ interface JobQueryParams {
     queue?: string;
     status?: string;
 }
+
+// @desc Get Jobs with pagination
+// @route GET /jobs
 export const getJobs = async (
     req: Request<{}, {}, {}, JobQueryParams>,
     res: Response,
@@ -75,23 +77,23 @@ export const getJobs = async (
 
         let response: IResponse;
         if (namespace === "" || namespace === "All") {
-            response = (await k8sApi.listClusterCustomObject(
-                "batch.volcano.sh",
-                "v1alpha1",
-                "jobs",
-                "true",
-            )) as IResponse;
+            response = await k8sApi.listClusterCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
+                plural: "jobs",
+                pretty: "true",
+            });
         } else {
-            response = (await k8sApi.listNamespacedCustomObject(
-                "batch.volcano.sh",
-                "v1alpha1",
+            response = await k8sApi.listNamespacedCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
                 namespace,
-                "jobs",
-                "true",
-            )) as IResponse;
+                plural: "jobs",
+                pretty: "true",
+            });
         }
 
-        let filteredJobs = response.body.items || [];
+        let filteredJobs = response.items || [];
 
         if (searchTerm) {
             filteredJobs = filteredJobs.filter((job) =>
@@ -127,18 +129,19 @@ export const getJobs = async (
     }
 };
 
-// Add an interface to obtain a single job
+// @desc Add an interface to obtain a single job
+// @route GET /jobs/:namespace/:name
 export const getJobByName = async (req: Request, res: Response) => {
     try {
         const { namespace, name } = req.params;
-        const response = await k8sApi.getNamespacedCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
+        const response: IResponse = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
             namespace,
-            "jobs",
+            plural: "jobs",
             name,
-        );
-        res.json(response.body);
+        });
+        res.json(response);
     } catch (err) {
         console.error("Error fetching job:", err);
         res.status(500).json({
@@ -152,22 +155,23 @@ interface JobParams {
     namespace: string;
     name: string;
 }
-// Add a route to obtain YAML in server.js
+//@desc Add a route to obtain YAML for a single job
+//@route GET /jobs/:namespace/:name/yaml
 export const getJobYamlByName = async (
     req: Request<JobParams>,
     res: Response,
 ) => {
     try {
         const { namespace, name } = req.params;
-        const response = (await k8sApi.getNamespacedCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
+        const response: IResponse = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
             namespace,
-            "jobs",
+            plural: "jobs",
             name,
-        )) as IResponse;
+        });
 
-        const formattedYaml = yaml.dump(response.body, {
+        const formattedYaml = yaml.dump(response, {
             indent: 2,
             lineWidth: -1,
             noRefs: true,

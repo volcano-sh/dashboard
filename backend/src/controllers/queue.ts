@@ -5,20 +5,20 @@ import http from "http";
 import { IQueue } from "../types/index";
 
 interface IResponse {
-    response: http.IncomingMessage;
-    body: { items: IQueue[] };
+    items: IQueue[];
 }
-// Get all Queues (no pagination)
+// @desc Get all Queues (no pagination)
+// @route GET /all-queues
 export const getAllQueues = async (req: Request, res: Response) => {
     try {
-        const response = (await k8sApi.listClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-        )) as IResponse;
+        const response: IResponse = await k8sApi.listClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+        });
         res.json({
-            items: response.body.items,
-            totalCount: response.body.items.length,
+            items: response.items,
+            totalCount: response.items.length,
         });
     } catch (error) {
         console.error("Error fetching all queues:", error);
@@ -31,7 +31,9 @@ interface QueueQueryParams {
     search?: string;
     state?: string;
 }
-// Get all Volcano Queues
+
+// @desc Get all queues with optional filters
+// @route GET /queues
 export const getQueues = async (
     req: Request<{}, {}, {}, QueueQueryParams>,
     res: Response,
@@ -49,13 +51,13 @@ export const getQueues = async (
             stateFilter,
         });
 
-        const response = (await k8sApi.listClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-        )) as IResponse;
+        const response: IResponse = await k8sApi.listClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+        });
 
-        let filteredQueues = response.body.items || [];
+        let filteredQueues = response.items || [];
 
         if (searchTerm) {
             filteredQueues = filteredQueues.filter((queue) =>
@@ -92,30 +94,35 @@ export const getQueues = async (
     }
 };
 
-// Get details of a specific Queue
+// @desc Get queue details by name
+// @route GET /queues/:name
 export const getQueueByName = async (req: Request, res: Response) => {
+    const { name } = req.params;
     try {
-        const response = await k8sApi.getClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-            req.params.name,
-        );
-        res.json(response.body);
+        const response = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+        res.json(response);
     } catch (error) {
         console.error("Error fetching queue details:", error);
         res.status(500).json({ error: "Failed to fetch queue details" });
     }
 };
 
+// @desc Get queue YAML by name
+// @route GET /queues/:name/yaml
 export const getQueueYamlByName = async (req: Request, res: Response) => {
+    const { name } = req.params;
     try {
-        const response = await k8sApi.getClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-            req.params.name,
-        );
+        const response = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
 
         const formattedYaml = yaml.dump(response.body, {
             indent: 2,

@@ -2,13 +2,14 @@ import { Request, Response } from "express";
 import { k8sCoreApi } from "../config/kubernetes.js";
 import yaml from "js-yaml";
 
-// Get all Pods (no pagination)
+// @desc Get all pods (no pagination)
+// @route GET /all-pods
 export const getAllPods = async (req: Request, res: Response) => {
     try {
         const response = await k8sCoreApi.listPodForAllNamespaces();
         res.json({
-            items: response.body.items,
-            totalCount: response.body.items.length,
+            items: response.items,
+            totalCount: response.items.length,
         });
     } catch (error) {
         console.error("Error fetching all pods:", error);
@@ -21,6 +22,9 @@ interface PodQueryParams {
     search?: string;
     status?: string;
 }
+
+// @desc Get all pods with optional filters
+// @route GET /pods
 export const getPods = async (
     req: Request<{}, {}, {}, PodQueryParams>,
     res: Response,
@@ -40,10 +44,10 @@ export const getPods = async (
         if (namespace === "" || namespace === "All") {
             response = await k8sCoreApi.listPodForAllNamespaces();
         } else {
-            response = await k8sCoreApi.listNamespacedPod(namespace);
+            response = await k8sCoreApi.listNamespacedPod({ namespace });
         }
 
-        let filteredPods = response.body.items || [];
+        let filteredPods = response.items || [];
 
         // Apply search filter
         if (searchTerm) {
@@ -73,14 +77,18 @@ export const getPods = async (
     }
 };
 
-// Get details of a specific Pod
+// @desc Get pod details by name
+// @route GET /pods/:namespace/:name
 export const getPodYamlByName = async (req: Request, res: Response) => {
     try {
         const { namespace, name } = req.params;
-        const response = await k8sCoreApi.readNamespacedPod(name, namespace);
+        const response = await k8sCoreApi.readNamespacedPod({
+            name,
+            namespace,
+        });
 
         // Convert JSON to formatted YAML
-        const formattedYaml = yaml.dump(response.body, {
+        const formattedYaml = yaml.dump(response, {
             indent: 2,
             lineWidth: -1,
             noRefs: true,
