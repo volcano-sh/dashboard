@@ -7,11 +7,12 @@ import {
 } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
-import Jobs from "./components/Jobs";
-import Queues from "./components/Queues";
-import Pods from "./components/Pods";
+import Jobs from "./components/jobs/Jobs";
+import Queues from "./components/queues/Queues";
+import Pods from "./components/pods/Pods";
 import { ThemeProvider } from "@mui/material/styles";
-import { theme } from "./theme"; // import theme
+import { theme } from "./theme";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {
     return (
