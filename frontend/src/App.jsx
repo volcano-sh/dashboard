@@ -54,9 +54,9 @@ function App() {
                                 element={<Navigate to="/dashboard" replace />}
                             />
                             <Route path="dashboard" element={<Dashboard />} />
-                            {/* <Route path="jobs" element={<Jobs />} /> */}
-                            {/* <Route path="queues" element={<Queues />} /> */}
-                            {/* <Route path="pods" element={<Pods />} /> */}
+                            <Route path="jobs" element={<Jobs />} />
+                            <Route path="queues" element={<Queues />} />
+                            <Route path="pods" element={<Pods />} />
                         </Route>
                     </Routes>
                 </Router>

@@ -1,13 +1,23 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+    ArrowDownward,
+    ArrowUpward,
+    Clear,
+    FilterList,
+    Refresh,
+    Search,
+    UnfoldMore,
+} from "@mui/icons-material";
 import {
     Box,
     Button,
     Chip,
+    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
     IconButton,
+    InputAdornment,
     Menu,
     MenuItem,
     Pagination,
@@ -22,27 +32,12 @@ import {
     TextField,
     Typography,
     useTheme,
-    InputAdornment,
 } from "@mui/material";
-import {
-    ArrowDownward,
-    ArrowUpward,
-    Clear,
-    Error,
-    FilterList,
-    Refresh,
-    Search,
-    UnfoldMore,
-} from "@mui/icons-material";
-import axios from "axios";
-import { calculateAge, fetchAllNamespaces } from "./utils";
+import React, { useCallback, useMemo, useState } from "react";
+import { trpc } from "../utils/trpc";
+import { calculateAge } from "./utils";
 
 const Pods = () => {
-    const [pods, setPods] = useState([]);
-    const [cachedPods, setCachedPods] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "default",
@@ -60,47 +55,54 @@ const Pods = () => {
         page: 1,
         rowsPerPage: 10,
     });
-    const [totalPods, setTotalPods] = useState(0);
-    const [sortDirection, setSortDirection] = useState("");
+    const [sortConfig, setSortConfig] = useState({
+        field: null,
+        direction: "asc",
+    });
+    const [error, setError] = useState(null);
 
-    const fetchPods = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response = await axios.get(`/api/pods`, {
-                params: {
-                    search: searchText,
-                    namespace: filters.namespace,
-                    status: filters.status,
-                },
-            });
-
-            if (response.status !== 200) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    const podsQuery = trpc.podRouter.getAllPods.useQuery(
+        {
+            search: searchText,
+            namespace: filters.namespace,
+            status: filters.status,
+            page: pagination.page,
+            pageSize: pagination.rowsPerPage,
+            sortField: sortConfig.field,
+            sortDirection: sortConfig.direction
+        },
+        {
+            keepPreviousData: true,
+            onError: (err) => {
+                console.error("Error fetching pods:", err);
+                setError(`Pods API error: ${err.message}`);
             }
-
-            const data = response.data;
-            setCachedPods(data.items || []);
-            setTotalPods(data.totalCount || 0); // 更新 totalPods
-        } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
-            setCachedPods([]);
-        } finally {
-            setLoading(false);
         }
-    }, [searchText, filters]);
+    );
 
-    useEffect(() => {
-        fetchPods();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPods]);
+    const namespacesQuery = trpc.podRouter.allNamespaces.useQuery(
+        {},
+        {
+            onError: (err) => {
+                console.error("Error fetching namespaces:", err);
+                setError(`Namespaces API error: ${err.message}`);
+            }
+        }
+    );
 
-    useEffect(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        setPods(cachedPods.slice(startIndex, endIndex));
-    }, [cachedPods, pagination]);
+    const podYamlQuery = trpc.podRouter.getPodYaml.useQuery(
+        {
+            namespace: filters.namespace,
+            name: selectedPodName
+        },
+        {
+            enabled: false,
+            onError: (err) => {
+                console.error("Error fetching pod YAML:", err);
+                setError(`Pod YAML API error: ${err.message}`);
+            }
+        }
+    );
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -110,22 +112,18 @@ const Pods = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchPods();
     };
 
     const handleRefresh = useCallback(() => {
-        setPagination((prev) => ({ ...prev, page: 1 }));
-        setSearchText("");
-        fetchPods();
-    }, [fetchPods]);
+        setError(null);
+        podsQuery.refetch();
+        namespacesQuery.refetch();
+    }, [podsQuery, namespacesQuery]);
 
     const handlePodClick = useCallback(async (pod) => {
         try {
-            setLoading(true);
-            const response = await axios.get(
-                `/api/pod/${pod.metadata.namespace}/${pod.metadata.name}/yaml`,
-                { responseType: "text" },
-            );
+            setSelectedPodName(pod.metadata.name);
+            const response = await podYamlQuery.refetch();
 
             const formattedYaml = response.data
                 .split("\n")
@@ -140,16 +138,13 @@ const Pods = () => {
                 })
                 .join("\n");
 
-            setSelectedPodName(pod.metadata.name);
             setSelectedPodYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch pod YAML:", err);
             setError("Failed to fetch pod YAML: " + err.message);
-        } finally {
-            setLoading(false);
         }
-    }, []);
+    }, [podYamlQuery]);
 
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
@@ -195,46 +190,42 @@ const Pods = () => {
             setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
             setPagination((prev) => ({ ...prev, page: 1 }));
         },
-        [fetchPods],
+        [],
     );
 
     const uniqueStatuses = useMemo(() => {
         return [
             "All",
-            ...new Set(pods.map((pod) => pod.status?.phase).filter(Boolean)),
+            ...new Set(podsQuery.data?.items?.map((pod) => pod.status?.phase).filter(Boolean) || []),
         ];
-    }, [pods]);
+    }, [podsQuery.data]);
 
-    const filteredPods = useMemo(() => {
-        return pods.filter((pod) => {
-            const statusMatch =
-                filters.status === "All" ||
-                (pod.status && pod.status.phase === filters.status);
-            const queueMatch =
-                filters.queue === "All" || pod.spec.queue === filters.queue;
-            return statusMatch && queueMatch;
-        });
-    }, [pods, filters]);
-
-    const sortedPods = useMemo(() => {
-        return [...filteredPods].sort((a, b) => {
-            const compareResult =
-                new Date(b.metadata.creationTimestamp) -
-                new Date(a.metadata.creationTimestamp);
-            return sortDirection === "desc" ? compareResult : -compareResult;
-        });
-    }, [filteredPods, sortDirection]);
-
-    const toggleSortDirection = useCallback(() => {
-        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    const handleSort = useCallback((field) => {
+        setSortConfig((prevConfig) => ({
+            field,
+            direction:
+                prevConfig.field === field && prevConfig.direction === "asc"
+                    ? "desc"
+                    : "asc",
+        }));
     }, []);
+
+    const isLoading = podsQuery.isLoading || namespacesQuery.isLoading;
+    const isRefreshing = podsQuery.isRefetching || namespacesQuery.isRefetching;
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
+                <Paper
+                    sx={{
+                        p: 2,
+                        mb: 2,
+                        bgcolor: "error.light",
+                        color: "error.contrastText",
+                    }}
+                >
+                    <Typography>{error}</Typography>
+                </Paper>
             )}
             <Typography variant="h4" gutterBottom align="left">
                 Volcano Pods Status
@@ -253,13 +244,14 @@ const Pods = () => {
                         size="small"
                         value={searchText}
                         onChange={handleSearch}
-                        sx={{ width: 200 }} // Adjust the width as needed
+                        sx={{ width: 200 }}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
                                     <IconButton
                                         size="small"
-                                        onClick={() => fetchPods()}
+                                        onClick={() => podsQuery.refetch()}
+                                        disabled={isRefreshing}
                                         sx={{ padding: "4px" }}
                                     >
                                         <Search />
@@ -284,6 +276,7 @@ const Pods = () => {
                     color="primary"
                     startIcon={<Refresh />}
                     onClick={handleRefresh}
+                    disabled={isRefreshing}
                 >
                     Refresh Pod Status
                 </Button>
@@ -292,206 +285,218 @@ const Pods = () => {
                 component={Paper}
                 sx={{ maxHeight: "calc(100vh - 200px)", overflow: "auto" }}
             >
-                <Table stickyHeader>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Name</Typography>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Namespace</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList />}
-                                    onClick={(e) =>
-                                        handleFilterClick("namespace", e)
-                                    }
+                {isLoading ? (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            minHeight: "200px",
+                        }}
+                    >
+                        <CircularProgress />
+                    </Box>
+                ) : (
+                    <Table stickyHeader>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell
                                     sx={{
-                                        textTransform: "none",
-                                        padding: 0,
-                                        minWidth: "auto",
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
                                     }}
                                 >
-                                    Filter: {filters.namespace}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.namespace}
-                                    open={Boolean(anchorEl.namespace)}
-                                    onClose={() =>
-                                        setAnchorEl((prev) => ({
-                                            ...prev,
-                                            namespace: null,
-                                        }))
-                                    }
-                                >
-                                    {allNamespaces.map((namespace) => (
-                                        <MenuItem
-                                            key={namespace}
-                                            onClick={() =>
-                                                handleFilterClose(
-                                                    "namespace",
-                                                    namespace,
-                                                )
-                                            }
-                                        >
-                                            {namespace}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">
-                                    Creation Time
-                                </Typography>
-                                <Button
-                                    size="small"
-                                    onClick={toggleSortDirection}
-                                    startIcon={
-                                        sortDirection === "desc" ? (
-                                            <ArrowDownward />
-                                        ) : sortDirection === "asc" ? (
-                                            <ArrowUpward />
-                                        ) : (
-                                            <UnfoldMore />
-                                        )
-                                    }
-                                    sx={{
-                                        textTransform: "none",
-                                        padding: 0,
-                                        minWidth: "auto",
-                                    }}
-                                >
-                                    Sort
-                                </Button>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Status</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList />}
-                                    onClick={(e) =>
-                                        handleFilterClick("status", e)
-                                    }
-                                    sx={{
-                                        textTransform: "none",
-                                        padding: 0,
-                                        minWidth: "auto",
-                                    }}
-                                >
-                                    Filter: {filters.status}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.status}
-                                    open={Boolean(anchorEl.status)}
-                                    onClose={() =>
-                                        setAnchorEl((prev) => ({
-                                            ...prev,
-                                            status: null,
-                                        }))
-                                    }
-                                >
-                                    {uniqueStatuses.map((status) => (
-                                        <MenuItem
-                                            key={status}
-                                            onClick={() =>
-                                                handleFilterClose(
-                                                    "status",
-                                                    status,
-                                                )
-                                            }
-                                        >
-                                            {status}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Age</Typography>
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {sortedPods.map((pod) => (
-                            <TableRow
-                                key={`${pod.metadata.namespace}-${pod.metadata.name}`}
-                                sx={{
-                                    "&:nth-of-type(odd)": {
-                                        bgcolor: "action.hover",
-                                    },
-                                    "&:hover": {
-                                        bgcolor: "action.hover",
-                                        color: "primary.main",
-                                        boxShadow:
-                                            "0px 4px 6px rgba(0, 0, 0, 0.1)",
-                                    },
-                                    cursor: "pointer",
-                                }}
-                                onClick={() => handlePodClick(pod)}
-                            >
-                                <TableCell>{pod.metadata.name}</TableCell>
-                                <TableCell>{pod.metadata.namespace}</TableCell>
-                                <TableCell>
-                                    {new Date(
-                                        pod.metadata.creationTimestamp,
-                                    ).toLocaleString()}
+                                    <Typography variant="h6">Name</Typography>
                                 </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={
-                                            pod.status
-                                                ? pod.status.phase
-                                                : "Unknown"
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">Namespace</Typography>
+                                    <Button
+                                        size="small"
+                                        startIcon={<FilterList />}
+                                        onClick={(e) =>
+                                            handleFilterClick("namespace", e)
                                         }
                                         sx={{
-                                            bgcolor: getStatusColor(
-                                                pod.status
-                                                    ? pod.status.phase
-                                                    : "Unknown",
-                                            ),
-                                            color: "common.white",
+                                            textTransform: "none",
+                                            padding: 0,
+                                            minWidth: "auto",
                                         }}
-                                    />
+                                    >
+                                        Filter: {filters.namespace}
+                                    </Button>
+                                    <Menu
+                                        anchorEl={anchorEl.namespace}
+                                        open={Boolean(anchorEl.namespace)}
+                                        onClose={() =>
+                                            setAnchorEl((prev) => ({
+                                                ...prev,
+                                                namespace: null,
+                                            }))
+                                        }
+                                    >
+                                        {namespacesQuery.data?.map((namespace) => (
+                                            <MenuItem
+                                                key={namespace}
+                                                onClick={() =>
+                                                    handleFilterClose(
+                                                        "namespace",
+                                                        namespace,
+                                                    )
+                                                }
+                                            >
+                                                {namespace}
+                                            </MenuItem>
+                                        ))}
+                                    </Menu>
                                 </TableCell>
-                                <TableCell>
-                                    {" "}
-                                    {calculateAge(
-                                        pod.metadata.creationTimestamp,
-                                    )}
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">
+                                        Creation Time
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        onClick={() => handleSort("creationTime")}
+                                        startIcon={
+                                            sortConfig.field === "creationTime" ? (
+                                                sortConfig.direction === "asc" ? (
+                                                    <ArrowUpward />
+                                                ) : (
+                                                    <ArrowDownward />
+                                                )
+                                            ) : (
+                                                <UnfoldMore />
+                                            )
+                                        }
+                                        sx={{
+                                            textTransform: "none",
+                                            padding: 0,
+                                            minWidth: "auto",
+                                        }}
+                                    >
+                                        Sort
+                                    </Button>
+                                </TableCell>
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">Status</Typography>
+                                    <Button
+                                        size="small"
+                                        startIcon={<FilterList />}
+                                        onClick={(e) =>
+                                            handleFilterClick("status", e)
+                                        }
+                                        sx={{
+                                            textTransform: "none",
+                                            padding: 0,
+                                            minWidth: "auto",
+                                        }}
+                                    >
+                                        Filter: {filters.status}
+                                    </Button>
+                                    <Menu
+                                        anchorEl={anchorEl.status}
+                                        open={Boolean(anchorEl.status)}
+                                        onClose={() =>
+                                            setAnchorEl((prev) => ({
+                                                ...prev,
+                                                status: null,
+                                            }))
+                                        }
+                                    >
+                                        {uniqueStatuses.map((status) => (
+                                            <MenuItem
+                                                key={status}
+                                                onClick={() =>
+                                                    handleFilterClose(
+                                                        "status",
+                                                        status,
+                                                    )
+                                                }
+                                            >
+                                                {status}
+                                            </MenuItem>
+                                        ))}
+                                    </Menu>
+                                </TableCell>
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">Age</Typography>
                                 </TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHead>
+                        <TableBody>
+                            {podsQuery.data?.items?.map((pod) => (
+                                <TableRow
+                                    key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                    sx={{
+                                        "&:nth-of-type(odd)": {
+                                            bgcolor: "action.hover",
+                                        },
+                                        "&:hover": {
+                                            bgcolor: "action.hover",
+                                            color: "primary.main",
+                                            boxShadow:
+                                                "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                                        },
+                                        cursor: "pointer",
+                                    }}
+                                    onClick={() => handlePodClick(pod)}
+                                >
+                                    <TableCell>{pod.metadata.name}</TableCell>
+                                    <TableCell>{pod.metadata.namespace}</TableCell>
+                                    <TableCell>
+                                        {new Date(
+                                            pod.metadata.creationTimestamp,
+                                        ).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={
+                                                pod.status
+                                                    ? pod.status.phase
+                                                    : "Unknown"
+                                            }
+                                            sx={{
+                                                bgcolor: getStatusColor(
+                                                    pod.status
+                                                        ? pod.status.phase
+                                                        : "Unknown",
+                                                ),
+                                                color: "common.white",
+                                            }}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        {calculateAge(pod.metadata.creationTimestamp)}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </TableContainer>
             <Box
                 sx={{
@@ -520,10 +525,10 @@ const Pods = () => {
                     }}
                 >
                     <Typography variant="body2" sx={{ mr: 2 }}>
-                        Total Pods: {totalPods}
+                        Total Pods: {podsQuery.data?.totalCount || 0}
                     </Typography>
                     <Pagination
-                        count={Math.ceil(totalPods / pagination.rowsPerPage)}
+                        count={Math.ceil((podsQuery.data?.totalCount || 0) / pagination.rowsPerPage)}
                         page={pagination.page}
                         onChange={handleChangePage}
                         color="primary"

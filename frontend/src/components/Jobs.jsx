@@ -1,13 +1,23 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+    ArrowDownward,
+    ArrowUpward,
+    Clear,
+    FilterList,
+    Refresh,
+    Search,
+    UnfoldMore,
+} from "@mui/icons-material";
 import {
     Box,
     Button,
     Chip,
+    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
     IconButton,
+    InputAdornment,
     Menu,
     MenuItem,
     Pagination,
@@ -22,28 +32,11 @@ import {
     TextField,
     Typography,
     useTheme,
-    InputAdornment,
 } from "@mui/material";
-import {
-    ArrowDownward,
-    ArrowUpward,
-    Clear,
-    Error,
-    FilterList,
-    Refresh,
-    Search,
-    UnfoldMore,
-} from "@mui/icons-material";
-import axios from "axios";
-import { fetchAllNamespaces, fetchAllQueues } from "./utils";
+import React, { useCallback, useMemo, useState } from "react";
+import { trpc } from "../utils/trpc";
 
 const Jobs = () => {
-    const [jobs, setJobs] = useState([]);
-    const [cachedJobs, setCachedJobs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
-    const [allQueues, setAllQueues] = useState([]);
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "default",
@@ -63,49 +56,65 @@ const Jobs = () => {
         page: 1,
         rowsPerPage: 10,
     });
-    const [totalJobs, setTotalJobs] = useState(0);
-    const [sortDirection, setSortDirection] = useState("");
+    const [sortConfig, setSortConfig] = useState({
+        field: null,
+        direction: "asc",
+    });
+    const [error, setError] = useState(null);
 
-    const fetchJobs = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response = await axios.get(`/api/jobs`, {
-                params: {
-                    search: searchText,
-                    namespace: filters.namespace,
-                    queue: filters.queue,
-                    status: filters.status,
-                },
-            });
-
-            if (response.status !== 200) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    const jobsQuery = trpc.jobsRouter.getAllJobs.useQuery(
+        {
+            search: searchText,
+            namespace: filters.namespace,
+            queue: filters.queue,
+            status: filters.status,
+            page: pagination.page,
+            pageSize: pagination.rowsPerPage,
+            sortField: sortConfig.field,
+            sortDirection: sortConfig.direction
+        },
+        {
+            keepPreviousData: true,
+            onError: (err) => {
+                console.error("Error fetching jobs:", err);
+                setError(`Jobs API error: ${err.message}`);
             }
-
-            const data = response.data;
-            setCachedJobs(data.items || []);
-            setTotalJobs(data.totalCount || 0); // update totalJobs
-        } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
-            setCachedJobs([]);
-        } finally {
-            setLoading(false);
         }
-    }, [searchText, filters]);
+    );
 
-    useEffect(() => {
-        fetchJobs();
-        fetchAllNamespaces().then(setAllNamespaces);
-        fetchAllQueues().then(setAllQueues);
-    }, [fetchJobs]);
+    const namespacesQuery = trpc.podRouter.allNamespaces.useQuery(
+        {},
+        {
+            onError: (err) => {
+                console.error("Error fetching namespaces:", err);
+                setError(`Namespaces API error: ${err.message}`);
+            }
+        }
+    );
 
-    useEffect(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        setJobs(cachedJobs.slice(startIndex, endIndex));
-    }, [cachedJobs, pagination]);
+    const queuesQuery = trpc.queueRouter.getAllQueues.useQuery(
+        { limit: 1000 },
+        {
+            onError: (err) => {
+                console.error("Error fetching queues:", err);
+                setError(`Queues API error: ${err.message}`);
+            }
+        }
+    );
+
+    const jobYamlQuery = trpc.jobsRouter.getJobYaml.useQuery(
+        {
+            namespace: filters.namespace,
+            name: selectedJobName
+        },
+        {
+            enabled: false,
+            onError: (err) => {
+                console.error("Error fetching job YAML:", err);
+                setError(`Job YAML API error: ${err.message}`);
+            }
+        }
+    );
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -115,22 +124,19 @@ const Jobs = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchJobs();
     };
 
     const handleRefresh = useCallback(() => {
-        setPagination((prev) => ({ ...prev, page: 1 }));
-        setSearchText("");
-        fetchJobs();
-    }, [fetchJobs]);
+        setError(null);
+        jobsQuery.refetch();
+        namespacesQuery.refetch();
+        queuesQuery.refetch();
+    }, [jobsQuery, namespacesQuery, queuesQuery]);
 
     const handleJobClick = useCallback(async (job) => {
         try {
-            setLoading(true);
-            const response = await axios.get(
-                `/api/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
-                { responseType: "text" },
-            );
+            setSelectedJobName(job.metadata.name);
+            const response = await jobYamlQuery.refetch();
 
             const formattedYaml = response.data
                 .split("\n")
@@ -145,16 +151,13 @@ const Jobs = () => {
                 })
                 .join("\n");
 
-            setSelectedJobName(job.metadata.name);
             setSelectedJobYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
             setError("Failed to fetch job YAML: " + err.message);
-        } finally {
-            setLoading(false);
         }
-    }, []);
+    }, [jobYamlQuery]);
 
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
@@ -200,48 +203,42 @@ const Jobs = () => {
             setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
             setPagination((prev) => ({ ...prev, page: 1 }));
         },
-        [fetchJobs],
+        [],
     );
 
     const uniqueStatuses = useMemo(() => {
         return [
             "All",
-            ...new Set(
-                jobs.map((job) => job.status?.state.phase).filter(Boolean),
-            ),
+            ...new Set(jobsQuery.data?.items?.map((job) => job.status?.state.phase).filter(Boolean) || []),
         ];
-    }, [jobs]);
+    }, [jobsQuery.data]);
 
-    const filteredJobs = useMemo(() => {
-        return jobs.filter((job) => {
-            const statusMatch =
-                filters.status === "All" ||
-                (job.status && job.status.state.phase === filters.status);
-            const queueMatch =
-                filters.queue === "All" || job.spec.queue === filters.queue;
-            return statusMatch && queueMatch;
-        });
-    }, [jobs, filters]);
-
-    const sortedJobs = useMemo(() => {
-        return [...filteredJobs].sort((a, b) => {
-            const compareResult =
-                new Date(b.metadata.creationTimestamp) -
-                new Date(a.metadata.creationTimestamp);
-            return sortDirection === "desc" ? compareResult : -compareResult;
-        });
-    }, [filteredJobs, sortDirection]);
-
-    const toggleSortDirection = useCallback(() => {
-        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    const handleSort = useCallback((field) => {
+        setSortConfig((prevConfig) => ({
+            field,
+            direction:
+                prevConfig.field === field && prevConfig.direction === "asc"
+                    ? "desc"
+                    : "asc",
+        }));
     }, []);
+
+    const isLoading = jobsQuery.isLoading || namespacesQuery.isLoading || queuesQuery.isLoading;
+    const isRefreshing = jobsQuery.isRefetching || namespacesQuery.isRefetching || queuesQuery.isRefetching;
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
+                <Paper
+                    sx={{
+                        p: 2,
+                        mb: 2,
+                        bgcolor: "error.light",
+                        color: "error.contrastText",
+                    }}
+                >
+                    <Typography>{error}</Typography>
+                </Paper>
             )}
             <Typography variant="h4" gutterBottom align="left">
                 Volcano Jobs Status
@@ -260,13 +257,14 @@ const Jobs = () => {
                         size="small"
                         value={searchText}
                         onChange={handleSearch}
-                        sx={{ width: 200 }} // Adjust the width as needed
+                        sx={{ width: 200 }}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
                                     <IconButton
                                         size="small"
-                                        onClick={() => fetchJobs()}
+                                        onClick={() => jobsQuery.refetch()}
+                                        disabled={isRefreshing}
                                         sx={{ padding: "4px" }}
                                     >
                                         <Search />
@@ -291,6 +289,7 @@ const Jobs = () => {
                     color="primary"
                     startIcon={<Refresh />}
                     onClick={handleRefresh}
+                    disabled={isRefreshing}
                 >
                     Refresh Job Status
                 </Button>
@@ -299,240 +298,255 @@ const Jobs = () => {
                 component={Paper}
                 sx={{ maxHeight: "calc(100vh - 200px)", overflow: "auto" }}
             >
-                <Table stickyHeader>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Name</Typography>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Namespace</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList />}
-                                    onClick={(e) =>
-                                        handleFilterClick("namespace", e)
-                                    }
+                {isLoading ? (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            minHeight: "200px",
+                        }}
+                    >
+                        <CircularProgress />
+                    </Box>
+                ) : (
+                    <Table stickyHeader>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell
                                     sx={{
-                                        textTransform: "none",
-                                        padding: 0,
-                                        minWidth: "auto",
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
                                     }}
                                 >
-                                    Filter: {filters.namespace}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.namespace}
-                                    open={Boolean(anchorEl.namespace)}
-                                    onClose={() =>
-                                        setAnchorEl((prev) => ({
-                                            ...prev,
-                                            namespace: null,
-                                        }))
-                                    }
-                                >
-                                    {allNamespaces.map((namespace) => (
-                                        <MenuItem
-                                            key={namespace}
-                                            onClick={() =>
-                                                handleFilterClose(
-                                                    "namespace",
-                                                    namespace,
-                                                )
-                                            }
-                                        >
-                                            {namespace}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Queue</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList />}
-                                    onClick={(e) =>
-                                        handleFilterClick("queue", e)
-                                    }
-                                    sx={{
-                                        textTransform: "none",
-                                        padding: 0,
-                                        minWidth: "auto",
-                                    }}
-                                >
-                                    Filter: {filters.queue}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.queue}
-                                    open={Boolean(anchorEl.queue)}
-                                    onClose={() =>
-                                        setAnchorEl((prev) => ({
-                                            ...prev,
-                                            queue: null,
-                                        }))
-                                    }
-                                >
-                                    {allQueues.map((queue) => (
-                                        <MenuItem
-                                            key={queue}
-                                            onClick={() =>
-                                                handleFilterClose(
-                                                    "queue",
-                                                    queue,
-                                                )
-                                            }
-                                            selected={queue === filters.queue}
-                                        >
-                                            {queue}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">
-                                    Creation Time
-                                </Typography>
-                                <Button
-                                    size="small"
-                                    onClick={toggleSortDirection}
-                                    startIcon={
-                                        sortDirection === "desc" ? (
-                                            <ArrowDownward />
-                                        ) : sortDirection === "asc" ? (
-                                            <ArrowUpward />
-                                        ) : (
-                                            <UnfoldMore />
-                                        )
-                                    }
-                                    sx={{
-                                        textTransform: "none",
-                                        padding: 0,
-                                        minWidth: "auto",
-                                    }}
-                                >
-                                    Sort
-                                </Button>
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    backgroundColor: "background.paper",
-                                    padding: "8px 16px",
-                                    minWidth: 120,
-                                }}
-                            >
-                                <Typography variant="h6">Status</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<FilterList />}
-                                    onClick={(e) =>
-                                        handleFilterClick("status", e)
-                                    }
-                                    sx={{
-                                        textTransform: "none",
-                                        padding: 0,
-                                        minWidth: "auto",
-                                    }}
-                                >
-                                    Filter: {filters.status}
-                                </Button>
-                                <Menu
-                                    anchorEl={anchorEl.status}
-                                    open={Boolean(anchorEl.status)}
-                                    onClose={() =>
-                                        setAnchorEl((prev) => ({
-                                            ...prev,
-                                            status: null,
-                                        }))
-                                    }
-                                >
-                                    {uniqueStatuses.map((status) => (
-                                        <MenuItem
-                                            key={status}
-                                            onClick={() =>
-                                                handleFilterClose(
-                                                    "status",
-                                                    status,
-                                                )
-                                            }
-                                        >
-                                            {status}
-                                        </MenuItem>
-                                    ))}
-                                </Menu>
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {sortedJobs.map((job) => (
-                            <TableRow
-                                key={`${job.metadata.namespace}-${job.metadata.name}`}
-                                sx={{
-                                    "&:nth-of-type(odd)": {
-                                        bgcolor: "action.hover",
-                                    },
-                                    "&:hover": {
-                                        bgcolor: "action.hover",
-                                        color: "primary.main",
-                                        boxShadow:
-                                            "0px 4px 6px rgba(0, 0, 0, 0.1)",
-                                    },
-                                    cursor: "pointer",
-                                }}
-                                onClick={() => handleJobClick(job)}
-                            >
-                                <TableCell>{job.metadata.name}</TableCell>
-                                <TableCell>{job.metadata.namespace}</TableCell>
-                                <TableCell>{job.spec.queue || "N/A"}</TableCell>
-                                <TableCell>
-                                    {new Date(
-                                        job.metadata.creationTimestamp,
-                                    ).toLocaleString()}
+                                    <Typography variant="h6">Name</Typography>
                                 </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={
-                                            job.status
-                                                ? job.status.state.phase
-                                                : "Unknown"
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">Namespace</Typography>
+                                    <Button
+                                        size="small"
+                                        startIcon={<FilterList />}
+                                        onClick={(e) =>
+                                            handleFilterClick("namespace", e)
                                         }
                                         sx={{
-                                            bgcolor: getStatusColor(
-                                                job.status
-                                                    ? job.status.state.phase
-                                                    : "Unknown",
-                                            ),
-                                            color: "common.white",
+                                            textTransform: "none",
+                                            padding: 0,
+                                            minWidth: "auto",
                                         }}
-                                    />
+                                    >
+                                        Filter: {filters.namespace}
+                                    </Button>
+                                    <Menu
+                                        anchorEl={anchorEl.namespace}
+                                        open={Boolean(anchorEl.namespace)}
+                                        onClose={() =>
+                                            setAnchorEl((prev) => ({
+                                                ...prev,
+                                                namespace: null,
+                                            }))
+                                        }
+                                    >
+                                        {namespacesQuery.data?.map((namespace) => (
+                                            <MenuItem
+                                                key={namespace}
+                                                onClick={() =>
+                                                    handleFilterClose(
+                                                        "namespace",
+                                                        namespace,
+                                                    )
+                                                }
+                                            >
+                                                {namespace}
+                                            </MenuItem>
+                                        ))}
+                                    </Menu>
+                                </TableCell>
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">Queue</Typography>
+                                    <Button
+                                        size="small"
+                                        startIcon={<FilterList />}
+                                        onClick={(e) =>
+                                            handleFilterClick("queue", e)
+                                        }
+                                        sx={{
+                                            textTransform: "none",
+                                            padding: 0,
+                                            minWidth: "auto",
+                                        }}
+                                    >
+                                        Filter: {filters.queue}
+                                    </Button>
+                                    <Menu
+                                        anchorEl={anchorEl.queue}
+                                        open={Boolean(anchorEl.queue)}
+                                        onClose={() =>
+                                            setAnchorEl((prev) => ({
+                                                ...prev,
+                                                queue: null,
+                                            }))
+                                        }
+                                    >
+                                        {queuesQuery.data?.items?.map((queue) => (
+                                            <MenuItem
+                                                key={queue.metadata.name}
+                                                onClick={() =>
+                                                    handleFilterClose(
+                                                        "queue",
+                                                        queue.metadata.name,
+                                                    )
+                                                }
+                                                selected={queue.metadata.name === filters.queue}
+                                            >
+                                                {queue.metadata.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Menu>
+                                </TableCell>
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">
+                                        Creation Time
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        onClick={() => handleSort("creationTime")}
+                                        startIcon={
+                                            sortConfig.field === "creationTime" ? (
+                                                sortConfig.direction === "asc" ? (
+                                                    <ArrowUpward />
+                                                ) : (
+                                                    <ArrowDownward />
+                                                )
+                                            ) : (
+                                                <UnfoldMore />
+                                            )
+                                        }
+                                        sx={{
+                                            textTransform: "none",
+                                            padding: 0,
+                                            minWidth: "auto",
+                                        }}
+                                    >
+                                        Sort
+                                    </Button>
+                                </TableCell>
+                                <TableCell
+                                    sx={{
+                                        backgroundColor: "background.paper",
+                                        padding: "8px 16px",
+                                        minWidth: 120,
+                                    }}
+                                >
+                                    <Typography variant="h6">Status</Typography>
+                                    <Button
+                                        size="small"
+                                        startIcon={<FilterList />}
+                                        onClick={(e) =>
+                                            handleFilterClick("status", e)
+                                        }
+                                        sx={{
+                                            textTransform: "none",
+                                            padding: 0,
+                                            minWidth: "auto",
+                                        }}
+                                    >
+                                        Filter: {filters.status}
+                                    </Button>
+                                    <Menu
+                                        anchorEl={anchorEl.status}
+                                        open={Boolean(anchorEl.status)}
+                                        onClose={() =>
+                                            setAnchorEl((prev) => ({
+                                                ...prev,
+                                                status: null,
+                                            }))
+                                        }
+                                    >
+                                        {uniqueStatuses.map((status) => (
+                                            <MenuItem
+                                                key={status}
+                                                onClick={() =>
+                                                    handleFilterClose(
+                                                        "status",
+                                                        status,
+                                                    )
+                                                }
+                                            >
+                                                {status}
+                                            </MenuItem>
+                                        ))}
+                                    </Menu>
                                 </TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHead>
+                        <TableBody>
+                            {jobsQuery.data?.items?.map((job) => (
+                                <TableRow
+                                    key={`${job.metadata.namespace}-${job.metadata.name}`}
+                                    sx={{
+                                        "&:nth-of-type(odd)": {
+                                            bgcolor: "action.hover",
+                                        },
+                                        "&:hover": {
+                                            bgcolor: "action.hover",
+                                            color: "primary.main",
+                                            boxShadow:
+                                                "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                                        },
+                                        cursor: "pointer",
+                                    }}
+                                    onClick={() => handleJobClick(job)}
+                                >
+                                    <TableCell>{job.metadata.name}</TableCell>
+                                    <TableCell>{job.metadata.namespace}</TableCell>
+                                    <TableCell>{job.spec.queue || "N/A"}</TableCell>
+                                    <TableCell>
+                                        {new Date(
+                                            job.metadata.creationTimestamp,
+                                        ).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={
+                                                job.status
+                                                    ? job.status.state.phase
+                                                    : "Unknown"
+                                            }
+                                            sx={{
+                                                bgcolor: getStatusColor(
+                                                    job.status
+                                                        ? job.status.state.phase
+                                                        : "Unknown",
+                                                ),
+                                                color: "common.white",
+                                            }}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </TableContainer>
             <Box
                 sx={{
@@ -561,10 +575,10 @@ const Jobs = () => {
                     }}
                 >
                     <Typography variant="body2" sx={{ mr: 2 }}>
-                        Total Jobs: {totalJobs}
+                        Total Jobs: {jobsQuery.data?.totalCount || 0}
                     </Typography>
                     <Pagination
-                        count={Math.ceil(totalJobs / pagination.rowsPerPage)}
+                        count={Math.ceil((jobsQuery.data?.totalCount || 0) / pagination.rowsPerPage)}
                         page={pagination.page}
                         onChange={handleChangePage}
                         color="primary"
