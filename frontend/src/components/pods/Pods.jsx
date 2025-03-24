@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
-import { Refresh } from "@mui/icons-material";
 import axios from "axios";
+import SearchBar from "../Searchbar";
+import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
-
-// Import the new components
-import SearchBar from "./SearchBar";
 import PodsTable from "./PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
@@ -148,33 +146,19 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <Typography variant="h4" gutterBottom align="left">
-                Volcano Pods Status
-            </Typography>
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2,
-                }}
-            >
+            <TitleComponent text="Volcano Pods Status" />;
+            <Box>
                 <SearchBar
                     searchText={searchText}
-                    onSearch={handleSearch}
-                    onClear={handleClearSearch}
-                    onSearchSubmit={fetchPods}
+                    handleSearch={handleSearch}
+                    handleClearSearch={handleClearSearch}
+                    handleRefresh={handleRefresh}
+                    fetchData={fetchPods}
+                    isRefreshing={false} // Update if needed
+                    placeholder="Search Pods..."
+                    refreshLabel="Refresh Pods"
                 />
-
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<Refresh />}
-                    onClick={handleRefresh}
-                >
-                    Refresh Pod Status
-                </Button>
             </Box>
-
             <PodsTable
                 pods={pods}
                 filters={filters}
@@ -184,13 +168,11 @@ const Pods = () => {
                 onFilterChange={handleFilterChange}
                 onPodClick={handlePodClick}
             />
-
             <PodsPagination
                 totalPods={totalPods}
                 pagination={pagination}
                 onPaginationChange={handlePaginationChange}
             />
-
             <PodDetailsDialog
                 open={openDialog}
                 podName={selectedPodName}
