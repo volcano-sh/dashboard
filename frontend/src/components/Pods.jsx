@@ -80,7 +80,7 @@ const Pods = () => {
         }
     );
 
-    const namespacesQuery = trpc.podRouter.allNamespaces.useQuery(
+    const namespacesQuery = trpc.namespaceRouter.getNamespaces.useQuery(
         {},
         {
             onError: (err) => {
@@ -341,7 +341,7 @@ const Pods = () => {
                                             }))
                                         }
                                     >
-                                        {namespacesQuery.data?.map((namespace) => (
+                                        {namespacesQuery.data?.items?.map((namespace) => (
                                             <MenuItem
                                                 key={namespace}
                                                 onClick={() =>

@@ -1,8 +1,8 @@
 import yaml from "js-yaml";
 import { k8sApi } from "../../../utils/k8s";
 import { procedure, router } from "../../trpc";
-import { getJobInputSchema, getJobsInputSchema } from "./schema";
 import { fetchJobs, getJobState } from "../helpers";
+import { getJobInputSchema, getJobsInputSchema } from "./schema";
 
 
 export const jobsRouter = router({
@@ -49,7 +49,7 @@ export const jobsRouter = router({
                 name
             });
 
-            const formattedYaml = yaml.dump(response.body, {
+            const formattedYaml = yaml.dump(response, {
                 indent: 2,
                 lineWidth: -1,
                 noRefs: true,
@@ -65,7 +65,6 @@ export const jobsRouter = router({
             plural: "jobs",
             pretty: "true"
         });
-        
 
         const jobs = response.items.map((job: any) => ({
             ...job,

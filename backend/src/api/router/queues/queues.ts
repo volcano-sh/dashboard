@@ -25,10 +25,10 @@ export const queueRouter = router({
                 group: "scheduling.volcano.sh",
                 version: "v1beta1",
                 plural: "queues",
-                name,
+                name
             });
 
-            const formattedYaml = yaml.dump(response.body, {
+            const formattedYaml = yaml.dump(response, {
                 indent: 2,
                 lineWidth: -1,
                 noRefs: true,
