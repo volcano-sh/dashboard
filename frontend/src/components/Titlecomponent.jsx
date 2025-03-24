@@ -1,4 +1,4 @@
-import { Typography, Stack } from "@mui/material";
+import { Typography } from "@mui/material";
 
 const TitleComponent = ({ text }) => {
     return (
