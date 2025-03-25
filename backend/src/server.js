@@ -32,23 +32,23 @@ app.get("/api/jobs", async (req, res) => {
 
         let response;
         if (namespace === "" || namespace === "All") {
-            response = await k8sApi.listClusterCustomObject(
-                "batch.volcano.sh",
-                "v1alpha1",
-                "jobs",
-                true,
-            );
+            response = await k8sApi.listClusterCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
+                plural: "jobs",
+                pretty: true,
+            });
         } else {
-            response = await k8sApi.listNamespacedCustomObject(
-                "batch.volcano.sh",
-                "v1alpha1",
+            response = await k8sApi.listNamespacedCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
                 namespace,
-                "jobs",
-                true,
-            );
+                plural: "jobs",
+                pretty: true,
+            });
         }
 
-        let filteredJobs = response.body.items || [];
+        let filteredJobs = response.items || [];
 
         if (searchTerm) {
             filteredJobs = filteredJobs.filter((job) =>
@@ -88,14 +88,14 @@ app.get("/api/jobs", async (req, res) => {
 app.get("/api/jobs/:namespace/:name", async (req, res) => {
     try {
         const { namespace, name } = req.params;
-        const response = await k8sApi.getNamespacedCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
             namespace,
-            "jobs",
+            plural: "jobs",
             name,
-        );
-        res.json(response.body);
+        });
+        res.json(response);
     } catch (err) {
         console.error("Error fetching job:", err);
         res.status(500).json({
@@ -109,15 +109,15 @@ app.get("/api/jobs/:namespace/:name", async (req, res) => {
 app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
     try {
         const { namespace, name } = req.params;
-        const response = await k8sApi.getNamespacedCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
             namespace,
-            "jobs",
+            plural: "jobs",
             name,
-        );
+        });
 
-        const formattedYaml = yaml.dump(response.body, {
+        const formattedYaml = yaml.dump(response, {
             indent: 2,
             lineWidth: -1,
             noRefs: true,
@@ -137,14 +137,15 @@ app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
 
 // Get details of a specific Queue
 app.get("/api/queues/:name", async (req, res) => {
+    const name = req.params.name;
     try {
-        const response = await k8sApi.getClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-            req.params.name,
-        );
-        res.json(response.body);
+        const response = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+        res.json(response);
     } catch (error) {
         console.error("Error fetching queue details:", error);
         res.status(500).json({ error: "Failed to fetch queue details" });
@@ -152,15 +153,16 @@ app.get("/api/queues/:name", async (req, res) => {
 });
 
 app.get("/api/queue/:name/yaml", async (req, res) => {
+    const name = req.params.name;
     try {
-        const response = await k8sApi.getClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-            req.params.name,
-        );
+        const response = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
 
-        const formattedYaml = yaml.dump(response.body, {
+        const formattedYaml = yaml.dump(response, {
             indent: 2,
             lineWidth: -1,
             noRefs: true,
@@ -194,13 +196,13 @@ app.get("/api/queues", async (req, res) => {
             stateFilter,
         });
 
-        const response = await k8sApi.listClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-        );
+        const response = await k8sApi.listClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+        });
 
-        let filteredQueues = response.body.items || [];
+        let filteredQueues = response.items || [];
 
         if (searchTerm) {
             filteredQueues = filteredQueues.filter((queue) =>
@@ -243,7 +245,7 @@ app.get("/api/namespaces", async (req, res) => {
         const response = await k8sCoreApi.listNamespace();
 
         res.json({
-            items: response.body.items,
+            items: response.items,
         });
     } catch (error) {
         console.error("Error fetching namespaces:", error);
@@ -270,10 +272,10 @@ app.get("/api/pods", async (req, res) => {
         if (namespace === "" || namespace === "All") {
             response = await k8sCoreApi.listPodForAllNamespaces();
         } else {
-            response = await k8sCoreApi.listNamespacedPod(namespace);
+            response = await k8sCoreApi.listNamespacedPod({ namespace });
         }
 
-        let filteredPods = response.body.items || [];
+        let filteredPods = response.items || [];
 
         // Apply search filter
         if (searchTerm) {
@@ -307,10 +309,13 @@ app.get("/api/pods", async (req, res) => {
 app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
     try {
         const { namespace, name } = req.params;
-        const response = await k8sCoreApi.readNamespacedPod(name, namespace);
+        const response = await k8sCoreApi.readNamespacedPod({
+            name,
+            namespace,
+        });
 
         // Convert JSON to formatted YAML
-        const formattedYaml = yaml.dump(response.body, {
+        const formattedYaml = yaml.dump(response, {
             indent: 2,
             lineWidth: -1,
             noRefs: true,
@@ -332,16 +337,14 @@ app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
 // Get all Jobs (no pagination)
 app.get("/api/all-jobs", async (req, res) => {
     try {
-        const response = await k8sApi.listClusterCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
-            "jobs", // 修改这里：从 "jobs" 改为 "vcjobs"
-            {
-                pretty: true,
-            },
-        );
+        const response = await k8sApi.listClusterCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            plural: "jobs", // 修改这里：从 "jobs" 改为 "vcjobs"
+            pretty: true,
+        });
 
-        const jobs = response.body.items.map((job) => ({
+        const jobs = response.items.map((job) => ({
             ...job,
             status: {
                 state: job.status?.state || getJobState(job),
@@ -375,14 +378,14 @@ function getJobState(job) {
 // Get all Queues (no pagination)
 app.get("/api/all-queues", async (req, res) => {
     try {
-        const response = await k8sApi.listClusterCustomObject(
-            "scheduling.volcano.sh",
-            "v1beta1",
-            "queues",
-        );
+        const response = await k8sApi.listClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+        });
         res.json({
-            items: response.body.items,
-            totalCount: response.body.items.length,
+            items: response.items,
+            totalCount: response.items.length,
         });
     } catch (error) {
         console.error("Error fetching all queues:", error);
@@ -395,8 +398,8 @@ app.get("/api/all-pods", async (req, res) => {
     try {
         const response = await k8sCoreApi.listPodForAllNamespaces();
         res.json({
-            items: response.body.items,
-            totalCount: response.body.items.length,
+            items: response.items,
+            totalCount: response.items.length,
         });
     } catch (error) {
         console.error("Error fetching all pods:", error);
@@ -407,11 +410,11 @@ app.get("/api/all-pods", async (req, res) => {
 const verifyVolcanoSetup = async () => {
     try {
         // Verify CRD access
-        await k8sApi.listClusterCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
-            "jobs",
-        );
+        await k8sApi.listClusterCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            plural: "jobs",
+        });
         return true;
     } catch (error) {
         console.error("Volcano verification failed:", error);
