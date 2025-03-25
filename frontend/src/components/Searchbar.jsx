@@ -15,7 +15,7 @@ const SearchBar = ({
     searchText,
     handleSearch,
     handleClearSearch,
-    handleRefresh,
+    handleRefresh, // This prop is being passed but not used correctly
     fetchData,
     isRefreshing,
     placeholder,
@@ -35,7 +35,7 @@ const SearchBar = ({
                                 <Button
                                     variant="outline-white"
                                     className="border-0 bg-transparent text-primary d-flex align-items-center px-2"
-                                    onClick={() => fetchData()}
+                                    onClick={handleRefresh} // Changed from fetchData to handleRefresh
                                     disabled={isRefreshing}
                                     style={{ height: "100%" }}
                                 >
@@ -44,12 +44,6 @@ const SearchBar = ({
                                         className="me-1"
                                         style={{ color: "#E34C26" }}
                                     />
-                                    {isRefreshing && (
-                                        <span
-                                            className="spinner-border spinner-border-sm text-primary"
-                                            role="status"
-                                        ></span>
-                                    )}
                                 </Button>
                                 <Form.Control
                                     placeholder={placeholder}
@@ -84,7 +78,7 @@ const SearchBar = ({
                                 variant="outline-danger"
                                 size="sm"
                                 className="rounded-pill px-4 py-2 d-flex align-items-center justify-content-center shadow-sm fw-medium border-2"
-                                onClick={handleRefresh}
+                                onClick={handleRefresh} // This is correct
                                 disabled={isRefreshing}
                                 style={{
                                     backgroundColor: "#E34C26",

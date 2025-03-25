@@ -8,6 +8,7 @@ import {
     Button,
     useTheme,
     alpha,
+    Typography,
 } from "@mui/material";
 
 const QueueTableDeleteDialog = ({
@@ -15,96 +16,29 @@ const QueueTableDeleteDialog = ({
     onClose,
     onConfirm,
     queueToDelete,
+    error,
 }) => {
     const theme = useTheme();
 
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            PaperProps={{
-                sx: {
-                    borderRadius: "16px",
-                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    backgroundImage: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.95)}, ${theme.palette.background.paper})`,
-                    backdropFilter: "blur(10px)",
-                },
-            }}
-        >
-            <DialogTitle
-                sx={{
-                    fontWeight: 700,
-                    color: theme.palette.error.main,
-                    fontSize: "1.2rem",
-                    textAlign: "center",
-                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    padding: "24px 32px",
-                }}
-            >
-                Confirm Deletion
-            </DialogTitle>
-            <DialogContent sx={{ padding: "24px 32px" }}>
-                <DialogContentText
-                    sx={{
-                        textAlign: "center",
-                        marginBottom: "24px",
-                        color: theme.palette.text.primary,
-                        fontSize: "1rem",
-                    }}
-                >
+        <Dialog open={open} onClose={onClose}>
+            <DialogTitle>Delete Queue</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
                     Are you sure you want to delete queue "{queueToDelete}"?
                     This action cannot be undone.
                 </DialogContentText>
+                {error && (
+                    <Typography color="error" sx={{ mt: 2 }}>
+                        {error}
+                    </Typography>
+                )}
             </DialogContent>
-            <DialogActions
-                sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    padding: "0 32px 24px",
-                    borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                }}
-            >
-                <Button
-                    onClick={onClose}
-                    variant="outlined"
-                    color="error"
-                    sx={{
-                        textTransform: "none",
-                        fontSize: "0.9rem",
-                        fontWeight: 500,
-                        padding: "8px 24px",
-                        borderRadius: "8px",
-                        border: `1px solid ${theme.palette.error.main}`,
-                        color: theme.palette.error.main,
-                        "&:hover": {
-                            backgroundColor: alpha(
-                                theme.palette.error.main,
-                                0.08,
-                            ),
-                            borderColor: theme.palette.error.dark,
-                        },
-                    }}
-                >
+            <DialogActions>
+                <Button onClick={onClose} color="primary">
                     Cancel
                 </Button>
-                <Button
-                    onClick={onConfirm}
-                    variant="contained"
-                    color="error"
-                    sx={{
-                        textTransform: "none",
-                        fontSize: "0.9rem",
-                        fontWeight: 600,
-                        padding: "8px 24px",
-                        marginLeft: "16px",
-                        borderRadius: "8px",
-                        backgroundColor: theme.palette.error.main,
-                        "&:hover": {
-                            backgroundColor: theme.palette.error.dark,
-                        },
-                    }}
-                >
+                <Button onClick={onConfirm} color="error" variant="contained">
                     Delete
                 </Button>
             </DialogActions>
