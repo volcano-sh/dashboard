@@ -4,7 +4,7 @@ import axios from "axios";
 import SearchBar from "../Searchbar";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
-import PodsTable from "./PodsTable";
+import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
 
@@ -69,8 +69,8 @@ const Pods = () => {
         setPods(cachedPods.slice(startIndex, endIndex));
     }, [cachedPods, pagination]);
 
-    const handleSearch = (value) => {
-        setSearchText(value);
+    const handleSearch = (event) => {
+        setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
     };
 
