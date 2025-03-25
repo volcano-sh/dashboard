@@ -77,6 +77,7 @@ const Layout = () => {
             </AppBar>
 
             <Drawer
+                data-testid="sidebar-drawer"
                 variant="permanent"
                 sx={{
                     width: open ? drawerWidth : 60,

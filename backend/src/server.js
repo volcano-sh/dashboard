@@ -7,7 +7,7 @@ import {
 } from "@kubernetes/client-node";
 import yaml from "js-yaml";
 
-const app = express();
+export const app = express();
 app.use(cors({ origin: "*" }));
 
 const kc = new KubeConfig();
