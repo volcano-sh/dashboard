@@ -1,10 +1,10 @@
-import sinon from "sinon";
+import sinon, { SinonSandbox, SinonStub } from "sinon";
 import request from "supertest";
-import { app } from "../src/server.js";
 import { CustomObjectsApi } from "@kubernetes/client-node";
+import app from "../app";
 
 describe("backend", () => {
-    let sandbox;
+    let sandbox: SinonSandbox;
 
     beforeEach(() => {
         sandbox = sinon.createSandbox();
@@ -16,23 +16,21 @@ describe("backend", () => {
 
     it("should fetch jobs", async () => {
         const mockResponse = {
-            body: {
-                items: [
-                    {
-                        metadata: { name: "job1" },
-                        spec: { queue: "default" },
-                        status: { state: { phase: "Running" } },
-                    },
-                    {
-                        metadata: { name: "job2" },
-                        spec: { queue: "default" },
-                        status: { state: { phase: "Pending" } },
-                    },
-                ],
-            },
+            items: [
+                {
+                    metadata: { name: "job1" },
+                    spec: { queue: "default" },
+                    status: { state: { phase: "Running" } },
+                },
+                {
+                    metadata: { name: "job2" },
+                    spec: { queue: "default" },
+                    status: { state: { phase: "Pending" } },
+                },
+            ],
         };
 
-        sandbox
+        const listStub: SinonStub = sandbox
             .stub(CustomObjectsApi.prototype, "listClusterCustomObject")
             .resolves(mockResponse);
 
@@ -41,5 +39,7 @@ describe("backend", () => {
         expect(res.status).toBe(200);
         expect(res.body.items).toHaveLength(2);
         expect(res.body.items[0].metadata.name).toBe("job1");
+
+        expect(listStub.calledOnce).toBe(true);
     });
 });
