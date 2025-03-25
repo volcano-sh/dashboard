@@ -6,34 +6,6 @@ There are various ways in which you can contribute to this project such as `upda
 
 When making any critical change to this repository, please first discuss the change you wish to make via issue, email, or any other method with the [owners](https://github.com/volcano-sh/dashboard/blob/main/OWNERS) of this repository before making a change.
 
-## Getting Started
-
-Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE.
-
-### Prerequisites
-
-Please follow the [guide](https://github.com/volcano-sh/volcano#quick-start-guide) to install volcano first.
-
-### Install volcano dashboard
-
-Login one node of your kubernetes cluster and execute the following command to install volcano dashboard.
-
-```bash
-kubectl create ns volcano-system
-
-kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/main/deployment/volcano-dashboard.yaml
-```
-
-Then use the following command to map the traffic to node.
-
-```bash
-kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0.0.0.0
-```
-
-Access the dashboard by navigate to `http://$YOUR_NODE_IP:8080` in your browser.
-
-If running locally navigate to `http://localhost:8080`
-
 ### Development
 
 1. First of all, `fork` this repo.
