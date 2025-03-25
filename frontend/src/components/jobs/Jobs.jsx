@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
-import { Refresh } from "@mui/icons-material";
 import axios from "axios";
+import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
-import JobSearchBar from "./JobSearchBar";
 import JobTable from "./JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
+import SearchBar from "../Searchbar";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -193,34 +193,19 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <Typography variant="h4" gutterBottom align="left">
-                Volcano Jobs Status
-            </Typography>
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2,
-                }}
-            >
-                <JobSearchBar
+            <TitleComponent text="Volcano Jobs Status" />;
+            <Box>
+                <SearchBar
                     searchText={searchText}
-                    setSearchText={setSearchText}
                     handleSearch={handleSearch}
                     handleClearSearch={handleClearSearch}
-                    fetchJobs={fetchJobs}
+                    handleRefresh={fetchJobs}
+                    fetchData={fetchJobs}
+                    isRefreshing={false} // Update if needed
+                    placeholder="Search jobs..."
+                    refreshLabel="Refresh Job Listings"
                 />
-
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<Refresh />}
-                    onClick={handleRefresh}
-                >
-                    Refresh Job Status
-                </Button>
             </Box>
-
             <JobTable
                 jobs={sortedJobs}
                 handleJobClick={handleJobClick}
@@ -234,14 +219,12 @@ const Jobs = () => {
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
             />
-
             <JobPagination
                 pagination={pagination}
                 totalJobs={totalJobs}
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />
-
             <JobDialog
                 open={openDialog}
                 handleClose={handleCloseDialog}
