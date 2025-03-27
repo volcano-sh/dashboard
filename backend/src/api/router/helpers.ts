@@ -2,9 +2,11 @@ import { k8sApi, k8sCoreApi } from "../../utils/k8s";
 
 export const fetchJobs = async (
     namespace: string,
-    searchTerm: string,
-    queueFilter: string,
-    statusFilter: string
+    search: string,
+    queue: string,
+    status: string,
+    page: number,
+    pageSize: number,
 ) => {
     let response;
     if (namespace === "" || namespace === "All") {
@@ -12,7 +14,7 @@ export const fetchJobs = async (
             group: "batch.volcano.sh",
             version: "v1alpha1",
             plural: "jobs",
-            pretty: "true"
+            pretty: "true",
         });
     } else {
         response = await k8sApi.listNamespacedCustomObject({
@@ -20,39 +22,48 @@ export const fetchJobs = async (
             version: "v1alpha1",
             namespace,
             plural: "jobs",
-            pretty: "true"
+            pretty: "true",
         });
     }
 
     let filteredJobs = response.items || [];
 
-    if (searchTerm) {
+    if (search) {
         filteredJobs = filteredJobs.filter((job: any) =>
-            job.metadata.name.toLowerCase().includes(searchTerm.toLowerCase())
+            job.metadata.name.toLowerCase().includes(search.toLowerCase()),
         );
     }
 
-    if (queueFilter && queueFilter !== "All") {
+    if (queue && queue !== "All") {
         filteredJobs = filteredJobs.filter(
-            (job: any) => job.spec.queue === queueFilter
+            (job: any) => job.spec.queue === queue,
         );
     }
 
-    if (statusFilter && statusFilter !== "All") {
+    if (status && status !== "All") {
         filteredJobs = filteredJobs.filter(
-            (job: any) => job.status.state.phase === statusFilter
+            (job: any) => job.status.state.phase === status,
         );
     }
 
-    return filteredJobs;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
+
+    return {
+        items: paginatedJobs,
+        totalCount: filteredJobs.length,
+    };
 };
 
 interface Job {
-    status?: {
-        state?: {
-            phase?: string;
-        };
-    } | string;
+    status?:
+        | {
+              state?: {
+                  phase?: string;
+              };
+          }
+        | string;
     spec?: {
         minAvailable?: number;
         queue?: string;
@@ -76,57 +87,78 @@ export function getJobState(job: Job) {
     return "Unknown";
 }
 
-export const fetchQueues = async (searchTerm: string, stateFilter: string) => {
+export const fetchQueues = async (
+    search: string,
+    state: string,
+    page: number,
+    pageSize: number,
+) => {
     const response = await k8sApi.listClusterCustomObject({
         group: "scheduling.volcano.sh",
         version: "v1beta1",
-        plural: "queues"
+        plural: "queues",
     });
 
     let filteredQueues = response.items || [];
 
-    if (searchTerm) {
+    if (search) {
         filteredQueues = filteredQueues.filter((queue: any) =>
-            queue.metadata.name.toLowerCase().includes(searchTerm.toLowerCase())
+            queue.metadata.name.toLowerCase().includes(search.toLowerCase()),
         );
     }
 
-    if (stateFilter && stateFilter !== "All") {
+    if (state && state !== "All") {
         filteredQueues = filteredQueues.filter(
-            (pod: any) => pod.status.state === stateFilter
+            (pod: any) => pod.status.state === state,
         );
     }
 
-    return filteredQueues;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedQueues = filteredQueues.slice(startIndex, endIndex);
+
+    return {
+        items: paginatedQueues,
+        totalCount: filteredQueues.length,
+    };
 };
 
 export const fetchPods = async (
     namespace: string,
-    searchTerm: string,
-    statusFilter: string
+    search: string,
+    status: string,
+    page: number,
+    pageSize: number,
 ) => {
     let response;
     if (namespace === "" || namespace === "All") {
         response = await k8sCoreApi.listPodForAllNamespaces();
     } else {
         response = await k8sCoreApi.listNamespacedPod({
-            namespace
+            namespace,
         });
     }
 
     let filteredPods = response.items || [];
 
-    if (searchTerm) {
+    if (search) {
         filteredPods = filteredPods.filter((pod: any) =>
-            pod.metadata.name.toLowerCase().includes(searchTerm.toLowerCase())
+            pod.metadata.name.toLowerCase().includes(search.toLowerCase()),
         );
     }
 
-    if (statusFilter && statusFilter !== "All") {
+    if (status && status !== "All") {
         filteredPods = filteredPods.filter(
-            (pod: any) => pod.status.phase === statusFilter
+            (pod: any) => pod.status.phase === status,
         );
     }
 
-    return filteredPods;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedPods = filteredPods.slice(startIndex, endIndex);
+
+    return {
+        items: paginatedPods,
+        totalCount: filteredPods.length,
+    };
 };

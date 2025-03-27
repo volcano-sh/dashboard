@@ -4,32 +4,40 @@ import { procedure, router } from "../../trpc";
 import { fetchPods } from "../helpers";
 import { getPodsInputSchema, getPodYamlInputSchema } from "./schema";
 
-
 export const podRouter = router({
-    getPods: procedure
-        .input(getPodsInputSchema)
-        .query(async ({ input }) => {
-            const { namespace = "", searchTerm = "", statusFilter = "" } = input;
-            console.log("Fetching pods with params:", {
-                namespace,
-                searchTerm,
-                statusFilter,
-            });
+    getPods: procedure.input(getPodsInputSchema).query(async ({ input }) => {
+        const {
+            namespace = "",
+            search = "",
+            status = "",
+            page = 1,
+            pageSize = 10,
+        } = input;
+        console.log("Fetching pods with params:", {
+            namespace,
+            search,
+            status,
+            page,
+            pageSize,
+        });
 
-            const filteredPods = await fetchPods(namespace, searchTerm, statusFilter);
+        const result = await fetchPods(
+            namespace,
+            search,
+            status,
+            page,
+            pageSize,
+        );
 
-            return {
-                items: filteredPods,
-                totalCount: filteredPods.length,
-            };
-        }),
+        return result;
+    }),
     getPodYaml: procedure
         .input(getPodYamlInputSchema)
         .query(async ({ input }) => {
             const { namespace, name } = input;
             const response = await k8sCoreApi.readNamespacedPod({
                 name,
-                namespace
+                namespace,
             });
 
             const formattedYaml = yaml.dump(response, {
@@ -42,7 +50,9 @@ export const podRouter = router({
             return formattedYaml;
         }),
     getAllPods: procedure.query(async () => {
-        const response = await k8sCoreApi.listPodForAllNamespaces();
+        const response = await k8sCoreApi.listNamespacedPod({
+            namespace: "default",
+        });
         return {
             items: response.items,
             totalCount: response.items.length,

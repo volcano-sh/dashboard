@@ -2,7 +2,7 @@ import * as trpcExpress from "@trpc/server/adapters/express";
 import cors from "cors";
 import express from "express";
 import { appRouter } from "./api/router";
-import { configs } from './utils/configs';
+import { configs } from "./utils/configs";
 import { k8sApi } from "./utils/k8s";
 
 const app = express();
@@ -12,16 +12,16 @@ app.use(
     "/api",
     trpcExpress.createExpressMiddleware({
         router: appRouter,
-        createContext: () => ({ session: null }), 
-    })
-)
+        createContext: () => ({ session: null }),
+    }),
+);
 
 const verifyVolcanoSetup = async () => {
     try {
-        await k8sApi.listClusterCustomObject({     
+        await k8sApi.listClusterCustomObject({
             group: "batch.volcano.sh",
             version: "v1alpha1",
-            plural: "jobs"
+            plural: "jobs",
         });
         return true;
     } catch (error) {
@@ -33,8 +33,10 @@ const verifyVolcanoSetup = async () => {
 export const server = app.listen(configs.Port, async () => {
     const volcanoReady = await verifyVolcanoSetup();
     if (volcanoReady) {
-        console.log(`Server running on port ${configs.Port} with Volcano support`);
+        console.log(
+            `Server running on port ${configs.Port} with Volcano support`,
+        );
     } else {
         console.error("Server started but Volcano support is not available");
     }
-})
+});

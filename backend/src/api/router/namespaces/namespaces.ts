@@ -8,5 +8,4 @@ export const namespaceRouter = router({
             items: response.items,
         };
     }),
-    
 });

@@ -1,12 +1,22 @@
-import yaml from "js-yaml"; 
+import yaml from "js-yaml";
 import { k8sApi } from "../../../utils/k8s";
-import { procedure, router } from "../../trpc"
+import { procedure, router } from "../../trpc";
 import { fetchQueues } from "../helpers";
 import { getQueueInputSchema, getQueuesInputSchema } from "./schema";
 
 export const queueRouter = router({
-    getQueue: procedure
-        .input(getQueueInputSchema) 
+    getQueue: procedure.input(getQueueInputSchema).query(async ({ input }) => {
+        const { name } = input;
+        const response = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+        return response;
+    }),
+    getQueueYaml: procedure
+        .input(getQueueInputSchema)
         .query(async ({ input }) => {
             const { name } = input;
             const response = await k8sApi.getClusterCustomObject({
@@ -14,18 +24,6 @@ export const queueRouter = router({
                 version: "v1beta1",
                 plural: "queues",
                 name,
-            });
-            return response;
-        }),
-    getQueueYaml: procedure
-        .input(getQueueInputSchema) 
-        .query(async ({ input }) => {
-            const { name } = input;
-            const response = await k8sApi.getClusterCustomObject({
-                group: "scheduling.volcano.sh",
-                version: "v1beta1",
-                plural: "queues",
-                name
             });
 
             const formattedYaml = yaml.dump(response, {
@@ -40,28 +38,22 @@ export const queueRouter = router({
     getQueues: procedure
         .input(getQueuesInputSchema)
         .query(async ({ input }) => {
-            const { page = 1, limit = 10, searchTerm = "", stateFilter = "" } = input;
+            const { page = 1, pageSize = 10, search = "", state = "" } = input;
             console.log("Fetching queues with params:", {
                 page,
-                limit,
-                searchTerm,
-                stateFilter,
+                pageSize,
+                search,
+                state,
             });
 
-            const filteredQueues = await fetchQueues(searchTerm, stateFilter);
+            const filteredQueues = await fetchQueues(
+                search,
+                state,
+                page,
+                pageSize,
+            );
 
-            const totalCount = filteredQueues.length;
-            const startIndex = (page - 1) * limit;
-            const endIndex = Math.min(startIndex + limit, totalCount);
-            const paginatedQueues = filteredQueues.slice(startIndex, endIndex);
-
-            return {
-                items: paginatedQueues,
-                totalCount: totalCount,
-                page: page,
-                limit: limit,
-                totalPages: Math.ceil(totalCount / limit),
-            };
+            return filteredQueues;
         }),
     getAllQueues: procedure.query(async () => {
         const response = await k8sApi.listClusterCustomObject({
