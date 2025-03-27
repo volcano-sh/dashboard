@@ -78,10 +78,6 @@ export function getJobState(job: Job) {
         return job.status.state.phase || "Unknown";
     }
     if (typeof job.status === "string") {
-        if (job.status === "Running") return "Running";
-        if (job.status === "Completed") return "Completed";
-        if (job.status === "Failed") return "Failed";
-        if (job.status === "Pending") return "Running";
         return job.status;
     }
     return "Unknown";
