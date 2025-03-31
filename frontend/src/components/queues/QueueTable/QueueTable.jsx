@@ -41,7 +41,7 @@ const QueueTable = ({
 
     const confirmDelete = async () => {
         if (!queueToDelete) return;
-    
+
         try {
             const response = await fetch(`/api/queues/${queueToDelete}`, {
                 method: "DELETE",
@@ -49,13 +49,15 @@ const QueueTable = ({
                     "Content-Type": "application/json",
                 },
             });
-    
+
             if (!response.ok) {
-                throw new Error(`Failed to delete queue: ${response.statusText}`);
+                throw new Error(
+                    `Failed to delete queue: ${response.statusText}`,
+                );
             }
-    
+
             console.log(`Queue ${queueToDelete} deleted successfully`);
-    
+
             if (handleDelete) {
                 handleDelete(queueToDelete);
             }
@@ -65,7 +67,6 @@ const QueueTable = ({
             handleCloseDeleteDialog();
         }
     };
-    
 
     return (
         <React.Fragment>
