@@ -146,7 +146,7 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Pods Status" />;
+            <TitleComponent text="Volcano Pods Status" />
             <Box>
                 <SearchBar
                     searchText={searchText}
