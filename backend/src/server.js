@@ -134,7 +134,30 @@ app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
         });
     }
 });
+app.delete("/api/queues/:name", async (req, res) => {
+    const name = req.params.name;
+    try {
+        console.log(`Deleting queue: ${name}`);
 
+        // Delete the queue
+        await k8sApi.deleteClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+
+        res.status(200).json({
+            message: `Queue ${name} deleted successfully`,
+        });
+    } catch (error) {
+        console.error("Error deleting queue:", error);
+        res.status(500).json({
+            error: "Failed to delete queue",
+            details: error.message,
+        });
+    }
+});
 // Get details of a specific Queue
 app.get("/api/queues/:name", async (req, res) => {
     const name = req.params.name;
