@@ -6,6 +6,7 @@ import {
     KubeConfig,
 } from "@kubernetes/client-node";
 import yaml from "js-yaml";
+import { log } from "../lib/helpers/log.js";
 
 export const app = express();
 app.use(cors({ origin: "*" }));
@@ -23,11 +24,16 @@ app.get("/api/jobs", async (req, res) => {
         const queueFilter = req.query.queue || "";
         const statusFilter = req.query.status || "";
 
-        console.log("Fetching jobs with params:", {
-            namespace,
-            searchTerm,
-            queueFilter,
-            statusFilter,
+        log({
+            message: [
+                "Fetching jobs with params:",
+                {
+                    namespace,
+                    searchTerm,
+                    queueFilter,
+                    statusFilter,
+                },
+            ],
         });
 
         let response;
@@ -76,7 +82,10 @@ app.get("/api/jobs", async (req, res) => {
             totalCount: filteredJobs.length,
         });
     } catch (err) {
-        console.error("Error fetching jobs:", err);
+        log({
+            message: ["Error fetching jobs:", err],
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch jobs",
             details: err.message,
@@ -97,7 +106,10 @@ app.get("/api/jobs/:namespace/:name", async (req, res) => {
         });
         res.json(response);
     } catch (err) {
-        console.error("Error fetching job:", err);
+        log({
+            message: ["Error fetching job:", err],
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch job",
             details: err.message,
@@ -127,7 +139,10 @@ app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
         res.setHeader("Content-Type", "text/yaml");
         res.send(formattedYaml);
     } catch (error) {
-        console.error("Error fetching job YAML:", error);
+        log({
+            message: `Error fetching job YAML: ${error}`,
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch job YAML",
             details: error.message,
@@ -147,7 +162,10 @@ app.get("/api/queues/:name", async (req, res) => {
         });
         res.json(response);
     } catch (error) {
-        console.error("Error fetching queue details:", error);
+        log({
+            message: `Error fetching queue details: ${error}`,
+            options: { level: error },
+        });
         res.status(500).json({ error: "Failed to fetch queue details" });
     }
 });
@@ -173,7 +191,10 @@ app.get("/api/queue/:name/yaml", async (req, res) => {
         res.setHeader("Content-Type", "text/yaml");
         res.send(formattedYaml);
     } catch (error) {
-        console.error("Error fetching job YAML:", error);
+        log({
+            message: `Error fetching job YAML: ${error}`,
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch job YAML",
             details: error.message,
@@ -189,11 +210,16 @@ app.get("/api/queues", async (req, res) => {
         const searchTerm = req.query.search || "";
         const stateFilter = req.query.state || "";
 
-        console.log("Fetching queues with params:", {
-            page,
-            limit,
-            searchTerm,
-            stateFilter,
+        log({
+            message: [
+                "Fetching queues with params:",
+                {
+                    page,
+                    limit,
+                    searchTerm,
+                    stateFilter,
+                },
+            ],
         });
 
         const response = await k8sApi.listClusterCustomObject({
@@ -231,7 +257,10 @@ app.get("/api/queues", async (req, res) => {
             totalPages: Math.ceil(totalCount / limit),
         });
     } catch (error) {
-        console.error("Error fetching queues:", error);
+        log({
+            message: `Error fetching queues: ${error}`,
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch queues",
             details: error.message,
@@ -248,7 +277,10 @@ app.get("/api/namespaces", async (req, res) => {
             items: response.items,
         });
     } catch (error) {
-        console.error("Error fetching namespaces:", error);
+        log({
+            message: `Error fetching namespaces: ${error}`,
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch namespaces",
             details: error.message,
@@ -262,10 +294,15 @@ app.get("/api/pods", async (req, res) => {
         const searchTerm = req.query.search || "";
         const statusFilter = req.query.status || "";
 
-        console.log("Fetching pods with params:", {
-            namespace,
-            searchTerm,
-            statusFilter,
+        log({
+            message: [
+                "Fetching pods with params:",
+                {
+                    namespace,
+                    searchTerm,
+                    statusFilter,
+                },
+            ],
         });
 
         let response;
@@ -297,7 +334,10 @@ app.get("/api/pods", async (req, res) => {
             totalCount: filteredPods.length,
         });
     } catch (err) {
-        console.error("Error fetching pods:", err);
+        log({
+            message: ["Error fetching pods:", err],
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch pods",
             details: err.message,
@@ -326,7 +366,10 @@ app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
         res.setHeader("Content-Type", "text/yaml");
         res.send(formattedYaml);
     } catch (error) {
-        console.error("Error fetching job YAML:", error);
+        log({
+            message: `Error fetching job YAML: ${error}`,
+            options: { level: "error" },
+        });
         res.status(500).json({
             error: "Failed to fetch job YAML",
             details: error.message,
@@ -360,7 +403,10 @@ app.get("/api/all-jobs", async (req, res) => {
             totalCount: jobs.length,
         });
     } catch (err) {
-        console.error("Error fetching all jobs:", err);
+        log({
+            message: ["Error fetching all jobs:", err],
+            options: { level: "error" },
+        });
         res.status(500).json({ error: "Failed to fetch all jobs" });
     }
 });
@@ -388,7 +434,10 @@ app.get("/api/all-queues", async (req, res) => {
             totalCount: response.items.length,
         });
     } catch (error) {
-        console.error("Error fetching all queues:", error);
+        log({
+            message: `Error fetching all queues: ${error}`,
+            options: { level: "error" },
+        });
         res.status(500).json({ error: "Failed to fetch all queues" });
     }
 });
@@ -402,7 +451,10 @@ app.get("/api/all-pods", async (req, res) => {
             totalCount: response.items.length,
         });
     } catch (error) {
-        console.error("Error fetching all pods:", error);
+        log({
+            message: `Error fetching all pods: ${error}`,
+            options: { level: "error" },
+        });
         res.status(500).json({ error: "Failed to fetch all pods" });
     }
 });
@@ -417,7 +469,10 @@ const verifyVolcanoSetup = async () => {
         });
         return true;
     } catch (error) {
-        console.error("Volcano verification failed:", error);
+        log({
+            message: `Volcano verification failed: ${error}`,
+            options: { level: "error" },
+        });
         return false;
     }
 };
@@ -427,8 +482,13 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, async () => {
     const volcanoReady = await verifyVolcanoSetup();
     if (volcanoReady) {
-        console.log(`Server running on port ${PORT} with Volcano support`);
+        log({ message: `Server running on port ${PORT} with Volcano support` });
     } else {
-        console.error("Server started but Volcano support is not available");
+        log({
+            message: "Server started but Volcano support is not available",
+            options: {
+                level: "warn",
+            },
+        });
     }
 });
