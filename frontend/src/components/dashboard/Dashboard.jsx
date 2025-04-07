@@ -1,65 +1,64 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Box } from "@mui/material";
 import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
-import { calculateSuccessRate } from "./utils";
+import { trpc } from "../../utils/trpc";
 
 const Dashboard = () => {
-    const [dashboardData, setDashboardData] = useState({
-        jobs: [],
-        queues: [],
-        pods: [],
-    });
-    const [isLoading, setIsLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchAllData = async () => {
-        setRefreshing(true);
-        setError(null);
-        try {
-            const [jobsRes, queuesRes, podsRes] = await Promise.all([
-                fetch("/api/jobs?limit=1000"),
-                fetch("/api/queues?limit=1000"),
-                fetch("/api/pods?limit=1000"),
-            ]);
+    const jobsQuery = trpc.jobsRouter.getAllJobs.useQuery(
+        { limit: 1000 },
+        {
+            onError: (err) => {
+                console.error("Error fetching jobs:", err);
+                setError(`Jobs API error: ${err.message}`);
+            },
+        },
+    );
 
-            if (!jobsRes.ok)
-                throw new Error(`Jobs API error: ${jobsRes.status}`);
-            if (!queuesRes.ok)
-                throw new Error(`Queues API error: ${queuesRes.status}`);
-            if (!podsRes.ok)
-                throw new Error(`Pods API error: ${podsRes.status}`);
+    const queuesQuery = trpc.queueRouter.getAllQueues.useQuery(
+        { limit: 1000 },
+        {
+            onError: (err) => {
+                console.error("Error fetching queues:", err);
+                setError(`Queues API error: ${err.message}`);
+            },
+        },
+    );
 
-            const [jobsData, queuesData, podsData] = await Promise.all([
-                jobsRes.json(),
-                queuesRes.json(),
-                podsRes.json(),
-            ]);
+    const podsQuery = trpc.podRouter.getAllPods.useQuery(
+        { limit: 1000 },
+        {
+            onError: (err) => {
+                console.error("Error fetching pods:", err);
+                setError(`Pods API error: ${err.message}`);
+            },
+        },
+    );
 
-            setDashboardData({
-                jobs: jobsData.items || [],
-                queues: queuesData.items || [],
-                pods: podsData.items || [],
-            });
-        } catch (error) {
-            console.error("Error fetching dashboard data:", error);
-            setError(error.message);
-        } finally {
-            setRefreshing(false);
-            setIsLoading(false);
-        }
+    // Combined loading state
+    const isLoading =
+        jobsQuery.isLoading || queuesQuery.isLoading || podsQuery.isLoading;
+
+    const refreshing =
+        jobsQuery.isRefetching ||
+        queuesQuery.isRefetching ||
+        podsQuery.isRefetching;
+
+    const dashboardData = {
+        jobs: jobsQuery.data?.items || [],
+        queues: queuesQuery.data?.items || [],
+        pods: podsQuery.data?.items || [],
     };
 
     const handleRefresh = () => {
-        fetchAllData();
+        jobsQuery.refetch();
+        queuesQuery.refetch();
+        podsQuery.refetch();
     };
-
-    useEffect(() => {
-        fetchAllData();
-    }, []);
 
     return (
         <Box
