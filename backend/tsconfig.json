@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "es2016",
+        "module": "CommonJS",
+        "rootDir": "./src",
+        "allowJs": true,
+        "sourceMap": true,
+        "outDir": "./dist",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "skipLibCheck": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist", "vitest.config.ts"]
+}
