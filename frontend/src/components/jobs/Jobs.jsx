@@ -3,7 +3,7 @@ import { Box, Button, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
-import JobTable from "./JobTable";
+import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
@@ -193,7 +193,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />;
+            <TitleComponent text="Volcano Jobs Status" />
             <Box>
                 <SearchBar
                     searchText={searchText}

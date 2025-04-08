@@ -4,7 +4,7 @@ import axios from "axios";
 import SearchBar from "../Searchbar";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
-import PodsTable from "./PodsTable";
+import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
 
@@ -146,7 +146,7 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Pods Status" />;
+            <TitleComponent text="Volcano Pods Status" />
             <Box>
                 <SearchBar
                     searchText={searchText}
