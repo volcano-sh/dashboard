@@ -54,20 +54,38 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
         }
     };
 
-    const handleSave = () => {
+    const [loading, setLoading] = useState(false); // Add loading state
+    const handleSave = async () => {
         try {
-            const updatedQueue =
-                editMode === "yaml"
-                    ? yaml.load(editorValue)
-                    : JSON.parse(editorValue);
-
-            onSave(updatedQueue);
+            setLoading(true);
+    
+            const updatedQueue = yaml.load(editorValue);
+            console.log("Updating queue:", updatedQueue);
+    
+            const response = await fetch(`/api/queues/${namespace}/${queueName}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updatedQueue),
+            });
+    
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+    
+            // Force UI refresh
+            onSave(updatedQueue); // Ensure UI gets updated
+            window.location.reload(); // Temporary fix to see if it updates
+    
             onClose();
         } catch (error) {
-            console.error("Error parsing edited content:", error);
-            alert("Invalid YAML/JSON format. Please check your input.");
+            console.error("Update failed:", error);
+            alert(error.message);
+        } finally {
+            setLoading(false);
         }
     };
+    
+    
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -108,9 +126,9 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                 <Button
                     onClick={handleSave}
                     color="primary"
-                    variant="contained"
-                >
-                    Update
+                    disabled={loading} // Disable button while updating
+>
+    {loading ? "Updating..." : "Update"}
                 </Button>
             </DialogActions>
         </Dialog>

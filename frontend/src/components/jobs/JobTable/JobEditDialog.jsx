@@ -49,22 +49,48 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
             setEditorValue(converted);
         }
     };
-
-    const handleSave = () => {
+    const handleSave = async () => {
         try {
             const updatedJob =
                 editMode === "yaml"
                     ? yaml.load(editorValue)
                     : JSON.parse(editorValue);
-
-            onSave(updatedJob);
-            onClose();
+    
+            const namespace = updatedJob.metadata?.namespace || "default";
+            const jobName = updatedJob.metadata?.name;
+    
+            if (!jobName) {
+                alert("Job name is missing. Please check your input.");
+                return;
+            }
+    
+            const response = await fetch(
+                `/api/jobs/${namespace}/${jobName}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(updatedJob),
+                }
+            );
+    
+            if (!response.ok) {
+                throw new Error(`Failed to update job: ${response.statusText}`);
+            }
+    
+            const data = await response.json();
+            console.log("Job updated successfully:", data);
+    
+            onSave(updatedJob); // Notify parent component
+            onClose(); // Close dialog
         } catch (err) {
-            console.error("Parsing error:", err);
-            alert("Invalid YAML/JSON format. Please check your input.");
+            console.error("Error updating job:", err);
+            alert("Failed to update job. Please check your input.");
         }
     };
-
+    
+    
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle

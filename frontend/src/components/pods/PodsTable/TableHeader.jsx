@@ -30,7 +30,7 @@ const TableHeader = ({
     return (
         <TableHead>
             <TableRow>
-                {["Name", "Namespace", "Creation Time", "Status", "Age"].map(
+                {["Name", "Namespace", "Creation Time", "Status", "Age", "Action"].map(
                     (header) => (
                         <TableCell
                             key={header}
@@ -56,16 +56,12 @@ const TableHeader = ({
                             >
                                 {header}
                             </Typography>
-                            {(header === "Namespace" ||
-                                header === "Status") && (
+                            {(header === "Namespace" || header === "Status") && (
                                 <Button
                                     size="small"
                                     startIcon={<FilterList fontSize="small" />}
                                     onClick={(e) =>
-                                        handleFilterClick(
-                                            header.toLowerCase(),
-                                            e,
-                                        )
+                                        handleFilterClick(header.toLowerCase(), e)
                                     }
                                     sx={{
                                         textTransform: "none",
@@ -79,18 +75,9 @@ const TableHeader = ({
                                         transition:
                                             "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                         backgroundColor:
-                                            filters[header.toLowerCase()] !==
-                                            "All"
-                                                ? alpha(
-                                                      theme.palette.primary
-                                                          .main,
-                                                      0.2,
-                                                  )
-                                                : alpha(
-                                                      theme.palette.primary
-                                                          .main,
-                                                      0.1,
-                                                  ),
+                                            filters[header.toLowerCase()] !== "All"
+                                                ? alpha(theme.palette.primary.main, 0.2)
+                                                : alpha(theme.palette.primary.main, 0.1),
                                         color: theme.palette.primary.main,
                                         "&:hover": {
                                             backgroundColor: alpha(
