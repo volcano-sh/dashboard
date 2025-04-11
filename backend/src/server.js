@@ -392,6 +392,63 @@ app.get("/api/all-queues", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch all queues" });
     }
 });
+app.patch("/api/jobs/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const patchData = req.body;
+
+        const options = {
+            headers: { "Content-Type": "application/merge-patch+json" },
+        };
+
+        const response = await k8sApi.patchNamespacedCustomObject(
+            "batch.volcano.sh",
+            "v1alpha1",
+            namespace,
+            "jobs",
+            name,
+            patchData,
+            undefined,
+            undefined,
+            undefined,
+            options
+        );
+
+        res.json({ message: "Job updated successfully", data: response.body });
+    } catch (error) {
+        console.error("Error updating job:", error);
+        res.status(500).json({ error: "Failed to update job" });
+    }
+});
+app.patch("/api/queues/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const patchData = req.body;
+
+        const options = {
+            headers: { "Content-Type": "application/merge-patch+json" },
+        };
+
+        const response = await k8sApi.patchNamespacedCustomObject(
+            "scheduling.volcano.sh",
+            "v1alpha1",
+            namespace,
+            "queues",
+            name,
+            patchData,
+            undefined,
+            undefined,
+            undefined,
+            options
+        );
+
+        res.json({ message: "Queue updated successfully", data: response.body });
+    } catch (error) {
+        console.error("Error updating queue:", error);
+        res.status(500).json({ error: "Failed to update queue" });
+    }
+});
+
 
 // Get all Pods (no pagination)
 app.get("/api/all-pods", async (req, res) => {
