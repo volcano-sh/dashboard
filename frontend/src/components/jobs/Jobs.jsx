@@ -1,108 +1,57 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Button, Typography, useTheme } from "@mui/material";
-import axios from "axios";
+import { Box, Typography, useTheme } from "@mui/material";
+import { trpc } from "../../utils/trpc";
 import TitleComponent from "../Titlecomponent";
-import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
-import { trpc } from "../../utils/trpc";
 
 const Jobs = () => {
-    const [jobs, setJobs] = useState([]);
-    const [cachedJobs, setCachedJobs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
-    const [allQueues, setAllQueues] = useState([]);
+    const [pagination, setPagination] = useState({ page: 1, rowsPerPage: 10 });
+    const [searchText, setSearchText] = useState("");
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "default",
         queue: "All",
     });
-    const [selectedJobYaml, setSelectedJobYaml] = useState("");
-    const [openDialog, setOpenDialog] = useState(false);
     const [anchorEl, setAnchorEl] = useState({
         status: null,
         namespace: null,
         queue: null,
     });
-    const [searchText, setSearchText] = useState("");
-    const theme = useTheme();
+
+    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedJobYaml, setSelectedJobYaml] = useState("");
     const [selectedJobName, setSelectedJobName] = useState("");
-    const [pagination, setPagination] = useState({
-        page: 1,
-        rowsPerPage: 10,
-    });
-    const [totalJobs, setTotalJobs] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
 
-    const jobsQuery = trpc.jobsRouter.getJobs.useQuery(
-        {
-            search: searchText,
-            namespace: filters.namespace,
-            queue: filters.queue,
-            status: filters.status,
-            page: pagination.page,
-            pageSize: pagination.rowsPerPage,
-            sortField: "creationTime",
-            sortDirection: sortDirection || "asc",
-        },
-        {
-            keepPreviousData: true,
-            onError: (err) => {
-                console.error("Error fetching jobs:", err);
-                setError(`Jobs API error: ${err.message}`);
-            },
-        },
-    );
+    const theme = useTheme();
 
-    const namespacesQuery = trpc.namespaceRouter.getNamespaces.useQuery(
-        {},
-        {
-            onError: (err) => {
-                console.error("Error fetching namespaces:", err);
-                setError(`Namespaces API error: ${err.message}`);
-            },
-        },
-    );
+    const {
+        data: jobData,
+        refetch: refetchJobs,
+        isLoading,
+        error,
+    } = trpc.job.getJobs.useQuery({
+        search: searchText,
+        namespace: filters.namespace,
+        queue: filters.queue,
+        status: filters.status,
+    });
 
-    const queuesQuery = trpc.queueRouter.getAllQueues.useQuery(
-        { limit: 1000 },
-        {
-            onError: (err) => {
-                console.error("Error fetching queues:", err);
-                setError(`Queues API error: ${err.message}`);
-            },
-        },
-    );
+    const { data: allNamespaces = [] } = trpc.job.getAllNamespaces.useQuery();
+    const { data: allQueues = [] } = trpc.job.getAllQueues.useQuery();
 
-    const jobYamlQuery = trpc.jobsRouter.getJobYaml.useQuery(
-        {
-            namespace: filters.namespace,
-            name: selectedJobName,
-        },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching job YAML:", err);
-                setError(`Job YAML API error: ${err.message}`);
-            },
-        },
-    );
+    const jobYamlQuery = trpc.job.getJobYaml.useMutation();
 
-    useEffect(() => {
-        if (jobsQuery.data) {
-            setCachedJobs(jobsQuery.data.items || []);
-            setTotalJobs(jobsQuery.data.totalCount || 0);
-        }
-    }, [jobsQuery.data]);
+    const cachedJobs = jobData?.items ?? [];
+    const totalJobs = jobData?.totalCount ?? 0;
 
-    useEffect(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        setJobs(cachedJobs.slice(startIndex, endIndex));
+    const jobs = useMemo(() => {
+        const start = (pagination.page - 1) * pagination.rowsPerPage;
+        const end = start + pagination.rowsPerPage;
+        return cachedJobs.slice(start, end);
     }, [cachedJobs, pagination]);
 
     const handleSearch = (event) => {
@@ -113,81 +62,76 @@ const Jobs = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        refetchJobs();
     };
 
-    const handleRefresh = useCallback(() => {
+    const handleRefresh = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
-        jobsQuery.refetch();
-        namespacesQuery.refetch();
-        queuesQuery.refetch();
-    }, [jobsQuery, namespacesQuery, queuesQuery]);
+        refetchJobs();
+    };
 
-    const handleJobClick = useCallback(
-        async (job) => {
-            try {
-                setSelectedJobName(job.metadata.name);
-                const response = await jobYamlQuery.refetch();
+    const handleJobClick = async (job) => {
+        try {
+            const res = await jobYamlQuery.mutateAsync({
+                namespace: job.metadata.namespace,
+                name: job.metadata.name,
+            });
 
-                const formattedYaml = response.data
-                    .split("\n")
-                    .map((line) => {
-                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                        if (keyMatch) {
-                            const [, indent, key] = keyMatch;
-                            const value = line.slice(keyMatch[0].length);
-                            return `${indent}<span class="yaml-key">${key}</span>:${value}`;
-                        }
-                        return line;
-                    })
-                    .join("\n");
+            const formattedYaml = res
+                .split("\n")
+                .map((line) => {
+                    const keyMatch = line.match(/^(\s*)([^:\s]+):/);
+                    if (keyMatch) {
+                        const [, indent, key] = keyMatch;
+                        const value = line.slice(keyMatch[0].length);
+                        return `${indent}<span class="yaml-key">${key}</span>:${value}`;
+                    }
+                    return line;
+                })
+                .join("\n");
 
-                setSelectedJobYaml(formattedYaml);
-                setOpenDialog(true);
-            } catch (err) {
-                console.error("Failed to fetch job YAML:", err);
-                setError("Failed to fetch job YAML: " + err.message);
-            }
-        },
-        [jobYamlQuery],
-    );
+            setSelectedJobName(job.metadata.name);
+            setSelectedJobYaml(formattedYaml);
+            setOpenDialog(true);
+        } catch (err) {
+            console.error("Failed to fetch job YAML:", err);
+        }
+    };
 
-    const handleCloseDialog = useCallback(() => {
+    const handleCloseDialog = () => {
         setOpenDialog(false);
-    }, []);
+    };
 
-    const handleChangePage = useCallback((event, newPage) => {
+    const handleChangePage = (event, newPage) => {
         setPagination((prev) => ({ ...prev, page: newPage }));
-    }, []);
+    };
 
-    const handleChangeRowsPerPage = useCallback((event) => {
-        setPagination((prev) => ({
-            ...prev,
+    const handleChangeRowsPerPage = (event) => {
+        setPagination({
             rowsPerPage: parseInt(event.target.value, 10),
             page: 1,
-        }));
-    }, []);
+        });
+    };
 
-    const handleFilterClick = useCallback((filterType, event) => {
+    const handleFilterClick = (filterType, event) => {
         setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
-    }, []);
+    };
 
-    const handleFilterClose = useCallback((filterType, value) => {
+    const handleFilterClose = (filterType, value) => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
         setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
         setPagination((prev) => ({ ...prev, page: 1 }));
-    }, []);
+    };
 
     const uniqueStatuses = useMemo(() => {
         return [
             "All",
             ...new Set(
-                jobsQuery.data?.items
-                    ?.map((job) => job.status?.state.phase)
-                    .filter(Boolean) || [],
+                jobs.map((job) => job.status?.state.phase).filter(Boolean),
             ),
         ];
-    }, [jobsQuery.data]);
+    }, [jobs]);
 
     const filteredJobs = useMemo(() => {
         return jobs.filter((job) => {
@@ -209,42 +153,32 @@ const Jobs = () => {
         });
     }, [filteredJobs, sortDirection]);
 
-    const toggleSortDirection = useCallback(() => {
+    const toggleSortDirection = () => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    }, []);
-
-    const isLoading =
-        jobsQuery.isLoading ||
-        namespacesQuery.isLoading ||
-        queuesQuery.isLoading;
-    const isRefreshing =
-        jobsQuery.isRefetching ||
-        namespacesQuery.isRefetching ||
-        queuesQuery.isRefetching;
+    };
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
                 <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
+                    <Typography variant="body1">
+                        Failed to fetch jobs: {error.message}
+                    </Typography>
                 </Box>
             )}
             <TitleComponent text="Volcano Jobs Status" />
-            <Box>
-                <SearchBar
-                    searchText={searchText}
-                    handleSearch={handleSearch}
-                    handleClearSearch={handleClearSearch}
-                    handleRefresh={handleRefresh}
-                    fetchData={handleRefresh}
-                    isRefreshing={isRefreshing}
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                />
-            </Box>
+            <SearchBar
+                searchText={searchText}
+                handleSearch={handleSearch}
+                handleClearSearch={handleClearSearch}
+                handleRefresh={handleRefresh}
+                fetchData={refetchJobs}
+                isRefreshing={isLoading}
+                placeholder="Search jobs..."
+                refreshLabel="Refresh Job Listings"
+            />
             <JobTable
                 jobs={sortedJobs}
-                isLoading={isLoading}
                 handleJobClick={handleJobClick}
                 filters={filters}
                 uniqueStatuses={uniqueStatuses}

@@ -1,29 +1,22 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import React, { useCallback, useMemo, useState } from "react";
+import { parseCPU, parseMemoryToMi } from "../utils";
 import SearchBar from "../Searchbar";
-import TitleComponent from "../Titlecomponent";
-import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
+import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
-import QueueTable from "./QueueTable";
 import QueueYamlDialog from "./QueueYamlDialog";
+import TitleComponent from "../Titlecomponent";
 import { trpc } from "../../utils/trpc";
 
 const Queues = () => {
     const [error, setError] = useState(null);
-    const [filters, setFilters] = useState({
-        status: "All",
-    });
+    const [filters, setFilters] = useState({ status: "All" });
     const [selectedQueueYaml, setSelectedQueueYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
-    const [anchorEl, setAnchorEl] = useState({
-        status: null,
-    });
+    const [anchorEl, setAnchorEl] = useState({ status: null });
     const [searchText, setSearchText] = useState("");
     const [selectedQueueName, setSelectedQueueName] = useState("");
-    const [pagination, setPagination] = useState({
-        page: 1,
-        rowsPerPage: 10,
-    });
+    const [pagination, setPagination] = useState({ page: 1, rowsPerPage: 10 });
     const [sortConfig, setSortConfig] = useState({
         field: null,
         direction: "asc",
@@ -66,10 +59,12 @@ const Queues = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        queuesQuery.refetch();
     };
 
     const handleRefresh = useCallback(() => {
-        setError(null);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setSearchText("");
         queuesQuery.refetch();
     }, [queuesQuery]);
 
@@ -102,31 +97,31 @@ const Queues = () => {
         [queueYamlQuery],
     );
 
-    const handleCloseDialog = useCallback(() => {
+    const handleCloseDialog = () => {
         setOpenDialog(false);
-    }, []);
+    };
 
-    const handleChangePage = useCallback((event, newPage) => {
+    const handleChangePage = (event, newPage) => {
         setPagination((prev) => ({ ...prev, page: newPage }));
-    }, []);
+    };
 
-    const handleChangeRowsPerPage = useCallback((event) => {
-        setPagination((prev) => ({
-            ...prev,
+    const handleChangeRowsPerPage = (event) => {
+        setPagination({
+            ...pagination,
             rowsPerPage: parseInt(event.target.value, 10),
             page: 1,
-        }));
-    }, []);
+        });
+    };
 
-    const handleFilterClick = useCallback((filterType, event) => {
+    const handleFilterClick = (filterType, event) => {
         setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
-    }, []);
+    };
 
-    const handleFilterClose = useCallback((filterType, value) => {
+    const handleFilterClose = (filterType, value) => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
         setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
         setPagination((prev) => ({ ...prev, page: 1 }));
-    }, []);
+    };
 
     const uniqueStates = useMemo(() => {
         return [
@@ -167,10 +162,9 @@ const Queues = () => {
                     bValue = b[config.field];
             }
 
-            if (config.direction === "asc") {
-                return aValue > bValue ? 1 : -1;
-            }
-            return aValue < bValue ? 1 : -1;
+            return config.direction === "asc"
+                ? aValue - bValue
+                : bValue - aValue;
         });
     }, []);
 
@@ -179,10 +173,10 @@ const Queues = () => {
     }, [queuesQuery.data?.items, sortConfig, sortQueues]);
 
     const handleSort = (field) => {
-        setSortConfig((prevConfig) => ({
+        setSortConfig((prev) => ({
             field,
             direction:
-                prevConfig.field === field && prevConfig.direction === "asc"
+                prev.field === field && prev.direction === "asc"
                     ? "desc"
                     : "asc",
         }));
@@ -218,7 +212,7 @@ const Queues = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={queuesQuery.refetch}
-                    isRefreshing={queuesQuery.isRefetching}
+                    isRefreshing={isRefreshing}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                 />

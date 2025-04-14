@@ -1,13 +1,17 @@
-import React, { useCallback, useState } from "react";
-import { Box, Typography, useTheme } from "@mui/material";
+import React, { useCallback, useEffect, useState } from "react";
+import { Box, Button, Typography, useTheme } from "@mui/material";
+import axios from "axios";
 import SearchBar from "../Searchbar";
 import TitleComponent from "../Titlecomponent";
+import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
-import { trpc } from "../../utils/trpc";
 
 const Pods = () => {
+    const [pods, setPods] = useState([]);
+    const [cachedPods, setCachedPods] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [filters, setFilters] = useState({
@@ -23,72 +27,104 @@ const Pods = () => {
         page: 1,
         rowsPerPage: 10,
     });
+    const [totalPods, setTotalPods] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
 
-    const podsQuery = trpc.podRouter.getPods.useQuery(
-        {
-            search: searchText,
-            namespace: filters.namespace,
-            status: filters.status,
-            page: pagination.page,
-            pageSize: pagination.rowsPerPage,
-        },
-        {
-            keepPreviousData: true,
-            onError: (err) => {
-                console.error("Error fetching pods:", err);
-                setError(`Pods API error: ${err.message}`);
-            },
-        },
-    );
+    const fetchPods = useCallback(async () => {
+        setLoading(true);
+        setError(null);
 
-    const namespacesQuery = trpc.namespaceRouter.getNamespaces.useQuery(
-        {},
-        {
-            onError: (err) => {
-                console.error("Error fetching namespaces:", err);
-                setError(`Namespaces API error: ${err.message}`);
-            },
-        },
-    );
+        try {
+            const response = await axios.get(`/api/pods`, {
+                params: {
+                    search: searchText,
+                    namespace: filters.namespace,
+                    status: filters.status,
+                },
+            });
 
-    const podYamlQuery = trpc.podRouter.getPodYaml.useQuery(
-        {
-            namespace: filters.namespace,
-            name: selectedPodName,
-        },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching pod YAML:", err);
-                setError(`Pod YAML API error: ${err.message}`);
-            },
-        },
-    );
+            if (response.status !== 200) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-    const handleSearch = (event) => {
-        setSearchText(event.target.value);
+            const data = response.data;
+            setCachedPods(data.items || []);
+            setTotalPods(data.totalCount || 0);
+        } catch (err) {
+            setError("Failed to fetch pods: " + err.message);
+            setCachedPods([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [searchText, filters]);
+
+    useEffect(() => {
+        fetchPods();
+        fetchAllNamespaces().then(setAllNamespaces);
+    }, [fetchPods]);
+
+    useEffect(() => {
+        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
+        const endIndex = startIndex + pagination.rowsPerPage;
+        setPods(cachedPods.slice(startIndex, endIndex));
+    }, [cachedPods, pagination]);
+
+    const handleSearch = (value) => {
+        setSearchText(value);
         setPagination((prev) => ({ ...prev, page: 1 }));
     };
 
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        fetchPods();
     };
 
     const handleRefresh = useCallback(() => {
-        setError(null);
-        podsQuery.refetch();
-        namespacesQuery.refetch();
-    }, [podsQuery, namespacesQuery]);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setSearchText("");
+        fetchPods();
+    }, [fetchPods]);
+
+    const handlePodClick = useCallback(async (pod) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(
+                `/api/pod/${pod.metadata.namespace}/${pod.metadata.name}/yaml`,
+                { responseType: "text" },
+            );
+
+            const formattedYaml = response.data
+                .split("\n")
+                .map((line) => {
+                    const keyMatch = line.match(/^(\s*)([^:\s]+):/);
+                    if (keyMatch) {
+                        const [, indent, key] = keyMatch;
+                        const value = line.slice(keyMatch[0].length);
+                        return `${indent}<span class="yaml-key">${key}</span>:${value}`;
+                    }
+                    return line;
+                })
+                .join("\n");
+
+            setSelectedPodName(pod.metadata.name);
+            setSelectedPodYaml(formattedYaml);
+            setOpenDialog(true);
+        } catch (err) {
+            console.error("Failed to fetch pod YAML:", err);
+            setError("Failed to fetch pod YAML: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const handleCloseDialog = useCallback(() => {
+        setOpenDialog(false);
+    }, []);
 
     const handleFilterChange = useCallback((filterType, value) => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
         setPagination((prev) => ({ ...prev, page: 1 }));
-    }, []);
-
-    const toggleSortDirection = useCallback(() => {
-        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     }, []);
 
     const handlePaginationChange = useCallback((newPage, newRowsPerPage) => {
@@ -99,43 +135,9 @@ const Pods = () => {
         }));
     }, []);
 
-    const handlePodClick = useCallback(
-        async (pod) => {
-            try {
-                setSelectedPodName(pod.metadata.name);
-                const response = await podYamlQuery.refetch();
-
-                console.log(response);
-
-                const formattedYaml = response.data
-                    .split("\n")
-                    .map((line) => {
-                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                        if (keyMatch) {
-                            const [, indent, key] = keyMatch;
-                            const value = line.slice(keyMatch[0].length);
-                            return `${indent}<span class="yaml-key">${key}</span>:${value}`;
-                        }
-                        return line;
-                    })
-                    .join("\n");
-
-                setSelectedPodYaml(formattedYaml);
-                setOpenDialog(true);
-            } catch (err) {
-                console.error("Failed to fetch pod YAML:", err);
-                setError("Failed to fetch pod YAML: " + err.message);
-            }
-        },
-        [podYamlQuery],
-    );
-
-    const handleCloseDialog = useCallback(() => {
-        setOpenDialog(false);
+    const toggleSortDirection = useCallback(() => {
+        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     }, []);
-
-    const isLoading = podsQuery.isLoading || namespacesQuery.isLoading;
-    const isRefreshing = podsQuery.isRefetching || namespacesQuery.isRefetching;
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
@@ -151,15 +153,14 @@ const Pods = () => {
                     handleSearch={handleSearch}
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
-                    fetchData={handleRefresh}
-                    isRefreshing={isRefreshing}
+                    fetchData={fetchPods}
+                    isRefreshing={false} // Update if needed
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
                 />
             </Box>
             <PodsTable
-                pods={podsQuery.data?.items || []}
-                isLoading={isLoading}
+                pods={pods}
                 filters={filters}
                 allNamespaces={allNamespaces}
                 sortDirection={sortDirection}
@@ -168,7 +169,7 @@ const Pods = () => {
                 onPodClick={handlePodClick}
             />
             <PodsPagination
-                totalPods={podsQuery.data?.totalCount || 0}
+                totalPods={totalPods}
                 pagination={pagination}
                 onPaginationChange={handlePaginationChange}
             />
