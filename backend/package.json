@@ -5,7 +5,8 @@
     "license": "MIT",
     "main": "index.js",
     "scripts": {
-        "dev": "npx ts-node src/app.ts"
+        "dev": "npx ts-node src/app.ts",
+        "build": "tsc"
     },
     "browser": {
         "fs": false
