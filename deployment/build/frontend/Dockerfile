@@ -1,7 +1,7 @@
 FROM node:lts-slim AS builder
 
 WORKDIR /app
-
+ENV ROLLUP_SKIP_NATIVES=true
 COPY frontend/package*.json ./
 
 RUN npm install
