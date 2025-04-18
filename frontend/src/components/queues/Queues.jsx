@@ -1,14 +1,16 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import React, { useCallback, useMemo, useState } from "react";
-import SearchBar from "../Searchbar";
-import TitleComponent from "../Titlecomponent";
+import axios from "axios";
 import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
-import QueuePagination from "./QueuePagination";
+import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable";
+import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
-import { trpc } from "../../utils/trpc";
+import TitleComponent from "../Titlecomponent";
 
 const Queues = () => {
+    const [queues, setQueues] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filters, setFilters] = useState({
         status: "All",
@@ -24,39 +26,44 @@ const Queues = () => {
         page: 1,
         rowsPerPage: 10,
     });
+    const [totalQueues, setTotalQueues] = useState(0);
     const [sortConfig, setSortConfig] = useState({
         field: null,
         direction: "asc",
     });
 
-    const queuesQuery = trpc.queueRouter.getQueues.useQuery(
-        {
-            search: searchText,
-            state: filters.status,
-            page: pagination.page,
-            pageSize: pagination.rowsPerPage,
-            sortField: sortConfig.field,
-            sortDirection: sortConfig.direction,
-        },
-        {
-            keepPreviousData: true,
-            onError: (err) => {
-                console.error("Error fetching queues:", err);
-                setError(`Queues API error: ${err.message}`);
-            },
-        },
-    );
+    const fetchQueues = useCallback(async () => {
+        setLoading(true);
+        setError(null);
 
-    const queueYamlQuery = trpc.queueRouter.getQueueYaml.useQuery(
-        { name: selectedQueueName },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching queue YAML:", err);
-                setError(`Queue YAML API error: ${err.message}`);
-            },
-        },
-    );
+        try {
+            const response = await axios.get(`/api/queues`, {
+                params: {
+                    page: pagination.page,
+                    limit: pagination.rowsPerPage,
+                    search: searchText,
+                    state: filters.status,
+                },
+            });
+
+            if (response.status !== 200) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = response.data;
+            setQueues(data.items || []);
+            setTotalQueues(data.totalCount || 0);
+        } catch (err) {
+            setError("Failed to fetch queues: " + err.message);
+            setQueues([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [pagination, searchText, filters]);
+
+    useEffect(() => {
+        fetchQueues();
+    }, [fetchQueues]);
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -66,41 +73,46 @@ const Queues = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        fetchQueues();
     };
 
     const handleRefresh = useCallback(() => {
-        setError(null);
-        queuesQuery.refetch();
-    }, [queuesQuery]);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setSearchText("");
+        fetchQueues();
+    }, [fetchQueues]);
 
-    const handleQueueClick = useCallback(
-        async (queue) => {
-            try {
-                setSelectedQueueName(queue.metadata.name);
-                const response = await queueYamlQuery.refetch();
+    const handleQueueClick = useCallback(async (queue) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(
+                `/api/queue/${queue.metadata.name}/yaml`,
+                { responseType: "text" },
+            );
 
-                const formattedYaml = response.data
-                    .split("\n")
-                    .map((line) => {
-                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                        if (keyMatch) {
-                            const [, indent, key] = keyMatch;
-                            const value = line.slice(keyMatch[0].length);
-                            return `${indent}<span class="yaml-key">${key}</span>:${value}`;
-                        }
-                        return line;
-                    })
-                    .join("\n");
+            const formattedYaml = response.data
+                .split("\n")
+                .map((line) => {
+                    const keyMatch = line.match(/^(\s*)([^:\s]+):/);
+                    if (keyMatch) {
+                        const [, indent, key] = keyMatch;
+                        const value = line.slice(keyMatch[0].length);
+                        return `${indent}<span class="yaml-key">${key}</span>:${value}`;
+                    }
+                    return line;
+                })
+                .join("\n");
 
-                setSelectedQueueYaml(formattedYaml);
-                setOpenDialog(true);
-            } catch (err) {
-                console.error("Failed to fetch queue YAML:", err);
-                setError("Failed to fetch queue YAML: " + err.message);
-            }
-        },
-        [queueYamlQuery],
-    );
+            setSelectedQueueName(queue.metadata.name);
+            setSelectedQueueYaml(formattedYaml);
+            setOpenDialog(true);
+        } catch (err) {
+            console.error("Failed to fetch queue YAML:", err);
+            setError("Failed to fetch queue YAML: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
@@ -132,12 +144,10 @@ const Queues = () => {
         return [
             "All",
             ...new Set(
-                queuesQuery.data?.items
-                    ?.map((queue) => queue.status?.state)
-                    .filter(Boolean) || [],
+                queues.map((queue) => queue.status?.state).filter(Boolean),
             ),
         ];
-    }, [queuesQuery.data]);
+    }, [queues]);
 
     const sortQueues = useCallback((queues, config) => {
         if (!config.field) return queues;
@@ -175,8 +185,8 @@ const Queues = () => {
     }, []);
 
     const sortedQueues = useMemo(() => {
-        return sortQueues(queuesQuery.data?.items || [], sortConfig);
-    }, [queuesQuery.data?.items, sortConfig, sortQueues]);
+        return sortQueues(queues, sortConfig);
+    }, [queues, sortConfig, sortQueues]);
 
     const handleSort = (field) => {
         setSortConfig((prevConfig) => ({
@@ -190,7 +200,7 @@ const Queues = () => {
 
     const allocatedFields = useMemo(() => {
         const fields = new Set();
-        queuesQuery.data?.items?.forEach((queue) => {
+        queues.forEach((queue) => {
             if (queue.status?.allocated) {
                 Object.keys(queue.status.allocated).forEach((key) => {
                     fields.add(key);
@@ -198,10 +208,7 @@ const Queues = () => {
             }
         });
         return Array.from(fields).sort();
-    }, [queuesQuery.data?.items]);
-
-    const isLoading = queuesQuery.isLoading;
-    const isRefreshing = queuesQuery.isRefetching;
+    }, [queues]);
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
@@ -210,15 +217,15 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text="Volcano Queues Status" />;
             <Box>
                 <SearchBar
                     searchText={searchText}
                     handleSearch={handleSearch}
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
-                    fetchData={queuesQuery.refetch}
-                    isRefreshing={queuesQuery.isRefetching}
+                    fetchData={fetchQueues}
+                    isRefreshing={false} // Update if needed
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                 />
@@ -226,8 +233,6 @@ const Queues = () => {
             <QueueTable
                 sortedQueues={sortedQueues}
                 allocatedFields={allocatedFields}
-                isLoading={isLoading}
-                isRefreshing={isRefreshing}
                 handleQueueClick={handleQueueClick}
                 handleSort={handleSort}
                 sortConfig={sortConfig}
@@ -240,7 +245,7 @@ const Queues = () => {
             />
             <QueuePagination
                 pagination={pagination}
-                totalQueues={queuesQuery.data?.totalCount || 0}
+                totalQueues={totalQueues}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 handleChangePage={handleChangePage}
             />
