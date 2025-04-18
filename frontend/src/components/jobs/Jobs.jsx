@@ -193,7 +193,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />;
+            <TitleComponent text="Volcano Jobs Status" />
             <Box>
                 <SearchBar
                     searchText={searchText}
