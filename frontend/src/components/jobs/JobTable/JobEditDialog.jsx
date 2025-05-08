@@ -11,30 +11,30 @@ import {
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 
-const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
+const JobEditDialog = ({ open, job, onClose, onSave }) => {
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
 
     useEffect(() => {
-        if (open && queue) {
-            const content = yaml.dump(queue); // Always YAML
-            setEditorValue(content);
+        if (open && job) {
+            const initialContent = yaml.dump(job); // Always keep YAML content
+            setEditorValue(initialContent);
         }
-    }, [open, queue]);
+    }, [open, job]);
 
     const handleModeChange = (event, newMode) => {
         if (newMode !== null) {
-            setEditMode(newMode); // Only for syntax highlighting
+            setEditMode(newMode); // Only change syntax highlighting
         }
     };
 
     const handleSave = () => {
         try {
-            const updatedQueue = yaml.load(editorValue); // Always parse as YAML
-            onSave(updatedQueue);
+            const updatedJob = yaml.load(editorValue); // Always parse as YAML
+            onSave(updatedJob);
             onClose();
-        } catch (error) {
-            console.error("Error parsing edited content:", error);
+        } catch (err) {
+            console.error("Parsing error:", err);
             alert("Invalid YAML format. Please check your input.");
         }
     };
@@ -48,7 +48,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     alignItems: "center",
                 }}
             >
-                Edit Queue
+                Edit Job
                 <ToggleButtonGroup
                     value={editMode}
                     exclusive
@@ -61,9 +61,9 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             <DialogContent sx={{ height: "500px" }}>
                 <Editor
                     height="100%"
-                    language={editMode} // only affects syntax highlighting
+                    language={editMode} // Just controls syntax highlight
                     value={editorValue}
-                    onChange={(value) => setEditorValue(value || "")}
+                    onChange={(val) => setEditorValue(val || "")}
                     options={{
                         minimap: { enabled: false },
                         automaticLayout: true,
@@ -86,4 +86,4 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
     );
 };
 
-export default EditQueueDialog;
+export default JobEditDialog;
