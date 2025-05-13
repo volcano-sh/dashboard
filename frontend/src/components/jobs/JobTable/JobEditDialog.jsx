@@ -15,27 +15,75 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
 
-    useEffect(() => {
-        if (open && job) {
-            const initialContent = yaml.dump(job); // Always keep YAML content
-            setEditorValue(initialContent);
-        }
-    }, [open, job]);
-
-    const handleModeChange = (event, newMode) => {
-        if (newMode !== null) {
-            setEditMode(newMode); // Only change syntax highlighting
+    const convertContent = (content, fromMode, toMode) => {
+        try {
+            if (fromMode === "yaml" && toMode === "json") {
+                const parsed = yaml.load(content);
+                return JSON.stringify(parsed, null, 2);
+            } else if (fromMode === "json" && toMode === "yaml") {
+                const parsed = JSON.parse(content);
+                return yaml.dump(parsed);
+            }
+            return content;
+        } catch (err) {
+            console.error("Conversion error:", err);
+            alert("Error converting content. Please check your input.");
+            return content;
         }
     };
 
-    const handleSave = () => {
+    useEffect(() => {
+        if (open && job) {
+            const initialContent =
+                editMode === "yaml"
+                    ? yaml.dump(job)
+                    : JSON.stringify(job, null, 2);
+            setEditorValue(initialContent);
+        }
+    }, [open, job, editMode]);
+
+    const handleModeChange = (event, newMode) => {
+        if (newMode !== null) {
+            const converted = convertContent(editorValue, editMode, newMode);
+            setEditMode(newMode);
+            setEditorValue(converted);
+        }
+    };
+    const handleSave = async () => {
         try {
-            const updatedJob = yaml.load(editorValue); // Always parse as YAML
-            onSave(updatedJob);
-            onClose();
+            const updatedJob =
+                editMode === "yaml"
+                    ? yaml.load(editorValue)
+                    : JSON.parse(editorValue);
+
+            const namespace = updatedJob.metadata?.namespace || "default";
+            const jobName = updatedJob.metadata?.name;
+
+            if (!jobName) {
+                alert("Job name is missing. Please check your input.");
+                return;
+            }
+
+            const response = await fetch(`/api/jobs/${namespace}/${jobName}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(updatedJob),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to update job: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log("Job updated successfully:", data);
+
+            onSave(updatedJob); // Notify parent component
+            onClose(); // Close dialog
         } catch (err) {
-            console.error("Parsing error:", err);
-            alert("Invalid YAML format. Please check your input.");
+            console.error("Error updating job:", err);
+            alert("Failed to update job. Please check your input.");
         }
     };
 
@@ -56,12 +104,13 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
                     color="primary"
                 >
                     <ToggleButton value="yaml">YAML</ToggleButton>
+                    <ToggleButton value="json">JSON</ToggleButton>
                 </ToggleButtonGroup>
             </DialogTitle>
             <DialogContent sx={{ height: "500px" }}>
                 <Editor
                     height="100%"
-                    language={editMode} // Just controls syntax highlight
+                    language={editMode}
                     value={editorValue}
                     onChange={(val) => setEditorValue(val || "")}
                     options={{
