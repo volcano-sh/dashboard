@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import TableHeader from "./TableHeader";
 import PodRow from "./PodRow";
+import EmptyState from "../../common/EmptyState";
 
 const PodsTable = ({
     pods,
@@ -18,6 +19,7 @@ const PodsTable = ({
     onSortDirectionToggle,
     onFilterChange,
     onPodClick,
+    onRefresh,
 }) => {
     const theme = useTheme();
     const [anchorEl, setAnchorEl] = React.useState({
@@ -81,6 +83,19 @@ const PodsTable = ({
         [theme],
     );
 
+    // Check if we have no pods at all or if pods exist but are filtered out
+    const noPodsAtAll = pods.length === 0;
+    const hasFilters = filters.status !== "All" || (filters.queue && filters.queue !== "All");
+    const hasNoResults = sortedPods.length === 0;
+
+    // Clear all filters function
+    const handleClearFilters = () => {
+        onFilterChange("status", "All");
+        if (filters.queue) {
+            onFilterChange("queue", "All");
+        }
+    };
+
     return (
         <TableContainer
             component={Paper}
@@ -92,6 +107,7 @@ const PodsTable = ({
                 background: `linear-gradient(to bottom, ${alpha(theme.palette.background.paper, 0.9)}, ${theme.palette.background.paper})`,
                 backdropFilter: "blur(10px)",
                 border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                transition: "all 0.3s ease",
                 "&::-webkit-scrollbar": {
                     width: "10px",
                     height: "10px",
@@ -120,14 +136,27 @@ const PodsTable = ({
                     sortDirection={sortDirection}
                 />
                 <TableBody>
-                    {sortedPods.map((pod) => (
-                        <PodRow
-                            key={`${pod.metadata.namespace}-${pod.metadata.name}`}
-                            pod={pod}
-                            getStatusColor={getStatusColor}
-                            onPodClick={onPodClick}
-                        />
-                    ))}
+                    {sortedPods.length > 0 ? (
+                        sortedPods.map((pod) => (
+                            <PodRow
+                                key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                pod={pod}
+                                getStatusColor={getStatusColor}
+                                onPodClick={onPodClick}
+                            />
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="100%">
+                                <EmptyState
+                                    resourceType="Pod"
+                                    hasFilters={hasFilters && !noPodsAtAll}
+                                    onClearFilters={handleClearFilters}
+                                    onRefresh={onRefresh}
+                                />
+                            </td>
+                        </tr>
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>

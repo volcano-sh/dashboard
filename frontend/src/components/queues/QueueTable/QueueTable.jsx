@@ -10,9 +10,10 @@ import {
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+import EmptyState from "../../common/EmptyState";
 
 const QueueTable = ({
-    sortedQueues,
+    sortedQueues = [],
     allocatedFields,
     handleQueueClick,
     handleSort,
@@ -24,6 +25,7 @@ const QueueTable = ({
     handleFilterClose,
     setAnchorEl,
     handleDelete,
+    onRefresh,
 }) => {
     const theme = useTheme();
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -44,6 +46,20 @@ const QueueTable = ({
             handleDelete(queueToDelete);
         }
         handleCloseDeleteDialog();
+    };
+
+    // Check if filters are applied
+    const hasFilters = Object.entries(filters).some(([key, value]) => {
+        // Skip 'All' values or empty values
+        return value !== "All" && value !== "";
+    });
+
+    // Handle clearing all filters
+    const handleClearFilters = () => {
+        // Reset all filters to 'All' or empty
+        Object.keys(filters).forEach((key) => {
+            handleFilterClose(key, "All");
+        });
     };
 
     return (
@@ -94,15 +110,36 @@ const QueueTable = ({
                         setAnchorEl={setAnchorEl}
                     />
                     <TableBody>
-                        {sortedQueues.map((queue) => (
-                            <QueueTableRow
-                                key={queue.metadata.name}
-                                queue={queue}
-                                allocatedFields={allocatedFields}
-                                handleQueueClick={handleQueueClick}
-                                handleOpenDeleteDialog={handleOpenDeleteDialog}
-                            />
-                        ))}
+                        {sortedQueues.length > 0 ? (
+                            sortedQueues.map((queue) => (
+                                <QueueTableRow
+                                    key={queue.metadata.name}
+                                    queue={queue}
+                                    allocatedFields={allocatedFields}
+                                    handleQueueClick={handleQueueClick}
+                                    handleOpenDeleteDialog={
+                                        handleOpenDeleteDialog
+                                    }
+                                />
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="100%">
+                                    <EmptyState
+                                        resourceType="Queue"
+                                        hasFilters={hasFilters}
+                                        onClearFilters={handleClearFilters}
+                                        onRefresh={onRefresh}
+                                        customMessages={{
+                                            noDataDescription:
+                                                "There are currently no queues configured in the cluster.",
+                                            noMatchDescription:
+                                                "No queues match your current filter criteria. Try adjusting your filters to see more results.",
+                                        }}
+                                    />
+                                </td>
+                            </tr>
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>

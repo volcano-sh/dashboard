@@ -218,6 +218,7 @@ const Jobs = () => {
                 handleFilterClose={handleFilterClose}
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
+                onRefresh={handleRefresh}
             />
             <JobPagination
                 pagination={pagination}
