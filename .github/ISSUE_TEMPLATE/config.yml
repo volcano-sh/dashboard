@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+    - name: CONTRIBUTING.md
+      url: https://github.com/volcano-sh/dashboard/blob/main/CONTRIBUTING.md
+      about: Please read the CONTRIBUTING.md guide before opening an issue or PR.
