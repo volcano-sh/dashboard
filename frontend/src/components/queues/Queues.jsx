@@ -242,6 +242,7 @@ const Queues = () => {
                 uniqueStates={uniqueStates}
                 handleFilterClose={handleFilterClose}
                 setAnchorEl={setAnchorEl}
+                onRefresh={handleRefresh}
             />
             <QueuePagination
                 pagination={pagination}

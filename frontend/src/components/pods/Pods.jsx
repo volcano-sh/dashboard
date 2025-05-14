@@ -167,6 +167,7 @@ const Pods = () => {
                 onSortDirectionToggle={toggleSortDirection}
                 onFilterChange={handleFilterChange}
                 onPodClick={handlePodClick}
+                onRefresh={handleRefresh}
             />
             <PodsPagination
                 totalPods={totalPods}

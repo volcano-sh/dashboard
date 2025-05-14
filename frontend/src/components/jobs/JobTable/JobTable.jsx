@@ -9,9 +9,10 @@ import {
 } from "@mui/material";
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
+import EmptyState from "../../common/EmptyState";
 
 const JobTable = ({
-    jobs,
+    jobs = [],
     handleJobClick,
     filters,
     uniqueStatuses,
@@ -22,8 +23,24 @@ const JobTable = ({
     handleFilterClose,
     sortDirection,
     toggleSortDirection,
+    onRefresh,
 }) => {
     const theme = useTheme();
+
+    // Check if filters are applied
+    const hasFilters =
+        filters.status !== "All" ||
+        filters.namespace !== "All" ||
+        (filters.queue && filters.queue !== "All");
+
+    // Function to clear all filters
+    const handleClearFilters = () => {
+        handleFilterClose("status", "All");
+        handleFilterClose("namespace", "All");
+        if (filters.queue) {
+            handleFilterClose("queue", "All");
+        }
+    };
 
     return (
         <TableContainer
@@ -66,13 +83,35 @@ const JobTable = ({
                     toggleSortDirection={toggleSortDirection}
                 />
                 <TableBody>
-                    {jobs.map((job) => (
-                        <JobTableRow
-                            key={`${job.metadata.namespace}-${job.metadata.name}`}
-                            job={job}
-                            handleJobClick={handleJobClick}
-                        />
-                    ))}
+                    {jobs.length > 0 ? (
+                        jobs.map((job) => (
+                            <JobTableRow
+                                key={`${job.metadata.namespace}-${job.metadata.name}`}
+                                job={job}
+                                handleJobClick={handleJobClick}
+                            />
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="100%">
+                                <EmptyState
+                                    resourceType="Job"
+                                    hasFilters={hasFilters}
+                                    onClearFilters={handleClearFilters}
+                                    onRefresh={onRefresh}
+                                    customMessages={{
+                                        noDataDescription:
+                                            "There are currently no jobs scheduled in the cluster.",
+                                        noMatchDescription:
+                                            "No jobs match your current filter criteria. Try adjusting your filters to see more results.",
+                                    }}
+                                    customButtons={{
+                                        refreshText: "Refresh Jobs",
+                                    }}
+                                />
+                            </td>
+                        </tr>
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>
