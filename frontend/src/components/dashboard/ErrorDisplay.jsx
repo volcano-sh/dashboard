@@ -1,18 +1,38 @@
 import React from "react";
-import { Paper, Typography } from "@mui/material";
+import { Alert, AlertTitle, Box, Button } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
-const ErrorDisplay = ({ message }) => {
+/**
+ * Component to display error messages with retry option
+ *
+ * @param {Object} props
+ * @param {string} props.message - Error message to display
+ * @param {Function} props.onRetry - Handler for retry button
+ * @param {Object} props.sx - Additional styles
+ */
+const ErrorDisplay = ({ message, onRetry = null, sx = {} }) => {
     return (
-        <Paper
-            sx={{
-                p: 2,
-                mb: 2,
-                bgcolor: "error.light",
-                color: "error.contrastText",
-            }}
-        >
-            <Typography>{message}</Typography>
-        </Paper>
+        <Box sx={{ mb: 3, ...sx }}>
+            <Alert
+                severity="error"
+                variant="outlined"
+                action={
+                    onRetry && (
+                        <Button
+                            color="inherit"
+                            size="small"
+                            startIcon={<RefreshIcon />}
+                            onClick={onRetry}
+                        >
+                            Retry
+                        </Button>
+                    )
+                }
+            >
+                <AlertTitle>Error</AlertTitle>
+                {message}
+            </Alert>
+        </Box>
     );
 };
 
