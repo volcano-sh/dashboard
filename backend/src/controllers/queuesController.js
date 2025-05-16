@@ -178,7 +178,7 @@ export const updateQueue = async (req, res) => {
                 name: name,
             });
             
-            
+            // Access the response data correctly
             // The response object might have a body property or might be the data directly
             const currentQueue = currentQueueResponse.body || currentQueueResponse;
             
@@ -207,12 +207,12 @@ export const updateQueue = async (req, res) => {
             });
         } catch (error) {
             console.error(`Error getting or updating queue ${name}:`, error);
-            throw error; 
+            throw error; // Re-throw to be caught by the outer catch block
         }
     } catch (error) {
         console.error(`Error updating queue ${name}:`, error);
         
-        
+        // Provide detailed error information
         const statusCode = error.statusCode || 500;
         const errorMessage = error.body?.message || error.message || "Unknown error";
         
