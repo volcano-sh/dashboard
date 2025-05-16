@@ -1,12 +1,38 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Button } from "@mui/material";
 import axios from "axios";
 import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
 import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
+import EditQueueDialog from "./QueueTable/EditQueueDialog";
 import TitleComponent from "../Titlecomponent";
+
+// Create axios instance with default configuration
+const api = axios.create({
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Add request interceptor for debugging
+api.interceptors.request.use(request => {
+    console.log('Starting Request:', request);
+    return request;
+});
+
+// Add response interceptor for debugging
+api.interceptors.response.use(
+    response => {
+        console.log('Response:', response);
+        return response;
+    },
+    error => {
+        console.error('Response Error:', error);
+        return Promise.reject(error);
+    }
+);
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -31,13 +57,16 @@ const Queues = () => {
         field: null,
         direction: "asc",
     });
+    const [openEditDialog, setOpenEditDialog] = useState(false);
+    const [selectedQueue, setSelectedQueue] = useState(null);
+    const [isEditingQueue, setIsEditingQueue] = useState(false);
 
     const fetchQueues = useCallback(async () => {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await axios.get(`/api/queues`, {
+            const response = await api.get(`/api/queues`, {
                 params: {
                     page: pagination.page,
                     limit: pagination.rowsPerPage,
@@ -85,7 +114,7 @@ const Queues = () => {
     const handleQueueClick = useCallback(async (queue) => {
         try {
             setLoading(true);
-            const response = await axios.get(
+            const response = await api.get(
                 `/api/queue/${queue.metadata.name}/yaml`,
                 { responseType: "text" },
             );
@@ -103,8 +132,12 @@ const Queues = () => {
                 })
                 .join("\n");
 
+            // Store the raw queue object for editing
             setSelectedQueueName(queue.metadata.name);
             setSelectedQueueYaml(formattedYaml);
+            
+            // Important: Make a deep copy of the queue to avoid reference issues
+            setSelectedQueue(JSON.parse(JSON.stringify(queue)));
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
@@ -117,6 +150,59 @@ const Queues = () => {
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
     }, []);
+
+    const handleEditQueue = useCallback(() => {
+        setOpenDialog(false);
+        setOpenEditDialog(true);
+    }, []);
+
+    const handleCloseEditDialog = useCallback(() => {
+        setOpenEditDialog(false);
+    }, []);
+
+    // Fixed handleSaveQueue function - properly handles Content-Type and ensures body is sent
+    const handleSaveQueue = useCallback(async (updatedQueue) => {
+        setIsEditingQueue(true);
+        try {
+            // Clean and prepare the data
+            const queueToUpdate = JSON.parse(JSON.stringify(updatedQueue));
+            if (queueToUpdate.status) {
+                delete queueToUpdate.status;
+            }
+            
+            console.log("Preparing to update queue:", selectedQueueName);
+            console.log("Queue data:", queueToUpdate);
+            
+            // Use axios directly with explicit configuration
+            const response = await axios({
+                method: 'PUT',
+                url: `/api/queue/${selectedQueueName}`,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: queueToUpdate  // This ensures the data is properly serialized
+            });
+            
+            console.log("Success response:", response.data);
+            
+            // Refresh the queue list
+            await fetchQueues();
+            
+            // Show success notification
+            alert(`Queue ${selectedQueueName} updated successfully`);
+            
+            // Close the edit dialog
+            setOpenEditDialog(false);
+            
+        } catch (err) {
+            console.error("Failed to update queue:", err);
+            const errorMsg = err.response?.data?.error || err.message || "Unknown error";
+            setError("Failed to update queue: " + errorMsg);
+            alert("Failed to update queue: " + errorMsg);
+        } finally {
+            setIsEditingQueue(false);
+        }
+    }, [selectedQueueName, fetchQueues]);
 
     const handleChangePage = useCallback((event, newPage) => {
         setPagination((prev) => ({ ...prev, page: newPage }));
@@ -225,7 +311,7 @@ const Queues = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={loading}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                 />
@@ -254,7 +340,16 @@ const Queues = () => {
                 handleCloseDialog={handleCloseDialog}
                 selectedQueueName={selectedQueueName}
                 selectedQueueYaml={selectedQueueYaml}
+                onEditClick={handleEditQueue}
             />
+            {selectedQueue && (
+                <EditQueueDialog
+                    open={openEditDialog}
+                    queue={selectedQueue}
+                    onClose={handleCloseEditDialog}
+                    onSave={handleSaveQueue}
+                />
+            )}
         </Box>
     );
 };
