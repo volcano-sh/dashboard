@@ -13,6 +13,7 @@ const QueueYamlDialog = ({
     handleCloseDialog,
     selectedQueueName,
     selectedQueueYaml,
+    onEditClick, // New prop for edit functionality
 }) => {
     return (
         <Dialog
@@ -61,13 +62,28 @@ const QueueYamlDialog = ({
                 <Box
                     sx={{
                         display: "flex",
-                        justifyContent: "flex-end",
+                        justifyContent: "space-between", // Changed from flex-end to space-between
                         mt: 2,
                         width: "100%",
                         px: 2,
                         pb: 2,
                     }}
                 >
+                    {/* New Edit button */}
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={onEditClick}
+                        sx={{
+                            minWidth: "100px",
+                            "&:hover": {
+                                bgcolor: "primary.dark",
+                            },
+                        }}
+                    >
+                        Edit Queue
+                    </Button>
+                    
                     <Button
                         variant="contained"
                         color="primary"
