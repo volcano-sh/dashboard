@@ -1,16 +1,20 @@
 import React from "react";
-import { Box, Typography, Grid } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
+import EmptyStateComponent from "../dashboard/EmptyStateComponent";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const JobStatusPieChart = ({ data }) => {
     if (!data || !Array.isArray(data)) {
         return (
-            <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
-            </Box>
+            <EmptyStateComponent 
+                title="No Job Data Available"
+                message="Job data could not be loaded. Please try refreshing the dashboard."
+                icon={<AssignmentIcon sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />}
+            />
         );
     }
 
@@ -72,6 +76,17 @@ const JobStatusPieChart = ({ data }) => {
     };
 
     const hasData = Object.values(statusCounts).some((count) => count > 0);
+
+    // Check if there's no data to display and show a meaningful empty state
+    if (!hasData) {
+        return (
+            <EmptyStateComponent 
+                title="No Jobs Available"
+                message="There are currently no jobs in the system. Jobs will appear here once they are created."
+                icon={<AssignmentIcon sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />}
+            />
+        );
+    }
 
     return (
         <Box
