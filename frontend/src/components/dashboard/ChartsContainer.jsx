@@ -39,7 +39,7 @@ const ChartsContainer = ({ isLoading, jobs, queues }) => {
                     <JobStatusPieChart data={jobs} />
                 </ChartWrapper>
             </Grid>
-
+            
             <Grid item xs={12} md={6}>
                 <ChartWrapper isLoading={isLoading}>
                     <QueueResourcesBarChart data={queues} />
