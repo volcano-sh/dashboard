@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
     TableRow,
     TableCell,
@@ -9,30 +9,14 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
-import JobEditDialog from "./JobEditDialog"; // Create or import this component
 
 const JobTableRow = ({
     job,
     handleJobClick,
     handleOpenDeleteDialog,
-    onJobUpdate, // Function to update job after edit
+    onEditJob, 
 }) => {
     const theme = useTheme();
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-    const handleOpenEditDialog = (e) => {
-        e.stopPropagation();
-        setIsEditDialogOpen(true);
-    };
-
-    const handleCloseEditDialog = () => {
-        setIsEditDialogOpen(false);
-    };
-
-    const handleSaveJob = (updatedJob) => {
-        onJobUpdate(updatedJob);
-        handleCloseEditDialog();
-    };
 
     return (
         <>
@@ -132,7 +116,10 @@ const JobTableRow = ({
                 <TableCell sx={{ padding: "16px 24px" }}>
                     <Box display="flex" alignItems="center" gap={2}>
                         <IconButton
-                            onClick={handleOpenEditDialog}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEditJob(job); 
+                            }}
                             size="small"
                             sx={{
                                 color: theme.palette.primary.main,
@@ -168,14 +155,6 @@ const JobTableRow = ({
                     </Box>
                 </TableCell>
             </TableRow>
-
-            {/* Edit Dialog */}
-            <JobEditDialog
-                open={isEditDialogOpen}
-                job={job}
-                onClose={handleCloseEditDialog}
-                onSave={handleSaveJob}
-            />
         </>
     );
 };

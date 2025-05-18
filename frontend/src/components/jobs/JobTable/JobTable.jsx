@@ -22,9 +22,11 @@ const JobTable = ({
     handleFilterClose,
     sortDirection,
     toggleSortDirection,
+    onEditJob,
 }) => {
     const theme = useTheme();
-
+     
+    const handleOpenDeleteDialog = () => {};
     return (
         <TableContainer
             component={Paper}
@@ -71,6 +73,8 @@ const JobTable = ({
                             key={`${job.metadata.namespace}-${job.metadata.name}`}
                             job={job}
                             handleJobClick={handleJobClick}
+                            handleOpenDeleteDialog={handleOpenDeleteDialog}
+                            onEditJob={onEditJob}
                         />
                     ))}
                 </TableBody>
