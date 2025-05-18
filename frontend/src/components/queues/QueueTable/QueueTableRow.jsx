@@ -179,7 +179,6 @@ const QueueTableRow = ({
                 open={isEditDialogOpen}
                 queue={queue}
                 onClose={handleCloseEditDialog}
-                onSave={handleSaveQueue}
             />
         </>
     );

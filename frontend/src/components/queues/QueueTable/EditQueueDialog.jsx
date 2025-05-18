@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     Dialog,
     DialogTitle,
@@ -10,16 +10,16 @@ import {
     TextField,
     Box,
     Typography,
+    CircularProgress,
+    Checkbox,
+    FormControlLabel,
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 
-const RenderFields = ({ data, onChange, path = [] }) => {
-    return Object.entries(data || {}).map(([key, value]) => {
-        // Skip internal Kubernetes metadata
-        if (key === "managedFields" || key.startsWith("f:")) {
-            return null;
-        }
+const RenderFields = ({ data, onChange, path = [] }) =>
+    Object.entries(data || {}).map(([key, value]) => {
+        if (key === "managedFields" || key.startsWith("f:")) return null;
 
         const currentPath = [...path, key];
 
@@ -52,20 +52,24 @@ const RenderFields = ({ data, onChange, path = [] }) => {
                                     />
                                 </Box>
                             );
-                        } else {
-                            return (
-                                <TextField
-                                    key={itemPath.join(".")}
-                                    label={`${key}[${index}]`}
-                                    value={item}
-                                    fullWidth
-                                    margin="dense"
-                                    onChange={(e) =>
-                                        onChange(itemPath, e.target.value)
-                                    }
-                                />
-                            );
                         }
+                        return (
+                            <TextField
+                                key={itemPath.join(".")}
+                                label={`${key}[${index}]`}
+                                value={item}
+                                fullWidth
+                                margin="dense"
+                                onChange={(e) => {
+                                    let val = e.target.value;
+                                    if (val === "true") val = true;
+                                    else if (val === "false") val = false;
+                                    else if (!isNaN(val) && val.trim() !== "")
+                                        val = Number(val);
+                                    onChange(itemPath, val);
+                                }}
+                            />
+                        );
                     })}
                 </Box>
             );
@@ -87,6 +91,26 @@ const RenderFields = ({ data, onChange, path = [] }) => {
             );
         }
 
+        // Render checkbox for booleans
+        if (typeof value === "boolean") {
+            return (
+                <FormControlLabel
+                    key={currentPath.join(".")}
+                    control={
+                        <Checkbox
+                            checked={value}
+                            onChange={(e) =>
+                                onChange(currentPath, e.target.checked)
+                            }
+                        />
+                    }
+                    label={currentPath.join(".")}
+                    sx={{ mb: 1 }}
+                />
+            );
+        }
+
+        // For other primitives, convert strings "true"/"false" to boolean, numbers too
         return (
             <TextField
                 key={currentPath.join(".")}
@@ -94,64 +118,140 @@ const RenderFields = ({ data, onChange, path = [] }) => {
                 value={value}
                 fullWidth
                 margin="dense"
-                onChange={(e) => onChange(currentPath, e.target.value)}
+                onChange={(e) => {
+                    let val = e.target.value;
+                    if (val === "true") val = true;
+                    else if (val === "false") val = false;
+                    else if (!isNaN(val) && val.trim() !== "")
+                        val = Number(val);
+                    onChange(currentPath, val);
+                }}
             />
         );
     });
-};
 
 const updateNestedValue = (obj, path, value) => {
-    const lastKey = path.pop();
-    const nested = path.reduce((acc, key) => (acc[key] = acc[key] || {}), obj);
-    nested[lastKey] = value;
-    return { ...obj };
+    const newObj = { ...obj };
+    let current = newObj;
+    for (let i = 0; i < path.length - 1; i++) {
+        const key = path[i];
+        if (!(key in current)) current[key] = {};
+        current = current[key];
+    }
+    current[path[path.length - 1]] = value;
+    return newObj;
 };
 
 const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
     const [formState, setFormState] = useState({});
+    const [saving, setSaving] = useState(false);
 
+    // Refs to avoid infinite loops when syncing form & YAML
+    const skipYamlUpdate = useRef(false);
+    const skipFormUpdate = useRef(false);
+
+    // Load initial data on open
     useEffect(() => {
         if (open && queue) {
-            const yamlContent = yaml.dump(queue);
-            setEditorValue(yamlContent);
+            const dumpedYaml = yaml.dump(queue);
+            setEditorValue(dumpedYaml);
             setFormState(queue);
             setEditMode("yaml");
         }
     }, [open, queue]);
 
-    const handleModeChange = (event, newMode) => {
-        if (!newMode) return;
-        if (newMode === "form") {
-            try {
-                const parsed = yaml.load(editorValue);
-                setFormState(parsed || {});
-                setEditMode("form");
-            } catch (err) {
-                alert("Invalid YAML. Cannot switch to Form view.");
-            }
-        } else if (newMode === "yaml") {
-            setEditorValue(yaml.dump(formState));
-            setEditMode("yaml");
+    // Sync YAML editor -> formState (parse YAML)
+    useEffect(() => {
+        if (skipYamlUpdate.current) {
+            skipYamlUpdate.current = false;
+            return;
         }
+        try {
+            const parsed = yaml.load(editorValue) || {};
+            skipFormUpdate.current = true;
+            setFormState(parsed);
+        } catch {
+            // Ignore YAML parse errors, keep old formState
+        }
+    }, [editorValue]);
+
+    // Sync formState -> YAML editor (stringify)
+    useEffect(() => {
+        if (skipFormUpdate.current) {
+            skipFormUpdate.current = false;
+            return;
+        }
+        try {
+            const dumped = yaml.dump(formState);
+            skipYamlUpdate.current = true;
+            setEditorValue(dumped);
+        } catch {
+            // Ignore errors
+        }
+    }, [formState]);
+
+    const handleModeChange = (_, newMode) => {
+        if (!newMode) return;
+        setEditMode(newMode);
     };
 
     const handleNestedChange = (path, value) => {
-        setFormState((prev) =>
-            updateNestedValue({ ...prev }, [...path], value),
-        );
+        setFormState((prev) => updateNestedValue(prev, path, value));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         try {
             const updated =
                 editMode === "yaml" ? yaml.load(editorValue) : formState;
-            onSave(updated);
+
+            if (!updated?.metadata?.name) {
+                throw new Error("Queue metadata.name is missing");
+            }
+
+            if (!updated.spec || Object.keys(updated.spec).length === 0) {
+                throw new Error("Queue spec is empty or missing");
+            }
+
+            setSaving(true);
+
+            const resp = await fetch(`/api/queues/${updated.metadata.name}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ spec: updated.spec }),
+            });
+
+            if (!resp.ok) {
+                const contentType = resp.headers.get("content-type");
+                const errText = contentType?.includes("application/json")
+                    ? (await resp.json()).details || "Unknown error"
+                    : await resp.text();
+                throw new Error(errText);
+            }
+
+            const responseData = await resp.json();
+
+            // Update local state with the response data from server
+            const fullUpdatedQueue = {
+                ...updated,
+                spec: responseData.spec || updated.spec,
+            };
+
+            // Prevent infinite loops while syncing
+            skipFormUpdate.current = true;
+            setFormState(fullUpdatedQueue);
+            skipYamlUpdate.current = true;
+            setEditorValue(yaml.dump(fullUpdatedQueue));
+
+            if (typeof onSave === "function") {
+                onSave(responseData);
+            }
+
             onClose();
-        } catch (error) {
-            console.error("Invalid YAML:", error);
-            alert("Invalid YAML format.");
+        } catch (err) {
+            console.error("Save failed:", err);
+            alert(err.message || "Failed to save");
         }
     };
 
@@ -198,15 +298,22 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             </DialogContent>
 
             <DialogActions>
-                <Button onClick={onClose} color="primary" variant="contained">
+                <Button
+                    onClick={onClose}
+                    color="primary"
+                    variant="contained"
+                    disabled={saving}
+                >
                     Cancel
                 </Button>
                 <Button
                     onClick={handleSave}
                     color="primary"
                     variant="contained"
+                    disabled={saving}
+                    startIcon={saving && <CircularProgress size={18} />}
                 >
-                    Update
+                    {saving ? "Updating…" : "Update"}
                 </Button>
             </DialogActions>
         </Dialog>
