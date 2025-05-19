@@ -7,6 +7,7 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import QueueGridView from "./QueueTable/QueueGridView";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -31,6 +32,8 @@ const Queues = () => {
         field: null,
         direction: "asc",
     });
+    // New state for view mode
+    const [viewMode, setViewMode] = useState("table"); // "table" or "grid"
 
     const fetchQueues = useCallback(async () => {
         setLoading(true);
@@ -140,6 +143,64 @@ const Queues = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
+    // New handler for toggling view mode
+    const handleToggleViewMode = (mode) => {
+        setViewMode(mode);
+    };
+
+    // New handler for exporting queues data
+    const handleExportQueues = () => {
+        exportQueuesData(sortedQueues);
+    };
+
+    // New function to export queues data as CSV
+    const exportQueuesData = (queues) => {
+        // Create a simplified version of the queues data for export
+        const exportData = queues.map(queue => {
+            return {
+                name: queue.metadata?.name || '',
+                namespace: queue.metadata?.namespace || 'default',
+                state: queue.status?.state || 'Unknown',
+                cpu: queue.status?.allocated?.cpu || 'N/A',
+                memory: queue.status?.allocated?.memory || 'N/A',
+                pods: queue.status?.allocated?.pods || 'N/A',
+                creationTime: queue.metadata?.creationTimestamp || ''
+            };
+        });
+
+        // Convert data to CSV format
+        const headers = ["Name", "Namespace", "State", "CPU", "Memory", "Pods", "Creation Time"];
+        const csvContent = [
+            headers.join(","),
+            ...exportData.map(row => 
+                [
+                    row.name,
+                    row.namespace,
+                    row.state,
+                    row.cpu,
+                    row.memory,
+                    row.pods,
+                    new Date(row.creationTime).toLocaleString()
+                ].join(",")
+            )
+        ].join("\n");
+
+        // Create download link
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        
+        // Create temporary link and trigger download
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `volcano-queues-${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        
+        // Cleanup
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const uniqueStates = useMemo(() => {
         return [
             "All",
@@ -230,25 +291,38 @@ const Queues = () => {
                     refreshLabel="Refresh Queues"
                 />
             </Box>
-            <QueueTable
-                sortedQueues={sortedQueues}
-                allocatedFields={allocatedFields}
-                handleQueueClick={handleQueueClick}
-                handleSort={handleSort}
-                sortConfig={sortConfig}
-                filters={filters}
-                handleFilterClick={handleFilterClick}
-                anchorEl={anchorEl}
-                uniqueStates={uniqueStates}
-                handleFilterClose={handleFilterClose}
-                setAnchorEl={setAnchorEl}
-            />
+            
+            {/* Conditional rendering based on view mode */}
+            {viewMode === "table" ? (
+                <QueueTable
+                    sortedQueues={sortedQueues}
+                    allocatedFields={allocatedFields}
+                    handleQueueClick={handleQueueClick}
+                    handleSort={handleSort}
+                    sortConfig={sortConfig}
+                    filters={filters}
+                    handleFilterClick={handleFilterClick}
+                    anchorEl={anchorEl}
+                    uniqueStates={uniqueStates}
+                    handleFilterClose={handleFilterClose}
+                    setAnchorEl={setAnchorEl}
+                />
+            ) : (
+                <QueueGridView 
+                    queues={sortedQueues} 
+                    handleQueueClick={handleQueueClick} 
+                />
+            )}
+            
             <QueuePagination
                 pagination={pagination}
                 totalQueues={totalQueues}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 handleChangePage={handleChangePage}
+                onExportQueues={handleExportQueues}  // New prop
+                onToggleViewMode={handleToggleViewMode}  // New prop
             />
+            
             <QueueYamlDialog
                 openDialog={openDialog}
                 handleCloseDialog={handleCloseDialog}
