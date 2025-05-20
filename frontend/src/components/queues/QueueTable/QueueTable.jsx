@@ -12,7 +12,7 @@ import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
 
 const QueueTable = ({
-    sortedQueues,
+    sortedQueues: initialQueues,
     allocatedFields,
     handleQueueClick,
     handleSort,
@@ -23,17 +23,13 @@ const QueueTable = ({
     uniqueStates,
     handleFilterClose,
     setAnchorEl,
-<<<<<<< HEAD
-    onDelete, // Prop for handling queue deletion
-    onQueueUpdate, // Prop for handling queue updates
-=======
-    handleDelete,
->>>>>>> main
+    onDelete, // optional callback
+    onQueueUpdate,
 }) => {
     const theme = useTheme();
+    const [queues, setQueues] = useState(initialQueues);
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [queueToDelete, setQueueToDelete] = useState(null);
-<<<<<<< HEAD
     const [deleteError, setDeleteError] = useState(null);
 
     const handleOpenDeleteDialog = (queueName) => {
@@ -42,10 +38,6 @@ const QueueTable = ({
             setOpenDeleteDialog(true);
             return;
         }
-=======
-
-    const handleOpenDeleteDialog = (queueName) => {
->>>>>>> main
         setQueueToDelete(queueName);
         setOpenDeleteDialog(true);
     };
@@ -53,7 +45,6 @@ const QueueTable = ({
     const handleCloseDeleteDialog = () => {
         setOpenDeleteDialog(false);
         setQueueToDelete(null);
-<<<<<<< HEAD
         setDeleteError(null);
     };
 
@@ -69,12 +60,16 @@ const QueueTable = ({
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(
-                    data.details || data.error || "Failed to delete queue",
-                );
+                throw new Error(data.details || data.error || "Failed to delete queue");
             }
 
+            // Update UI
+            setQueues((prevQueues) =>
+                prevQueues.filter((q) => q.metadata.name !== queueToDelete)
+            );
+
             handleCloseDeleteDialog();
+
             if (onDelete) {
                 onDelete(queueToDelete);
             }
@@ -82,19 +77,10 @@ const QueueTable = ({
             console.error("Error deleting queue:", error);
             setDeleteError(error.message);
         }
-=======
-    };
-
-    const confirmDelete = () => {
-        if (handleDelete && queueToDelete) {
-            handleDelete(queueToDelete);
-        }
-        handleCloseDeleteDialog();
->>>>>>> main
     };
 
     return (
-        <React.Fragment>
+        <>
             <TableContainer
                 component={Paper}
                 sx={{
@@ -113,17 +99,11 @@ const QueueTable = ({
                         backgroundColor: alpha(theme.palette.primary.main, 0.2),
                         borderRadius: "5px",
                         "&:hover": {
-                            backgroundColor: alpha(
-                                theme.palette.primary.main,
-                                0.3,
-                            ),
+                            backgroundColor: alpha(theme.palette.primary.main, 0.3),
                         },
                     },
                     "&::-webkit-scrollbar-track": {
-                        backgroundColor: alpha(
-                            theme.palette.primary.main,
-                            0.05,
-                        ),
+                        backgroundColor: alpha(theme.palette.primary.main, 0.05),
                         borderRadius: "5px",
                     },
                 }}
@@ -141,17 +121,14 @@ const QueueTable = ({
                         setAnchorEl={setAnchorEl}
                     />
                     <TableBody>
-                        {sortedQueues.map((queue) => (
+                        {queues.map((queue) => (
                             <QueueTableRow
                                 key={queue.metadata.name}
                                 queue={queue}
                                 allocatedFields={allocatedFields}
                                 handleQueueClick={handleQueueClick}
                                 handleOpenDeleteDialog={handleOpenDeleteDialog}
-<<<<<<< HEAD
                                 onQueueUpdate={onQueueUpdate}
-=======
->>>>>>> main
                             />
                         ))}
                     </TableBody>
@@ -160,16 +137,11 @@ const QueueTable = ({
             <QueueTableDeleteDialog
                 open={openDeleteDialog}
                 onClose={handleCloseDeleteDialog}
-<<<<<<< HEAD
                 onConfirm={handleDelete}
                 queueToDelete={queueToDelete}
                 error={deleteError}
-=======
-                onConfirm={confirmDelete}
-                queueToDelete={queueToDelete}
->>>>>>> main
             />
-        </React.Fragment>
+        </>
     );
 };
 

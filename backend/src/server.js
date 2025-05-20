@@ -479,7 +479,6 @@ app.get("/api/all-pods", async (req, res) => {
     }
 });
 
-// DELETE /api/queues/:name
 app.delete("/api/queues/:name", async (req, res) => {
     const { name } = req.params;
     const queueName = name.toLowerCase();
@@ -512,44 +511,12 @@ app.delete("/api/queues/:name", async (req, res) => {
 
         return res.json({ message: "Queue deleted successfully", data: body });
     } catch (err) {
-        const { statusCode, body, message, code } = err || {};
-
-        if (statusCode === 403) {
-            return res.status(403).json({
-                error: "Forbidden",
-                details:
-                    "The dashboard service account does not have permission to delete queues. Please ask your cluster administrator to update the RBAC rules.",
-            });
-        }
-
-        if (statusCode === 404) {
-            throw new Error(
-                `The specified queue "${req.params.name}" does not exist in the cluster. ` +
-                    `Please ensure the queue name is correct and try again.`,
-            );
-        }
-
-        console.error("Error deleting queue:", body || err);
-        return res.status(500).json({
-            error: "Failed to delete queue",
-            details:
-                message ||
-                "An unexpected error occurred while attempting to delete the queue.",
-            code,
-        });
+        // Let the error propagate to global error middleware
+        throw err;
     }
 });
-// Delete a Pod
-// app.delete("/api/pods/:namespace/:name", async (req, res) => {
-//     try {
-//         const { namespace, name } = req.params;
-//         const response = await k8sCoreApi.deleteNamespacedPod(name, namespace);
-//         res.json({ message: "Pod deleted successfully", data: response.body });
-//     } catch (error) {
-//         console.error("Error deleting pod:", error);
-//         res.status(500).json({ error: "Failed to delete pod" });
-//     }
-// });
+
+
 
 const verifyVolcanoSetup = async () => {
     try {
