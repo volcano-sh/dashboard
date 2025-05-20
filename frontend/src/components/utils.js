@@ -1,38 +1,52 @@
+import { isBackendAvailable } from "../App";
+
 export const fetchAllNamespaces = async () => {
     try {
+        // Don't fetch if backend is unavailable
+        if (!isBackendAvailable()) {
+            console.log("Skipping namespace fetch - backend unavailable");
+            return ["All", "default"];
+        }
+        
         const response = await fetch(`/api/namespaces`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+         
         const data = await response.json();
-
+         
         return [
             "All",
             ...new Set(data.items.map((item) => item.metadata.name)),
         ];
     } catch (error) {
         console.error("Error fetching namespaces:", error);
-        return [];
+        return ["All", "default"];  // Return sensible defaults on error
     }
 };
 
 export const fetchAllQueues = async () => {
     try {
+        // Don't fetch if backend is unavailable
+        if (!isBackendAvailable()) {
+            console.log("Skipping queues fetch - backend unavailable");
+            return ["All"];
+        }
+        
         const response = await fetch(`/api/all-queues`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+         
         const data = await response.json();
-
+         
         return [
             "All",
             ...new Set(data.items.map((item) => item.metadata.name)),
         ];
     } catch (error) {
         console.error("Error fetching queues:", error);
-        return [];
+        return ["All"];  // Return sensible default on error
     }
 };
 
@@ -40,7 +54,7 @@ export const calculateAge = (creationTimestamp) => {
     const created = new Date(creationTimestamp);
     const now = new Date();
     const diffInSeconds = Math.floor((now - created) / 1000);
-
+    
     if (diffInSeconds < 60) {
         return `${diffInSeconds}s`;
     }
@@ -70,4 +84,29 @@ export const parseMemoryToMi = (memoryStr) => {
     if (memoryStr.includes("Mi")) return value;
     if (memoryStr.includes("Ki")) return value / 1024;
     return value / 1024 / 1024; // default Bi
+};
+
+// Helper function to debounce API calls to prevent rapid retries
+export const debounce = (func, wait) => {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+};
+
+// Helper to format error messages for user display
+export const formatErrorMessage = (error) => {
+    if (!error) return "Unknown error occurred";
+    
+    if (error.includes("ECONNREFUSED")) {
+        return "Could not connect to the Volcano API. The service may be down or unreachable.";
+    }
+    
+    if (error.includes("status code 500")) {
+        return "The Volcano API encountered an internal server error. Please try again later.";
+    }
+    
+    return error;
 };

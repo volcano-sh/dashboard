@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Button, Typography, useTheme } from "@mui/material";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { Box, Button, Paper, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
@@ -7,6 +7,52 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { ErrorContext } from "../Layout";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import { isBackendAvailable, resetBackendStatus } from "../../App";
+
+// New Empty State Component
+const EmptyState = ({ message, icon, isError = false, onRetry = null }) => {
+    return (
+        <Paper
+            elevation={0}
+            sx={{
+                p: 5,
+                textAlign: "center",
+                borderRadius: 2,
+                backgroundColor: isError ? "#FFF5F5" : "#F9F9F9",
+                border: isError ? "1px solid #FFCDD2" : "1px solid #EEEEEE",
+                my: 3,
+            }}
+        >
+            <Box sx={{ mb: 2 }}>
+                {icon || (isError ? (
+                    <ErrorOutlineIcon sx={{ fontSize: 60, color: isError ? "#F44336" : "#9E9E9E" }} />
+                ) : (
+                    <AssignmentIcon sx={{ fontSize: 60, color: "#9E9E9E" }} />
+                ))}
+            </Box>
+            <Typography variant="h6" color={isError ? "error" : "textSecondary"} gutterBottom>
+                {isError ? "Connection Error" : "No Data Available"}
+            </Typography>
+            <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 500, mx: "auto", mb: 3 }}>
+                {message}
+            </Typography>
+            {onRetry && (
+                <Button
+                    variant="contained"
+                    color={isError ? "error" : "primary"}
+                    startIcon={<RefreshIcon />}
+                    onClick={onRetry}
+                >
+                    Retry Connection
+                </Button>
+            )}
+        </Paper>
+    );
+};
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -36,10 +82,23 @@ const Jobs = () => {
     });
     const [totalJobs, setTotalJobs] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    // Add a flag to prevent auto-refresh when backend is down
+    const [preventAutoRefresh, setPreventAutoRefresh] = useState(false);
+    
+    // Global error context
+    const { setError: setGlobalError } = useContext(ErrorContext);
 
-    const fetchJobs = useCallback(async () => {
+    const fetchJobs = useCallback(async (forceRefresh = false) => {
+        // Don't fetch if backend is known to be unavailable and not a manual refresh
+        if (!forceRefresh && !isBackendAvailable()) {
+            console.log("Skipping fetch - backend unavailable");
+            return;
+        }
+
         setLoading(true);
         setError(null);
+        setIsRefreshing(true);
 
         try {
             const response = await axios.get(`/api/jobs`, {
@@ -58,20 +117,59 @@ const Jobs = () => {
             const data = response.data;
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
+            
+            // Clear any global error when fetch succeeds
+            setGlobalError(null);
+            // Allow auto-refresh again
+            setPreventAutoRefresh(false);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            const errorMessage = "Failed to fetch jobs: " + err.message;
+            setError(errorMessage);
             setCachedJobs([]);
+            
+            // Prevent auto-refresh after error
+            setPreventAutoRefresh(true);
+            
+            // Set global error when fetch fails with status 500
+            if (err.response && err.response.status === 500) {
+                setGlobalError("The Volcano API is currently unavailable. We're working to restore service.", "error");
+            }
         } finally {
             setLoading(false);
+            setIsRefreshing(false);
         }
-    }, [searchText, filters]);
+    }, [searchText, filters, setGlobalError]);
 
     useEffect(() => {
+        // Initial fetch only
         fetchJobs();
-        fetchAllNamespaces().then(setAllNamespaces);
-        fetchAllQueues().then(setAllQueues);
-    }, [fetchJobs]);
-
+        
+        // Error handling for namespace and queue fetch
+        const fetchData = async () => {
+            try {
+                if (isBackendAvailable()) {
+                    const namespaces = await fetchAllNamespaces();
+                    setAllNamespaces(namespaces);
+                }
+            } catch (err) {
+                console.error("Failed to fetch namespaces:", err);
+            }
+            
+            try {
+                if (isBackendAvailable()) {
+                    const queues = await fetchAllQueues();
+                    setAllQueues(queues);
+                }
+            } catch (err) {
+                console.error("Failed to fetch queues:", err);
+            }
+        };
+        
+        fetchData();
+        
+        // NO auto-refresh interval to prevent continuous errors
+    }, []);  // Empty dependency array - run only once on mount
+    
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
         const endIndex = startIndex + pagination.rowsPerPage;
@@ -86,13 +184,14 @@ const Jobs = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchJobs();
     };
 
     const handleRefresh = useCallback(() => {
+        // Force refresh even if backend was unavailable
+        resetBackendStatus();
         setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
-        fetchJobs();
+        fetchJobs(true); // Pass true to force refresh
     }, [fetchJobs]);
 
     const handleJobClick = useCallback(async (job) => {
@@ -127,6 +226,7 @@ const Jobs = () => {
         }
     }, []);
 
+    // Add the missing handleCloseDialog function
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
     }, []);
@@ -188,43 +288,70 @@ const Jobs = () => {
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
-            {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
             <TitleComponent text="Volcano Jobs Status" />
+            
             <Box>
                 <SearchBar
                     searchText={searchText}
                     handleSearch={handleSearch}
                     handleClearSearch={handleClearSearch}
-                    handleRefresh={fetchJobs}
+                    handleRefresh={handleRefresh}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={isRefreshing}
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
                 />
             </Box>
-            <JobTable
-                jobs={sortedJobs}
-                handleJobClick={handleJobClick}
-                filters={filters}
-                uniqueStatuses={uniqueStatuses}
-                allNamespaces={allNamespaces}
-                allQueues={allQueues}
-                anchorEl={anchorEl}
-                handleFilterClick={handleFilterClick}
-                handleFilterClose={handleFilterClose}
-                sortDirection={sortDirection}
-                toggleSortDirection={toggleSortDirection}
-            />
-            <JobPagination
-                pagination={pagination}
-                totalJobs={totalJobs}
-                handleChangePage={handleChangePage}
-                handleChangeRowsPerPage={handleChangeRowsPerPage}
-            />
+            
+            {/* Enhanced error state handling */}
+            {error ? (
+                <EmptyState 
+                    message={error.includes("status code 500") 
+                        ? "We're having trouble connecting to the Volcano API. This could be due to maintenance or temporary server issues." 
+                        : error
+                    }
+                    isError={true}
+                    onRetry={handleRefresh}
+                />
+            ) : loading && cachedJobs.length === 0 ? (
+                // Custom loading state when there's no data
+                <Box sx={{ py: 4, textAlign: "center" }}>
+                    <Typography variant="body1" color="textSecondary">
+                        Loading job data...
+                    </Typography>
+                </Box>
+            ) : cachedJobs.length === 0 ? (
+                // Empty state when no jobs match filters
+                <EmptyState 
+                    message="No jobs found matching your current filters. Try adjusting your filters or create a new job."
+                    onRetry={handleRefresh}
+                />
+            ) : (
+                // Table view when we have jobs
+                <>
+                    <JobTable
+                        jobs={sortedJobs}
+                        loading={loading}
+                        handleJobClick={handleJobClick}
+                        filters={filters}
+                        uniqueStatuses={uniqueStatuses}
+                        allNamespaces={allNamespaces}
+                        allQueues={allQueues}
+                        anchorEl={anchorEl}
+                        handleFilterClick={handleFilterClick}
+                        handleFilterClose={handleFilterClose}
+                        sortDirection={sortDirection}
+                        toggleSortDirection={toggleSortDirection}
+                    />
+                    <JobPagination
+                        pagination={pagination}
+                        totalJobs={totalJobs}
+                        handleChangePage={handleChangePage}
+                        handleChangeRowsPerPage={handleChangeRowsPerPage}
+                    />
+                </>
+            )}
+            
             <JobDialog
                 open={openDialog}
                 handleClose={handleCloseDialog}
