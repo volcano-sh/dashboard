@@ -210,17 +210,6 @@ const Queues = () => {
         return Array.from(fields).sort();
     }, [queues]);
 
-    const handleDelete = useCallback(
-        (queueName) => {
-            setQueues((prevQueues) =>
-                prevQueues.filter((queue) => queue.metadata.name !== queueName),
-            );
-            // Optionally refresh the data
-            fetchQueues();
-        },
-        [fetchQueues],
-    );
-
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
@@ -236,7 +225,7 @@ const Queues = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
-                    isRefreshing={loading}
+                    isRefreshing={false} // Update if needed
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                 />
@@ -253,7 +242,6 @@ const Queues = () => {
                 uniqueStates={uniqueStates}
                 handleFilterClose={handleFilterClose}
                 setAnchorEl={setAnchorEl}
-                onDelete={handleDelete}
             />
             <QueuePagination
                 pagination={pagination}

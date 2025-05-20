@@ -23,12 +23,17 @@ const QueueTable = ({
     uniqueStates,
     handleFilterClose,
     setAnchorEl,
+<<<<<<< HEAD
     onDelete, // Prop for handling queue deletion
     onQueueUpdate, // Prop for handling queue updates
+=======
+    handleDelete,
+>>>>>>> main
 }) => {
     const theme = useTheme();
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [queueToDelete, setQueueToDelete] = useState(null);
+<<<<<<< HEAD
     const [deleteError, setDeleteError] = useState(null);
 
     const handleOpenDeleteDialog = (queueName) => {
@@ -37,6 +42,10 @@ const QueueTable = ({
             setOpenDeleteDialog(true);
             return;
         }
+=======
+
+    const handleOpenDeleteDialog = (queueName) => {
+>>>>>>> main
         setQueueToDelete(queueName);
         setOpenDeleteDialog(true);
     };
@@ -44,6 +53,7 @@ const QueueTable = ({
     const handleCloseDeleteDialog = () => {
         setOpenDeleteDialog(false);
         setQueueToDelete(null);
+<<<<<<< HEAD
         setDeleteError(null);
     };
 
@@ -72,6 +82,15 @@ const QueueTable = ({
             console.error("Error deleting queue:", error);
             setDeleteError(error.message);
         }
+=======
+    };
+
+    const confirmDelete = () => {
+        if (handleDelete && queueToDelete) {
+            handleDelete(queueToDelete);
+        }
+        handleCloseDeleteDialog();
+>>>>>>> main
     };
 
     return (
@@ -129,7 +148,10 @@ const QueueTable = ({
                                 allocatedFields={allocatedFields}
                                 handleQueueClick={handleQueueClick}
                                 handleOpenDeleteDialog={handleOpenDeleteDialog}
+<<<<<<< HEAD
                                 onQueueUpdate={onQueueUpdate}
+=======
+>>>>>>> main
                             />
                         ))}
                     </TableBody>
@@ -138,9 +160,14 @@ const QueueTable = ({
             <QueueTableDeleteDialog
                 open={openDeleteDialog}
                 onClose={handleCloseDeleteDialog}
+<<<<<<< HEAD
                 onConfirm={handleDelete}
                 queueToDelete={queueToDelete}
                 error={deleteError}
+=======
+                onConfirm={confirmDelete}
+                queueToDelete={queueToDelete}
+>>>>>>> main
             />
         </React.Fragment>
     );

@@ -15,6 +15,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
 
+<<<<<<< HEAD
     const convertContent = (content, fromMode, toMode) => {
         try {
             if (fromMode === "yaml" && toMode === "json") {
@@ -154,6 +155,32 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
         return true;
     };
 
+=======
+    useEffect(() => {
+        if (open && queue) {
+            const content = yaml.dump(queue); // Always YAML
+            setEditorValue(content);
+        }
+    }, [open, queue]);
+
+    const handleModeChange = (event, newMode) => {
+        if (newMode !== null) {
+            setEditMode(newMode); // Only for syntax highlighting
+        }
+    };
+
+    const handleSave = () => {
+        try {
+            const updatedQueue = yaml.load(editorValue); // Always parse as YAML
+            onSave(updatedQueue);
+            onClose();
+        } catch (error) {
+            console.error("Error parsing edited content:", error);
+            alert("Invalid YAML format. Please check your input.");
+        }
+    };
+
+>>>>>>> main
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle
@@ -171,13 +198,20 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     color="primary"
                 >
                     <ToggleButton value="yaml">YAML</ToggleButton>
+<<<<<<< HEAD
                     <ToggleButton value="json">JSON</ToggleButton>
+=======
+>>>>>>> main
                 </ToggleButtonGroup>
             </DialogTitle>
             <DialogContent sx={{ height: "500px" }}>
                 <Editor
                     height="100%"
+<<<<<<< HEAD
                     language={editMode}
+=======
+                    language={editMode} // only affects syntax highlighting
+>>>>>>> main
                     value={editorValue}
                     onChange={(value) => setEditorValue(value || "")}
                     options={{
@@ -193,9 +227,15 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                 <Button
                     onClick={handleSave}
                     color="primary"
+<<<<<<< HEAD
                     disabled={loading} // Disable button while updating
                 >
                     {loading ? "Updating..." : "Update"}
+=======
+                    variant="contained"
+                >
+                    Update
+>>>>>>> main
                 </Button>
             </DialogActions>
         </Dialog>

@@ -61,7 +61,7 @@ const Pods = () => {
     useEffect(() => {
         fetchPods();
         fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPods, searchText]);
+    }, [fetchPods]);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -69,17 +69,15 @@ const Pods = () => {
         setPods(cachedPods.slice(startIndex, endIndex));
     }, [cachedPods, pagination]);
 
-    const handleSearch = (value) => {
-        const searchValue =
-            typeof value === "string" ? value : value.target.value;
-        setSearchText(searchValue);
+    const handleSearch = (event) => {
+        setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
     };
 
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchPods(); // This will trigger a new search with empty searchText
+        fetchPods();
     };
 
     const handleRefresh = useCallback(() => {
@@ -156,7 +154,7 @@ const Pods = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
-                    isRefreshing={loading}
+                    isRefreshing={false} // Update if needed
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
                 />

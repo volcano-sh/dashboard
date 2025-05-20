@@ -199,9 +199,9 @@ const Jobs = () => {
                     searchText={searchText}
                     handleSearch={handleSearch}
                     handleClearSearch={handleClearSearch}
-                    handleRefresh={handleRefresh}
+                    handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={loading}
+                    isRefreshing={false} // Update if needed
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
                 />

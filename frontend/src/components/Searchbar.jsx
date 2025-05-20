@@ -35,7 +35,7 @@ const SearchBar = ({
                                 <Button
                                     variant="outline-white"
                                     className="border-0 bg-transparent text-primary d-flex align-items-center px-2"
-                                    onClick={handleRefresh}
+                                    onClick={() => fetchData()}
                                     disabled={isRefreshing}
                                     style={{ height: "100%" }}
                                 >
@@ -44,6 +44,12 @@ const SearchBar = ({
                                         className="me-1"
                                         style={{ color: "#E34C26" }}
                                     />
+                                    {isRefreshing && (
+                                        <span
+                                            className="spinner-border spinner-border-sm text-primary"
+                                            role="status"
+                                        ></span>
+                                    )}
                                 </Button>
                                 <Form.Control
                                     placeholder={placeholder}
