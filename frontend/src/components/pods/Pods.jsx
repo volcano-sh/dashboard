@@ -13,7 +13,8 @@ import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { isBackendAvailable, resetBackendStatus } from "../../App";
 
-// EmptyState component for showing error and empty states
+let podsSearchDebounceTimeout = null;
+
 const EmptyState = ({ message, icon, isError = false, onRetry = null }) => {
     return (
         <Paper
@@ -121,12 +122,11 @@ const Pods = () => {
             setLoading(false);
             setIsRefreshing(false);
         }
-    }, [searchText, filters, setGlobalError]);
+    }, [searchText, filters, setGlobalError, clearGlobalError]);
 
     useEffect(() => {
         fetchPods();
         
-        // Error handling for namespace fetch
         const fetchData = async () => {
             try {
                 if (isBackendAvailable()) {
@@ -148,13 +148,28 @@ const Pods = () => {
     }, [cachedPods, pagination]);
 
     const handleSearch = (event) => {
-        setSearchText(event.target.value);
+        const newSearchText = event.target.value;
+        setSearchText(newSearchText);
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        // Clear any existing timeout
+        if (podsSearchDebounceTimeout) {
+            clearTimeout(podsSearchDebounceTimeout);
+        }
+        
+        podsSearchDebounceTimeout = setTimeout(() => {
+            fetchPods(); 
+        }, 300); 
     };
 
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        if (podsSearchDebounceTimeout) {
+            clearTimeout(podsSearchDebounceTimeout);
+        }
+        
         fetchPods();
     };
 
@@ -246,20 +261,17 @@ const Pods = () => {
                     onRetry={handleRefresh}
                 />
             ) : loading && pods.length === 0 ? (
-                // Custom loading state when there's no data
                 <Box sx={{ py: 4, textAlign: "center" }}>
                     <Typography variant="body1" color="textSecondary">
                         Loading pod data...
                     </Typography>
                 </Box>
             ) : pods.length === 0 ? (
-                // Empty state when no pods match filters
                 <EmptyState 
                     message="No pods found matching your current filters."
                     onRetry={handleRefresh}
                 />
             ) : (
-                // Table view when we have pods
                 <>
                     <PodsTable
                         pods={pods}

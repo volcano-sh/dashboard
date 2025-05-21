@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography, Button, Paper } from "@mui/material";
 import axios from "axios";
-import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
+import { parseCPU, parseMemoryToMi } from "../utils"; 
 import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
@@ -14,6 +14,7 @@ import CloudIcon from "@mui/icons-material/Cloud";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { isBackendAvailable, resetBackendStatus } from "../../App";
 
+let queuesSearchDebounceTimeout = null;
 
 const EmptyState = ({ message, icon, isError = false, onRetry = null }) => {
     return (
@@ -84,9 +85,9 @@ const Queues = () => {
 
     const fetchQueues = useCallback(async (forceRefresh = false) => {
         if (!forceRefresh && !isBackendAvailable()) {
-        console.log("Skipping fetch - backend unavailable");
-        return;
-    }
+            console.log("Skipping fetch - backend unavailable");
+            return;
+        }
         setLoading(true);
         setError(null);
         setIsRefreshing(true);
@@ -119,24 +120,42 @@ const Queues = () => {
             if (err.response && err.response.status === 500) {
                 setGlobalError("The Volcano API is currently unavailable. We're working to restore service.", "error");
             }
-            } finally {
-                setLoading(false);
-                setIsRefreshing(false);
-            }
-    }, [pagination, searchText, filters, setGlobalError]);
+        } finally {
+            setLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [pagination, searchText, filters, setGlobalError, clearGlobalError]);
 
     useEffect(() => {
         fetchQueues();
     }, []);
 
     const handleSearch = (event) => {
-        setSearchText(event.target.value);
+        const newSearchText = event.target.value;
+        setSearchText(newSearchText);
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        if (queuesSearchDebounceTimeout) {
+            clearTimeout(queuesSearchDebounceTimeout);
+        }
+        
+        queuesSearchDebounceTimeout = setTimeout(() => {
+            fetchQueues(); 
+        }, 300); 
     };
 
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        if (queuesSearchDebounceTimeout) {
+            clearTimeout(queuesSearchDebounceTimeout);
+        }
+        
+        if (queuesSearchDebounceTimeout) {
+            clearTimeout(queuesSearchDebounceTimeout);
+        }
+        
         fetchQueues();
     };
 
@@ -290,7 +309,6 @@ const Queues = () => {
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                     error={error}
-
                 />
             </Box>
             
@@ -347,8 +365,7 @@ const Queues = () => {
                 </>
             )}
         </Box>
-);
-
+    );
 };
 
 export default Queues;

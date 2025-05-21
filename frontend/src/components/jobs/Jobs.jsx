@@ -13,6 +13,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import { isBackendAvailable, resetBackendStatus } from "../../App";
 
+let jobsSearchDebounceTimeout = null;
 const EmptyState = ({ message, icon, isError = false, onRetry = null }) => {
     return (
         <Paper
@@ -166,13 +167,28 @@ const Jobs = () => {
     }, [cachedJobs, pagination]);
 
     const handleSearch = (event) => {
-        setSearchText(event.target.value);
+        const newSearchText = event.target.value;
+        setSearchText(newSearchText);
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        if (jobsSearchDebounceTimeout) {
+            clearTimeout(jobsSearchDebounceTimeout);
+        }
+        
+        jobsSearchDebounceTimeout = setTimeout(() => {
+            fetchJobs(); 
+        }, 300);
     };
 
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        if (jobsSearchDebounceTimeout) {
+            clearTimeout(jobsSearchDebounceTimeout);
+        }
+        
+        fetchJobs();
     };
 
     const handleRefresh = useCallback(() => {
