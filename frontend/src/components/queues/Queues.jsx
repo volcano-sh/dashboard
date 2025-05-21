@@ -1,12 +1,60 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Button, Paper } from "@mui/material";
 import axios from "axios";
-import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
+import { parseCPU, parseMemoryToMi } from "../utils"; 
 import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { useContext } from "react";
+import { ErrorContext } from "../Layout";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import CloudIcon from "@mui/icons-material/Cloud";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { isBackendAvailable, resetBackendStatus } from "../../App";
+
+let queuesSearchDebounceTimeout = null;
+
+const EmptyState = ({ message, icon, isError = false, onRetry = null }) => {
+    return (
+        <Paper
+            elevation={0}
+            sx={{
+                p: 5,
+                textAlign: "center",
+                borderRadius: 2,
+                backgroundColor: isError ? "#FFF5F5" : "#F9F9F9",
+                border: isError ? "1px solid #FFCDD2" : "1px solid #EEEEEE",
+                my: 3,
+            }}
+        >
+            <Box sx={{ mb: 2 }}>
+                {icon || (isError ? (
+                    <ErrorOutlineIcon sx={{ fontSize: 60, color: isError ? "#F44336" : "#9E9E9E" }} />
+                ) : (
+                    <CloudIcon sx={{ fontSize: 60, color: "#9E9E9E" }} />
+                ))}
+            </Box>
+            <Typography variant="h6" color={isError ? "error" : "textSecondary"} gutterBottom>
+                {isError ? "Connection Error" : "No Data Available"}
+            </Typography>
+            <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 500, mx: "auto", mb: 3 }}>
+                {message}
+            </Typography>
+            {onRetry && (
+                <Button
+                    variant="contained"
+                    color={isError ? "error" : "primary"}
+                    startIcon={<RefreshIcon />}
+                    onClick={onRetry}
+                >
+                    Retry Connection
+                </Button>
+            )}
+        </Paper>
+    );
+};
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -31,10 +79,18 @@ const Queues = () => {
         field: null,
         direction: "asc",
     });
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const fetchQueues = useCallback(async () => {
+    const { setError: setGlobalError, clearError: clearGlobalError } = useContext(ErrorContext);
+
+    const fetchQueues = useCallback(async (forceRefresh = false) => {
+        if (!forceRefresh && !isBackendAvailable()) {
+            console.log("Skipping fetch - backend unavailable");
+            return;
+        }
         setLoading(true);
         setError(null);
+        setIsRefreshing(true);
 
         try {
             const response = await axios.get(`/api/queues`, {
@@ -53,33 +109,61 @@ const Queues = () => {
             const data = response.data;
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
+            
+            setError(null);
+            clearGlobalError();
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            const errorMessage = "Failed to fetch queues: " + err.message;
+            setError(errorMessage);
             setQueues([]);
+            
+            if (err.response && err.response.status === 500) {
+                setGlobalError("The Volcano API is currently unavailable. We're working to restore service.", "error");
+            }
         } finally {
             setLoading(false);
+            setIsRefreshing(false);
         }
-    }, [pagination, searchText, filters]);
+    }, [pagination, searchText, filters, setGlobalError, clearGlobalError]);
 
     useEffect(() => {
         fetchQueues();
-    }, [fetchQueues]);
+    }, []);
 
     const handleSearch = (event) => {
-        setSearchText(event.target.value);
+        const newSearchText = event.target.value;
+        setSearchText(newSearchText);
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        if (queuesSearchDebounceTimeout) {
+            clearTimeout(queuesSearchDebounceTimeout);
+        }
+        
+        queuesSearchDebounceTimeout = setTimeout(() => {
+            fetchQueues(); 
+        }, 300); 
     };
 
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
+        
+        if (queuesSearchDebounceTimeout) {
+            clearTimeout(queuesSearchDebounceTimeout);
+        }
+        
+        if (queuesSearchDebounceTimeout) {
+            clearTimeout(queuesSearchDebounceTimeout);
+        }
+        
         fetchQueues();
     };
 
     const handleRefresh = useCallback(() => {
+        resetBackendStatus();
         setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
-        fetchQueues();
+        fetchQueues(true);
     }, [fetchQueues]);
 
     const handleQueueClick = useCallback(async (queue) => {
@@ -212,12 +296,8 @@ const Queues = () => {
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
-            {error && (
-                <Box sx={{ mt: 2, color: "error.main" }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
             <TitleComponent text="Volcano Queues Status" />
+            
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -225,36 +305,65 @@ const Queues = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={isRefreshing}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
+                    error={error}
                 />
             </Box>
-            <QueueTable
-                sortedQueues={sortedQueues}
-                allocatedFields={allocatedFields}
-                handleQueueClick={handleQueueClick}
-                handleSort={handleSort}
-                sortConfig={sortConfig}
-                filters={filters}
-                handleFilterClick={handleFilterClick}
-                anchorEl={anchorEl}
-                uniqueStates={uniqueStates}
-                handleFilterClose={handleFilterClose}
-                setAnchorEl={setAnchorEl}
-            />
-            <QueuePagination
-                pagination={pagination}
-                totalQueues={totalQueues}
-                handleChangeRowsPerPage={handleChangeRowsPerPage}
-                handleChangePage={handleChangePage}
-            />
-            <QueueYamlDialog
-                openDialog={openDialog}
-                handleCloseDialog={handleCloseDialog}
-                selectedQueueName={selectedQueueName}
-                selectedQueueYaml={selectedQueueYaml}
-            />
+            
+            {error ? (
+                <EmptyState 
+                    message={error.includes("status code 500") 
+                        ? "We're having trouble connecting to the Volcano API. This could be due to maintenance or temporary server issues." 
+                        : error
+                    }
+                    isError={true}
+                    onRetry={handleRefresh}
+                />
+            ) : loading && queues.length === 0 ? (
+                // Custom loading state when there's no data
+                <Box sx={{ py: 4, textAlign: "center" }}>
+                    <Typography variant="body1" color="textSecondary">
+                        Loading queue data...
+                    </Typography>
+                </Box>
+            ) : queues.length === 0 ? (
+                // Empty state when no queues match filters
+                <EmptyState 
+                    message="No queues found matching your current filters."
+                    onRetry={handleRefresh}
+                />
+            ) : (
+                // Table view when we have queues
+                <>
+                    <QueueTable
+                        sortedQueues={sortedQueues}
+                        allocatedFields={allocatedFields}
+                        handleQueueClick={handleQueueClick}
+                        handleSort={handleSort}
+                        sortConfig={sortConfig}
+                        filters={filters}
+                        handleFilterClick={handleFilterClick}
+                        anchorEl={anchorEl}
+                        uniqueStates={uniqueStates}
+                        handleFilterClose={handleFilterClose}
+                        setAnchorEl={setAnchorEl}
+                    />
+                    <QueuePagination
+                        pagination={pagination}
+                        totalQueues={totalQueues}
+                        handleChangeRowsPerPage={handleChangeRowsPerPage}
+                        handleChangePage={handleChangePage}
+                    />
+                    <QueueYamlDialog
+                        openDialog={openDialog}
+                        handleCloseDialog={handleCloseDialog}
+                        selectedQueueName={selectedQueueName}
+                        selectedQueueYaml={selectedQueueYaml}
+                    />
+                </>
+            )}
         </Box>
     );
 };
