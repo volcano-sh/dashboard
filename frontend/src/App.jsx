@@ -15,21 +15,17 @@ import { theme } from "./theme";
 import "bootstrap/dist/css/bootstrap.min.css";
 import axios from "axios";
 
-// Add a flag to track if backend is available
 let backendUnavailable = false;
 let consecutiveFailures = 0;
 const MAX_FAILURES = 3;
 
-// Add global axios interceptor to detect API errors
 axios.interceptors.response.use(
     (response) => {
-        // Reset failure count on success
         consecutiveFailures = 0;
         backendUnavailable = false;
         return response;
     },
     (error) => {
-        // Check if this is a server error (status 500)
         if (error.response && error.response.status === 500) {
             consecutiveFailures++;
             
@@ -44,7 +40,6 @@ axios.interceptors.response.use(
     }
 );
 
-// Export the backend status checker
 export const isBackendAvailable = () => !backendUnavailable;
 export const resetBackendStatus = () => {
     backendUnavailable = false;

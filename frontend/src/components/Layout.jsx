@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
     Alert,
@@ -23,11 +23,10 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloseIcon from "@mui/icons-material/Close";
+import { resetBackendStatus } from "../App";
 
-// use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
 
-// Create and export the context once
 export const ErrorContext = React.createContext({
     hasError: false,
     errorMessage: "",
@@ -36,21 +35,21 @@ export const ErrorContext = React.createContext({
 });
 
 const Layout = () => {
-    // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
     const [globalError, setGlobalError] = useState({
         hasError: false,
         message: "",
-        severity: "error", // can be 'error', 'warning', 'info', 'success'
+        severity: "error",
     });
     const [showErrorBanner, setShowErrorBanner] = useState(true);
 
-    // Error context value
     const errorContextValue = {
         hasError: globalError.hasError,
         errorMessage: globalError.message,
         setError: (message, severity = "error") => {
+            if (!message) return;
+            
             setGlobalError({
                 hasError: true,
                 message,
@@ -64,12 +63,16 @@ const Layout = () => {
                 message: "",
                 severity: "error",
             });
+            setShowErrorBanner(false);
         },
     };
 
-    // constants can be kept outside the component
-    const volcanoOrange = "#E34C26"; // orange red theme
-    const headerGrey = "#424242"; // dark gray top stripe
+    useEffect(() => {
+        errorContextValue.clearError();
+    }, [location.pathname]);
+
+    const volcanoOrange = "#E34C26";
+    const headerGrey = "#424242";
     const drawerWidth = 240;
 
     const handleDrawerToggle = () => {
@@ -77,24 +80,18 @@ const Layout = () => {
     };
 
     const handleDismissError = () => {
-        setShowErrorBanner(false);
+        errorContextValue.clearError();
     };
 
     const handleRetryConnection = () => {
-        // Here you would implement your retry logic
-        // For now, just clear the error and show a temporary info message
+        resetBackendStatus();
+        
         errorContextValue.clearError();
         errorContextValue.setError("Attempting to reconnect...", "info");
         
-        // Simulate trying to reconnect
         setTimeout(() => {
-            // This would be replaced with actual API check results
-            const reconnectSuccessful = Math.random() > 0.5;
-            
-            if (reconnectSuccessful) {
+            if (globalError.severity === "info") {
                 errorContextValue.clearError();
-            } else {
-                errorContextValue.setError("Failed to reconnect. Services are still unavailable.", "error");
             }
         }, 2000);
     };
@@ -211,7 +208,6 @@ const Layout = () => {
                             })}
                         </List>
                     </Box>
-                    {/* Logo and text part */}
                     <Box
                         sx={{
                             p: 1,
@@ -236,7 +232,6 @@ const Layout = () => {
                     </Box>
                 </Drawer>
                 
-                {/* Main content box with the error banner inside */}
                 <Box
                     component="main"
                     sx={{ 
@@ -247,7 +242,6 @@ const Layout = () => {
                 >
                     <Toolbar />
                     
-                    {/* Place error banner at the top of the main content area */}
                     {globalError.hasError && showErrorBanner && (
                         <Alert 
                             severity={globalError.severity}
@@ -276,7 +270,7 @@ const Layout = () => {
                             }
                             sx={{ 
                                 borderRadius: 1,
-                                mb: 3 // Add margin bottom to separate from content
+                                mb: 3
                             }}
                         >
                             <AlertTitle>

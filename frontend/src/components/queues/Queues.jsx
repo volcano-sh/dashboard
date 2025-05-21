@@ -80,7 +80,7 @@ const Queues = () => {
     });
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const { setError: setGlobalError } = useContext(ErrorContext);
+    const { setError: setGlobalError, clearError: clearGlobalError } = useContext(ErrorContext);
 
     const fetchQueues = useCallback(async (forceRefresh = false) => {
         if (!forceRefresh && !isBackendAvailable()) {
@@ -108,8 +108,9 @@ const Queues = () => {
             const data = response.data;
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
-
-            setGlobalError(null);
+            
+            setError(null);
+            clearGlobalError();
         } catch (err) {
             const errorMessage = "Failed to fetch queues: " + err.message;
             setError(errorMessage);
@@ -126,7 +127,7 @@ const Queues = () => {
 
     useEffect(() => {
         fetchQueues();
-    }, [fetchQueues]);
+    }, []);
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -288,6 +289,8 @@ const Queues = () => {
                     isRefreshing={isRefreshing}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
+                    error={error}
+
                 />
             </Box>
             

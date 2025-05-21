@@ -2,7 +2,6 @@ import { isBackendAvailable } from "../App";
 
 export const fetchAllNamespaces = async () => {
     try {
-        // Don't fetch if backend is unavailable
         if (!isBackendAvailable()) {
             console.log("Skipping namespace fetch - backend unavailable");
             return ["All", "default"];
@@ -21,13 +20,12 @@ export const fetchAllNamespaces = async () => {
         ];
     } catch (error) {
         console.error("Error fetching namespaces:", error);
-        return ["All", "default"];  // Return sensible defaults on error
+        return ["All", "default"]; 
     }
 };
 
 export const fetchAllQueues = async () => {
     try {
-        // Don't fetch if backend is unavailable
         if (!isBackendAvailable()) {
             console.log("Skipping queues fetch - backend unavailable");
             return ["All"];
@@ -46,7 +44,7 @@ export const fetchAllQueues = async () => {
         ];
     } catch (error) {
         console.error("Error fetching queues:", error);
-        return ["All"];  // Return sensible default on error
+        return ["All"];  
     }
 };
 
@@ -86,7 +84,6 @@ export const parseMemoryToMi = (memoryStr) => {
     return value / 1024 / 1024; // default Bi
 };
 
-// Helper function to debounce API calls to prevent rapid retries
 export const debounce = (func, wait) => {
     let timeout;
     return function(...args) {
@@ -96,7 +93,6 @@ export const debounce = (func, wait) => {
     };
 };
 
-// Helper to format error messages for user display
 export const formatErrorMessage = (error) => {
     if (!error) return "Unknown error occurred";
     

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
     Container,
     Row,
@@ -20,7 +20,22 @@ const SearchBar = ({
     isRefreshing,
     placeholder,
     refreshLabel,
+    error, 
 }) => {
+    useEffect(() => {    
+        let refreshInterval;
+        
+        if (!isRefreshing && !error && fetchData) {
+            refreshInterval = setInterval(() => {
+                fetchData(false); 
+            }, 30000);
+        }
+        
+        return () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        };
+    }, [fetchData, isRefreshing, error]); 
+
     return (
         <Card className="mb-3 border-0 rounded-lg">
             <Card.Body className="py-3">
@@ -35,7 +50,7 @@ const SearchBar = ({
                                 <Button
                                     variant="outline-white"
                                     className="border-0 bg-transparent text-primary d-flex align-items-center px-2"
-                                    onClick={() => fetchData()}
+                                    onClick={() => fetchData && fetchData()} 
                                     disabled={isRefreshing}
                                     style={{ height: "100%" }}
                                 >

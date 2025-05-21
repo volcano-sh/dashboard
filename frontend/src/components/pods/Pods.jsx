@@ -77,11 +77,9 @@ const Pods = () => {
     const [sortDirection, setSortDirection] = useState("");
     const [isRefreshing, setIsRefreshing] = useState(false);
     
-    // Global error context
-    const { setError: setGlobalError } = useContext(ErrorContext);
+    const { setError: setGlobalError, clearError: clearGlobalError } = useContext(ErrorContext);
 
     const fetchPods = useCallback(async (forceRefresh = false) => {
-        // Don't fetch if backend is known to be unavailable and not a manual refresh
         if (!forceRefresh && !isBackendAvailable()) {
             console.log("Skipping fetch - backend unavailable");
             return;
@@ -108,14 +106,14 @@ const Pods = () => {
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0);
             
-            // Clear any global error when fetch succeeds
-            setGlobalError(null);
+            setError(null);
+            clearGlobalError(); 
+            
         } catch (err) {
             const errorMessage = "Failed to fetch pods: " + err.message;
             setError(errorMessage);
             setCachedPods([]);
             
-            // Set global error when fetch fails with status 500
             if (err.response && err.response.status === 500) {
                 setGlobalError("The Volcano API is currently unavailable. We're working to restore service.", "error");
             }
@@ -141,7 +139,7 @@ const Pods = () => {
         };
         
         fetchData();
-    }, [fetchPods]);
+    }, []);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -161,11 +159,10 @@ const Pods = () => {
     };
 
     const handleRefresh = useCallback(() => {
-        // Force refresh even if backend was unavailable
         resetBackendStatus();
         setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
-        fetchPods(true); // Pass true to force refresh
+        fetchPods(true); 
     }, [fetchPods]);
 
     const handlePodClick = useCallback(async (pod) => {
@@ -235,10 +232,10 @@ const Pods = () => {
                     isRefreshing={isRefreshing}
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
+                    error={error}
                 />
             </Box>
             
-            {/* Enhanced error state handling */}
             {error ? (
                 <EmptyState 
                     message={error.includes("status code 500") 

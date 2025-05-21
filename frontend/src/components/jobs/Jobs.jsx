@@ -13,7 +13,6 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import { isBackendAvailable, resetBackendStatus } from "../../App";
 
-// New Empty State Component
 const EmptyState = ({ message, icon, isError = false, onRetry = null }) => {
     return (
         <Paper
@@ -83,14 +82,11 @@ const Jobs = () => {
     const [totalJobs, setTotalJobs] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
     const [isRefreshing, setIsRefreshing] = useState(false);
-    // Add a flag to prevent auto-refresh when backend is down
     const [preventAutoRefresh, setPreventAutoRefresh] = useState(false);
     
-    // Global error context
-    const { setError: setGlobalError } = useContext(ErrorContext);
+    const { setError: setGlobalError, clearError: clearGlobalError } = useContext(ErrorContext);
 
     const fetchJobs = useCallback(async (forceRefresh = false) => {
-        // Don't fetch if backend is known to be unavailable and not a manual refresh
         if (!forceRefresh && !isBackendAvailable()) {
             console.log("Skipping fetch - backend unavailable");
             return;
@@ -118,19 +114,16 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
             
-            // Clear any global error when fetch succeeds
-            setGlobalError(null);
-            // Allow auto-refresh again
+            // Updated: Use clearGlobalError instead of setGlobalError(null)
+            clearGlobalError();
             setPreventAutoRefresh(false);
         } catch (err) {
             const errorMessage = "Failed to fetch jobs: " + err.message;
             setError(errorMessage);
             setCachedJobs([]);
             
-            // Prevent auto-refresh after error
             setPreventAutoRefresh(true);
             
-            // Set global error when fetch fails with status 500
             if (err.response && err.response.status === 500) {
                 setGlobalError("The Volcano API is currently unavailable. We're working to restore service.", "error");
             }
@@ -138,13 +131,11 @@ const Jobs = () => {
             setLoading(false);
             setIsRefreshing(false);
         }
-    }, [searchText, filters, setGlobalError]);
+    }, [searchText, filters, setGlobalError, clearGlobalError]);
 
     useEffect(() => {
-        // Initial fetch only
         fetchJobs();
         
-        // Error handling for namespace and queue fetch
         const fetchData = async () => {
             try {
                 if (isBackendAvailable()) {
@@ -166,9 +157,7 @@ const Jobs = () => {
         };
         
         fetchData();
-        
-        // NO auto-refresh interval to prevent continuous errors
-    }, []);  // Empty dependency array - run only once on mount
+    }, []);
     
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -187,11 +176,10 @@ const Jobs = () => {
     };
 
     const handleRefresh = useCallback(() => {
-        // Force refresh even if backend was unavailable
         resetBackendStatus();
         setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
-        fetchJobs(true); // Pass true to force refresh
+        fetchJobs(true);
     }, [fetchJobs]);
 
     const handleJobClick = useCallback(async (job) => {
@@ -226,7 +214,6 @@ const Jobs = () => {
         }
     }, []);
 
-    // Add the missing handleCloseDialog function
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
     }, []);
@@ -300,10 +287,10 @@ const Jobs = () => {
                     isRefreshing={isRefreshing}
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
+                    error={error}
                 />
             </Box>
             
-            {/* Enhanced error state handling */}
             {error ? (
                 <EmptyState 
                     message={error.includes("status code 500") 
@@ -314,20 +301,17 @@ const Jobs = () => {
                     onRetry={handleRefresh}
                 />
             ) : loading && cachedJobs.length === 0 ? (
-                // Custom loading state when there's no data
                 <Box sx={{ py: 4, textAlign: "center" }}>
                     <Typography variant="body1" color="textSecondary">
                         Loading job data...
                     </Typography>
                 </Box>
             ) : cachedJobs.length === 0 ? (
-                // Empty state when no jobs match filters
                 <EmptyState 
                     message="No jobs found matching your current filters. Try adjusting your filters or create a new job."
                     onRetry={handleRefresh}
                 />
             ) : (
-                // Table view when we have jobs
                 <>
                     <JobTable
                         jobs={sortedJobs}

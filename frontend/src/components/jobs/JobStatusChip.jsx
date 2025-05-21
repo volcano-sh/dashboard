@@ -9,9 +9,7 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 const JobStatusChip = ({ status, error = false, loading = false }) => {
     const theme = useTheme();
 
-    // Enhanced status color mapping with better visual distinctions
     const getStatusConfig = (status) => {
-        // If there's a connection error, override status display
         if (error) {
             return {
                 color: theme.palette.error.main,
@@ -21,7 +19,6 @@ const JobStatusChip = ({ status, error = false, loading = false }) => {
             };
         }
         
-        // If loading, show loading state
         if (loading) {
             return {
                 color: theme.palette.grey[500],
@@ -31,7 +28,6 @@ const JobStatusChip = ({ status, error = false, loading = false }) => {
             };
         }
         
-        // Regular status mapping
         switch (status) {
             case "Failed":
                 return {
