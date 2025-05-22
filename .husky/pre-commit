@@ -1,1 +1,9 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
 npx lint-staged
+npx prettier --check .
+npx vitest run --silent
+
+# Add DCO check
+.husky/scripts/check-dco-signoff.sh
