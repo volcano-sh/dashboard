@@ -100,7 +100,7 @@ const JobStatusPieChart = ({ data }) => {
                     sx={{
                         flex: 1,
                         minWidth: "250px", // Ensure that the chart is not too small
-                        height: "300px", // Fixed height to adapt to various screens
+                        height: "260px", // Fixed height to adapt to various screens
                         position: "relative",
                         display: "flex",
                         alignItems: "center",
