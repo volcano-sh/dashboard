@@ -154,7 +154,7 @@ const Pods = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
                 />
@@ -165,7 +165,7 @@ const Pods = () => {
                 allNamespaces={allNamespaces}
                 sortDirection={sortDirection}
                 onSortDirectionToggle={toggleSortDirection}
-                onFilterChange={handleFilterChange}
+                onFilterChange={handleFilterChange}  // Updated prop name
                 onPodClick={handlePodClick}
             />
             <PodsPagination

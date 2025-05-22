@@ -1,3 +1,4 @@
+// Fixed Jobs.jsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
 import axios from "axios";
@@ -22,11 +23,6 @@ const Jobs = () => {
     });
     const [selectedJobYaml, setSelectedJobYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
-    const [anchorEl, setAnchorEl] = useState({
-        status: null,
-        namespace: null,
-        queue: null,
-    });
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
     const [selectedJobName, setSelectedJobName] = useState("");
@@ -143,32 +139,36 @@ const Jobs = () => {
         }));
     }, []);
 
-    const handleFilterClick = useCallback((filterType, event) => {
-        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
-    }, []);
-
-    const handleFilterClose = useCallback((filterType, value) => {
+    const handleFilterChange = useCallback((filterType, value) => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
-        setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
+    // FIX 1: Calculate uniqueStatuses from ALL cached jobs, not filtered ones
+    // This ensures all status options are always available
     const uniqueStatuses = useMemo(() => {
         return [
             "All",
             ...new Set(
-                jobs.map((job) => job.status?.state.phase).filter(Boolean),
+                cachedJobs.map((job) => job.status?.state?.phase).filter(Boolean),
             ),
         ];
-    }, [jobs]);
+    }, [cachedJobs]); // Changed from 'jobs' to 'cachedJobs'
+
+    // FIX 2: Prepare queue options without duplicate "All"
+    const queueOptions = useMemo(() => {
+        // Remove "All" from allQueues if it exists, then add it at the beginning
+        const filteredQueues = allQueues.filter(queue => queue !== "All");
+        return ["All", ...filteredQueues];
+    }, [allQueues]);
 
     const filteredJobs = useMemo(() => {
         return jobs.filter((job) => {
             const statusMatch =
                 filters.status === "All" ||
-                (job.status && job.status.state.phase === filters.status);
+                (job.status && job.status.state?.phase === filters.status);
             const queueMatch =
-                filters.queue === "All" || job.spec.queue === filters.queue;
+                filters.queue === "All" || job.spec?.queue === filters.queue;
             return statusMatch && queueMatch;
         });
     }, [jobs, filters]);
@@ -201,7 +201,7 @@ const Jobs = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
                 />
@@ -212,10 +212,8 @@ const Jobs = () => {
                 filters={filters}
                 uniqueStatuses={uniqueStatuses}
                 allNamespaces={allNamespaces}
-                allQueues={allQueues}
-                anchorEl={anchorEl}
-                handleFilterClick={handleFilterClick}
-                handleFilterClose={handleFilterClose}
+                allQueues={queueOptions}  // Use the fixed queue options
+                onFilterChange={handleFilterChange}
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
             />
