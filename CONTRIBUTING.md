@@ -6,9 +6,7 @@ There are various ways in which you can contribute to this project such as `upda
 
 When making any critical change to this repository, please first discuss the change you wish to make via issue, email, or any other method with the [owners](https://github.com/volcano-sh/dashboard/blob/main/OWNERS) of this repository before making a change.
 
-## Getting Started
-
-Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE.
+🚀 For dashboard setup, see the [Getting Started](./README.md#getting-started) section in README.
 
 ### Prerequisites
 
