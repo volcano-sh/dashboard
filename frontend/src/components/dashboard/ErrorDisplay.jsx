@@ -1,5 +1,6 @@
 import React from "react";
 import { Paper, Typography, Button, Stack } from "@mui/material";
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 
 const ErrorDisplay = ({ message, onRetry }) => {
     return (
@@ -16,8 +17,10 @@ const ErrorDisplay = ({ message, onRetry }) => {
                 boxShadow: 2,
             }}
         >
+    
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                ⚠️ {message}
+             <ReportProblemIcon sx={{ color: '#ffb74d' }} fontSize="medium" />
+               {message}
             </Typography>
             {onRetry && (
                 <Button

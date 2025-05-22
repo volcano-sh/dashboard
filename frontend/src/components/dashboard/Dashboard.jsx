@@ -70,7 +70,7 @@ const Dashboard = () => {
                 p: 3,
             }}
         >
-            {/* {error && <ErrorDisplay message={error} />} */}
+            
             {error && <ErrorDisplay message={error} onRetry={fetchAllData} />}
 
 

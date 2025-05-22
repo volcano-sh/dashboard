@@ -142,11 +142,6 @@ const Pods = () => {
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
-            {/* {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )} */}
             {error && (
                 <ErrorDisplay
                     message={error}
