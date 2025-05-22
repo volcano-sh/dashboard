@@ -8,7 +8,7 @@ The volcano dashboard provides a basic dashboard that can be easily deployed in 
 
 ## Getting Started
 
-Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE.
+Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE. Thanks.
 
 ## Design
 
