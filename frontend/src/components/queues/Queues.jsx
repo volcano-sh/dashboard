@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import axios from "axios";
-import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
+import { parseCPU, parseMemoryToMi } from "../utils";
 import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
@@ -17,9 +17,6 @@ const Queues = () => {
     });
     const [selectedQueueYaml, setSelectedQueueYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
-    const [anchorEl, setAnchorEl] = useState({
-        status: null,
-    });
     const [searchText, setSearchText] = useState("");
     const [selectedQueueName, setSelectedQueueName] = useState("");
     const [pagination, setPagination] = useState({
@@ -130,13 +127,9 @@ const Queues = () => {
         }));
     }, []);
 
-    const handleFilterClick = useCallback((filterType, event) => {
-        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
-    }, []);
-
-    const handleFilterClose = useCallback((filterType, value) => {
+    // ADD THIS FUNCTION - replaces the old handleFilterClick/handleFilterClose pattern
+    const handleFilterChange = useCallback((filterType, value) => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
-        setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
@@ -225,7 +218,7 @@ const Queues = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                 />
@@ -237,11 +230,8 @@ const Queues = () => {
                 handleSort={handleSort}
                 sortConfig={sortConfig}
                 filters={filters}
-                handleFilterClick={handleFilterClick}
-                anchorEl={anchorEl}
                 uniqueStates={uniqueStates}
-                handleFilterClose={handleFilterClose}
-                setAnchorEl={setAnchorEl}
+                onFilterChange={handleFilterChange}  // Updated prop name
             />
             <QueuePagination
                 pagination={pagination}
