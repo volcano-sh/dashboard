@@ -127,6 +127,7 @@ rules:
       - get
       - list
       - watch
+      - delete
 ---
 
 # volcano dashboard service
