@@ -3,12 +3,38 @@ import {
     TableContainer,
     Table,
     TableBody,
+    TableRow,
+    TableCell,
     Paper,
     useTheme,
     alpha,
+    Skeleton,
 } from "@mui/material";
 import TableHeader from "./TableHeader";
 import PodRow from "./PodRow";
+
+// Skeleton Row Component for Pods Table
+const PodsTableSkeletonRow = () => {
+    return (
+        <TableRow>
+            <TableCell>
+                <Skeleton variant="text" width="70%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="text" width="60%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="text" width="85%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="rounded" width={80} height={32} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="text" width="50%" height={24} />
+            </TableCell>
+        </TableRow>
+    );
+};
 
 const PodsTable = ({
     pods,
@@ -18,6 +44,8 @@ const PodsTable = ({
     onSortDirectionToggle,
     onFilterChange,
     onPodClick,
+    isLoading = false,
+    skeletonRows = 5,
 }) => {
     const theme = useTheme();
     const [anchorEl, setAnchorEl] = React.useState({
@@ -120,14 +148,18 @@ const PodsTable = ({
                     sortDirection={sortDirection}
                 />
                 <TableBody>
-                    {sortedPods.map((pod) => (
-                        <PodRow
-                            key={`${pod.metadata.namespace}-${pod.metadata.name}`}
-                            pod={pod}
-                            getStatusColor={getStatusColor}
-                            onPodClick={onPodClick}
-                        />
-                    ))}
+                    {isLoading
+                        ? Array.from({ length: skeletonRows }).map((_, index) => (
+                              <PodsTableSkeletonRow key={`skeleton-${index}`} />
+                          ))
+                        : sortedPods.map((pod) => (
+                              <PodRow
+                                  key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                  pod={pod}
+                                  getStatusColor={getStatusColor}
+                                  onPodClick={onPodClick}
+                              />
+                          ))}
                 </TableBody>
             </Table>
         </TableContainer>

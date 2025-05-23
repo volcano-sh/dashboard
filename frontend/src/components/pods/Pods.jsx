@@ -154,7 +154,7 @@ const Pods = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
                 />
@@ -167,6 +167,8 @@ const Pods = () => {
                 onSortDirectionToggle={toggleSortDirection}
                 onFilterChange={handleFilterChange}
                 onPodClick={handlePodClick}
+                isLoading={loading}
+                skeletonRows={pagination.rowsPerPage}
             />
             <PodsPagination
                 totalPods={totalPods}

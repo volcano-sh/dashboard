@@ -3,13 +3,44 @@ import {
     TableContainer,
     Table,
     TableBody,
+    TableRow,
+    TableCell,
     Paper,
     useTheme,
     alpha,
+    Skeleton,
 } from "@mui/material";
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+
+// Skeleton Row Component for Queue Table
+const QueueTableSkeletonRow = ({ allocatedFields }) => {
+    return (
+        <TableRow>
+            <TableCell>
+                <Skeleton variant="text" width="70%" height={24} />
+            </TableCell>
+            {allocatedFields.map((field) => (
+                <TableCell key={field}>
+                    <Skeleton variant="text" width="40%" height={24} />
+                </TableCell>
+            ))}
+            <TableCell>
+                <Skeleton variant="text" width="85%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="rounded" width={70} height={28} />
+            </TableCell>
+            <TableCell>
+                <div style={{ display: "flex", gap: "8px" }}>
+                    <Skeleton variant="circular" width={24} height={24} />
+                    <Skeleton variant="circular" width={24} height={24} />
+                </div>
+            </TableCell>
+        </TableRow>
+    );
+};
 
 const QueueTable = ({
     sortedQueues,
@@ -24,6 +55,8 @@ const QueueTable = ({
     handleFilterClose,
     setAnchorEl,
     handleDelete,
+    isLoading = false,
+    skeletonRows = 5,
 }) => {
     const theme = useTheme();
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -94,15 +127,22 @@ const QueueTable = ({
                         setAnchorEl={setAnchorEl}
                     />
                     <TableBody>
-                        {sortedQueues.map((queue) => (
-                            <QueueTableRow
-                                key={queue.metadata.name}
-                                queue={queue}
-                                allocatedFields={allocatedFields}
-                                handleQueueClick={handleQueueClick}
-                                handleOpenDeleteDialog={handleOpenDeleteDialog}
-                            />
-                        ))}
+                        {isLoading
+                            ? Array.from({ length: skeletonRows }).map((_, index) => (
+                                  <QueueTableSkeletonRow 
+                                      key={`skeleton-${index}`}
+                                      allocatedFields={allocatedFields}
+                                  />
+                              ))
+                            : sortedQueues.map((queue) => (
+                                  <QueueTableRow
+                                      key={queue.metadata.name}
+                                      queue={queue}
+                                      allocatedFields={allocatedFields}
+                                      handleQueueClick={handleQueueClick}
+                                      handleOpenDeleteDialog={handleOpenDeleteDialog}
+                                  />
+                              ))}
                     </TableBody>
                 </Table>
             </TableContainer>
