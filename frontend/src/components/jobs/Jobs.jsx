@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
+import AddIcon from '@mui/icons-material/Add';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import axios from "axios";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
-import SearchBar from "../Searchbar";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -36,6 +37,8 @@ const Jobs = () => {
     });
     const [totalJobs, setTotalJobs] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
+    const [dialogMode, setDialogMode] = useState('view');
+    const [selectedJobNamespace, setSelectedJobNamespace] = useState('default');
 
     const fetchJobs = useCallback(async () => {
         setLoading(true);
@@ -95,6 +98,14 @@ const Jobs = () => {
         fetchJobs();
     }, [fetchJobs]);
 
+    const handleCreateJob = () => {
+        setSelectedJobName('');
+        setSelectedJobYaml('');
+        setSelectedJobNamespace('default');
+        setDialogMode('create');
+        setOpenDialog(true);
+    };
+
     const handleJobClick = useCallback(async (job) => {
         try {
             setLoading(true);
@@ -118,6 +129,7 @@ const Jobs = () => {
 
             setSelectedJobName(job.metadata.name);
             setSelectedJobYaml(formattedYaml);
+            setDialogMode('view');
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
@@ -127,9 +139,33 @@ const Jobs = () => {
         }
     }, []);
 
-    const handleCloseDialog = useCallback(() => {
+    const handleEditJob = async (job) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(
+                `/api/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
+                { responseType: "text" },
+            );
+        
+            setSelectedJobName(job.metadata.name);
+            setSelectedJobNamespace(job.metadata.namespace);
+            setSelectedJobYaml(response.data);
+            setDialogMode('edit');
+            setOpenDialog(true);
+        } catch (err) {
+            console.error("Failed to fetch job YAML:", err);
+            setError("Failed to fetch job YAML: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCloseDialog = useCallback((refreshNeeded = false) => {
         setOpenDialog(false);
-    }, []);
+        if (refreshNeeded) {
+            fetchJobs();
+        }
+    },[fetchJobs]);
 
     const handleChangePage = useCallback((event, newPage) => {
         setPagination((prev) => ({ ...prev, page: newPage }));
@@ -193,19 +229,67 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
-            <Box>
-                <SearchBar
-                    searchText={searchText}
-                    handleSearch={handleSearch}
-                    handleClearSearch={handleClearSearch}
-                    handleRefresh={fetchJobs}
-                    fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                />
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <TitleComponent text="VOLCANO JOBS STATUS" />
+                
+                {/* CREATE JOB button in top-right */}
+                <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<AddIcon />}
+                    onClick={handleCreateJob}
+                    sx={{ 
+                        height: '40px',
+                        borderRadius: '4px',
+                        textTransform: 'uppercase',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    CREATE JOB
+                </Button>
             </Box>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box sx={{ position: 'relative', width: '400px' }}>
+                    <input
+                        type="text"
+                        value={searchText}
+                        onChange={handleSearch}
+                        placeholder="Search jobs..."
+                        style={{
+                            width: '100%',
+                            padding: '8px 12px 8px 40px',
+                            borderRadius: '20px',
+                            border: '1px solid #ddd',
+                            fontSize: '14px',
+                            outline: 'none'
+                        }}
+                    />
+                    <Box sx={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M21 21L16.65 16.65" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                    </Box>
+                </Box>
+                
+                {/* Position Refresh button to match Pods UI */}
+                <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<RefreshIcon />}
+                    onClick={handleRefresh}
+                    disabled={loading}
+                    sx={{ 
+                        height: '40px',
+                        borderRadius: '20px'
+                    }}
+                >
+                    Refresh Jobs
+                </Button>
+            </Box>
+            
             <JobTable
                 jobs={sortedJobs}
                 handleJobClick={handleJobClick}
@@ -218,6 +302,7 @@ const Jobs = () => {
                 handleFilterClose={handleFilterClose}
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
+                onEditJob={handleEditJob}
             />
             <JobPagination
                 pagination={pagination}
@@ -230,6 +315,8 @@ const Jobs = () => {
                 handleClose={handleCloseDialog}
                 selectedJobName={selectedJobName}
                 selectedJobYaml={selectedJobYaml}
+                selectedJobNamespace={selectedJobNamespace}
+                mode={dialogMode}
             />
         </Box>
     );
