@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: deployment/build/frontend/Dockerfile
+    ports:
+      - "8080:8080"  # Expose on localhost:8080
+    depends_on:
+      - backend
+    networks:
+      - volcano-net
+    environment:
+      - NODE_ENV=development
+
+  backend:
+    build:
+      context: .
+      dockerfile: deployment/build/backend/Dockerfile
+    ports:
+      - "3001:3001"  # Expose on localhost:3001
+    volumes:
+      - ~/.kube/config:/root/.kube/config:ro  # mount your kube config
+    environment:
+      - KUBECONFIG=/root/.kube/config
+    networks:
+      - volcano-net
+
+networks:
+  volcano-net:
+    driver: bridge
