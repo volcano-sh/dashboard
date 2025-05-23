@@ -16,15 +16,32 @@ spec:
       labels:
         app: volcano-dashboard
     spec:
+      securityContext:
+        seLinuxOptions:
+          level: s0:c123,c456
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: volcano-dashboard
       containers:
         - image: volcanosh/vc-dashboard-frontend:latest
           imagePullPolicy: Always
           name: frontend
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: frontend
               protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+          volumeMounts:
+            - mountPath: /var/cache/nginx
+              name: nginx-cache
+            - mountPath: /run
+              name: nginx-run
         - image: volcanosh/vc-dashboard-backend:latest
           imagePullPolicy: Always
           name: backend
@@ -32,6 +49,18 @@ spec:
             - containerPort: 3001
               name: backend
               protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
 ---
 
 # volcano dashboard serviceAccount
@@ -98,6 +127,7 @@ rules:
       - get
       - list
       - watch
+      - delete
 ---
 
 # volcano dashboard service
@@ -115,6 +145,6 @@ spec:
     - name: frontend
       port: 80
       protocol: TCP
-      targetPort: 80
+      targetPort: 8080
   selector:
     app: volcano-dashboard
