@@ -183,6 +183,106 @@ app.get("/api/queue/:name/yaml", async (req, res) => {
     }
 });
 
+app.put("/api/queues/:name", express.json(), async (req, res) => {
+    const name = req.params.name;
+    const updatedBody = req.body;
+
+    try {
+        console.log(
+            `Attempting to update queue ${name} with:`,
+            JSON.stringify(updatedBody),
+        );
+
+        // Validate the request body
+        if (!updatedBody.spec || Object.keys(updatedBody.spec).length === 0) {
+            return res.status(400).json({
+                error: "Bad Request",
+                details: "spec object is required and cannot be empty",
+            });
+        }
+
+        // First, verify the queue exists
+        try {
+            await k8sApi.getClusterCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "queues",
+                name: name,
+            });
+            console.log(`Found existing queue ${name}`);
+        } catch (err) {
+            console.error(`Queue ${name} not found:`, err);
+            return res.status(404).json({
+                error: "Not Found",
+                details: `Queue ${name} not found`,
+            });
+        }
+
+        // Convert numeric fields in spec from string to integer if needed
+        const numericFields = new Set(["weight"]); // Add more fields here if needed
+
+        const patchOperations = [];
+
+        Object.entries(updatedBody.spec).forEach(([key, value]) => {
+            let val = value;
+
+            if (numericFields.has(key) && typeof val === "string") {
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed)) {
+                    val = parsed;
+                }
+            }
+
+            patchOperations.push({
+                op: "replace",
+                path: `/spec/${key}`,
+                value: val,
+            });
+        });
+
+        console.log(
+            "Using JSON Patch operations:",
+            JSON.stringify(patchOperations),
+        );
+
+        // Apply the patch and capture the response
+        const response = await k8sApi.patchClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: name,
+            body: patchOperations,
+            options: {
+                headers: {
+                    "Content-Type": "application/json-patch+json",
+                },
+            },
+        });
+
+        console.log("Patch response:", JSON.stringify(response.body, null, 2));
+
+        // Get and return the fully updated queue
+        const updatedQueue = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: name,
+        });
+
+        res.json({
+            message: `Successfully updated queue ${name}`,
+            patchResponse: response.body,
+            updatedQueue: updatedQueue.body,
+        });
+    } catch (err) {
+        console.error(`Error updating queue ${name}:`, err);
+        res.status(500).json({
+            error: `Failed to update queue ${name}`,
+            details: err.body?.message || err.message,
+            rawError: err.toString(),
+        });
+    }
+});
 // Get all Volcano Queues
 app.get("/api/queues", async (req, res) => {
     try {

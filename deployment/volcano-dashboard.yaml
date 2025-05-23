@@ -132,6 +132,8 @@ rules:
       - watch
       - delete
       - create
+      - update
+      - patch 
 ---
 
 # volcano dashboard service
