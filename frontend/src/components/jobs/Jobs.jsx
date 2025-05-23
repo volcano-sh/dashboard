@@ -199,9 +199,9 @@ const Jobs = () => {
                     searchText={searchText}
                     handleSearch={handleSearch}
                     handleClearSearch={handleClearSearch}
-                    handleRefresh={fetchJobs}
+                    handleRefresh={handleRefresh}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
                 />
@@ -218,6 +218,8 @@ const Jobs = () => {
                 handleFilterClose={handleFilterClose}
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
+                isLoading={loading}
+                skeletonRows={pagination.rowsPerPage}
             />
             <JobPagination
                 pagination={pagination}

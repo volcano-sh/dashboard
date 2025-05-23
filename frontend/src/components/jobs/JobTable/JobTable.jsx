@@ -3,12 +3,41 @@ import {
     TableContainer,
     Table,
     TableBody,
+    TableRow,
+    TableCell,
     Paper,
     useTheme,
     alpha,
+    Skeleton,
 } from "@mui/material";
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
+
+// Skeleton Row Component for Job Table
+const JobTableSkeletonRow = () => {
+    return (
+        <TableRow>
+            <TableCell>
+                <Skeleton variant="text" width="60%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="text" width="80%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="text" width="70%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="text" width="90%" height={24} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="rounded" width={80} height={32} />
+            </TableCell>
+            <TableCell>
+                <Skeleton variant="circular" width={24} height={24} />
+            </TableCell>
+        </TableRow>
+    );
+};
 
 const JobTable = ({
     jobs,
@@ -22,6 +51,8 @@ const JobTable = ({
     handleFilterClose,
     sortDirection,
     toggleSortDirection,
+    isLoading = false,
+    skeletonRows = 5,
 }) => {
     const theme = useTheme();
 
@@ -66,13 +97,17 @@ const JobTable = ({
                     toggleSortDirection={toggleSortDirection}
                 />
                 <TableBody>
-                    {jobs.map((job) => (
-                        <JobTableRow
-                            key={`${job.metadata.namespace}-${job.metadata.name}`}
-                            job={job}
-                            handleJobClick={handleJobClick}
-                        />
-                    ))}
+                    {isLoading
+                        ? Array.from({ length: skeletonRows }).map((_, index) => (
+                              <JobTableSkeletonRow key={`skeleton-${index}`} />
+                          ))
+                        : jobs.map((job) => (
+                              <JobTableRow
+                                  key={`${job.metadata.namespace}-${job.metadata.name}`}
+                                  job={job}
+                                  handleJobClick={handleJobClick}
+                              />
+                          ))}
                 </TableBody>
             </Table>
         </TableContainer>

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import axios from "axios";
-import { parseCPU, parseMemoryToMi } from "../utils"; // Adjust this path based on your project structure
+import { parseCPU, parseMemoryToMi } from "../utils";
 import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
@@ -225,7 +225,7 @@ const Queues = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                 />
@@ -242,6 +242,8 @@ const Queues = () => {
                 uniqueStates={uniqueStates}
                 handleFilterClose={handleFilterClose}
                 setAnchorEl={setAnchorEl}
+                isLoading={loading}
+                skeletonRows={pagination.rowsPerPage}
             />
             <QueuePagination
                 pagination={pagination}
