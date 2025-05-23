@@ -6,13 +6,13 @@ The volcano dashboard provides a basic dashboard that can be easily deployed in 
 
 <img src="docs/images/demo.gif" alt="volcano dashboard" style="zoom:50%;" />
 
-## Getting Started
-
-Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE. Thanks.
-
 ## Design
 
 You can follow the [design doc](docs/design.md) to learn more about the design details.
+
+## Getting Started
+
+Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE. Thanks.
 
 ## Contributing
 
