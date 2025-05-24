@@ -204,6 +204,7 @@ const Jobs = () => {
                     isRefreshing={false} // Update if needed
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
+                    createlabel="Create Job"
                 />
             </Box>
             <JobTable
