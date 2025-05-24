@@ -277,20 +277,33 @@ app.get("/api/pods", async (req, res) => {
 
         let filteredPods = response.items || [];
 
-        // Apply search filter
+        // Improved search filter to search in both name and namespace
         if (searchTerm) {
-            filteredPods = filteredPods.filter((pod) =>
-                pod.metadata.name
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase()),
-            );
+            const searchLower = searchTerm.toLowerCase();
+            filteredPods = filteredPods.filter((pod) => {
+                const podName = pod.metadata.name.toLowerCase();
+                const podNamespace = pod.metadata.namespace.toLowerCase();
+                return (
+                    podName.includes(searchLower) ||
+                    podNamespace.includes(searchLower)
+                );
+            });
         }
 
+        // Status filter
         if (statusFilter && statusFilter !== "All") {
             filteredPods = filteredPods.filter(
                 (pod) => pod.status.phase === statusFilter,
             );
         }
+
+        // Sort pods by creation timestamp (newest first)
+        filteredPods.sort((a, b) => {
+            return (
+                new Date(b.metadata.creationTimestamp) -
+                new Date(a.metadata.creationTimestamp)
+            );
+        });
 
         res.json({
             items: filteredPods,
@@ -392,6 +405,65 @@ app.get("/api/all-queues", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch all queues" });
     }
 });
+app.patch("/api/jobs/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const patchData = req.body;
+
+        const options = {
+            headers: { "Content-Type": "application/merge-patch+json" },
+        };
+
+        const response = await k8sApi.patchNamespacedCustomObject(
+            "batch.volcano.sh",
+            "v1alpha1",
+            namespace,
+            "jobs",
+            name,
+            patchData,
+            undefined,
+            undefined,
+            undefined,
+            options,
+        );
+
+        res.json({ message: "Job updated successfully", data: response.body });
+    } catch (error) {
+        console.error("Error updating job:", error);
+        res.status(500).json({ error: "Failed to update job" });
+    }
+});
+app.patch("/api/queues/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const patchData = req.body;
+
+        const options = {
+            headers: { "Content-Type": "application/merge-patch+json" },
+        };
+
+        const response = await k8sApi.patchNamespacedCustomObject(
+            "scheduling.volcano.sh",
+            "v1alpha1",
+            namespace,
+            "queues",
+            name,
+            patchData,
+            undefined,
+            undefined,
+            undefined,
+            options,
+        );
+
+        res.json({
+            message: "Queue updated successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        console.error("Error updating queue:", error);
+        res.status(500).json({ error: "Failed to update queue" });
+    }
+});
 
 // Get all Pods (no pagination)
 app.get("/api/all-pods", async (req, res) => {
@@ -404,6 +476,62 @@ app.get("/api/all-pods", async (req, res) => {
     } catch (error) {
         console.error("Error fetching all pods:", error);
         res.status(500).json({ error: "Failed to fetch all pods" });
+    }
+});
+
+app.delete("/api/queues/:name", async (req, res) => {
+    const { name } = req.params;
+    const queueName = name.toLowerCase();
+
+    try {
+        await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: queueName,
+        });
+
+        const { body } = await k8sApi.deleteClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: queueName,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return res.json({ message: "Queue deleted successfully", data: body });
+    } catch (err) {
+        const statusCode = err?.statusCode || err?.response?.statusCode || 500;
+
+        let message = "An unexpected error occurred.";
+
+        try {
+            const rawBody = err?.body || err?.response?.body;
+
+            // 🔹 Print the raw error body from Kubernetes
+            console.error("Kubernetes Error Raw Body:", rawBody);
+
+            const parsedBody =
+                typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
+
+            // 🔹 Print the parsed error body
+            console.error("Kubernetes Error Parsed Body:", parsedBody);
+
+            if (parsedBody?.message) {
+                message = parsedBody.message;
+            }
+        } catch (parseErr) {
+            console.error("Error parsing Kubernetes error body:", parseErr);
+            message = err?.message || message;
+        }
+
+        // 🔹 Also print the full error object for debugging
+        console.error("Full Kubernetes Error Object:", err);
+
+        return res.status(statusCode).json({
+            error: "Kubernetes Error",
+            details: message,
+        });
     }
 });
 
