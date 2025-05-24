@@ -4,6 +4,7 @@ import {
     CoreV1Api,
     CustomObjectsApi,
     KubeConfig,
+    Watch,
 } from "@kubernetes/client-node";
 import yaml from "js-yaml";
 
@@ -15,6 +16,87 @@ kc.loadFromDefault();
 
 const k8sApi = kc.makeApiClient(CustomObjectsApi);
 const k8sCoreApi = kc.makeApiClient(CoreV1Api);
+
+const watcher = new Watch(kc);
+
+app.get(`/api/get-update-events`, (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    watcher.watch(
+        "/api/v1/pods",
+        {},
+        (phase, pod) => {
+            res.write(
+                `data: ${JSON.stringify({ phase, type: "pod", data: pod })}\n\n`,
+            );
+        },
+        (err) => {
+            if (err) {
+                console.log("Error watching pods:", err);
+            } else {
+                console.log("Pod watcher started successfully");
+            }
+        },
+    );
+
+    watcher.watch(
+        "/api/v1/namespaces",
+        {},
+        (phase, namespace) => {
+            res.write(
+                `data: ${JSON.stringify({ phase, type: "namespace", data: namespace.metadata.name })}\n\n`,
+            );
+        },
+        (err) => {
+            if (err) {
+                console.log("Error watching namespaces:", err);
+            } else {
+                console.log("Namespace watcher started successfully");
+            }
+        },
+    );
+
+    watcher.watch(
+        "/apis/batch.volcano.sh/v1alpha1/jobs",
+        {},
+        (phase, job) => {
+            res.write(
+                `data: ${JSON.stringify({ phase, type: "job", data: job })}\n\n`,
+            );
+        },
+        (err) => {
+            if (err) {
+                console.log("Error watching jobs:", err);
+            } else {
+                console.log("Job watcher started successfully");
+            }
+        },
+    );
+
+    watcher.watch(
+        "/apis/scheduling.volcano.sh/v1beta1/queues",
+        {},
+        (phase, queue) => {
+            res.write(
+                `data: ${JSON.stringify({ phase, type: "queue", data: queue })}\n\n`,
+            );
+        },
+        (err) => {
+            if (err) {
+                console.log("Error watching queues:", err);
+            } else {
+                console.log("Queue watcher started successfully");
+            }
+        },
+    );
+
+    req.on("close", () => {
+        console.log("Client disconnected, stopping watchers");
+        res.end();
+    });
+});
 
 app.get("/api/jobs", async (req, res) => {
     try {
