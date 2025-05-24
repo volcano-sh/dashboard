@@ -1,6 +1,6 @@
 import React from "react";
 import { TableRow, TableCell, Chip, useTheme, alpha } from "@mui/material";
-import { calculateAge } from "../../utils";
+import { calculateAge } from "../../dateUtils";
 
 const PodRow = ({ pod, getStatusColor, onPodClick }) => {
     const theme = useTheme();
@@ -60,6 +60,17 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                 {new Date(pod.metadata.creationTimestamp).toLocaleString()}
             </TableCell>
 
+            <TableCell
+                sx={{
+                    padding: "16px 24px",
+                    fontSize: "0.9rem",
+                    fontWeight: 500,
+                    color: theme.palette.text.secondary,
+                }}
+            >
+                {calculateAge(pod.metadata.creationTimestamp)}
+            </TableCell>
+
             <TableCell sx={{ padding: "16px 24px" }}>
                 <Chip
                     label={pod.status?.phase || "Unknown"}
@@ -81,16 +92,6 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                         },
                     }}
                 />
-            </TableCell>
-
-            <TableCell
-                sx={{
-                    padding: "16px 24px",
-                    fontSize: "0.95rem",
-                    fontWeight: 500,
-                }}
-            >
-                {calculateAge(pod.metadata.creationTimestamp)}
             </TableCell>
         </TableRow>
     );

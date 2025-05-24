@@ -3,17 +3,20 @@ import { TableRow, TableCell, Box, Chip, useTheme, alpha } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 import Edit from "@mui/icons-material/Edit";
-import EditQueueDialog from "./EditQueueDialog"; // Import the new dialog
+import EditQueueDialog from "./EditQueueDialog";
+import { calculateAge } from "../../dateUtils";
 
 const QueueTableRow = ({
     queue,
-    allocatedFields,
     handleQueueClick,
     handleOpenDeleteDialog,
-    onQueueUpdate, // New prop for updating queue
+    onQueueUpdate,
 }) => {
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+    // Static allocated fields - matches header
+    const allocatedFields = ["cpu", "memory", "pods"];
 
     const getStateColor = (status) => {
         switch (status) {
@@ -105,6 +108,18 @@ const QueueTableRow = ({
                     {new Date(
                         queue.metadata.creationTimestamp,
                     ).toLocaleString()}
+                </TableCell>
+
+                {/* Age Column */}
+                <TableCell
+                    sx={{
+                        padding: "16px 24px",
+                        fontSize: "0.9rem",
+                        fontWeight: 500,
+                        color: theme.palette.text.secondary,
+                    }}
+                >
+                    {calculateAge(queue.metadata.creationTimestamp)}
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>

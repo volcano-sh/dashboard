@@ -150,6 +150,29 @@ const JobTableHeader = ({
                     </Button>
                 </TableCell>
 
+                {/* Age Column */}
+                <TableCell
+                    sx={{
+                        backgroundColor: alpha(
+                            theme.palette.background.paper,
+                            0.8,
+                        ),
+                        backdropFilter: "blur(8px)",
+                        padding: "16px 24px",
+                        minWidth: 80,
+                        borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    }}
+                >
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        color="text.primary"
+                        sx={{ letterSpacing: "0.02em" }}
+                    >
+                        Age
+                    </Typography>
+                </TableCell>
+
                 <TableCell
                     sx={{
                         backgroundColor: alpha(
@@ -179,7 +202,7 @@ const JobTableHeader = ({
                     />
                 </TableCell>
 
-                {/* New Actions Column */}
+                {/* Actions Column */}
                 <TableCell
                     sx={{
                         backgroundColor: alpha(

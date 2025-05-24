@@ -25,6 +25,37 @@ const JobTable = ({
 }) => {
     const theme = useTheme();
 
+    // Filter jobs based on current filters
+    const filteredJobs = React.useMemo(
+        () =>
+            jobs.filter(
+                (job) =>
+                    (filters.status === "All" ||
+                        (job.status && job.status.conditions?.some(
+                            condition => condition.type === filters.status
+                        ))) &&
+                    (filters.namespace === "All" ||
+                        job.metadata.namespace === filters.namespace) &&
+                    (filters.queue === "All" ||
+                        job.spec.queue === filters.queue)
+            ),
+        [jobs, filters],
+    );
+
+    // Sort jobs by creation time
+    const sortedJobs = React.useMemo(
+        () =>
+            [...filteredJobs].sort((a, b) => {
+                const compareResult =
+                    new Date(b.metadata.creationTimestamp) -
+                    new Date(a.metadata.creationTimestamp);
+                return sortDirection === "desc"
+                    ? compareResult
+                    : -compareResult;
+            }),
+        [filteredJobs, sortDirection],
+    );
+
     return (
         <TableContainer
             component={Paper}
@@ -66,7 +97,7 @@ const JobTable = ({
                     toggleSortDirection={toggleSortDirection}
                 />
                 <TableBody>
-                    {jobs.map((job) => (
+                    {sortedJobs.map((job) => (
                         <JobTableRow
                             key={`${job.metadata.namespace}-${job.metadata.name}`}
                             job={job}
