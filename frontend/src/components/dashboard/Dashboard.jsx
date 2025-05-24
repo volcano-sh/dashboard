@@ -5,6 +5,7 @@ import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
 import { calculateSuccessRate } from "./utils";
+import ResourceUsageContainer from "./ResourceUsageContainer";
 
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -64,10 +65,10 @@ const Dashboard = () => {
     return (
         <Box
             sx={{
-                height: "100vh",
                 display: "flex",
                 flexDirection: "column",
                 p: 3,
+                overflow: "auto",
             }}
         >
             {error && <ErrorDisplay message={error} />}
@@ -88,6 +89,8 @@ const Dashboard = () => {
                 jobs={dashboardData.jobs}
                 queues={dashboardData.queues}
             />
+
+            <ResourceUsageContainer />
         </Box>
     );
 };
