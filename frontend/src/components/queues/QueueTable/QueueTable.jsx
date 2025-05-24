@@ -1,22 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
-    TableContainer,
-    Table,
-    TableBody,
-    Paper,
+    TableHead,
     TableRow,
     TableCell,
+    Typography,
+    Box,
+    IconButton,
+    Button,
+    Menu,
+    MenuItem,
     useTheme,
     alpha,
+    Tooltip,
 } from "@mui/material";
-import QueueTableHeader from "./QueueTableHeader";
-import QueueTableRow from "./QueueTableRow";
-import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+import {
+    ArrowDownward,
+    ArrowUpward,
+    FilterList,
+    UnfoldMore,
+} from "@mui/icons-material";
 
-const QueueTable = ({
-    sortedQueues,
+const QueueTableHeader = ({
     allocatedFields,
-    handleQueueClick,
     handleSort,
     sortConfig,
     filters,
@@ -25,185 +30,302 @@ const QueueTable = ({
     uniqueStates,
     handleFilterClose,
     setAnchorEl,
-    onQueueUpdate,
 }) => {
     const theme = useTheme();
 
-    const [queues, setQueues] = useState([]);
-
-    useEffect(() => {
-        setQueues(sortedQueues);
-    }, [sortedQueues]);
-
-    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-    const [queueToDelete, setQueueToDelete] = useState(null);
-    const [deleteError, setDeleteError] = useState(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const handleOpenDeleteDialog = (queueName) => {
-        setQueueToDelete(queueName);
-        setOpenDeleteDialog(true);
-    };
-
-    const handleCloseDeleteDialog = () => {
-        setOpenDeleteDialog(false);
-        setQueueToDelete(null);
-        setDeleteError(null);
-        setIsDeleting(false);
-    };
-
-    const handleDelete = async () => {
-        try {
-            setIsDeleting(true);
-
-            const response = await fetch(
-                `/api/queues/${encodeURIComponent(queueToDelete)}`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                    },
-                },
-            );
-
-            let data = {};
-            const contentType = response.headers.get("content-type");
-            const text = await response.text();
-
-            let isJsonResponse = false;
-            try {
-                if (
-                    (contentType && contentType.includes("application/json")) ||
-                    (text && !text.trim().startsWith("<"))
-                ) {
-                    data = text ? JSON.parse(text) : {};
-                    isJsonResponse = true;
-                }
-            } catch (parseError) {
-                console.warn("Failed to parse response as JSON:", parseError);
-            }
-
-            if (!response.ok) {
-                let customMessage = `queues.scheduling.volcano.sh "${queueToDelete}" is forbidden.`;
-                let errorType = "UnknownError";
-
-                if (
-                    isJsonResponse &&
-                    typeof data === "object" &&
-                    (data.message || data.details)
-                ) {
-                    customMessage = data.message || data.details;
-                    if (customMessage.toLowerCase().includes("denied")) {
-                        errorType = "ValidationError";
-                    } else {
-                        errorType = "KubernetesError";
-                    }
-                }
-
-                const fullMessage = `Cannot delete "${queueToDelete}". Error message: ${customMessage}`;
-                const error = new Error(fullMessage);
-                error.type = errorType;
-                error.status = response.status;
-                throw error;
-            }
-
-            // Success
-            setQueues((prev) =>
-                prev.filter((queue) => queue.metadata.name !== queueToDelete),
-            );
-            handleCloseDeleteDialog();
-        } catch (error) {
-            console.error("Error deleting queue:", error);
-            setDeleteError(error.message || "An unexpected error occurred.");
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
     return (
-        <React.Fragment>
-            <TableContainer
-                component={Paper}
-                sx={{
-                    maxHeight: "calc(100vh - 200px)",
-                    overflow: "auto",
-                    borderRadius: "16px",
-                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
-                    background: `linear-gradient(to bottom, ${alpha(theme.palette.background.paper, 0.9)}, ${theme.palette.background.paper})`,
-                    backdropFilter: "blur(10px)",
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    "&::-webkit-scrollbar": {
-                        width: "10px",
-                        height: "10px",
-                    },
-                    "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                        borderRadius: "5px",
-                        "&:hover": {
+        <TableHead>
+            <TableRow>
+                <TableCell
+                    sx={{
+                        backgroundColor: alpha(
+                            theme.palette.background.paper,
+                            0.8,
+                        ),
+                        backdropFilter: "blur(8px)",
+                        padding: "16px 24px",
+                        minWidth: 140,
+                        borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    }}
+                >
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        color="text.primary"
+                        sx={{ letterSpacing: "0.02em" }}
+                    >
+                        Name
+                    </Typography>
+                </TableCell>
+
+                {allocatedFields.map((field) => (
+                    <TableCell
+                        key={field}
+                        sx={{
+                            backgroundColor: alpha(
+                                theme.palette.background.paper,
+                                0.8,
+                            ),
+                            backdropFilter: "blur(8px)",
+                            padding: "16px 24px",
+                            borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                            }}
+                        >
+                            <Typography
+                                variant="subtitle1"
+                                fontWeight="700"
+                                color="text.primary"
+                                sx={{ letterSpacing: "0.02em" }}
+                            >
+                                {`Allocated ${field}`}
+                            </Typography>
+                            <IconButton
+                                size="small"
+                                onClick={() => handleSort(field)}
+                                sx={{
+                                    transition:
+                                        "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                    width: "32px",
+                                    height: "32px",
+                                    "&:hover": {
+                                        color: theme.palette.primary.main,
+                                        backgroundColor: alpha(
+                                            theme.palette.primary.main,
+                                            0.1,
+                                        ),
+                                        transform: "scale(1.1)",
+                                    },
+                                }}
+                            >
+                                {sortConfig.field === field ? (
+                                    sortConfig.direction === "asc" ? (
+                                        <ArrowUpward fontSize="small" />
+                                    ) : (
+                                        <ArrowDownward fontSize="small" />
+                                    )
+                                ) : (
+                                    <UnfoldMore fontSize="small" />
+                                )}
+                            </IconButton>
+                        </Box>
+                    </TableCell>
+                ))}
+
+                <TableCell
+                    sx={{
+                        backgroundColor: alpha(
+                            theme.palette.background.paper,
+                            0.8,
+                        ),
+                        backdropFilter: "blur(8px)",
+                        padding: "16px 24px",
+                        minWidth: 140,
+                        borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    }}
+                >
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        color="text.primary"
+                        sx={{ letterSpacing: "0.02em" }}
+                    >
+                        Creation Time
+                    </Typography>
+                    <Button
+                        size="small"
+                        onClick={() => handleSort("creationTime")}
+                        startIcon={
+                            sortConfig.field === "creationTime" ? (
+                                sortConfig.direction === "asc" ? (
+                                    <Tooltip title="Descending">
+                                        <ArrowUpward fontSize="small" />
+                                    </Tooltip>
+                                        
+                                ) : (
+                                    <Tooltip title="Sort by Creation Time Descending">
+                                        <ArrowDownward fontSize="small" />
+                                    </Tooltip>
+                                )
+                            ) : (
+                                <Tooltip title="Sort by Creation Time">
+                                    <UnfoldMore fontSize="small" />
+                                </Tooltip>
+                            )
+                        }
+                        sx={{
+                            textTransform: "none",
+                            padding: "4px 12px",
+                            minWidth: "auto",
+                            borderRadius: "20px",
+                            marginTop: "8px",
+                            fontSize: "0.8rem",
+                            fontWeight: 500,
+                            letterSpacing: "0.02em",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                             backgroundColor: alpha(
                                 theme.palette.primary.main,
-                                0.3,
+                                0.1,
                             ),
-                        },
-                    },
-                    "&::-webkit-scrollbar-track": {
+                            color: theme.palette.primary.main,
+                            "&:hover": {
+                                backgroundColor: alpha(
+                                    theme.palette.primary.main,
+                                    0.15,
+                                ),
+                                transform: "translateY(-2px)",
+                                boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+                            },
+                        }}
+                    >
+                        Sort
+                    </Button>
+                </TableCell>
+                <TableCell
+                    sx={{
                         backgroundColor: alpha(
-                            theme.palette.primary.main,
-                            0.05,
+                            theme.palette.background.paper,
+                            0.8,
                         ),
-                        borderRadius: "5px",
-                    },
-                }}
-            >
-                <Table stickyHeader>
-                    <QueueTableHeader
-                        allocatedFields={allocatedFields}
-                        handleSort={handleSort}
-                        sortConfig={sortConfig}
-                        filters={filters}
-                        handleFilterClick={handleFilterClick}
-                        anchorEl={anchorEl}
-                        uniqueStates={uniqueStates}
-                        handleFilterClose={handleFilterClose}
-                        setAnchorEl={setAnchorEl}
-                    />
-                    <TableBody>
-                        {queues.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={allocatedFields.length + 2}
-                                    align="center"
-                                >
-                                    No queues found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            queues.map((queue) => (
-                                <QueueTableRow
-                                    key={queue.metadata.name}
-                                    queue={queue}
-                                    allocatedFields={allocatedFields}
-                                    handleQueueClick={handleQueueClick}
-                                    handleOpenDeleteDialog={
-                                        handleOpenDeleteDialog
-                                    }
-                                    onQueueUpdate={onQueueUpdate}
-                                />
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <QueueTableDeleteDialog
-                open={openDeleteDialog}
-                onClose={handleCloseDeleteDialog}
-                onConfirm={handleDelete}
-                queueToDelete={queueToDelete}
-                error={deleteError}
-                isDeleting={isDeleting}
-            />
-        </React.Fragment>
+                        backdropFilter: "blur(8px)",
+                        padding: "16px 24px",
+                        minWidth: 140,
+                        borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    }}
+                >
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        color="text.primary"
+                        sx={{ letterSpacing: "0.02em" }}
+                    >
+                        State
+                    </Typography>
+                    <Button
+                        size="small"
+                        startIcon={<FilterList fontSize="small" />}
+                        onClick={(e) => handleFilterClick("status", e)}
+                        sx={{
+                            textTransform: "none",
+                            padding: "4px 12px",
+                            minWidth: "auto",
+                            borderRadius: "20px",
+                            marginTop: "8px",
+                            fontSize: "0.8rem",
+                            fontWeight: 500,
+                            letterSpacing: "0.02em",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            backgroundColor:
+                                filters.status !== "All"
+                                    ? alpha(theme.palette.primary.main, 0.2)
+                                    : alpha(theme.palette.primary.main, 0.1),
+                            color: theme.palette.primary.main,
+                            "&:hover": {
+                                backgroundColor: alpha(
+                                    theme.palette.primary.main,
+                                    0.15,
+                                ),
+                                transform: "translateY(-2px)",
+                                boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+                            },
+                        }}
+                    >
+                        Filter: {filters.status}
+                    </Button>
+                    <Menu
+                        anchorEl={anchorEl.status}
+                        open={Boolean(anchorEl.status)}
+                        onClose={() =>
+                            setAnchorEl((prev) => ({
+                                ...prev,
+                                status: null,
+                            }))
+                        }
+                        PaperProps={{
+                            elevation: 3,
+                            sx: {
+                                borderRadius: "12px",
+                                mt: 1.5,
+                                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
+                                overflow: "hidden",
+                                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                                backgroundImage: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.95)}, ${theme.palette.background.paper})`,
+                                backdropFilter: "blur(10px)",
+                            },
+                        }}
+                    >
+                        {uniqueStates.map((status) => (
+                            <MenuItem
+                                key={status}
+                                onClick={() =>
+                                    handleFilterClose("status", status)
+                                }
+                                sx={{
+                                    fontSize: "0.875rem",
+                                    minHeight: "40px",
+                                    transition: "all 0.2s ease",
+                                    "&:hover": {
+                                        backgroundColor: alpha(
+                                            theme.palette.primary.main,
+                                            0.08,
+                                        ),
+                                        paddingLeft: "24px",
+                                    },
+                                    ...(filters.status === status && {
+                                        backgroundColor: alpha(
+                                            theme.palette.primary.main,
+                                            0.12,
+                                        ),
+                                        fontWeight: 600,
+                                        "&::before": {
+                                            content: '""',
+                                            position: "absolute",
+                                            left: "0",
+                                            top: "0",
+                                            bottom: "0",
+                                            width: "3px",
+                                            backgroundColor:
+                                                theme.palette.primary.main,
+                                        },
+                                    }),
+                                }}
+                            >
+                                {status}
+                            </MenuItem>
+                        ))}
+                    </Menu>
+                </TableCell>
+                {/* Added 'Action' column */}
+                <TableCell
+                    sx={{
+                        backgroundColor: alpha(
+                            theme.palette.background.paper,
+                            0.8,
+                        ),
+                        backdropFilter: "blur(8px)",
+                        padding: "16px 24px",
+                        minWidth: 140,
+                        borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    }}
+                >
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        color="text.primary"
+                        sx={{ letterSpacing: "0.02em" }}
+                    >
+                        Actions
+                    </Typography>
+                </TableCell>
+            </TableRow>
+        </TableHead>
     );
 };
 
-export default QueueTable;
+export default QueueTableHeader;
