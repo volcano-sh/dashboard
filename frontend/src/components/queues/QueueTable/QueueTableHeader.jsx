@@ -20,7 +20,6 @@ import {
 } from "@mui/icons-material";
 
 const QueueTableHeader = ({
-    allocatedFields,
     handleSort,
     sortConfig,
     filters,
@@ -31,6 +30,9 @@ const QueueTableHeader = ({
     setAnchorEl,
 }) => {
     const theme = useTheme();
+
+    // Static allocated fields - no more dynamic prop
+    const allocatedFields = ["cpu", "memory", "pods"];
 
     return (
         <TableHead>
@@ -179,6 +181,30 @@ const QueueTableHeader = ({
                         Sort
                     </Button>
                 </TableCell>
+
+                {/* Age Column */}
+                <TableCell
+                    sx={{
+                        backgroundColor: alpha(
+                            theme.palette.background.paper,
+                            0.8,
+                        ),
+                        backdropFilter: "blur(8px)",
+                        padding: "16px 24px",
+                        minWidth: 80,
+                        borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    }}
+                >
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        color="text.primary"
+                        sx={{ letterSpacing: "0.02em" }}
+                    >
+                        Age
+                    </Typography>
+                </TableCell>
+
                 <TableCell
                     sx={{
                         backgroundColor: alpha(
@@ -293,7 +319,8 @@ const QueueTableHeader = ({
                         ))}
                     </Menu>
                 </TableCell>
-                {/* Added 'Action' column */}
+
+                {/* Actions Column */}
                 <TableCell
                     sx={{
                         backgroundColor: alpha(

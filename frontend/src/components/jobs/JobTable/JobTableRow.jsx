@@ -9,13 +9,14 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
-import JobEditDialog from "./JobEditDialog"; // Create or import this component
+import JobEditDialog from "./JobEditDialog";
+import { calculateAge } from "../../utils";
 
 const JobTableRow = ({
     job,
     handleJobClick,
     handleOpenDeleteDialog,
-    onJobUpdate, // Function to update job after edit
+    onJobUpdate,
 }) => {
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -33,6 +34,9 @@ const JobTableRow = ({
         onJobUpdate(updatedJob);
         handleCloseEditDialog();
     };
+
+    // Calculate age for the job
+    const age = calculateAge(job.metadata.creationTimestamp);
 
     return (
         <>
@@ -98,6 +102,18 @@ const JobTableRow = ({
                     }}
                 >
                     {new Date(job.metadata.creationTimestamp).toLocaleString()}
+                </TableCell>
+
+                {/* New Age Column */}
+                <TableCell
+                    sx={{
+                        padding: "16px 24px",
+                        fontSize: "0.9rem",
+                        fontWeight: 500,
+                        color: theme.palette.text.secondary,
+                    }}
+                >
+                    {age}
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>
