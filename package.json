@@ -51,6 +51,7 @@
         "@mui/material": "^6.4.8",
         "bootstrap": "^5.3.3",
         "fortawesome": "^0.0.1-security",
+        "lucide-react": "^0.511.0",
         "react-bootstrap": "^2.10.9"
     }
 }

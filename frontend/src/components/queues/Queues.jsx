@@ -171,11 +171,13 @@ const Queues = () => {
                     aValue = a[config.field];
                     bValue = b[config.field];
             }
-
-            if (config.direction === "asc") {
-                return aValue > bValue ? 1 : -1;
-            }
-            return aValue < bValue ? 1 : -1;
+            return config.direction === "asc"
+                ? aValue > bValue
+                    ? 1
+                    : -1
+                : aValue < bValue
+                  ? 1
+                  : -1;
         });
     }, []);
 
@@ -223,6 +225,7 @@ const Queues = () => {
                     isRefreshing={loading}
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
+                    createlabel="Create Queue"
                 />
             </Box>
             <QueueTable

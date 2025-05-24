@@ -157,6 +157,7 @@ const Pods = () => {
                     isRefreshing={false} // Update if needed
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
+                    createlabel="Create Pod"
                 />
             </Box>
             <PodsTable
