@@ -11,6 +11,7 @@ import {
     MenuItem,
     useTheme,
     alpha,
+    Tooltip,
 } from "@mui/material";
 import {
     ArrowDownward,
@@ -143,12 +144,19 @@ const QueueTableHeader = ({
                         startIcon={
                             sortConfig.field === "creationTime" ? (
                                 sortConfig.direction === "asc" ? (
-                                    <ArrowUpward fontSize="small" />
+                                    <Tooltip title="Descending">
+                                        <ArrowUpward fontSize="small" />
+                                    </Tooltip>
+                                        
                                 ) : (
-                                    <ArrowDownward fontSize="small" />
+                                    <Tooltip title="Sort by Creation Time Descending">
+                                        <ArrowDownward fontSize="small" />
+                                    </Tooltip>
                                 )
                             ) : (
-                                <UnfoldMore fontSize="small" />
+                                <Tooltip title="Sort by Creation Time">
+                                    <UnfoldMore fontSize="small" />
+                                </Tooltip>
                             )
                         }
                         sx={{
