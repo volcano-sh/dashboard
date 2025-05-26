@@ -155,7 +155,7 @@ const QueueTableHeader = ({
                                     </Tooltip>
                                         
                                 ) : (
-                                    <Tooltip title="Sort by Creation Time Descending">
+                                    <Tooltip title="Ascending">
                                         <ArrowDownward fontSize="small" />
                                     </Tooltip>
                                 )
