@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
-import JobEditDialog from "./JobEditDialog"; // Create or import this component
+import JobEditDialog from "./JobEditDialog";
 
 const JobTableRow = ({
     job,
@@ -150,7 +150,7 @@ const JobTableRow = ({
                         <IconButton
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleOpenDeleteDialog(job.metadata.name);
+                                handleOpenDeleteDialog(job);
                             }}
                             size="small"
                             sx={{

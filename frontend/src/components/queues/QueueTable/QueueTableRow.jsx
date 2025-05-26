@@ -3,14 +3,14 @@ import { TableRow, TableCell, Box, Chip, useTheme, alpha } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 import Edit from "@mui/icons-material/Edit";
-import EditQueueDialog from "./EditQueueDialog"; // Import the new dialog
+import EditQueueDialog from "./EditQueueDialog";
 
 const QueueTableRow = ({
     queue,
     allocatedFields,
     handleQueueClick,
     handleOpenDeleteDialog,
-    onQueueUpdate, // New prop for updating queue
+    onQueueUpdate,
 }) => {
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
