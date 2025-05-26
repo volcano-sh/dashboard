@@ -1,4 +1,5 @@
 import React from "react";
+import Tooltip from "@mui/material/Tooltip";
 import {
     TableHead,
     TableRow,
@@ -116,13 +117,20 @@ const JobTableHeader = ({
                         onClick={toggleSortDirection}
                         startIcon={
                             sortDirection === "desc" ? (
-                                <ArrowDownward fontSize="small" />
-                            ) : sortDirection === "asc" ? (
-                                <ArrowUpward fontSize="small" />
-                            ) : (
-                                <UnfoldMore fontSize="small" />
-                            )
-                        }
+                                <Tooltip title="ascending" >
+                                    <ArrowDownward fontSize="small" />
+                                </Tooltip>
+                                ) : sortDirection === "asc" ? (
+                                    <Tooltip title="descending">
+                                        <ArrowUpward fontSize="small" />
+                                    </Tooltip>
+                                                                        
+                                ) : (
+                                    <Tooltip title="Sort by Creation Time">
+                                        <UnfoldMore fontSize="small" />
+                                    </Tooltip>          
+                                )
+                            }
                         sx={{
                             textTransform: "none",
                             padding: "4px 12px",

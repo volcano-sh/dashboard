@@ -13,7 +13,7 @@ import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
 
-const QueueTable = ({
+const QueueTable = ({ 
     sortedQueues,
     allocatedFields,
     handleQueueClick,

@@ -1,4 +1,5 @@
 import React from "react";
+import Tooltip from '@mui/material/Tooltip';
 import {
     TableHead,
     TableRow,
@@ -114,11 +115,18 @@ const TableHeader = ({
                                     onClick={onSortDirectionToggle}
                                     startIcon={
                                         sortDirection === "desc" ? (
-                                            <ArrowDownward fontSize="small" />
+                                            <Tooltip title="ascending" >
+                                                <ArrowDownward fontSize="small" />
+                                            </Tooltip>
                                         ) : sortDirection === "asc" ? (
-                                            <ArrowUpward fontSize="small" />
+                                            <Tooltip title="descending">
+                                                <ArrowUpward fontSize="small" />
+                                            </Tooltip>
+                                                
                                         ) : (
-                                            <UnfoldMore fontSize="small" />
+                                            <Tooltip title="Sort by Creation Time">
+                                                <UnfoldMore fontSize="small" />
+                                            </Tooltip>          
                                         )
                                     }
                                     sx={{
