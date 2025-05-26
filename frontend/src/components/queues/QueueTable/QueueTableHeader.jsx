@@ -106,12 +106,18 @@ const QueueTableHeader = ({
                             >
                                 {sortConfig.field === field ? (
                                     sortConfig.direction === "asc" ? (
-                                        <ArrowUpward fontSize="small" />
+                                        <Tooltip title="Sort by Ascending">
+                                            <ArrowUpward fontSize="small" />
+                                        </Tooltip>
                                     ) : (
+                                        <Tooltip title="Sort by Descending">    
                                         <ArrowDownward fontSize="small" />
+                                        </Tooltip>
                                     )
                                 ) : (
-                                    <UnfoldMore fontSize="small" />
+                                    <Tooltip title={`Sort by ${field}`}>
+                                        <UnfoldMore fontSize="small" />
+                                    </Tooltip>
                                 )}
                             </IconButton>
                         </Box>
