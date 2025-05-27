@@ -7,6 +7,9 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { buildQueueTree } from "../utils";
+import QueueTree from "./QueueTree"; // adjust path if needed
+
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -210,6 +213,23 @@ const Queues = () => {
         return Array.from(fields).sort();
     }, [queues]);
 
+
+   const dummyQueues = [
+  { metadata: { name: "rootQueue" } },
+  { metadata: { name: "rootQueue/computeQueue" } },
+  { metadata: { name: "rootQueue/computeQueue/gpuQueue" } },
+  { metadata: { name: "rootQueue/computeQueue/cpuQueue" } },
+  { metadata: { name: "rootQueue/devQueue" } }
+];
+
+const queueTree = useMemo(() => buildQueueTree(dummyQueues), []);
+
+
+         
+         
+       
+
+
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
@@ -230,6 +250,12 @@ const Queues = () => {
                     refreshLabel="Refresh Queues"
                 />
             </Box>
+              <Box sx={{ mt: 4 }}>
+    <Typography variant="h6" sx={{ mb: 1 }}>
+        Queue Hierarchy View
+    </Typography>
+    <QueueTree queueTree={queueTree} handleQueueClick={handleQueueClick} />
+</Box>
             <QueueTable
                 sortedQueues={sortedQueues}
                 allocatedFields={allocatedFields}
@@ -243,6 +269,9 @@ const Queues = () => {
                 handleFilterClose={handleFilterClose}
                 setAnchorEl={setAnchorEl}
             />
+
+      
+
             <QueuePagination
                 pagination={pagination}
                 totalQueues={totalQueues}
