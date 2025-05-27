@@ -44,14 +44,17 @@
         "vitest": "^3.0.8"
     },
     "dependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.0",
         "@fortawesome/free-solid-svg-icons": "^6.7.2",
         "@fortawesome/react-fontawesome": "github:fortawesome/react-fontawesome",
         "@monaco-editor/react": "^4.7.0",
-        "@mui/icons-material": "^6.4.8",
-        "@mui/material": "^6.4.8",
+        "@mui/icons-material": "^6.4.11",
+        "@mui/material": "^6.4.11",
         "bootstrap": "^5.3.3",
         "fortawesome": "^0.0.1-security",
         "lucide-react": "^0.511.0",
-        "react-bootstrap": "^2.10.9"
+        "react-bootstrap": "^2.10.9",
+        "recharts": "^2.15.3"
     }
 }
