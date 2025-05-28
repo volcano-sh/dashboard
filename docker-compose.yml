@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -21,7 +19,8 @@ services:
     ports:
       - "3001:3001"  # Expose on localhost:3001
     volumes:
-      - ~/.kube/config:/root/.kube/config:ro  # mount your kube config
+      -  ${KUBECONFIG_PATH}:/root/.kube/config:ro  # mount your kube config
+      - ~/.minikube:/root/.minikube:ro # Mount the whole .minikube directory
     environment:
       - KUBECONFIG=/root/.kube/config
     networks:
