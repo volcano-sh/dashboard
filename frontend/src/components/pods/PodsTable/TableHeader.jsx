@@ -115,7 +115,7 @@ const TableHeader = ({
                                     startIcon={
                                         sortDirection === "desc" ? (
                                         <Tooltip title="ascending">
-                                            <ArrowDownward fontSize="small" /> 
+                                            <ArrowDownward fontSize="small" />
                                         </Tooltip>
                                     ) : sortDirection === "asc" ? (
                                         <Tooltip title="descending">
