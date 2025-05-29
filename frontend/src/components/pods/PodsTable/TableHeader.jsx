@@ -15,7 +15,7 @@ import {
     UnfoldMore,
 } from "@mui/icons-material";
 import FilterMenu from "./FilterMenu";
-
+import Tooltip from "@mui/material/Tooltip";
 const TableHeader = ({
     filters,
     anchorEl,
@@ -114,12 +114,18 @@ const TableHeader = ({
                                     onClick={onSortDirectionToggle}
                                     startIcon={
                                         sortDirection === "desc" ? (
+                                        <Tooltip title="ascending">
                                             <ArrowDownward fontSize="small" />
-                                        ) : sortDirection === "asc" ? (
+                                        </Tooltip>
+                                    ) : sortDirection === "asc" ? (
+                                        <Tooltip title="descending">
                                             <ArrowUpward fontSize="small" />
-                                        ) : (
+                                        </Tooltip>
+                                    ) : (
+                                        <Tooltip title="Sort by Creation Time">
                                             <UnfoldMore fontSize="small" />
-                                        )
+                                        </Tooltip>
+                                    )
                                     }
                                     sx={{
                                         textTransform: "none",
