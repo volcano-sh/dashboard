@@ -114,12 +114,18 @@ const TableHeader = ({
                                     onClick={onSortDirectionToggle}
                                     startIcon={
                                         sortDirection === "desc" ? (
+                                        <Tooltip title="ascending">
                                             <ArrowDownward fontSize="small" />
-                                        ) : sortDirection === "asc" ? (
+                                        </Tooltip>
+                                    ) : sortDirection === "asc" ? (
+                                        <Tooltip title="descending">
                                             <ArrowUpward fontSize="small" />
-                                        ) : (
+                                        </Tooltip>
+                                    ) : (
+                                        <Tooltip title="Sort by Creation Time">
                                             <UnfoldMore fontSize="small" />
-                                        )
+                                        </Tooltip>
+                                    )
                                     }
                                     sx={{
                                         textTransform: "none",
