@@ -16,7 +16,7 @@ import {
 } from "@mui/icons-material";
 import FilterMenu from "./FilterMenu";
 import Tooltip from "@mui/material/Tooltip";
-const TableHeader = ({
+const TableHeader = ({ 
     filters,
     anchorEl,
     handleFilterClick,
