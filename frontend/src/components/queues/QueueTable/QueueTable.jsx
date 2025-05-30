@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import PropTypes from "prop-types";
 import {
     TableContainer,
     Table,
@@ -8,13 +9,26 @@ import {
     TableCell,
     useTheme,
     alpha,
+    IconButton,
+    Popover,
 } from "@mui/material";
+import { ViewColumn } from "@mui/icons-material";
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+import ColumnVisibilityFilter from "../../filters/ColumnVisibilityFilter";
+
+const COLUMNS = [
+    { key: "name", label: "Name" },
+    { key: "allocatedCpu", label: "Allocated CPU" },
+    { key: "allocatedMemory", label: "Allocated Memory" },
+    { key: "creationTime", label: "Creation Time" },
+    { key: "state", label: "State" },
+    { key: "actions", label: "Actions" },
+];
 
 const QueueTable = ({
-    sortedQueues,
+    sortedQueues = [],
     allocatedFields,
     handleQueueClick,
     handleSort,
@@ -29,29 +43,48 @@ const QueueTable = ({
 }) => {
     const theme = useTheme();
 
-    const [queues, setQueues] = useState([]);
 
-    useEffect(() => {
-        setQueues(sortedQueues);
-    }, [sortedQueues]);
+    const [queues, setQueues] = useState(sortedQueues);
+    const [columnFilterAnchor, setColumnFilterAnchor] = useState(null);
+    const [visibleColumns, setVisibleColumns] = useState(() =>
+        COLUMNS.reduce(
+            (acc, col) => ({
+                ...acc,
+                [col.key]: true,
+            }),
+            {},
+        ),
+    );
 
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [queueToDelete, setQueueToDelete] = useState(null);
     const [deleteError, setDeleteError] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const handleOpenDeleteDialog = (queueName) => {
+
+    useEffect(() => {
+        setQueues(sortedQueues || []);
+    }, [sortedQueues]);
+
+    const handleOpenDeleteDialog = useCallback((queueName) => {
         setQueueToDelete(queueName);
         setOpenDeleteDialog(true);
-    };
+    }, []);
 
-    const handleCloseDeleteDialog = () => {
+    const handleCloseDeleteDialog = useCallback(() => {
         setOpenDeleteDialog(false);
         setQueueToDelete(null);
         setDeleteError(null);
         setIsDeleting(false);
-    };
+    }, []);
 
-    const handleDelete = async () => {
+    const handleColumnToggle = useCallback((columnKey, isVisible) => {
+        setVisibleColumns((prev) => ({
+            ...prev,
+            [columnKey]: isVisible,
+        }));
+    }, []);
+
+    const handleDelete = useCallback(async () => {
         try {
             setIsDeleting(true);
 
@@ -66,59 +99,25 @@ const QueueTable = ({
                 },
             );
 
-            let data = {};
-            const contentType = response.headers.get("content-type");
-            const text = await response.text();
-
-            let isJsonResponse = false;
-            try {
-                if (
-                    (contentType && contentType.includes("application/json")) ||
-                    (text && !text.trim().startsWith("<"))
-                ) {
-                    data = text ? JSON.parse(text) : {};
-                    isJsonResponse = true;
-                }
-            } catch (parseError) {
-                console.warn("Failed to parse response as JSON:", parseError);
-            }
-
             if (!response.ok) {
-                let customMessage = `queues.scheduling.volcano.sh "${queueToDelete}" is forbidden.`;
-                let errorType = "UnknownError";
-
-                if (
-                    isJsonResponse &&
-                    typeof data === "object" &&
-                    (data.message || data.details)
-                ) {
-                    customMessage = data.message || data.details;
-                    if (customMessage.toLowerCase().includes("denied")) {
-                        errorType = "ValidationError";
-                    } else {
-                        errorType = "KubernetesError";
-                    }
-                }
-
-                const fullMessage = `Cannot delete "${queueToDelete}". Error message: ${customMessage}`;
-                const error = new Error(fullMessage);
-                error.type = errorType;
-                error.status = response.status;
-                throw error;
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Success
-            setQueues((prev) =>
-                prev.filter((queue) => queue.metadata.name !== queueToDelete),
-            );
             handleCloseDeleteDialog();
+            const updatedQueues = queues.filter(
+                (q) => q.metadata.name !== queueToDelete,
+            );
+            setQueues(updatedQueues);
+            if (onQueueUpdate) {
+                onQueueUpdate(updatedQueues);
+            }
         } catch (error) {
             console.error("Error deleting queue:", error);
-            setDeleteError(error.message || "An unexpected error occurred.");
+            setDeleteError(error.message);
         } finally {
             setIsDeleting(false);
         }
-    };
+    }, [queueToDelete, handleCloseDeleteDialog, queues, onQueueUpdate]);
 
     return (
         <React.Fragment>
@@ -132,6 +131,7 @@ const QueueTable = ({
                     background: `linear-gradient(to bottom, ${alpha(theme.palette.background.paper, 0.9)}, ${theme.palette.background.paper})`,
                     backdropFilter: "blur(10px)",
                     border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    position: "relative",
                     "&::-webkit-scrollbar": {
                         width: "10px",
                         height: "10px",
@@ -155,6 +155,38 @@ const QueueTable = ({
                     },
                 }}
             >
+                <IconButton
+                    onClick={(e) => setColumnFilterAnchor(e.currentTarget)}
+                    sx={{
+                        position: "absolute",
+                        top: "16px",
+                        right: "16px",
+                        zIndex: 1000,
+                    }}
+                >
+                    <ViewColumn />
+                </IconButton>
+
+                <Popover
+                    open={Boolean(columnFilterAnchor)}
+                    anchorEl={columnFilterAnchor}
+                    onClose={() => setColumnFilterAnchor(null)}
+                    anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                    }}
+                    transformOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                    }}
+                >
+                    <ColumnVisibilityFilter
+                        columns={COLUMNS}
+                        visibleColumns={visibleColumns}
+                        onColumnToggle={handleColumnToggle}
+                    />
+                </Popover>
+
                 <Table stickyHeader>
                     <QueueTableHeader
                         allocatedFields={allocatedFields}
@@ -166,34 +198,45 @@ const QueueTable = ({
                         uniqueStates={uniqueStates}
                         handleFilterClose={handleFilterClose}
                         setAnchorEl={setAnchorEl}
+                        visibleColumns={visibleColumns}
                     />
                     <TableBody>
-                        {queues.length === 0 ? (
+                        {!Array.isArray(queues) || queues.length === 0 ? (
                             <TableRow>
                                 <TableCell
-                                    colSpan={allocatedFields.length + 2}
+                                    colSpan={
+                                        Object.values(visibleColumns).filter(
+                                            Boolean,
+                                        ).length
+                                    }
                                     align="center"
                                 >
                                     No queues found.
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            queues.map((queue) => (
-                                <QueueTableRow
-                                    key={queue.metadata.name}
-                                    queue={queue}
-                                    allocatedFields={allocatedFields}
-                                    handleQueueClick={handleQueueClick}
-                                    handleOpenDeleteDialog={
-                                        handleOpenDeleteDialog
-                                    }
-                                    onQueueUpdate={onQueueUpdate}
-                                />
-                            ))
+                            queues.map(
+                                (queue) =>
+                                    queue &&
+                                    queue.metadata && (
+                                        <QueueTableRow
+                                            key={queue.metadata.name}
+                                            queue={queue}
+                                            allocatedFields={allocatedFields}
+                                            handleQueueClick={handleQueueClick}
+                                            handleOpenDeleteDialog={
+                                                handleOpenDeleteDialog
+                                            }
+                                            onQueueUpdate={onQueueUpdate}
+                                            visibleColumns={visibleColumns}
+                                        />
+                                    ),
+                            )
                         )}
                     </TableBody>
                 </Table>
             </TableContainer>
+
             <QueueTableDeleteDialog
                 open={openDeleteDialog}
                 onClose={handleCloseDeleteDialog}
@@ -204,6 +247,40 @@ const QueueTable = ({
             />
         </React.Fragment>
     );
+};
+
+QueueTable.propTypes = {
+    sortedQueues: PropTypes.arrayOf(
+        PropTypes.shape({
+            metadata: PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string,
+                creationTimestamp: PropTypes.string.isRequired,
+            }).isRequired,
+            status: PropTypes.shape({
+                state: PropTypes.string,
+                allocated: PropTypes.shape({
+                    cpu: PropTypes.string,
+                    memory: PropTypes.string,
+                    pods: PropTypes.string,
+                }),
+            }),
+        }),
+    ).isRequired,
+    allocatedFields: PropTypes.arrayOf(PropTypes.string).isRequired,
+    handleQueueClick: PropTypes.func.isRequired,
+    handleSort: PropTypes.func.isRequired,
+    sortConfig: PropTypes.shape({
+        field: PropTypes.string,
+        direction: PropTypes.string,
+    }).isRequired,
+    filters: PropTypes.object.isRequired,
+    handleFilterClick: PropTypes.func.isRequired,
+    anchorEl: PropTypes.object.isRequired,
+    uniqueStates: PropTypes.arrayOf(PropTypes.string).isRequired,
+    handleFilterClose: PropTypes.func.isRequired,
+    setAnchorEl: PropTypes.func.isRequired,
+    onQueueUpdate: PropTypes.func,
 };
 
 export default QueueTable;

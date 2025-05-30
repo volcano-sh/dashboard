@@ -1,8 +1,11 @@
+
+
 import React from "react";
+import PropTypes from "prop-types";
 import { TableRow, TableCell, Chip, useTheme, alpha } from "@mui/material";
 import { calculateAge } from "../../utils";
 
-const PodRow = ({ pod, getStatusColor, onPodClick }) => {
+const PodRow = ({ pod, visibleColumns, getStatusColor, onPodClick }) => {
     const theme = useTheme();
 
     return (
@@ -29,71 +32,106 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                 },
             }}
         >
-            <TableCell
-                sx={{
-                    padding: "16px 24px",
-                    fontWeight: 600,
-                    color: theme.palette.text.primary,
-                    letterSpacing: "0.01em",
-                }}
-            >
-                {pod.metadata.name}
-            </TableCell>
-
-            <TableCell
-                sx={{
-                    padding: "16px 24px",
-                    fontSize: "0.95rem",
-                    fontWeight: 500,
-                }}
-            >
-                {pod.metadata.namespace}
-            </TableCell>
-
-            <TableCell
-                sx={{
-                    padding: "16px 24px",
-                    fontSize: "0.9rem",
-                    color: alpha(theme.palette.text.primary, 0.85),
-                }}
-            >
-                {new Date(pod.metadata.creationTimestamp).toLocaleString()}
-            </TableCell>
-
-            <TableCell sx={{ padding: "16px 24px" }}>
-                <Chip
-                    label={pod.status?.phase || "Unknown"}
+            {visibleColumns.name && (
+                <TableCell
                     sx={{
-                        bgcolor: getStatusColor(pod.status?.phase || "Unknown"),
-                        color: "common.white",
-                        height: "30px",
+                        padding: "16px 24px",
                         fontWeight: 600,
-                        fontSize: "0.8rem",
-                        letterSpacing: "0.02em",
-                        borderRadius: "15px",
-                        boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                        padding: "0 12px",
-                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                        "&:hover": {
-                            transform: "translateY(-2px)",
-                            boxShadow: "0 5px 10px rgba(0, 0, 0, 0.2)",
-                            filter: "brightness(1.05)",
-                        },
+                        color: theme.palette.text.primary,
+                        letterSpacing: "0.01em",
                     }}
-                />
-            </TableCell>
+                >
+                    {pod.metadata.name}
+                </TableCell>
+            )}
 
-            <TableCell
-                sx={{
-                    padding: "16px 24px",
-                    fontSize: "0.95rem",
-                    fontWeight: 500,
-                }}
-            >
-                {calculateAge(pod.metadata.creationTimestamp)}
-            </TableCell>
+            {visibleColumns.namespace && (
+                <TableCell
+                    sx={{
+                        padding: "16px 24px",
+                        fontSize: "0.95rem",
+                        fontWeight: 500,
+                    }}
+                >
+                    {pod.metadata.namespace}
+                </TableCell>
+            )}
+
+            {visibleColumns.creationTime && (
+                <TableCell
+                    sx={{
+                        padding: "16px 24px",
+                        fontSize: "0.9rem",
+                        color: alpha(theme.palette.text.primary, 0.85),
+                    }}
+                >
+                    {new Date(pod.metadata.creationTimestamp).toLocaleString()}
+                </TableCell>
+            )}
+
+            {visibleColumns.status && (
+                <TableCell sx={{ padding: "16px 24px" }}>
+                    <Chip
+                        label={pod.status?.phase || "Unknown"}
+                        sx={{
+                            bgcolor: getStatusColor(
+                                pod.status?.phase || "Unknown",
+                            ),
+                            color: "common.white",
+                            height: "30px",
+                            fontWeight: 600,
+                            fontSize: "0.8rem",
+                            letterSpacing: "0.02em",
+                            borderRadius: "15px",
+                            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
+                            padding: "0 12px",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            "&:hover": {
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 5px 10px rgba(0, 0, 0, 0.2)",
+                                filter: "brightness(1.05)",
+                            },
+                        }}
+                    />
+                </TableCell>
+            )}
+
+            {visibleColumns.age && (
+                <TableCell
+                    sx={{
+                        padding: "16px 24px",
+                        fontSize: "0.95rem",
+                        fontWeight: 500,
+                    }}
+                >
+                    {calculateAge(pod.metadata.creationTimestamp)}
+                </TableCell>
+            )}
         </TableRow>
     );
 };
 
+PodRow.propTypes = {
+    pod: PropTypes.shape({
+        metadata: PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired,
+            creationTimestamp: PropTypes.string.isRequired,
+        }).isRequired,
+        status: PropTypes.shape({
+            phase: PropTypes.string,
+        }),
+    }).isRequired,
+    visibleColumns: PropTypes.shape({
+        name: PropTypes.bool.isRequired,
+        namespace: PropTypes.bool.isRequired,
+        creationTime: PropTypes.bool.isRequired,
+        status: PropTypes.bool.isRequired,
+        age: PropTypes.bool.isRequired,
+    }).isRequired,
+    getStatusColor: PropTypes.func.isRequired,
+    onPodClick: PropTypes.func.isRequired,
+};
+
 export default PodRow;
+
