@@ -7,6 +7,7 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { useEvent } from "../../contexts/EventContext";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -36,6 +37,8 @@ const Jobs = () => {
     });
     const [totalJobs, setTotalJobs] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
+
+    const { onUpdateEvent } = useEvent();
 
     const fetchJobs = useCallback(async () => {
         setLoading(true);
@@ -208,6 +211,27 @@ const Jobs = () => {
 
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    }, []);
+
+    useEffect(() => {
+        const handleJobUpdate = (obj) => {
+            if (obj.type === "job") {
+                const jobData = obj.data;
+
+                setCachedJobs((prevJobs) => {
+                    const jobs = prevJobs.filter(
+                        (job) => job.metadata.name !== jobData.metadata.name,
+                    );
+                    if (obj.phase === "DELETED") {
+                        return jobs;
+                    } else {
+                        return [...jobs, jobData];
+                    }
+                });
+            }
+        };
+
+        onUpdateEvent(handleJobUpdate);
     }, []);
 
     return (

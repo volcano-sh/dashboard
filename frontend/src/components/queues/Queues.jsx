@@ -7,6 +7,7 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { useEvent } from "../../contexts/EventContext";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -24,6 +25,7 @@ const Queues = () => {
         field: null,
         direction: "asc",
     });
+    const { onUpdateEvent } = useEvent();
 
     // 🟢 1. Fetch all queues
     const fetchQueues = useCallback(async () => {
@@ -225,6 +227,27 @@ const Queues = () => {
         });
         return Array.from(fields).sort();
     }, [queues]);
+
+    useEffect(() => {
+        const handleQueueUpdate = (obj) => {
+            if (obj.type === "queue") {
+                const qData = obj.data;
+
+                setQueues((prevQueues) => {
+                    const queues = prevQueues.filter(
+                        (q) => q.metadata.name !== qData.metadata.name,
+                    );
+                    if (obj.phase === "DELETED") {
+                        return queues;
+                    } else {
+                        return [...queues, qData];
+                    }
+                });
+            }
+        };
+
+        onUpdateEvent(handleQueueUpdate);
+    }, []);
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
