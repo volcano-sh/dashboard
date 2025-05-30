@@ -25,6 +25,7 @@ const Queues = () => {
         direction: "asc",
     });
 
+    // 🟢 1. Fetch all queues
     const fetchQueues = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -57,6 +58,28 @@ const Queues = () => {
         fetchQueues();
     }, [fetchQueues]);
 
+    // Create Queue handler for SearchBar
+    const handleCreateQueue = async (newQueue) => {
+        try {
+            setLoading(true);
+            const response = await axios.post("/api/queues", newQueue);
+
+            if (response.status !== 201) {
+                let errMsg = response.data?.error || response.statusText;
+                alert("Failed to create queue: " + errMsg);
+                return;
+            }
+
+            alert("Queue created successfully!");
+        } catch (err) {
+            alert(
+                "Network error: " + (err?.response?.data?.error || err.message),
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSearch = useCallback((event) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -66,10 +89,6 @@ const Queues = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
-
-    useEffect(() => {
-        fetchQueues();
-    }, [searchText, pagination.page, filters]);
 
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -226,6 +245,10 @@ const Queues = () => {
                     placeholder="Search queues..."
                     refreshLabel="Refresh Queues"
                     createlabel="Create Queue"
+                    onCreateClick={handleCreateQueue}
+                    dialogTitle="Create a Queue"
+                    dialogResourceNameLabel="Queue Name"
+                    dialogResourceType="Queue"
                 />
             </Box>
             <QueueTable

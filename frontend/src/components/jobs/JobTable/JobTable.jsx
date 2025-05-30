@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
+
 import {
     TableContainer,
     Table,
@@ -18,6 +19,7 @@ import { FilterAlt } from "@mui/icons-material";
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog";
+import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
 
 const JobTable = ({
     jobs,
@@ -48,6 +50,7 @@ const JobTable = ({
     });
 
     // Delete dialog states
+
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [jobToDelete, setJobToDelete] = useState(null);
     const [deleteError, setDeleteError] = useState(null);
@@ -105,12 +108,12 @@ const JobTable = ({
         return statusMatch && namespaceMatch && queueMatch;
     });
 
-    // Delete handlers
     const handleOpenDeleteDialog = (job) => {
         setJobToDelete(job);
         setOpenDeleteDialog(true);
         setDeleteError(null);
     };
+
 
     const handleCloseDeleteDialog = () => {
         setOpenDeleteDialog(false);
@@ -152,6 +155,7 @@ const JobTable = ({
                 data = { message: text };
             }
 
+
             if (!response.ok) {
                 const k8sMessage =
                     data.message ||
@@ -163,7 +167,9 @@ const JobTable = ({
                 return;
             }
 
+
             if (reloadJobs) reloadJobs();
+
             handleCloseDeleteDialog();
         } catch (error) {
             setDeleteError(error.message || "An unexpected error occurred.");
@@ -230,6 +236,7 @@ const JobTable = ({
                 </Menu>
             ))}
 
+
             <TableContainer
                 component={Paper}
                 sx={{
@@ -266,6 +273,7 @@ const JobTable = ({
                 <Table stickyHeader>
                     <JobTableHeader
                         filters={activeFilters}
+
                         uniqueStatuses={uniqueStatuses}
                         allNamespaces={allNamespaces}
                         allQueues={allQueues}
@@ -284,6 +292,7 @@ const JobTable = ({
                             </TableRow>
                         ) : (
                             filteredJobs.map((job) => (
+
                                 <JobTableRow
                                     key={`${job.metadata.namespace}-${job.metadata.name}`}
                                     job={job}

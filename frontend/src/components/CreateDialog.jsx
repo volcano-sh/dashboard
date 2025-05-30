@@ -19,21 +19,38 @@ import { Plus, Minus, ChevronDown } from "lucide-react";
 
 const primaryColor = "#E34C26";
 
-const CreateQueueDialog = ({ open, onClose, onCreate }) => {
+const CreateDialog = ({
+    open,
+    onClose,
+    onCreate,
+    title,
+    resourceNameLabel,
+    resourceType,
+}) => {
     const [queueData, setQueueData] = useState({
         name: "",
         weight: "",
         reclaimable: true,
-        guaranteed: { cpu: "", memory: "", scalars: [] },
+        guarantee: { cpu: "", memory: "", scalars: [] },
         capability: { cpu: "", memory: "", scalars: [] },
         deserved: { cpu: "", memory: "", scalars: [] },
+        // Pod-specific fields
+        namespace: "default",
+        containerName: "my-container",
+        image: "nginx:latest",
+        containerPort: "80",
     });
     const [expanded, setExpanded] = useState({});
     const [errors, setErrors] = useState({});
 
+    const isPod = resourceType === "Pod";
+    const isQueue = resourceType === "Queue";
+
     const handleChange = (field) => (event) => {
         let value = event.target.value;
-        if (field === "weight") value = value.replace(/\D/, "");
+        if (field === "weight" || field === "containerPort") {
+            value = value.replace(/\D/, "");
+        }
         setQueueData((prev) => ({ ...prev, [field]: value }));
     };
 
@@ -89,60 +106,166 @@ const CreateQueueDialog = ({ open, onClose, onCreate }) => {
 
     const validate = () => {
         let newErrors = {};
-        if (!queueData.name.trim()) newErrors.name = "Queue name is required";
-        if (
-            !queueData.weight ||
-            isNaN(queueData.weight) ||
-            parseInt(queueData.weight) < 1
-        )
-            newErrors.weight = "Weight is required and must be positive";
+        if (!queueData.name.trim()) {
+            newErrors.name = `${resourceType} name is required`;
+        }
+
+        if (isPod) {
+            if (!queueData.containerName.trim()) {
+                newErrors.containerName = "Container name is required";
+            }
+            if (!queueData.image.trim()) {
+                newErrors.image = "Container image is required";
+            }
+            if (
+                !queueData.containerPort ||
+                isNaN(queueData.containerPort) ||
+                parseInt(queueData.containerPort) < 1
+            ) {
+                newErrors.containerPort =
+                    "Container port is required and must be positive";
+            }
+        } else {
+            // Queue validation
+            if (
+                !queueData.weight ||
+                isNaN(queueData.weight) ||
+                parseInt(queueData.weight) < 1
+            ) {
+                newErrors.weight = "Weight is required and must be positive";
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = () => {
-        if (!validate()) return;
+    const createPodResource = () => {
+        const podSpec = {
+            containers: [
+                {
+                    name: queueData.containerName.trim(),
+                    image: queueData.image.trim(),
+                    ports: [
+                        {
+                            containerPort: parseInt(
+                                queueData.containerPort,
+                                10,
+                            ),
+                        },
+                    ],
+                },
+            ],
+        };
 
+        return {
+            apiVersion: "v1",
+            kind: "Pod",
+            metadata: {
+                name: queueData.name.trim(),
+                namespace: queueData.namespace.trim(),
+            },
+            spec: podSpec,
+        };
+    };
+
+    const createQueueResource = () => {
         const specSection = {
             weight: parseInt(queueData.weight, 10),
             reclaimable: queueData.reclaimable,
         };
 
-        ["guaranteed", "capability", "deserved"].forEach((section) => {
-            const cpu = queueData[section].cpu.trim();
-            const memory = queueData[section].memory.trim();
-            const scalars = queueData[section].scalars || [];
-            const hasStandard = cpu || memory;
-            const hasScalars = scalars.some(
-                ({ key, value }) => key.trim() && value.trim(),
-            );
-            if (hasStandard || hasScalars) {
-                specSection[section] = {};
-                if (cpu) specSection[section].cpu = cpu;
-                if (memory) specSection[section].memory = memory;
-                scalars.forEach(({ key, value }) => {
-                    if (key.trim() && value.trim()) {
-                        specSection[section][key.trim()] = value.trim();
-                    }
-                });
-            }
-        });
+        // Handle guarantee (must be nested under resource)
+        const guaranteeCpu = queueData.guarantee.cpu.trim();
+        const guaranteeMemory = queueData.guarantee.memory.trim();
+        const guaranteeScalars = queueData.guarantee.scalars || [];
+        const hasGuaranteeStandard = guaranteeCpu || guaranteeMemory;
+        const hasGuaranteeScalars = guaranteeScalars.some(
+            ({ key, value }) => key.trim() && value.trim(),
+        );
+        if (hasGuaranteeStandard || hasGuaranteeScalars) {
+            specSection.guarantee = { resource: {} };
+            if (guaranteeCpu) specSection.guarantee.resource.cpu = guaranteeCpu;
+            if (guaranteeMemory)
+                specSection.guarantee.resource.memory = guaranteeMemory;
+            guaranteeScalars.forEach(({ key, value }) => {
+                if (key.trim() && value.trim()) {
+                    specSection.guarantee.resource[key.trim()] = value.trim();
+                }
+            });
+        }
 
-        const newQueue = {
+        // Handle capability (flattened, not under resource)
+        const capabilityCpu = queueData.capability.cpu.trim();
+        const capabilityMemory = queueData.capability.memory.trim();
+        const capabilityScalars = queueData.capability.scalars || [];
+        const hasCapabilityStandard = capabilityCpu || capabilityMemory;
+        const hasCapabilityScalars = capabilityScalars.some(
+            ({ key, value }) => key.trim() && value.trim(),
+        );
+        if (hasCapabilityStandard || hasCapabilityScalars) {
+            specSection.capability = {};
+            if (capabilityCpu) specSection.capability.cpu = capabilityCpu;
+            if (capabilityMemory)
+                specSection.capability.memory = capabilityMemory;
+            capabilityScalars.forEach(({ key, value }) => {
+                if (key.trim() && value.trim()) {
+                    specSection.capability[key.trim()] = value.trim();
+                }
+            });
+        }
+
+        // Handle deserved (flattened, not under resource)
+        const deservedCpu = queueData.deserved.cpu.trim();
+        const deservedMemory = queueData.deserved.memory.trim();
+        const deservedScalars = queueData.deserved.scalars || [];
+        const hasDeservedStandard = deservedCpu || deservedMemory;
+        const hasDeservedScalars = deservedScalars.some(
+            ({ key, value }) => key.trim() && value.trim(),
+        );
+        if (hasDeservedStandard || hasDeservedScalars) {
+            specSection.deserved = {};
+            if (deservedCpu) specSection.deserved.cpu = deservedCpu;
+            if (deservedMemory) specSection.deserved.memory = deservedMemory;
+            deservedScalars.forEach(({ key, value }) => {
+                if (key.trim() && value.trim()) {
+                    specSection.deserved[key.trim()] = value.trim();
+                }
+            });
+        }
+
+        return {
             apiVersion: "scheduling.volcano.sh/v1beta1",
-            kind: "Queue",
+            kind: resourceType,
             metadata: { name: queueData.name.trim() },
             spec: specSection,
         };
+    };
 
-        onCreate(newQueue);
+    const handleSubmit = () => {
+        if (!validate()) return;
+
+        let newResource;
+        if (isPod) {
+            newResource = createPodResource();
+        } else {
+            newResource = createQueueResource();
+        }
+
+        onCreate(newResource);
+
+        // Reset form
         setQueueData({
             name: "",
             weight: "",
             reclaimable: false,
-            guaranteed: { cpu: "", memory: "", scalars: [] },
+            guarantee: { cpu: "", memory: "", scalars: [] },
             capability: { cpu: "", memory: "", scalars: [] },
             deserved: { cpu: "", memory: "", scalars: [] },
+            namespace: "default",
+            containerName: "my-container",
+            image: "nginx:latest",
+            containerPort: "80",
         });
         setExpanded({});
         setErrors({});
@@ -285,6 +408,95 @@ const CreateQueueDialog = ({ open, onClose, onCreate }) => {
         </Accordion>
     );
 
+    const renderPodFields = () => (
+        <>
+            <TextField
+                label="Namespace"
+                value={queueData.namespace}
+                onChange={handleChange("namespace")}
+                fullWidth
+                sx={tfStyle}
+                placeholder="default"
+            />
+            <TextField
+                required
+                label="Container Name"
+                value={queueData.containerName}
+                onChange={handleChange("containerName")}
+                fullWidth
+                sx={tfStyle}
+                error={!!errors.containerName}
+                helperText={errors.containerName}
+                placeholder="my-container"
+            />
+            <TextField
+                required
+                label="Container Image"
+                value={queueData.image}
+                onChange={handleChange("image")}
+                fullWidth
+                sx={tfStyle}
+                error={!!errors.image}
+                helperText={errors.image}
+                placeholder="nginx:latest"
+            />
+            <TextField
+                required
+                label="Container Port"
+                type="number"
+                value={queueData.containerPort}
+                onChange={handleChange("containerPort")}
+                fullWidth
+                sx={tfStyle}
+                error={!!errors.containerPort}
+                helperText={errors.containerPort}
+                inputProps={{ min: 1 }}
+                placeholder="80"
+            />
+        </>
+    );
+
+    const renderQueueFields = () => (
+        <>
+            <TextField
+                label="Weight *"
+                type="number"
+                value={queueData.weight}
+                onChange={handleChange("weight")}
+                fullWidth
+                sx={tfStyle}
+                error={!!errors.weight}
+                helperText={errors.weight}
+                inputProps={{ min: 1 }}
+            />
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={queueData.reclaimable}
+                        onChange={handleCheckboxChange}
+                        sx={{
+                            color: primaryColor,
+                            "&.Mui-checked": { color: primaryColor },
+                        }}
+                    />
+                }
+                label="Reclaimable"
+                sx={{
+                    ".MuiTypography-root": {
+                        fontWeight: 500,
+                        color: "#222",
+                    },
+                }}
+            />
+            {errors.reclaimable && (
+                <Typography color="error" sx={{ ml: 1, fontSize: 13 }}>
+                    {errors.reclaimable}
+                </Typography>
+            )}
+            {["guarantee", "capability", "deserved"].map(renderResourceSection)}
+        </>
+    );
+
     return (
         <Dialog
             open={open}
@@ -307,7 +519,7 @@ const CreateQueueDialog = ({ open, onClose, onCreate }) => {
                     letterSpacing: "0.5px",
                 }}
             >
-                Create Queue
+                {title}
             </DialogTitle>
             <DialogContent>
                 <Box
@@ -320,7 +532,7 @@ const CreateQueueDialog = ({ open, onClose, onCreate }) => {
                 >
                     <TextField
                         required
-                        label="Queue Name"
+                        label={resourceNameLabel}
                         value={queueData.name}
                         onChange={handleChange("name")}
                         fullWidth
@@ -328,44 +540,8 @@ const CreateQueueDialog = ({ open, onClose, onCreate }) => {
                         error={!!errors.name}
                         helperText={errors.name}
                     />
-                    <TextField
-                        label="Weight *"
-                        type="number"
-                        value={queueData.weight}
-                        onChange={handleChange("weight")}
-                        fullWidth
-                        sx={tfStyle}
-                        error={!!errors.weight}
-                        helperText={errors.weight}
-                        inputProps={{ min: 1 }}
-                    />
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={queueData.reclaimable}
-                                onChange={handleCheckboxChange}
-                                sx={{
-                                    color: primaryColor,
-                                    "&.Mui-checked": { color: primaryColor },
-                                }}
-                            />
-                        }
-                        label="Reclaimable"
-                        sx={{
-                            ".MuiTypography-root": {
-                                fontWeight: 500,
-                                color: "#222",
-                            },
-                        }}
-                    />
-                    {errors.reclaimable && (
-                        <Typography color="error" sx={{ ml: 1, fontSize: 13 }}>
-                            {errors.reclaimable}
-                        </Typography>
-                    )}
-                    {["guaranteed", "capability", "deserved"].map(
-                        renderResourceSection,
-                    )}
+
+                    {isPod ? renderPodFields() : renderQueueFields()}
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
@@ -403,4 +579,4 @@ const CreateQueueDialog = ({ open, onClose, onCreate }) => {
     );
 };
 
-export default CreateQueueDialog;
+export default CreateDialog;

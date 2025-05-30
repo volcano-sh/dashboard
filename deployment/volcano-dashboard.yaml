@@ -102,6 +102,9 @@ rules:
       - get
       - list
       - watch
+      - create
+      - delete
+
   - apiGroups:
       - ""
     resources:
@@ -128,6 +131,9 @@ rules:
       - list
       - watch
       - delete
+      - create
+      - update
+      - patch 
 ---
 
 # volcano dashboard service

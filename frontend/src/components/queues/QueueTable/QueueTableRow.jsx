@@ -4,6 +4,8 @@ import PropTypes from "prop-types";
 import { TableRow, TableCell, Box, Chip, useTheme, alpha } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
+
+import Edit from "@mui/icons-material/Edit";
 import EditQueueDialog from "./EditQueueDialog";
 
 const QueueTableRow = ({
@@ -12,7 +14,8 @@ const QueueTableRow = ({
     handleQueueClick,
     handleOpenDeleteDialog,
     onQueueUpdate,
-    visibleColumns,
+    visibleColumns
+
 }) => {
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -220,7 +223,6 @@ const QueueTableRow = ({
                 open={isEditDialogOpen}
                 queue={queue}
                 onClose={handleCloseEditDialog}
-                onSave={handleSaveQueue}
             />
         </>
     );

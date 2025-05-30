@@ -86,6 +86,43 @@ const Pods = () => {
         fetchPods();
     }, [fetchPods]);
 
+    const fetchData = async () => {
+        try {
+            const response = await fetch("/api/pods");
+            if (response.ok) {
+                const data = await response.json();
+                setPods(data);
+            }
+        } catch (error) {
+            console.error("Error fetching pods:", error);
+        }
+    };
+
+    const handleCreatePod = async (newPod) => {
+        try {
+            const response = await fetch("/api/pods", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newPod),
+            });
+
+            if (!response.ok) {
+                let errorMsg = "Unknown error";
+                try {
+                    const errData = await response.json();
+                    errorMsg = errData.error || response.statusText;
+                } catch {}
+                alert("Error creating pod: " + errorMsg);
+                return;
+            }
+
+            alert("Pod created successfully!");
+            await fetchData(); // Now fetchData is defined in the same scope
+        } catch (err) {
+            alert("Network error: " + err.message);
+        }
+    };
+
     const handlePodClick = useCallback(async (pod) => {
         try {
             setLoading(true);
@@ -158,6 +195,10 @@ const Pods = () => {
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
                     createlabel="Create Pod"
+                    dialogTitle="Create a Pod"
+                    dialogResourceNameLabel="Pod Name"
+                    dialogResourceType="Pod"
+                    onCreateClick={handleCreatePod}
                 />
             </Box>
             <PodsTable

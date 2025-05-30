@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
-import JobEditDialog from "./JobEditDialog"; // Create or import this component
+import JobEditDialog from "./JobEditDialog";
 
 const JobTableRow = ({
     job,
@@ -144,7 +144,6 @@ const JobTableRow = ({
                         </Box>
                     </TableCell>
                 )}
-
                 {visibleColumns.actions && (
                     <TableCell sx={{ padding: "16px 24px" }}>
                         <Box display="flex" alignItems="center" gap={2}>
@@ -185,6 +184,7 @@ const JobTableRow = ({
                         </Box>
                     </TableCell>
                 )}
+
             </TableRow>
 
             {/* Edit Dialog */}

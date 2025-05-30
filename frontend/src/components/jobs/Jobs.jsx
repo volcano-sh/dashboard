@@ -147,6 +147,30 @@ const Jobs = () => {
         setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
     }, []);
 
+    const handleCreateJob = async (newJob) => {
+        try {
+            const response = await fetch("/api/jobs", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newJob),
+            });
+
+            if (!response.ok) {
+                let errorMsg = "Unknown error";
+                try {
+                    const errData = await response.json();
+                    errorMsg = errData.error || response.statusText;
+                } catch {}
+                alert("Error creating job: " + errorMsg);
+                return;
+            }
+
+            alert("Job created successfully!");
+        } catch (err) {
+            alert("Network error: " + err.message);
+        }
+    };
+
     const handleFilterClose = useCallback((filterType, value) => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
         setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
@@ -205,6 +229,10 @@ const Jobs = () => {
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
                     createlabel="Create Job"
+                    dialogTitle="Create a Job"
+                    dialogResourceNameLabel="Job Name"
+                    dialogResourceType="Job"
+                    onCreateClick={handleCreateJob}
                 />
             </Box>
             <JobTable
@@ -219,6 +247,7 @@ const Jobs = () => {
                 handleFilterClose={handleFilterClose}
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
+                reloadJobs={fetchJobs}
             />
             <JobPagination
                 pagination={pagination}
