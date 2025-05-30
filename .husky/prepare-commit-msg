@@ -1,0 +1,19 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check if the commit is a merge or squash, and skip
+case "$2" in
+  merge|squash) exit 0 ;;
+esac
+
+# Check if the sign-off exists
+if ! grep -q "^Signed-off-by: " "$1"; then
+  echo ""
+  echo "Commit rejected: missing 'Signed-off-by' line."
+  echo "To sign off your commit, use:"
+  echo "    git commit --signoff"
+  echo ""
+  echo "Alternatively, set up Git to always sign off:"
+  echo "    git config --global commit.signoff true"
+  exit 1
+fi
