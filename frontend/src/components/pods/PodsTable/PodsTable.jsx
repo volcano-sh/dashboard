@@ -31,7 +31,9 @@ const PodsTable = ({
 
     const handleFilterClose = React.useCallback(
         (filterType, value) => {
-            onFilterChange(filterType, value);
+            if (filterType && value) {
+                onFilterChange(filterType, value);
+            }
             setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
         },
         [onFilterChange],
