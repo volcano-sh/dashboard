@@ -10,30 +10,9 @@ import {
     Card,
 } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-    faSearch,
-    faTimes,
-    faRedo,
-    faPlus,
-} from "@fortawesome/free-solid-svg-icons";
-import CreateQueueDialog from "./CreateQueueDialog";
-const handleCreateQueue = async (newQueue) => {
-    try {
-        const response = await fetch("/api/queues", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newQueue),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.details || "Failed to create queue");
-        }
-        // Optionally, fetch queues again or update UI
-    } catch (err) {
-        alert("Error creating queue: " + err.message);
-    }
-};
+import { faSearch, faTimes, faRedo } from "@fortawesome/free-solid-svg-icons";
+import CreateDialog from "./CreateDialog";
+import CreateJobDialog from "./jobs/JobTable/CreateJobDialog";
 
 const SearchBar = ({
     searchText,
@@ -42,6 +21,10 @@ const SearchBar = ({
     handleRefresh,
     fetchData,
     isRefreshing,
+    dialogTitle,
+    dialogResourceNameLabel,
+    dialogResourceType,
+
     placeholder,
     refreshLabel,
     onCreateClick,
@@ -52,10 +35,11 @@ const SearchBar = ({
     const handleOpenDialog = () => setDialogOpen(true);
     const handleCloseDialog = () => setDialogOpen(false);
 
-    const handleCreateQueue = (newQueue) => {
+    const handleDialogCreate = async (resourceData) => {
         if (onCreateClick) {
-            onCreateClick(newQueue);
+            await onCreateClick(resourceData);
         }
+        setDialogOpen(false);
     };
 
     return (
@@ -168,11 +152,28 @@ const SearchBar = ({
                 </Card.Body>
             </Card>
 
-            <CreateQueueDialog
-                open={dialogOpen}
-                onClose={handleCloseDialog}
-                onCreate={handleCreateQueue}
-            />
+            {/* For Queue Dialog */}
+            {dialogResourceType === "Queue" && (
+                <CreateDialog
+                    open={dialogOpen}
+                    onClose={handleCloseDialog}
+                    onCreate={handleDialogCreate}
+                    title={dialogTitle}
+                    resourceNameLabel={dialogResourceNameLabel}
+                    resourceType={dialogResourceType}
+                />
+            )}
+
+            {dialogResourceType === "Job" && (
+                <CreateJobDialog
+                    open={dialogOpen}
+                    onClose={handleCloseDialog}
+                    onCreate={handleDialogCreate}
+                    title={dialogTitle}
+                    resourceNameLabel={dialogResourceNameLabel}
+                    resourceType={dialogResourceType}
+                />
+            )}
         </>
     );
 };
