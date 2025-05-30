@@ -1,1 +1,8 @@
+#!/usr/bin/env bash
+
 npx lint-staged
+npx prettier --check .
+npx vitest run --silent
+
+
+
