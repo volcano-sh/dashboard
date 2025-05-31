@@ -5,20 +5,23 @@ const TitleComponent = ({ text }) => {
         <Typography
             variant="h4"
             align="center"
-            className="text-center rounded mx-auto"
             sx={{
                 color: "#dc3545",
-                letterSpacing: "1px",
+                letterSpacing: "0.05em",
+                fontWeight: 500,
+                fontSize: "1.75rem",
+                marginBottom: "2rem",
                 textTransform: "uppercase",
-                maxWidth: "80%",
                 position: "relative",
                 "&::after": {
                     content: "''",
                     position: "absolute",
                     width: "30%",
-                    height: "3px",
-                    bottom: "-3px",
+                    height: "2px",
+                    bottom: "-8px",
                     left: "35%",
+                    backgroundColor: "#dc3545",
+                    opacity: 0.3,
                 },
             }}
         >
