@@ -176,6 +176,38 @@ const Pods = () => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     }, []);
 
+    const handleBulkDelete = async (pods) => {
+        try {
+            // Create an array of promises for each pod deletion
+            const deletePromises = pods.map((pod) =>
+                axios.delete(
+                    `/api/pods/${pod.metadata.namespace}/${pod.metadata.name}`,
+                ),
+            );
+
+            // Wait for all deletions to complete
+            await Promise.all(deletePromises);
+
+            // Refresh the pods list
+            handleRefresh();
+        } catch (error) {
+            setError(`Failed to delete pods: ${error.message}`);
+        }
+    };
+
+    const handleBulkAction = (action, selectedPods) => {
+        switch (action) {
+            case "delete":
+                handleBulkDelete(selectedPods);
+                break;
+            case "refresh":
+                // Implement refresh functionality if needed
+                break;
+            default:
+                break;
+        }
+    };
+
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
@@ -209,6 +241,10 @@ const Pods = () => {
                 onSortDirectionToggle={toggleSortDirection}
                 onFilterChange={handleFilterChange}
                 onPodClick={handlePodClick}
+                onBulkAction={handleBulkAction}
+                onPodDelete={handleBulkDelete}
+                onPodRefresh={handleRefresh}
+                onPodEdit={handlePodClick}
             />
             <PodsPagination
                 totalPods={totalPods}
