@@ -11,44 +11,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json 
+
       - name: Install Dependencies
         working-directory: frontend
         run: npm ci
+
       - name: Check Formatting
         working-directory: frontend
         run: npm run format:check
-      - name: ✅ Formatting Check Passed
+
+      - name: Formatting Check Passed
         if: success()
         run: echo "Prettier formatting check passed ✅"
+
       - name: Lint Check
         working-directory: frontend
         run: npm run lint
-      - name: ✅ Lint Check Passed
+
+      - name: Lint Check Passed
         if: success()
         run: echo "Linting successful ✅"
+
       - name: Run Frontend Tests
         working-directory: frontend
-        run: npm test -- --ci --coverage
-      - name: ✅ Frontend Tests Passed
+        run: npm test
+
+      - name: Frontend Tests Passed
         if: success()
         run: echo "Frontend tests passed ✅"
+
       - name: Build
         working-directory: frontend
         run: npm run build
-      - name: ✅ Frontend Build Successful
+
+      - name: Frontend Build Successful
         if: success()
         run: echo "Frontend build successful ✅"
+
       - name: Run Frontend
         working-directory: frontend
         run: |
           echo "Starting Frontend Server..."
           npm run dev &
+
       - name: ✅ Frontend Server Started
         if: success()
         run: echo "Frontend server started successfully ✅"
@@ -62,12 +72,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+
       - name: Install Dependencies
         working-directory: backend
         run: npm ci
+
       - name: ✅ Dependencies Installed
         if: success()
         run: echo "Backend dependencies installed successfully ✅"
+
       - name: Check Formatting (if you have prettier/eslint)
         working-directory: backend
         run: |
@@ -76,9 +89,11 @@ jobs:
           else
             echo "No format:check script found, skipping formatting check"
           fi
+
       - name: ✅ Formatting Check Passed
         if: success()
         run: echo "Backend formatting check passed ✅"
+
       - name: Lint Check (if you have linting)
         working-directory: backend
         run: |
@@ -87,15 +102,19 @@ jobs:
           else
             echo "No lint script found, skipping lint check"
           fi
+        
       - name: ✅ Lint Check Passed
         if: success()
         run: echo "Backend linting successful ✅"
+
       - name: Build Backend
         working-directory: backend
         run: npm run build
+
       - name: ✅ Backend Build Successful
         if: success()
         run: echo "Backend build successful ✅"
+
       - name: Run Backend Server
         working-directory: backend
         run: |
@@ -103,6 +122,7 @@ jobs:
           npm run dev &
           sleep 5
           echo "Backend server started"
+          
       - name: ✅ Backend Server Started
         if: success()
         run: echo "Backend server started successfully ✅"
