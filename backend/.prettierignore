@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage
+
+# Package files
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
