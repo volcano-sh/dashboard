@@ -119,7 +119,7 @@ export default function QueueManagement() {
 
     const handlePageSizeChange = (newPageSize: string) => {
         setPagination(prev => ({
-            page: 1, // Reset to first page when changing page size
+            page: 1,
             pageSize: parseInt(newPageSize),
         }));
     }
@@ -147,7 +147,6 @@ export default function QueueManagement() {
     const isLoading = queuesQuery.isLoading
     const isRefreshing = queuesQuery.isRefetching
 
-    // Calculate pagination info
     const totalPages = Math.ceil(totalQueues / pagination.pageSize);
     const startItem = (pagination.page - 1) * pagination.pageSize + 1;
     const endItem = Math.min(pagination.page * pagination.pageSize, totalQueues);
@@ -172,7 +171,6 @@ export default function QueueManagement() {
                 </div>
             </div>
 
-            {/* Error Alert */}
             {error && (
                 <Alert className="mb-4 border-red-200 bg-red-50">
                     <AlertDescription className="text-red-800">
@@ -181,7 +179,6 @@ export default function QueueManagement() {
                 </Alert>
             )}
 
-            {/* Loading State */}
             {isLoading ? (
                 <div className="space-y-4">
                     <Skeleton className="h-12 w-full" />
@@ -192,7 +189,6 @@ export default function QueueManagement() {
                 </div>
             ) : (
                 <>
-                    {/* Enhanced DataTable with click handlers */}
                     <div className="rounded-lg">
                         <DataTable
                             columns={columns}
@@ -202,13 +198,11 @@ export default function QueueManagement() {
                         />
                     </div>
 
-                    {/* Server-side Pagination Controls */}
                     <div className="flex items-center justify-between space-x-2 py-4">
                         <div className="flex-1 text-sm text-muted-foreground">
                             Showing {startItem} to {endItem} of {totalQueues} results
                         </div>
                         <div className="flex items-center space-x-2">
-                            {/* Page Size Selector */}
                             <div className="flex items-center space-x-2">
                                 <span className="text-sm text-muted-foreground">Show:</span>
                                 <Select
@@ -227,7 +221,6 @@ export default function QueueManagement() {
                                 </Select>
                             </div>
 
-                            {/* Pagination Controls */}
                             <div className="flex items-center space-x-2">
                                 <Button
                                     variant="outline"
@@ -239,7 +232,6 @@ export default function QueueManagement() {
                                     Previous
                                 </Button>
 
-                                {/* Page Numbers */}
                                 <div className="flex items-center space-x-1">
                                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                         let pageNum;
@@ -282,7 +274,6 @@ export default function QueueManagement() {
                 </>
             )}
 
-            {/* Queue Details Modal */}
             <Dialog open={showQueueDetails} onOpenChange={setShowQueueDetails}>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
@@ -298,7 +289,6 @@ export default function QueueManagement() {
 
                     {selectedQueue && (
                         <div className="space-y-4">
-                            {/* Queue Info */}
                             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                                 <div>
                                     <span className="font-semibold">Name:</span> {selectedQueue.name}
@@ -314,7 +304,6 @@ export default function QueueManagement() {
                                 </div>
                             </div>
 
-                            {/* YAML Configuration */}
                             <div>
                                 <h3 className="font-semibold mb-2">YAML Configuration</h3>
                                 <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
@@ -326,8 +315,7 @@ export default function QueueManagement() {
                 </DialogContent>
             </Dialog>
 
-            {/* Create Queue Modal */}
-            <CreateQueueDialog open={showCreateQueueModal} setOpen={setShowCreateQueueModal} />
+            <CreateQueueDialog open={showCreateQueueModal} setOpen={setShowCreateQueueModal} handleRefresh={handleRefresh}/>
         </div>
     )
 }

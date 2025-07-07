@@ -14,7 +14,6 @@ import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Filter } from 'lucide-react'
 import { PodStatus } from "./pod-management"
 
-// Function to create columns with dynamic namespace and status filtering
 export const createColumns = (availableNamespaces: string[], availableStatuses: string[]): ColumnDef<PodStatus>[] => [
     {
         accessorKey: "name",
@@ -166,5 +165,4 @@ export const createColumns = (availableNamespaces: string[], availableStatuses: 
 
 ]
 
-// Default columns for backward compatibility
 export const columns = createColumns([], []) 

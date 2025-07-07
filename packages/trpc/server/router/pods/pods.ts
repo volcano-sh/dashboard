@@ -52,37 +52,8 @@ export const podRouter = router({
     createPod: procedure.input(createPodInputSchema).mutation(async ({ input }) => {
         const { podManifest } = input;
 
-        if (!podManifest.metadata.name || !podManifest.spec) {
-            throw new Error("Invalid pod manifest: name and spec are required");
-        }
-
-        // Fix the apiVersion for regular Pods
-        if (podManifest.apiVersion === "scheduling.volcano.sh/v1beta1") {
-            podManifest.apiVersion = "v1";
-        }
-
-        // Fix the kind
-        if (podManifest.kind !== "Pod") {
-            podManifest.kind = "Pod";
-        }
-
-        const spec = podManifest.spec as any;
-        if (spec.weight || spec.reclaimable) {
-            throw new Error("Invalid Pod spec. Use proper Pod specification with containers, not Queue fields.");
-        }
-
-        if (!podManifest.spec.containers || !Array.isArray(podManifest.spec.containers)) {
-            throw new Error("Pod spec must include 'containers' array");
-        }
-
-        let namespace = podManifest.metadata.namespace;
-        if (!namespace || namespace === "All" || typeof namespace !== "string" || !namespace.trim()) {
-            namespace = "default";
-            podManifest.metadata.namespace = namespace;
-        }
-
         const response = await k8sCoreApi.createNamespacedPod({
-            namespace: namespace,
+            namespace: podManifest.metadata.namespace || "default",
             body: podManifest,
         });
 

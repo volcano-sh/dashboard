@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
-// Sample data structure matching the original
 const sampleData = [
   {
     metadata: { name: "gpu-queue" },
@@ -118,13 +117,11 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
 
     const resourceTypes = new Set<string>()
 
-    // Traverse the queue data and get all resource types
     data.forEach((queue) => {
       const allocated = queue.status?.allocated || {}
       Object.keys(allocated).forEach((resource) => resourceTypes.add(resource))
     })
 
-    // Convert resource type from Set to Array
     return Array.from(resourceTypes).map((resource) => ({
       value: resource,
       label: `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`.replace("Nvidia.com/gpu", "GPU"),
@@ -132,7 +129,6 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
   }, [data])
 
   useEffect(() => {
-    // If there is a resource option, select the first resource by default
     if (resourceOptions.length > 0 && !selectedResource) {
       setSelectedResource(resourceOptions[0].value)
     }
@@ -156,7 +152,6 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
     return cpuStr.toString().includes("m") ? value / 1000 : value // m is converted to the number of cores
   }
 
-  // Process queue data and convert memory and CPU units
   const processData = (data: typeof sampleData) => {
     return data.reduce(
       (acc, queue) => {
@@ -164,11 +159,9 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
         const allocated = queue.status?.allocated || {}
         const capability = queue.spec?.capability || {}
 
-        // Handle memory unit conversion
         const allocatedMemory = convertMemoryToGi(allocated.memory || "0")
         const capabilityMemory = convertMemoryToGi(capability.memory || "0")
 
-        // Handle CPU unit conversion
         const allocatedCPU = convertCPUToCores(allocated.cpu || "0")
         const capabilityCPU = convertCPUToCores(capability.cpu || "0")
 
@@ -190,10 +183,8 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
     )
   }
 
-  // Process queue data
   const processedData = useMemo(() => processData(data), [data])
 
-  // Build chart data for Recharts
   const chartData = useMemo(() => {
     return Object.keys(processedData).map((queueName) => ({
       name: queueName,
@@ -202,7 +193,6 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
     }))
   }, [processedData, selectedResource])
 
-  // Get Y-axis label
   const getYAxisLabel = () => {
     switch (selectedResource) {
       case "memory":

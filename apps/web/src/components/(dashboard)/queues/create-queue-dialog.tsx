@@ -1,380 +1,191 @@
 "use client"
 
+import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import * as React from "react"
-import { ChevronDown, Plus, Trash2 } from "lucide-react"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  DialogTitle
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { trpc } from "@volcano/trpc/react"
 
-interface CustomResource {
-  key: string
-  value: string
-}
+const defaultQueueYaml = `apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: test
+spec:
+  capability:
+    cpu: "8"
+    memory: 16Gi
+  # deserved field is only used by capacity plugin
+  deserved:
+    cpu: "4"
+    memory: 8Gi
+  guarantee:
+    resource:
+      cpu: "2"
+      memory: 4Gi
+  priority: 100
+  reclaimable: true
+  # weight field is only used by proportion plugin
+  weight: 1
+status:
+  allocated:
+    cpu: "0"
+    memory: "0"
+  state: Open`
 
+export function CreateQueueDialog({ open, setOpen, handleRefresh }: { open: boolean, setOpen: (open: boolean) => void, handleRefresh: () => void }) {
+  const [yaml, setYaml] = React.useState(defaultQueueYaml)
+  const [status, setStatus] = React.useState<{
+    type: "success" | "error" | null
+    message: string
+  }>({ type: null, message: "" })
+  
+  React.useEffect(() => {
+    if (open) {
+      setStatus({ type: null, message: "" })
+    }
+  }, [open])
 
-export function CreateQueueDialog({ open, setOpen }: { open: boolean, setOpen: (open: boolean) => void }) {
-  const [queueName, setQueueName] = React.useState("")
-  const [weight, setWeight] = React.useState("")
-  const [reclaimable, setReclaimable] = React.useState(true)
+  const { mutateAsync: createQueue, isPending: isCreating } = trpc.queueRouter.createQueue.useMutation(
+    {
+      onSuccess: () => {
+        setStatus({
+          type: "success",
+          message: "Queue created successfully!",
+        })
 
-  // Guarantee Resources
-  const [guaranteeCpu, setGuaranteeCpu] = React.useState("")
-  const [guaranteeMemory, setGuaranteeMemory] = React.useState("")
-  const [guaranteeCustomResources, setGuaranteeCustomResources] = React.useState<CustomResource[]>([])
+        setOpen(false)
+        handleRefresh()
+      },
+      onError: (error) => {
+        setStatus({
+          type: "error",
+          message: error.message,
+        })
+      },
+    }
+  )
 
-  // Capability Resources
-  const [capabilityCpu, setCapabilityCpu] = React.useState("")
-  const [capabilityMemory, setCapabilityMemory] = React.useState("")
-  const [capabilityCustomResources, setCapabilityCustomResources] = React.useState<CustomResource[]>([])
+  const parseYamlToManifest = (yamlString: string) => {
+    const lines = yamlString.trim().split('\n')
+    const manifest: any = {
+      apiVersion: '',
+      kind: '',
+      metadata: { name: '' },
+      spec: {}
+    }
 
-  // Deserved Resources
-  const [deservedCpu, setDeservedCpu] = React.useState("")
-  const [deservedMemory, setDeservedMemory] = React.useState("")
-  const [deservedCustomResources, setDeservedCustomResources] = React.useState<CustomResource[]>([
-    { key: "", value: "" },
-  ])
+    const requiredFields = ['apiVersion', 'kind', 'metadata', 'spec']
+    const foundFields = new Set<string>()
 
-  const addCustomResource = (type: "guarantee" | "capability" | "deserved") => {
-    const newResource = { key: "", value: "" }
-    if (type === "guarantee") {
-      setGuaranteeCustomResources([...guaranteeCustomResources, newResource])
-    } else if (type === "capability") {
-      setCapabilityCustomResources([...capabilityCustomResources, newResource])
-    } else {
-      setDeservedCustomResources([...deservedCustomResources, newResource])
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+
+      // Check for required top-level fields
+      for (const field of requiredFields) {
+        if (trimmed.startsWith(`${field}:`)) {
+          foundFields.add(field)
+          if (field === 'apiVersion' || field === 'kind') {
+            manifest[field] = trimmed.split(':')[1].trim()
+          }
+        }
+      }
+
+      // Extract metadata.name
+      if (trimmed.startsWith('name:') && foundFields.has('metadata')) {
+        manifest.metadata.name = trimmed.split(':')[1].trim()
+      }
+    }
+
+    // Validate required fields
+    const missingFields = requiredFields.filter(field => !foundFields.has(field))
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
+    }
+
+    if (manifest.kind !== 'Queue') {
+      throw new Error('Kind must be "Queue"')
+    }
+
+    if (!manifest.metadata.name) {
+      throw new Error('Missing required field: metadata.name')
+    }
+
+    return manifest
+  }
+
+  const handleCreateQueue = async () => {
+    try {
+      const queueManifest = parseYamlToManifest(yaml)
+      await createQueue({ queueManifest })
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Failed to create queue"
+      })
     }
   }
 
-  const removeCustomResource = (type: "guarantee" | "capability" | "deserved", index: number) => {
-    if (type === "guarantee") {
-      setGuaranteeCustomResources(guaranteeCustomResources.filter((_, i) => i !== index))
-    } else if (type === "capability") {
-      setCapabilityCustomResources(capabilityCustomResources.filter((_, i) => i !== index))
-    } else {
-      setDeservedCustomResources(deservedCustomResources.filter((_, i) => i !== index))
-    }
-  }
-
-  const updateCustomResource = (
-    type: "guarantee" | "capability" | "deserved",
-    index: number,
-    field: "key" | "value",
-    value: string,
-  ) => {
-    if (type === "guarantee") {
-      const updated = [...guaranteeCustomResources]
-      updated[index][field] = value
-      setGuaranteeCustomResources(updated)
-    } else if (type === "capability") {
-      const updated = [...capabilityCustomResources]
-      updated[index][field] = value
-      setCapabilityCustomResources(updated)
-    } else {
-      const updated = [...deservedCustomResources]
-      updated[index][field] = value
-      setDeservedCustomResources(updated)
-    }
-  }
-
-  const handleCreate = () => {
-    // Handle form submission here
-    console.log({
-      queueName,
-      weight,
-      reclaimable,
-      guaranteeResources: {
-        cpu: guaranteeCpu,
-        memory: guaranteeMemory,
-        custom: guaranteeCustomResources,
-      },
-      capabilityResources: {
-        cpu: capabilityCpu,
-        memory: capabilityMemory,
-        custom: capabilityCustomResources,
-      },
-      deservedResources: {
-        cpu: deservedCpu,
-        memory: deservedMemory,
-        custom: deservedCustomResources,
-      },
-    })
-    setOpen(false)
-  }
-
-  const handleCancel = () => {
-    setOpen(false)
+  const handleReset = () => {
+    setYaml(defaultQueueYaml)
+    setStatus({ type: null, message: "" })
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-orange-600">Create a Queue</DialogTitle>
-          <DialogDescription className="sr-only">Create a new queue with resource configurations</DialogDescription>
+          <DialogTitle>Create Kubernetes Queue</DialogTitle>
+          <DialogDescription>Enter your queue configuration in YAML format below.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="queue-name">
-                Queue Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="queue-name"
-                value={queueName}
-                onChange={(e) => setQueueName(e.target.value)}
-                placeholder="Enter queue name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="weight">
-                Weight <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="weight"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                placeholder="Enter weight"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="reclaimable"
-                checked={reclaimable}
-                onCheckedChange={(checked) => setReclaimable(checked as boolean)}
-              />
-              <Label htmlFor="reclaimable">Reclaimable</Label>
-            </div>
+        <div className="flex-1 space-y-4 overflow-hidden">
+          <div className="space-y-2">
+            <Label htmlFor="yaml-input">Queue YAML Configuration</Label>
+            <Textarea
+              id="yaml-input"
+              value={yaml}
+              onChange={(e) => setYaml(e.target.value)}
+              placeholder="Enter your queue YAML configuration..."
+              className="min-h-[400px] font-mono text-sm resize-none"
+              disabled={isCreating}
+            />
           </div>
 
-          {/* Guarantee Resources */}
-          <Collapsible defaultOpen>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left bg-gray-50 rounded-lg hover:bg-gray-100">
-              <span className="font-medium text-gray-700">Guarantee Resources (Optional)</span>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="guarantee-cpu">CPU</Label>
-                  <Input
-                    id="guarantee-cpu"
-                    value={guaranteeCpu}
-                    onChange={(e) => setGuaranteeCpu(e.target.value)}
-                    placeholder="Enter CPU"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="guarantee-memory">Memory</Label>
-                  <Input
-                    id="guarantee-memory"
-                    value={guaranteeMemory}
-                    onChange={(e) => setGuaranteeMemory(e.target.value)}
-                    placeholder="Enter Memory"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600">Custom Scalar Resources</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => addCustomResource("guarantee")}
-                    className="text-orange-600 hover:text-orange-700"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {guaranteeCustomResources.map((resource, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      value={resource.key}
-                      onChange={(e) => updateCustomResource("guarantee", index, "key", e.target.value)}
-                      placeholder="Key"
-                    />
-                    <Input
-                      value={resource.value}
-                      onChange={(e) => updateCustomResource("guarantee", index, "value", e.target.value)}
-                      placeholder="Value"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeCustomResource("guarantee", index)}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Capability Resources */}
-          <Collapsible>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left bg-gray-50 rounded-lg hover:bg-gray-100">
-              <span className="font-medium text-gray-700">Capability Resources (Optional)</span>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="capability-cpu">CPU</Label>
-                  <Input
-                    id="capability-cpu"
-                    value={capabilityCpu}
-                    onChange={(e) => setCapabilityCpu(e.target.value)}
-                    placeholder="Enter CPU"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="capability-memory">Memory</Label>
-                  <Input
-                    id="capability-memory"
-                    value={capabilityMemory}
-                    onChange={(e) => setCapabilityMemory(e.target.value)}
-                    placeholder="Enter Memory"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600">Custom Scalar Resources</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => addCustomResource("capability")}
-                    className="text-orange-600 hover:text-orange-700"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {capabilityCustomResources.map((resource, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      value={resource.key}
-                      onChange={(e) => updateCustomResource("capability", index, "key", e.target.value)}
-                      placeholder="Key"
-                    />
-                    <Input
-                      value={resource.value}
-                      onChange={(e) => updateCustomResource("capability", index, "value", e.target.value)}
-                      placeholder="Value"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeCustomResource("capability", index)}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Deserved Resources */}
-          <Collapsible>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left bg-gray-50 rounded-lg hover:bg-gray-100">
-              <span className="font-medium text-gray-700">Deserved Resources (Optional)</span>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="deserved-cpu">CPU</Label>
-                  <Input
-                    id="deserved-cpu"
-                    value={deservedCpu}
-                    onChange={(e) => setDeservedCpu(e.target.value)}
-                    placeholder="Enter CPU"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deserved-memory">Memory</Label>
-                  <Input
-                    id="deserved-memory"
-                    value={deservedMemory}
-                    onChange={(e) => setDeservedMemory(e.target.value)}
-                    placeholder="Enter Memory"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600">Custom Scalar Resources</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => addCustomResource("deserved")}
-                    className="text-orange-600 hover:text-orange-700"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {deservedCustomResources.map((resource, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      value={resource.key}
-                      onChange={(e) => updateCustomResource("deserved", index, "key", e.target.value)}
-                      placeholder="Key"
-                    />
-                    <Input
-                      value={resource.value}
-                      onChange={(e) => updateCustomResource("deserved", index, "value", e.target.value)}
-                      placeholder="Value"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeCustomResource("deserved", index)}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+          {status.type && (
+            <Alert variant={status.type === "error" ? "destructive" : "default"}>
+              {status.type === "success" ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+              <AlertDescription>{status.message}</AlertDescription>
+            </Alert>
+          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 pt-6 border-t">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={handleReset} disabled={isCreating}>
+            Reset
           </Button>
-          <Button onClick={handleCreate} className="bg-orange-600 hover:bg-orange-700 text-white">
-            Create
+          <Button onClick={handleCreateQueue} disabled={isCreating || !yaml.trim()}>
+            {isCreating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Queue"
+            )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

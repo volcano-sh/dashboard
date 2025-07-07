@@ -17,14 +17,14 @@ export const createQueueInputSchema = z.object({
             name: z.string(),
             annotations: z.record(z.string()).optional(),
         }),
-        spec: z.any(),      
+        spec: z.any(),
     }),
 });
 
 export const updateQueueInputSchema = z.object({
     name: z.string(),
     updatedBody: z.object({
-        spec: z.any(),  
+        spec: z.any(),
     }),
 });
 

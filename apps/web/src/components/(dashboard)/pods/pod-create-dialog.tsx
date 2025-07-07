@@ -1,8 +1,9 @@
 "use client"
 
+import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import * as React from "react"
-import { Plus, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -10,12 +11,11 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  DialogTitle
 } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Textarea } from "@/components/ui/textarea"
+import { trpc } from "@volcano/trpc/react"
 
 const defaultPodYaml = `apiVersion: v1
 kind: Pod
@@ -31,88 +31,130 @@ spec:
     - containerPort: 80
   restartPolicy: Always`
 
-export function CreatePodDialog({open, setOpen}:{open: boolean, setOpen: (open: boolean) => void}) {
+export function CreatePodDialog({ open, setOpen, handleRefresh }: { open: boolean, setOpen: (open: boolean) => void, handleRefresh: () => void }) {
   const [yaml, setYaml] = React.useState(defaultPodYaml)
-  const [isCreating, setIsCreating] = React.useState(false)
   const [status, setStatus] = React.useState<{
     type: "success" | "error" | null
     message: string
   }>({ type: null, message: "" })
 
-  const validateYaml = (yamlString: string) => {
-    try {
-      // Basic validation - check if it's valid YAML structure
-      const lines = yamlString.trim().split("\n")
-
-      // Check for required Kubernetes fields
-      const hasApiVersion = lines.some((line) => line.trim().startsWith("apiVersion:"))
-      const hasKind = lines.some((line) => line.trim().startsWith("kind:"))
-      const hasMetadata = lines.some((line) => line.trim().startsWith("metadata:"))
-      const hasSpec = lines.some((line) => line.trim().startsWith("spec:"))
-
-      if (!hasApiVersion) throw new Error("Missing required field: apiVersion")
-      if (!hasKind) throw new Error("Missing required field: kind")
-      if (!hasMetadata) throw new Error("Missing required field: metadata")
-      if (!hasSpec) throw new Error("Missing required field: spec")
-
-      // Check if kind is Pod
-      const kindLine = lines.find((line) => line.trim().startsWith("kind:"))
-      if (kindLine && !kindLine.includes("Pod")) {
-        throw new Error('Kind must be "Pod"')
-      }
-
-      return { valid: true, error: null }
-    } catch (error) {
-      return {
-        valid: false,
-        error: error instanceof Error ? error.message : "Invalid YAML format",
-      }
+  React.useEffect(() => {
+    if (open) {
+      setStatus({ type: null, message: "" })
     }
-  }
+  }, [open])
 
-  const handleCreatePod = async () => {
-    const validation = validateYaml(yaml)
-
-    if (!validation.valid) {
-      setStatus({
-        type: "error",
-        message: validation.error || "Invalid YAML format",
-      })
-      return
-    }
-
-    setIsCreating(true)
-    setStatus({ type: null, message: "" })
-
-    try {
-      // Simulate API call to create pod
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // In a real implementation, you would call your Kubernetes API here
-      // const response = await fetch('/api/pods', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/yaml' },
-      //   body: yaml
-      // })
-
+  const { mutateAsync: createPod, isPending: isCreating } = trpc.podRouter.createPod.useMutation({
+    onSuccess: () => {
       setStatus({
         type: "success",
         message: "Pod created successfully!",
       })
 
-      // Reset form after successful creation
-      setTimeout(() => {
-        setOpen(false)
-        setYaml(defaultPodYaml)
-        setStatus({ type: null, message: "" })
-      }, 2000)
+      setOpen(false)
+      handleRefresh()
+    },
+    onError: (error) => {
+      setStatus({
+        type: "error",
+        message: error.message,
+      })
+    },
+  })
+
+
+
+  const parseYamlToManifest = (yamlString: string) => {
+    const lines = yamlString.trim().split('\n')
+    const manifest: any = {
+      apiVersion: '',
+      kind: '',
+      metadata: { name: '' },
+      spec: { containers: [] }
+    }
+
+    const requiredFields = ['apiVersion', 'kind', 'metadata', 'spec']
+    const foundFields = new Set<string>()
+    let currentSection = ''
+    let currentSubSection = ''
+    let currentContainer: any = null
+    let inContainers = false
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+
+      for (const field of requiredFields) {
+        if (trimmed.startsWith(`${field}:`)) {
+          foundFields.add(field)
+          if (field === 'apiVersion' || field === 'kind') {
+            manifest[field] = trimmed.split(':')[1].trim()
+          }
+          currentSection = field
+          currentSubSection = ''
+        }
+      }
+
+      if (trimmed.startsWith('name:') && currentSection === 'metadata') {
+        manifest.metadata.name = trimmed.split(':')[1].trim()
+      }
+
+      if (currentSection === 'spec') {
+        if (trimmed.startsWith('containers:')) {
+          inContainers = true
+          currentSubSection = 'containers'
+        } else if (trimmed.startsWith('- name:') && inContainers) {
+          if (currentContainer) {
+            manifest.spec.containers.push(currentContainer)
+          }
+          currentContainer = { name: trimmed.split(':')[1].trim() }
+        } else if (trimmed.startsWith('image:') && currentContainer) {
+          currentContainer.image = trimmed.split(':')[1].trim()
+        } else if (trimmed.startsWith('ports:') && currentContainer) {
+          currentContainer.ports = []
+          currentSubSection = 'ports'
+        } else if (trimmed.startsWith('- containerPort:') && currentSubSection === 'ports' && currentContainer) {
+          const port = parseInt(trimmed.split(':')[1].trim())
+          currentContainer.ports.push({ containerPort: port })
+        } else if (trimmed.startsWith('restartPolicy:') && currentSection === 'spec') {
+          manifest.spec.restartPolicy = trimmed.split(':')[1].trim()
+        }
+      }
+    }
+
+    if (currentContainer) {
+      manifest.spec.containers.push(currentContainer)
+    }
+
+    const missingFields = requiredFields.filter(field => !foundFields.has(field))
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
+    }
+
+    if (manifest.kind !== 'Pod') {
+      throw new Error('Kind must be "Pod"')
+    }
+
+    if (!manifest.metadata.name) {
+      throw new Error('Missing required field: metadata.name')
+    }
+
+    if (!manifest.spec.containers || manifest.spec.containers.length === 0) {
+      throw new Error('Pod spec must include at least one container')
+    }
+
+    return manifest
+  }
+
+  const handleCreatePod = async () => {
+    try {
+      const podManifest = parseYamlToManifest(yaml)
+      await createPod({ podManifest })
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Failed to create pod",
+        message: error instanceof Error ? error.message : "Failed to create pod"
       })
-    } finally {
-      setIsCreating(false)
     }
   }
 
@@ -123,7 +165,7 @@ export function CreatePodDialog({open, setOpen}:{open: boolean, setOpen: (open: 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      
+
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Create Kubernetes Pod</DialogTitle>

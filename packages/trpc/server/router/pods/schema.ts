@@ -18,8 +18,6 @@ export const createPodInputSchema = z.object({
             name: z.string(),
             namespace: z.string().optional(),
         }),
-        spec: z.object({
-            containers: z.array(z.any()), 
-        }),
+        spec: z.any(), // Allow flexible spec structure
     }),
 });

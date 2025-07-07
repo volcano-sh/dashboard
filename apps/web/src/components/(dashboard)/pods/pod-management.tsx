@@ -30,7 +30,7 @@ export type PodStatus = {
     createdAt: Date;
     status: string;
     age: string;
-    yaml?: string; // For pod details modal
+    yaml?: string;
 }
 
 export default function PodManagement() {
@@ -76,17 +76,14 @@ export default function PodManagement() {
         },
     );
 
-    // Extract unique namespaces from pods data
     const availableNamespaces = pods ?
         Array.from(new Set(pods.map(pod => pod.namespace).filter(Boolean))).sort()
         : [];
 
-    // Extract unique statuses from pods data
     const availableStatuses = pods ?
         Array.from(new Set(pods.map(pod => pod.status).filter(Boolean))).sort()
         : [];
 
-    // Create dynamic columns with namespace and status filtering
     const columns = createColumns(availableNamespaces, availableStatuses);
 
     useEffect(() => {
@@ -146,7 +143,7 @@ export default function PodManagement() {
 
     const handlePageSizeChange = (newPageSize: string) => {
         setPagination(prev => ({
-            page: 1, // Reset to first page when changing page size
+            page: 1,
             pageSize: parseInt(newPageSize),
         }));
     }
@@ -203,7 +200,6 @@ export default function PodManagement() {
                 </div>
             </div>
 
-            {/* Error Alert */}
             {error && (
                 <Alert className="mb-4 border-red-200 bg-red-50">
                     <AlertDescription className="text-red-800">
@@ -212,7 +208,6 @@ export default function PodManagement() {
                 </Alert>
             )}
 
-            {/* Loading State */}
             {isLoading ? (
                 <div className="space-y-4">
                     <Skeleton className="h-12 w-full" />
@@ -223,7 +218,6 @@ export default function PodManagement() {
                 </div>
             ) : (
                 <>
-                    {/* Enhanced DataTable with click handlers */}
                     <div className="rounded-lg">
                         <DataTable
                             columns={columns}
@@ -233,13 +227,11 @@ export default function PodManagement() {
                         />
                     </div>
 
-                    {/* Server-side Pagination Controls */}
                     <div className="flex items-center justify-between space-x-2 py-4">
                         <div className="flex-1 text-sm text-muted-foreground">
                             Showing {startItem} to {endItem} of {totalPods} results
                         </div>
                         <div className="flex items-center space-x-2">
-                            {/* Page Size Selector */}
                             <div className="flex items-center space-x-2">
                                 <span className="text-sm text-muted-foreground">Show:</span>
                                 <Select
@@ -258,7 +250,6 @@ export default function PodManagement() {
                                 </Select>
                             </div>
 
-                            {/* Pagination Controls */}
                             <div className="flex items-center space-x-2">
                                 <Button
                                     variant="outline"
@@ -270,7 +261,6 @@ export default function PodManagement() {
                                     Previous
                                 </Button>
 
-                                {/* Page Numbers */}
                                 <div className="flex items-center space-x-1">
                                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                         let pageNum;
@@ -313,7 +303,6 @@ export default function PodManagement() {
                 </>
             )}
 
-            {/* Pod Details Modal */}
             <Dialog open={showPodDetails} onOpenChange={setShowPodDetails}>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
@@ -329,7 +318,6 @@ export default function PodManagement() {
 
                     {selectedPod && (
                         <div className="space-y-4">
-                            {/* Pod Info */}
                             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                                 <div>
                                     <span className="font-semibold">Name:</span> {selectedPod.name}
@@ -351,7 +339,6 @@ export default function PodManagement() {
                                 </div>
                             </div>
 
-                            {/* YAML Configuration */}
                             <div>
                                 <h3 className="font-semibold mb-2">YAML Configuration</h3>
                                 <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
@@ -363,7 +350,7 @@ export default function PodManagement() {
                 </DialogContent>
             </Dialog>
 
-            <CreatePodDialog open={showCreatePodModal} setOpen={setShowCreatePodModal} />
+            <CreatePodDialog open={showCreatePodModal} setOpen={setShowCreatePodModal} handleRefresh={handleRefresh} />
         </div>
     )
 }
