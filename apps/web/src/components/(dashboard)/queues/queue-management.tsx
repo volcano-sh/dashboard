@@ -29,7 +29,7 @@ export type QueueStatus = {
     createdAt: Date;
     state: string;
     parent: string;
-    yaml?: string; 
+    yaml?: string;
 }
 
 export default function QueueManagement() {
@@ -315,7 +315,7 @@ export default function QueueManagement() {
                 </DialogContent>
             </Dialog>
 
-            <CreateQueueDialog open={showCreateQueueModal} setOpen={setShowCreateQueueModal} handleRefresh={handleRefresh}/>
+            <CreateQueueDialog open={showCreateQueueModal} setOpen={setShowCreateQueueModal} handleRefresh={handleRefresh} />
         </div>
     )
 }

@@ -59,16 +59,6 @@ export default function JobsManagement() {
     }
   )
 
-  const namespacesQuery = trpc.namespaceRouter.getNamespaces.useQuery(
-    undefined,
-    {
-      onError: (err) => {
-        console.error("Error fetching namespaces:", err);
-        setError(`Namespaces API error: ${err.message}`);
-      },
-    },
-  );
-
   const queuesQuery = trpc.queueRouter.getAllQueues.useQuery(
     undefined,
     {
@@ -119,7 +109,6 @@ export default function JobsManagement() {
       // Use tRPC refetch methods
       await Promise.all([
         jobsQuery.refetch(),
-        namespacesQuery.refetch(),
         queuesQuery.refetch()
       ]);
       setError(null)
@@ -128,7 +117,7 @@ export default function JobsManagement() {
     } finally {
       setLoading(false)
     }
-  }, [jobsQuery, namespacesQuery, queuesQuery])
+  }, [jobsQuery, queuesQuery])
 
   const handleJobClick = useCallback(async (job: JobStatus) => {
     setError(null);
@@ -261,7 +250,7 @@ export default function JobsManagement() {
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                
+
                 {/* Page Numbers */}
                 <div className="flex items-center space-x-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {

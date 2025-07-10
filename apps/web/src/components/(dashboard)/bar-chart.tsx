@@ -1,123 +1,76 @@
 "use client"
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Loader2Icon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
-const sampleData = [
-  {
-    metadata: { name: "gpu-queue" },
-    status: {
-      allocated: {
-        memory: "8Gi",
-        cpu: "4000m",
-        pods: "10",
-        "nvidia.com/gpu": "2",
-      },
-    },
-    spec: {
-      capability: {
-        memory: "16Gi",
-        cpu: "8000m",
-        pods: "20",
-        "nvidia.com/gpu": "4",
-      },
-    },
-  },
-  {
-    metadata: { name: "cpu-intensive" },
-    status: {
-      allocated: {
-        memory: "12Gi",
-        cpu: "6000m",
-        pods: "15",
-        "nvidia.com/gpu": "0",
-      },
-    },
-    spec: {
-      capability: {
-        memory: "32Gi",
-        cpu: "16000m",
-        pods: "50",
-        "nvidia.com/gpu": "0",
-      },
-    },
-  },
-  {
-    metadata: { name: "memory-heavy" },
-    status: {
-      allocated: {
-        memory: "24Gi",
-        cpu: "2000m",
-        pods: "8",
-        "nvidia.com/gpu": "1",
-      },
-    },
-    spec: {
-      capability: {
-        memory: "64Gi",
-        cpu: "8000m",
-        pods: "30",
-        "nvidia.com/gpu": "2",
-      },
-    },
-  },
-  {
-    metadata: { name: "general-purpose" },
-    status: {
-      allocated: {
-        memory: "4Gi",
-        cpu: "2000m",
-        pods: "12",
-        "nvidia.com/gpu": "0",
-      },
-    },
-    spec: {
-      capability: {
-        memory: "16Gi",
-        cpu: "8000m",
-        pods: "40",
-        "nvidia.com/gpu": "0",
-      },
-    },
-  },
-  {
-    metadata: { name: "ml-training" },
-    status: {
-      allocated: {
-        memory: "32Gi",
-        cpu: "8000m",
-        pods: "5",
-        "nvidia.com/gpu": "8",
-      },
-    },
-    spec: {
-      capability: {
-        memory: "128Gi",
-        cpu: "32000m",
-        pods: "20",
-        "nvidia.com/gpu": "16",
-      },
-    },
-  },
-]
-
-interface QueueResourcesBarChartProps {
-  data?: typeof sampleData
+interface QueueMetrics {
+  name: string
+  weight: number
+  reclaimable: boolean
+  inqueue: number
+  pending: number
+  running: number
+  unknown: number
 }
 
-const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartProps) => {
+interface QueueResourcesBarChartProps {
+  data?: QueueMetrics[]
+  isLoading?: boolean
+}
+
+const BarChartSkeleton = () => (
+  <Card className="h-full flex flex-col">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <Skeleton className="h-6 w-32" />
+      <Skeleton className="h-10 w-[180px]" />
+    </CardHeader>
+    <CardContent className="flex items-center justify-center h-[300px]">
+      <div className="flex flex-col items-center space-y-2">
+        <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="text-muted-foreground">Loading queue data...</p>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResourcesBarChartProps) => {
   const [selectedResource, setSelectedResource] = useState("")
+
+  // Transform API data to match the expected format
+  const transformedData = useMemo(() => {
+    return data.map(queue => ({
+      metadata: { name: queue.name },
+      status: {
+        allocated: {
+          inqueue: queue.inqueue,
+          pending: queue.pending,
+          running: queue.running,
+          unknown: queue.unknown,
+        },
+      },
+      spec: {
+        capability: {
+          inqueue: queue.inqueue + queue.pending + queue.running + queue.unknown,
+          pending: queue.pending + queue.running + queue.unknown,
+          running: queue.running + queue.unknown,
+          unknown: queue.unknown,
+        },
+      },
+    }));
+  }, [data]);
 
   // Get resource type options dynamically
   const resourceOptions = useMemo(() => {
-    if (!data || data.length === 0) return []
+    if (!transformedData || transformedData.length === 0) return []
 
     const resourceTypes = new Set<string>()
 
-    data.forEach((queue) => {
+    transformedData.forEach((queue) => {
       const allocated = queue.status?.allocated || {}
       Object.keys(allocated).forEach((resource) => resourceTypes.add(resource))
     })
@@ -126,7 +79,7 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
       value: resource,
       label: `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`.replace("Nvidia.com/gpu", "GPU"),
     }))
-  }, [data])
+  }, [transformedData])
 
   useEffect(() => {
     if (resourceOptions.length > 0 && !selectedResource) {
@@ -152,29 +105,19 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
     return cpuStr.toString().includes("m") ? value / 1000 : value // m is converted to the number of cores
   }
 
-  const processData = (data: typeof sampleData) => {
+  const processData = (data: typeof transformedData) => {
     return data.reduce(
       (acc, queue) => {
         const name = queue.metadata.name
         const allocated = queue.status?.allocated || {}
         const capability = queue.spec?.capability || {}
 
-        const allocatedMemory = convertMemoryToGi(allocated.memory || "0")
-        const capabilityMemory = convertMemoryToGi(capability.memory || "0")
-
-        const allocatedCPU = convertCPUToCores(allocated.cpu || "0")
-        const capabilityCPU = convertCPUToCores(capability.cpu || "0")
-
         acc[name] = {
           allocated: {
             ...allocated,
-            memory: allocatedMemory,
-            cpu: allocatedCPU,
           },
           capability: {
             ...capability,
-            memory: capabilityMemory,
-            cpu: capabilityCPU,
           },
         }
         return acc
@@ -183,7 +126,7 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
     )
   }
 
-  const processedData = useMemo(() => processData(data), [data])
+  const processedData = useMemo(() => processData(transformedData), [transformedData])
 
   const chartData = useMemo(() => {
     return Object.keys(processedData).map((queueName) => ({
@@ -203,6 +146,14 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
         return "Pod Count"
       case "nvidia.com/gpu":
         return "GPU Count"
+      case "inqueue":
+        return "In Queue Count"
+      case "pending":
+        return "Pending Count"
+      case "running":
+        return "Running Count"
+      case "unknown":
+        return "Unknown Count"
       default:
         return "Amount"
     }
@@ -217,6 +168,29 @@ const QueueResourcesBarChart = ({ data = sampleData }: QueueResourcesBarChartPro
       label: `${selectedResource.toUpperCase()} Capacity`,
       color: "hsl(var(--chart-2))",
     },
+  }
+
+  if (isLoading) {
+    return <BarChartSkeleton />;
+  }
+
+  if (transformedData.length === 0) {
+    return (
+      <Card className="h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Queue Resources</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px]">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+              <span className="text-2xl">📈</span>
+            </div>
+            <p className="text-muted-foreground">No queue data available</p>
+            <p className="text-sm text-muted-foreground">Create a queue to see resource information</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
