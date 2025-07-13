@@ -1,0 +1,27 @@
+{
+    "name": "@volcano/trpc",
+    "version": "1.30.0",
+    "description": "Official API for Volcano",
+    "license": "MIT",
+    "main": "./index.ts",
+    "type": "./index.ts",
+    "scripts": {
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "clean": "rimraf node_modules"
+    },
+    "dependencies": {
+        "@tanstack/react-query": "^4.32.0",
+        "@trpc/client": "^10.36.0",
+        "@trpc/next": "^10.36.0",
+        "@trpc/react-query": "^10.36.0",
+        "@trpc/server": "^10.36.0",
+        "@ts-rest/core": "^3.30.5",
+        "@ts-rest/next": "^3.30.5",
+        "next-auth": "^5.0.0-beta.20",
+        "superjson": "^1.13.1",
+        "trpc-openapi": "^1.2.0",
+        "uuid": "^10.0.0",
+        "zod": "^3.22.4"
+    }
+}
