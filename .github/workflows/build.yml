@@ -78,3 +78,19 @@ jobs:
       - name: ✅ Backend Server Started
         if: success()
         run: echo "Backend server started successfully ✅"
+  
+  docker-build:
+    name: Docker Image Build
+    runs-on: ubuntu-latest
+    needs: [frontend-build, backend-build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Frontend Docker Image
+        run: docker build -t frontend:dev . -f deployment/build/frontend/Dockerfile
+
+      - name: Build Backend Docker Image
+        run: docker build -t backend:dev . -f deployment/build/backend/Dockerfile
+
+      - name: ✅ Docker Build Successful
+        run: echo "Docker images built successfully ✅"
