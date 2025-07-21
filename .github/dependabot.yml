@@ -7,3 +7,13 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    # Limit the number of open PRs to avoid flooding the repo.
+    open-pull-requests-limit: 10
+    # Add labels for easier filtering.
+    labels:
+      - "dependencies"
+      - "github-actions"
+    # Customize commit messages to align with conventional commits.
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
