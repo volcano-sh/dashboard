@@ -67,9 +67,9 @@ const DashboardSkeleton = () => {
 };
 
 export const DashboardUtils = () => {
-  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = trpc.dashboardRouter.getSummary.useQuery();
-  const { data: jobStatusMetrics, isLoading: jobStatusLoading, refetch: refetchJobStatus } = trpc.dashboardRouter.getJobStatusMetrics.useQuery();
-  const { data: queueMetrics, isLoading: queueMetricsLoading, refetch: refetchQueueMetrics } = trpc.dashboardRouter.getQueueMetrics.useQuery();
+  const { data: summary, isLoading: summaryLoading } = trpc.dashboardRouter.getSummary.useQuery();
+  const { data: jobStatusMetrics, isLoading: jobStatusLoading } = trpc.dashboardRouter.getJobStatusMetrics.useQuery();
+  const { data: queueMetrics, isLoading: queueMetricsLoading } = trpc.dashboardRouter.getQueueMetrics.useQuery();
 
   const isLoading = summaryLoading || jobStatusLoading || queueMetricsLoading;
 

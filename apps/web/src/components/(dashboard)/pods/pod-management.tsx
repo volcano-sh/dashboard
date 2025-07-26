@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -23,6 +25,8 @@ import { useCallback, useEffect, useState } from "react"
 import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
 import { CreatePodDialog } from "./pod-create-dialog"
+
+ 
 
 export type PodStatus = {
     name: string;
@@ -119,6 +123,7 @@ export default function PodManagement() {
             await podsQuery.refetch();
         } catch (err) {
             setError("Failed to refresh pods")
+            console.error(err)
         } finally {
             setLoading(false)
         }
@@ -134,6 +139,7 @@ export default function PodManagement() {
             setShowPodDetails(true);
         } catch (err) {
             setError("Failed to fetch pod YAML");
+            console.error(err)
         }
     }, [podYamlQuery])
 
@@ -142,10 +148,10 @@ export default function PodManagement() {
     }
 
     const handlePageSizeChange = (newPageSize: string) => {
-        setPagination(prev => ({
+        setPagination({
             page: 1,
             pageSize: parseInt(newPageSize),
-        }));
+        });
     }
 
     const handlePageChange = (newPage: number) => {

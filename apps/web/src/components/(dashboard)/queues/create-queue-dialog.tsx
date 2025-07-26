@@ -1,5 +1,5 @@
 "use client"
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import * as React from "react"
 
@@ -42,6 +42,7 @@ status:
     cpu: "0"
     memory: "0"
   state: Open`
+
 
 export function CreateQueueDialog({ open, setOpen, handleRefresh }: { open: boolean, setOpen: (open: boolean) => void, handleRefresh: () => void }) {
   const [yaml, setYaml] = React.useState(defaultQueueYaml)

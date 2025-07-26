@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -73,7 +74,6 @@ export default function QueueManagement() {
 
     useEffect(() => {
         if (queuesQuery.data) {
-            console.log(queuesQuery)
             const transformedQueues: QueueStatus[] = (queuesQuery.data.items || []).map((queue: any) => ({
                 name: queue.metadata?.name || '',
                 createdAt: new Date(queue.metadata?.creationTimestamp || Date.now()),
@@ -95,6 +95,7 @@ export default function QueueManagement() {
             await queuesQuery.refetch();
         } catch (err) {
             setError("Failed to refresh queues")
+            console.error(err)
         } finally {
             setLoading(false)
         }
@@ -110,6 +111,7 @@ export default function QueueManagement() {
             setShowQueueDetails(true);
         } catch (err) {
             setError("Failed to fetch queue YAML");
+            console.error(err)
         }
     }, [queueYamlQuery])
 
@@ -118,10 +120,10 @@ export default function QueueManagement() {
     }
 
     const handlePageSizeChange = (newPageSize: string) => {
-        setPagination(prev => ({
+        setPagination({
             page: 1,
             pageSize: parseInt(newPageSize),
-        }));
+        });
     }
 
     const handlePageChange = (newPage: number) => {

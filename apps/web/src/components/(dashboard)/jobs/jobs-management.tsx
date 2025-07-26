@@ -1,5 +1,5 @@
 'use client'
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -114,6 +114,7 @@ export default function JobsManagement() {
       setError(null)
     } catch (err) {
       setError("Failed to refresh jobs")
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -129,14 +130,15 @@ export default function JobsManagement() {
       setShowJobDetails(true);
     } catch (err) {
       setError("Failed to fetch job YAML");
+      console.error(err)
     }
   }, [jobYamlQuery]);
 
   const handlePageSizeChange = (newPageSize: string) => {
-    setPagination(prev => ({
+    setPagination({
       page: 1, // Reset to first page when changing page size
       pageSize: parseInt(newPageSize),
-    }));
+    });
   }
 
   const handlePageChange = (newPage: number) => {

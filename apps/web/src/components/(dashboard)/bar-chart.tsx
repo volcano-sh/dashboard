@@ -87,26 +87,8 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
     }
   }, [resourceOptions, selectedResource])
 
-  const convertMemoryToGi = (memoryStr: string): number => {
-    if (!memoryStr) return 0
-    const value = Number.parseInt(memoryStr)
-    if (memoryStr.includes("Gi")) return value
-    if (memoryStr.includes("Mi")) return value / 1024 // Mi to Gi
-    if (memoryStr.includes("Ki")) return value / 1024 / 1024 // Ki to Gi
-    return value // default unit Gi
-  }
-
-  const convertCPUToCores = (cpuStr: string | number): number => {
-    if (!cpuStr) return 0
-    if (typeof cpuStr === "number") {
-      return cpuStr
-    }
-    const value = Number.parseInt(cpuStr.toString())
-    return cpuStr.toString().includes("m") ? value / 1000 : value // m is converted to the number of cores
-  }
-
-  const processData = (data: typeof transformedData) => {
-    return data.reduce(
+  const processedData = useMemo(() => {
+    return transformedData.reduce(
       (acc, queue) => {
         const name = queue.metadata.name
         const allocated = queue.status?.allocated || {}
@@ -122,11 +104,9 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
         }
         return acc
       },
-      {} as Record<string, any>,
+      {} as Record<string, { allocated: Record<string, unknown>; capability: Record<string, unknown> }>,
     )
-  }
-
-  const processedData = useMemo(() => processData(transformedData), [transformedData])
+  }, [transformedData])
 
   const chartData = useMemo(() => {
     return Object.keys(processedData).map((queueName) => ({
@@ -135,6 +115,7 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
       capacity: processedData[queueName].capability[selectedResource] || 0,
     }))
   }, [processedData, selectedResource])
+
 
   const getYAxisLabel = () => {
     switch (selectedResource) {

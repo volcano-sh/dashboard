@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { QueryClient, QueryClientConfig, QueryClientProvider } from "@tanstack/react-query"
 import { createTRPCReact, httpBatchLink, httpLink, splitLink } from "@trpc/react-query"

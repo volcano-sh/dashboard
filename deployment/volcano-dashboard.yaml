@@ -1,11 +1,10 @@
-# volcano dashboard deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: volcano-dashboard
   name: volcano-dashboard
   namespace: volcano-system
+  labels:
+    app: volcano-dashboard
 spec:
   replicas: 1
   selector:
@@ -23,13 +22,20 @@ spec:
           type: RuntimeDefault
       serviceAccountName: volcano-dashboard
       containers:
-        - image: volcanosh/vc-dashboard-frontend:latest
-          imagePullPolicy: Always
-          name: frontend
+        - name: volcano-dashboard
+          image: volcanosh/volcano-dashboard:latest
+          imagePullPolicy: Never
           ports:
-            - containerPort: 8080
-              name: frontend
+            - containerPort: 3000
+              name: http
               protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: K8S_SKIP_TLS_VERIFY
+              value: "false"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -37,46 +43,19 @@ spec:
               - ALL
             runAsNonRoot: true
             runAsUser: 1000
-          volumeMounts:
-            - mountPath: /var/cache/nginx
-              name: nginx-cache
-            - mountPath: /run
-              name: nginx-run
-        - image: volcanosh/vc-dashboard-backend:latest
-          imagePullPolicy: Always
-          name: backend
-          ports:
-            - containerPort: 3001
-              name: backend
-              protocol: TCP
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
-      volumes:
-        - name: nginx-cache
-          emptyDir: {}
-        - name: nginx-run
-          emptyDir: {}
 ---
-
-# volcano dashboard serviceAccount
+# Volcano Dashboard ServiceAccount
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: volcano-dashboard
   namespace: volcano-system
 ---
-
-# volcano dashboard cluster role binding
+# Volcano Dashboard ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: volcano-dashboard-role
-  namespace: volcano-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -86,14 +65,13 @@ subjects:
     name: volcano-dashboard
     namespace: volcano-system
 ---
-
-# volcano dashboard cluster role
+# Volcano Dashboard ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: volcano-dashboard
-  namespace: volcano-system
 rules:
+  # Volcano Jobs
   - apiGroups:
       - batch.volcano.sh
     resources:
@@ -104,7 +82,9 @@ rules:
       - watch
       - create
       - delete
-
+      - update
+      - patch
+  # Pods
   - apiGroups:
       - ""
     resources:
@@ -113,6 +93,7 @@ rules:
       - get
       - list
       - watch
+  # Namespaces
   - apiGroups:
       - ""
     resources:
@@ -121,6 +102,7 @@ rules:
       - get
       - list
       - watch
+  # Volcano Queues
   - apiGroups:
       - scheduling.incubator.k8s.io
       - scheduling.volcano.sh
@@ -133,24 +115,31 @@ rules:
       - delete
       - create
       - update
-      - patch 
+      - patch
+  # Events (for better monitoring)
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - get
+      - list
+      - watch
 ---
-
-# volcano dashboard service
+# Volcano Dashboard Service
 apiVersion: v1
 kind: Service
 metadata:
   name: volcano-dashboard
   namespace: volcano-system
+  labels:
+    app: volcano-dashboard
 spec:
+  type: ClusterIP
   ports:
-    - name: backend
-      port: 3001
-      protocol: TCP
-      targetPort: 3001
-    - name: frontend
+    - name: http
       port: 80
       protocol: TCP
-      targetPort: 8080
+      targetPort: 3000
   selector:
     app: volcano-dashboard

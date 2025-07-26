@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import * as React from "react"
