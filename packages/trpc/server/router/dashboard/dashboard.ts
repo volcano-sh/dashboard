@@ -17,21 +17,15 @@ const getSummary = async () => {
         const podsResponse = await k8sCoreApi.listPodForAllNamespaces();
         const pods = podsResponse.items || [];
 
-        // Get all queues
-        const queuesResponse = await k8sApi.listClusterCustomObject({
-            group: "scheduling.volcano.sh",
-            version: "v1beta1",
-            plural: "queues",
-        });
-        const queues = queuesResponse.items || [];
-
         // Calculate metrics
         const totalJobs = jobs.length;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const activeJobs = jobs.filter((job: any) => {
             const state = job.status?.state?.phase || job.status?.state || "Unknown";
             return ["Running", "Pending", "Inqueue"].includes(state);
         }).length;
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const runningPods = pods.filter((pod: any) =>
             pod.status?.phase === "Running"
         ).length;
@@ -70,6 +64,7 @@ const getJobStatusMetrics = async () => {
 
         const statusCounts: { [key: string]: number } = {};
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jobs.forEach((job: any) => {
             const state = job.status?.state?.phase || job.status?.state || "Unknown";
             statusCounts[state] = (statusCounts[state] || 0) + 1;
@@ -98,6 +93,7 @@ const getQueueResourcesMetrics = async () => {
         });
         const queues = response.items || [];
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const queueMetrics = queues.map((queue: any) => {
             const spec = queue.spec || {};
             const status = queue.status || {};

@@ -3,19 +3,51 @@
   "ui": "tui",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY"
+      ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ],
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY"
+      ]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": [
+        "^check-types"
+      ],
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY"
+      ]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY"
+      ]
     }
   }
 }

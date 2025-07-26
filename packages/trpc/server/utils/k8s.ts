@@ -15,6 +15,7 @@ try {
 
         // Set the agent on all clusters
         kc.getClusters().forEach(cluster => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (cluster as any).httpsAgent = httpsAgent;
         });
     }

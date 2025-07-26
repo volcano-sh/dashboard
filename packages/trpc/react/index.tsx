@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { QueryClient, QueryClientConfig, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createTRPCReact, httpBatchLink, httpLink, splitLink } from "@trpc/react-query"
 import  type { AppRouter } from "../server/router"
 import SuperJSON from "superjson"
@@ -27,15 +27,6 @@ export const getBaseUrl = () => {
     return '';
   }
 
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-//   const webAppUrl = NEXT_PUBLIC_WEBAPP_URL();
-
-//   if (webAppUrl) {
-//     return webAppUrl;
-//   }
   return `http://localhost:${process.env.PORT ?? 3000}`;
 };
 

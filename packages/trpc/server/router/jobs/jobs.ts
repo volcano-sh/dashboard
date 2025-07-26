@@ -66,6 +66,7 @@ export const jobsRouter = router({
             pretty: "true",
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const jobs = response.items.map((job: any) => ({
             ...job,
             status: {

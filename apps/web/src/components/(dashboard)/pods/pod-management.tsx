@@ -92,7 +92,6 @@ export default function PodManagement() {
 
     useEffect(() => {
         if (podsQuery.data) {
-            console.log(podsQuery)
             const transformedPods: PodStatus[] = (podsQuery.data.items || []).map((pod: any) => {
                 const createdAt = new Date(pod.metadata?.creationTimestamp || Date.now());
                 const now = new Date();

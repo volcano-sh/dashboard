@@ -4,7 +4,7 @@ export const fetchJobs = async (
     page: number,
     pageSize: number,
 ) => {
-    let response = await k8sApi.listClusterCustomObject({
+    const response = await k8sApi.listClusterCustomObject({
             group: "batch.volcano.sh",
             version: "v1alpha1",
             plural: "jobs",
@@ -12,7 +12,7 @@ export const fetchJobs = async (
         });
 
 
-    let filteredJobs = response.items || [];
+    const filteredJobs = response.items || [];
         
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -61,7 +61,7 @@ export const fetchQueues = async (
         plural: "queues",
     });
 
-    let filteredQueues = response.items || [];
+    const filteredQueues = response.items || [];
 
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -77,9 +77,9 @@ export const fetchPods = async (
     page: number,
     pageSize: number,
 ) => {
-    let response = await k8sCoreApi.listPodForAllNamespaces();
+    const response = await k8sCoreApi.listPodForAllNamespaces();
 
-    let filteredPods = response.items || [];
+    const filteredPods = response.items || [];
 
 
     const startIndex = (page - 1) * pageSize;

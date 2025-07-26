@@ -1,4 +1,4 @@
-export const createTrpcContext = async (opts: any) => {
+export const createTrpcContext = async () => {
     return {
         session: null,
     };

@@ -1,6 +1,6 @@
 import yaml from "js-yaml";
-import { k8sApi } from "../../utils/k8s";
 import { procedure, router } from "../../trpc";
+import { k8sApi } from "../../utils/k8s";
 import { fetchQueues } from "../helpers";
 import {
     createQueueInputSchema,
@@ -101,7 +101,7 @@ export const queueRouter = router({
                 plural: "queues",
                 name: name,
             });
-        } catch (err) {
+        } catch {
             throw new Error(`Queue ${name} not found`);
         }
 
@@ -109,6 +109,7 @@ export const queueRouter = router({
         const patchOperations: Array<{
             op: string;
             path: string;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             value: any;
         }> = [];
 
@@ -153,7 +154,7 @@ export const queueRouter = router({
     deleteQueue: procedure.input(deleteQueueInputSchema).mutation(async ({ input }) => {
         const { name } = input;
         const queueName = name.toLowerCase();
-        
+
         await k8sApi.getClusterCustomObject({
             group: "scheduling.volcano.sh",
             version: "v1beta1",
