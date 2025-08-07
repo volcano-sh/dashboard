@@ -12,6 +12,7 @@ import {
     Toolbar,
     Typography,
     Tooltip,
+    useMediaQuery
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -25,7 +26,8 @@ import volcanoLogo from "../assets/volcano-icon-color.svg";
 const Layout = () => {
     // Hooks must be used inside component functions
     const location = useLocation();
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
+    const isMobile = useMediaQuery("(max-width:960px)");
 
     // constants can be kept outside the component
     const volcanoOrange = "#E34C26"; // orange red theme
@@ -78,23 +80,22 @@ const Layout = () => {
 
             <Drawer
                 data-testid="sidebar-drawer"
-                variant="permanent"
+                variant="temporary"
+                onClose={handleDrawerToggle}
+                open={open}
+                ModalProps={{
+                    keepMounted: true,
+                }}
                 sx={{
-                    width: open ? drawerWidth : 60,
-                    flexShrink: 0,
                     [`& .MuiDrawer-paper`]: {
-                        width: open ? drawerWidth : 60,
+                        width: drawerWidth,
                         boxSizing: "border-box",
                         backgroundColor: "#f5f5f5",
-                        transition: "width 0.2s",
-                        overflowX: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
                     },
                 }}
             >
                 <Toolbar />
-                <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
+                <Box sx={{ overflow: "auto", flexGrow: 1 }}>
                     <List>
                         {menuItems.map((item) => {
                             const listItem = (
@@ -102,6 +103,7 @@ const Layout = () => {
                                     key={item.text}
                                     component={Link}
                                     to={item.path}
+                                    onClick={() => setOpen(false)} // auto-close on navigation
                                     className={
                                         location.pathname === item.path
                                             ? "active"
@@ -125,12 +127,10 @@ const Layout = () => {
                                     }}
                                 >
                                     <ListItemIcon>{item.icon}</ListItemIcon>
-                                    {open && (
-                                        <ListItemText primary={item.text} />
-                                    )}
+                                    <ListItemText primary={item.text} />
                                 </ListItem>
                             );
-                            return !open ? (
+                            return isMobile ? (
                                 <Tooltip
                                     key={item.text}
                                     title={item.text}

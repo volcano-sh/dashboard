@@ -7,6 +7,7 @@ import {
     Typography,
     useTheme,
     alpha,
+    Box,
 } from "@mui/material";
 import {
     ArrowDownward,
@@ -26,89 +27,68 @@ const TableHeader = ({
     sortDirection,
 }) => {
     const theme = useTheme();
+    const headerConfig = [
+        { label: "Name", key: "name", minWidth: 200 },
+        { label: "Namespace", key: "namespace", minWidth: 290, filterable: true },
+        { label: "Creation Time", key: "creationTime", minWidth: 250, sortable: true },
+        { label: "Status", key: "status", minWidth: 250, filterable: true },
+        { label: "Age", key: "age", minWidth: 100 },
+    ];
 
     return (
         <TableHead>
             <TableRow>
-                {["Name", "Namespace", "Creation Time", "Status", "Age"].map(
-                    (header) => (
-                        <TableCell
-                            key={header}
-                            sx={{
-                                backgroundColor: alpha(
-                                    theme.palette.background.paper,
-                                    0.8,
-                                ),
-                                backdropFilter: "blur(8px)",
-                                padding: "16px 24px",
-                                minWidth: 140,
-                                borderBottom: `2px solid ${alpha(
-                                    theme.palette.primary.main,
-                                    0.2,
-                                )}`,
-                            }}
-                        >
+                {headerConfig.map(({ label, key, minWidth, filterable, sortable }) => (
+                    <TableCell
+                        key={label}
+                        sx={{
+                            backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                            backdropFilter: "blur(8px)",
+                            padding: "16px 24px",
+                            minWidth,
+                            borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                        }}
+                    >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
                             <Typography
                                 variant="subtitle1"
                                 fontWeight="700"
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {header}
+                                {label}
                             </Typography>
-                            {(header === "Namespace" ||
-                                header === "Status") && (
+
+                            {filterable && (
                                 <Button
                                     size="small"
                                     startIcon={<FilterList fontSize="small" />}
-                                    onClick={(e) =>
-                                        handleFilterClick(
-                                            header.toLowerCase(),
-                                            e,
-                                        )
-                                    }
+                                    onClick={(e) => handleFilterClick(key, e)}
                                     sx={{
                                         textTransform: "none",
                                         padding: "4px 12px",
                                         minWidth: "auto",
                                         borderRadius: "20px",
-                                        marginTop: "8px",
                                         fontSize: "0.8rem",
                                         fontWeight: 500,
                                         letterSpacing: "0.02em",
-                                        transition:
-                                            "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                         backgroundColor:
-                                            filters[header.toLowerCase()] !==
-                                            "All"
-                                                ? alpha(
-                                                      theme.palette.primary
-                                                          .main,
-                                                      0.2,
-                                                  )
-                                                : alpha(
-                                                      theme.palette.primary
-                                                          .main,
-                                                      0.1,
-                                                  ),
+                                            filters[key] !== "All"
+                                                ? alpha(theme.palette.primary.main, 0.2)
+                                                : alpha(theme.palette.primary.main, 0.1),
                                         color: theme.palette.primary.main,
                                         "&:hover": {
-                                            backgroundColor: alpha(
-                                                theme.palette.primary.main,
-                                                0.15,
-                                            ),
+                                            backgroundColor: alpha(theme.palette.primary.main, 0.15),
                                             transform: "translateY(-2px)",
-                                            boxShadow: `0 4px 8px ${alpha(
-                                                theme.palette.primary.main,
-                                                0.2,
-                                            )}`,
+                                            boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
                                         },
                                     }}
                                 >
-                                    Filter: {filters[header.toLowerCase()]}
+                                    Filter: {filters[key]}
                                 </Button>
                             )}
-                            {header === "Creation Time" && (
+
+                            {sortable && (
                                 <Button
                                     size="small"
                                     onClick={onSortDirectionToggle}
@@ -126,37 +106,27 @@ const TableHeader = ({
                                         padding: "4px 12px",
                                         minWidth: "auto",
                                         borderRadius: "20px",
-                                        marginTop: "8px",
                                         fontSize: "0.8rem",
                                         fontWeight: 500,
                                         letterSpacing: "0.02em",
-                                        transition:
-                                            "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                                        backgroundColor: alpha(
-                                            theme.palette.primary.main,
-                                            0.1,
-                                        ),
+                                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
                                         color: theme.palette.primary.main,
                                         "&:hover": {
-                                            backgroundColor: alpha(
-                                                theme.palette.primary.main,
-                                                0.15,
-                                            ),
+                                            backgroundColor: alpha(theme.palette.primary.main, 0.15),
                                             transform: "translateY(-2px)",
-                                            boxShadow: `0 4px 8px ${alpha(
-                                                theme.palette.primary.main,
-                                                0.2,
-                                            )}`,
+                                            boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
                                         },
                                     }}
                                 >
                                     Sort
                                 </Button>
                             )}
-                        </TableCell>
-                    ),
-                )}
+                        </Box>
+                    </TableCell>
+                ))}
             </TableRow>
+
+            {/* Filter Menus */}
             <FilterMenu
                 anchorEl={anchorEl.namespace}
                 handleClose={handleFilterClose}
@@ -170,6 +140,7 @@ const TableHeader = ({
                 filterType="status"
             />
         </TableHead>
+
     );
 };
 

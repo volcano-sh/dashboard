@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, MenuItem, Pagination, Select, Typography } from "@mui/material";
+import { Box, MenuItem, Pagination, Select, Typography, useTheme, useMediaQuery } from "@mui/material";
 
 const JobPagination = ({
     pagination,
@@ -7,36 +7,47 @@ const JobPagination = ({
     handleChangePage,
     handleChangeRowsPerPage,
 }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
     return (
         <Box
             sx={{
                 mt: 2,
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                flexDirection: isMobile ? "column" : "row",
+                justifyContent: isMobile ? "center" : "space-between",
+                alignItems: isMobile ? "stretch" : "center",
+                gap: 2,
             }}
         >
-            <Select
-                value={pagination.rowsPerPage}
-                onChange={handleChangeRowsPerPage}
-                size="small"
-            >
-                <MenuItem value={5}>5 per page</MenuItem>
-                <MenuItem value={10}>10 per page</MenuItem>
-                <MenuItem value={20}>20 per page</MenuItem>
-            </Select>
             <Box
                 sx={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mt: 2,
-                    mb: 2,
+                    justifyContent: isMobile ? "center" : "flex-start",
                 }}
             >
-                <Typography variant="body2" sx={{ mr: 2 }}>
-                    Total Jobs: {totalJobs}
-                </Typography>
+                <Select
+                    value={pagination.rowsPerPage}
+                    onChange={handleChangeRowsPerPage}
+                    size="small"
+                >
+                    <MenuItem value={5}>5 per page</MenuItem>
+                    <MenuItem value={10}>10 per page</MenuItem>
+                    <MenuItem value={20}>20 per page</MenuItem>
+                </Select>
+            </Box>
+
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: isMobile ? "column" : "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: isMobile ? 1 : 2,
+                }}
+            >
+                <Typography variant="body2">Total Jobs: {totalJobs}</Typography>
                 <Pagination
                     count={Math.ceil(totalJobs / pagination.rowsPerPage)}
                     page={pagination.page}
@@ -44,6 +55,7 @@ const JobPagination = ({
                     color="primary"
                     showFirstButton
                     showLastButton
+                    siblingCount={isMobile ? 0 : 1}
                 />
             </Box>
         </Box>
