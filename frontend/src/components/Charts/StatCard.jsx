@@ -5,7 +5,7 @@ const StatCard = ({ title, value, icon }) => (
     <Paper
         sx={{
             p: 2,
-            height: '100%',
+            height: "100%",
         }}
     >
         <Box
@@ -13,7 +13,7 @@ const StatCard = ({ title, value, icon }) => (
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                flex: 1
+                flex: 1,
             }}
         >
             <Typography variant="subtitle2" color="textSecondary">

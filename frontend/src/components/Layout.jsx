@@ -12,7 +12,7 @@ import {
     Toolbar,
     Typography,
     Tooltip,
-    useMediaQuery
+    useMediaQuery,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";

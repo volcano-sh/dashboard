@@ -1,5 +1,13 @@
 import React from "react";
-import { Box, MenuItem, Pagination, Select, Typography, useTheme, useMediaQuery } from "@mui/material";
+import {
+    Box,
+    MenuItem,
+    Pagination,
+    Select,
+    Typography,
+    useTheme,
+    useMediaQuery,
+} from "@mui/material";
 
 const QueuePagination = ({
     pagination,
@@ -27,7 +35,6 @@ const QueuePagination = ({
                     justifyContent: isMobile ? "center" : "flex-start",
                 }}
             >
-
                 <Select
                     value={pagination.rowsPerPage}
                     onChange={handleChangeRowsPerPage}

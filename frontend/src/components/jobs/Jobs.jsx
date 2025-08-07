@@ -160,7 +160,7 @@ const Jobs = () => {
                 try {
                     const errData = await response.json();
                     errorMsg = errData.error || response.statusText;
-                } catch { }
+                } catch {}
                 alert("Error creating job: " + errorMsg);
                 return;
             }
@@ -211,15 +211,17 @@ const Jobs = () => {
     }, []);
 
     return (
-        <Box sx={{
-            bgcolor: "background.default",
-            minHeight: "100vh",
-            px: { xs: 0, sm: 3},
-            py: { xs: 0, sm: 3 },
-            width: '100%',
-            overflow: 'hidden',
-            maxWidth: '100vw'
-        }}>
+        <Box
+            sx={{
+                bgcolor: "background.default",
+                minHeight: "100vh",
+                px: { xs: 0, sm: 3 },
+                py: { xs: 0, sm: 3 },
+                width: "100%",
+                overflow: "hidden",
+                maxWidth: "100vw",
+            }}
+        >
             {error && (
                 <Box sx={{ mt: 2, color: theme.palette.error.main }}>
                     <Typography variant="body1">{error}</Typography>

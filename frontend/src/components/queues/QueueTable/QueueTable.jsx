@@ -125,8 +125,8 @@ const QueueTable = ({
             <TableContainer
                 component={Paper}
                 sx={{
-                    width: '100%',
-                    maxWidth: '100%',
+                    width: "100%",
+                    maxWidth: "100%",
                     maxHeight: "calc(100vh - 200px)",
                     overflow: "auto",
                     borderRadius: "16px",
@@ -161,7 +161,7 @@ const QueueTable = ({
                     stickyHeader
                     sx={{
                         minWidth: 750,
-                        tableLayout: 'auto',
+                        tableLayout: "auto",
                     }}
                 >
                     <QueueTableHeader

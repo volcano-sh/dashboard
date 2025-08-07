@@ -1,5 +1,13 @@
 import React from "react";
-import { Box, MenuItem, Pagination, Select, Typography, useTheme, useMediaQuery } from "@mui/material";
+import {
+    Box,
+    MenuItem,
+    Pagination,
+    Select,
+    Typography,
+    useTheme,
+    useMediaQuery,
+} from "@mui/material";
 
 const JobPagination = ({
     pagination,

@@ -1,5 +1,13 @@
 import React from "react";
-import { Box, MenuItem, Pagination, Select, Typography, useTheme, useMediaQuery } from "@mui/material";
+import {
+    Box,
+    MenuItem,
+    Pagination,
+    Select,
+    Typography,
+    useTheme,
+    useMediaQuery,
+} from "@mui/material";
 
 const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
     const handleChangePage = (event, newPage) => {
@@ -48,9 +56,7 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
                     gap: isMobile ? 1 : 2,
                 }}
             >
-                <Typography variant="body2">
-                    Total Pods: {totalPods}
-                </Typography>
+                <Typography variant="body2">Total Pods: {totalPods}</Typography>
                 <Pagination
                     count={Math.ceil(totalPods / pagination.rowsPerPage)}
                     page={pagination.page}

@@ -68,7 +68,7 @@ const QueueTableHeader = ({
                             backdropFilter: "blur(8px)",
                             padding: "16px 24px",
                             borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                            minWidth: 240
+                            minWidth: 240,
                         }}
                     >
                         <Box
@@ -162,7 +162,8 @@ const QueueTableHeader = ({
                                 fontSize: "0.8rem",
                                 fontWeight: 500,
                                 letterSpacing: "0.02em",
-                                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                transition:
+                                    "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                 backgroundColor: alpha(
                                     theme.palette.primary.main,
                                     0.1,
@@ -216,11 +217,15 @@ const QueueTableHeader = ({
                                 fontSize: "0.8rem",
                                 fontWeight: 500,
                                 letterSpacing: "0.02em",
-                                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                transition:
+                                    "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                 backgroundColor:
                                     filters.status !== "All"
                                         ? alpha(theme.palette.primary.main, 0.2)
-                                        : alpha(theme.palette.primary.main, 0.1),
+                                        : alpha(
+                                              theme.palette.primary.main,
+                                              0.1,
+                                          ),
                                 color: theme.palette.primary.main,
                                 "&:hover": {
                                     backgroundColor: alpha(
