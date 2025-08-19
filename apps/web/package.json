@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev ",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -18,9 +18,11 @@
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.1.2",
     "@tanstack/react-table": "^8.21.2",
+    "@types/js-yaml": "^4.0.9",
     "@volcano/trpc": "^1.30.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "js-yaml": "^4.1.0",
     "lucide-react": "^0.475.0",
     "next": "14.2.18",
     "react": "^18",

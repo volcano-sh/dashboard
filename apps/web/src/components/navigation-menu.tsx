@@ -12,7 +12,7 @@ export const DashboardNav = ({navItems, className} : {navItems: NavItem[], class
         <div className={cn("pt-4", className)}>
             <div className="flex flex-col gap-1 left-0 top-0 w-full">
             {navItems.map(({title, icon, href, disable}) => {
-                const Icon = Icons[icon!] || Icons["Notepad"];
+                const Icon = Icons[icon!] || Icons["notepad"];
                 return (
                 <Link
                     key={title}
@@ -34,7 +34,7 @@ export const DashboardNav = ({navItems, className} : {navItems: NavItem[], class
                 </Link>
                 )
             }
-            )}
+        )}
             </div>
         </div>
     )   

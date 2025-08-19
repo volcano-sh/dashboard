@@ -1,5 +1,6 @@
 "use client"
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { load, YAMLException } from "js-yaml"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import * as React from "react"
 
@@ -50,7 +51,7 @@ export function CreateQueueDialog({ open, setOpen, handleRefresh }: { open: bool
     type: "success" | "error" | null
     message: string
   }>({ type: null, message: "" })
-  
+
   React.useEffect(() => {
     if (open) {
       setStatus({ type: null, message: "" })
@@ -78,52 +79,48 @@ export function CreateQueueDialog({ open, setOpen, handleRefresh }: { open: bool
   )
 
   const parseYamlToManifest = (yamlString: string) => {
-    const lines = yamlString.trim().split('\n')
-    const manifest: any = {
-      apiVersion: '',
-      kind: '',
-      metadata: { name: '' },
-      spec: {}
-    }
+    try {
+      // Parse YAML using js-yaml library
+      const parsed = load(yamlString) as any
 
-    const requiredFields = ['apiVersion', 'kind', 'metadata', 'spec']
-    const foundFields = new Set<string>()
-
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed || trimmed.startsWith('#')) continue
-
-      // Check for required top-level fields
-      for (const field of requiredFields) {
-        if (trimmed.startsWith(`${field}:`)) {
-          foundFields.add(field)
-          if (field === 'apiVersion' || field === 'kind') {
-            manifest[field] = trimmed.split(':')[1].trim()
-          }
-        }
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Invalid YAML: must be an object')
       }
 
-      // Extract metadata.name
-      if (trimmed.startsWith('name:') && foundFields.has('metadata')) {
-        manifest.metadata.name = trimmed.split(':')[1].trim()
+      // Validate required fields
+      const requiredFields = ['apiVersion', 'kind', 'metadata', 'spec']
+      const missingFields = requiredFields.filter(field => !(field in parsed))
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
       }
-    }
 
-    // Validate required fields
-    const missingFields = requiredFields.filter(field => !foundFields.has(field))
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
-    }
+      // Validate kind
+      if (parsed.kind !== 'Queue') {
+        throw new Error('Kind must be "Queue"')
+      }
 
-    if (manifest.kind !== 'Queue') {
-      throw new Error('Kind must be "Queue"')
-    }
+      // Validate metadata
+      if (!parsed.metadata || typeof parsed.metadata !== 'object') {
+        throw new Error('Invalid metadata: must be an object')
+      }
 
-    if (!manifest.metadata.name) {
-      throw new Error('Missing required field: metadata.name')
-    }
+      if (!parsed.metadata.name || typeof parsed.metadata.name !== 'string') {
+        throw new Error('Missing required field: metadata.name')
+      }
 
-    return manifest
+      // Validate spec
+      if (!parsed.spec || typeof parsed.spec !== 'object') {
+        throw new Error('Invalid spec: must be an object')
+      }
+
+      return parsed
+    } catch (error) {
+      if (error instanceof YAMLException) {
+        throw new Error(`YAML parsing error: ${error.message}`)
+      }
+      throw error
+    }
   }
 
   const handleCreateQueue = async () => {

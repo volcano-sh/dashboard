@@ -1,6 +1,7 @@
 "use client"
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { load, YAMLException } from "js-yaml"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import * as React from "react"
 
@@ -66,85 +67,73 @@ export function CreatePodDialog({ open, setOpen, handleRefresh }: { open: boolea
 
 
   const parseYamlToManifest = (yamlString: string) => {
-    const lines = yamlString.trim().split('\n')
-    const manifest: any = {
-      apiVersion: '',
-      kind: '',
-      metadata: { name: '' },
-      spec: { containers: [] }
-    }
+    try {
+      // Parse YAML using js-yaml library
+      const parsed = load(yamlString) as any
 
-    const requiredFields = ['apiVersion', 'kind', 'metadata', 'spec']
-    const foundFields = new Set<string>()
-    let currentSection = ''
-    let currentSubSection = ''
-    let currentContainer: any = null
-    let inContainers = false
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Invalid YAML: must be an object')
+      }
 
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed || trimmed.startsWith('#')) continue
+      // Validate required fields
+      const requiredFields = ['apiVersion', 'kind', 'metadata', 'spec']
+      const missingFields = requiredFields.filter(field => !(field in parsed))
 
-      for (const field of requiredFields) {
-        if (trimmed.startsWith(`${field}:`)) {
-          foundFields.add(field)
-          if (field === 'apiVersion' || field === 'kind') {
-            manifest[field] = trimmed.split(':')[1].trim()
-          }
-          currentSection = field
-          currentSubSection = ''
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
+      }
+
+      // Validate kind
+      if (parsed.kind !== 'Pod') {
+        throw new Error('Kind must be "Pod"')
+      }
+
+      // Validate metadata
+      if (!parsed.metadata || typeof parsed.metadata !== 'object') {
+        throw new Error('Invalid metadata: must be an object')
+      }
+
+      if (!parsed.metadata.name || typeof parsed.metadata.name !== 'string') {
+        throw new Error('Missing required field: metadata.name')
+      }
+
+      // Validate spec
+      if (!parsed.spec || typeof parsed.spec !== 'object') {
+        throw new Error('Invalid spec: must be an object')
+      }
+
+      // Validate containers
+      if (!parsed.spec.containers || !Array.isArray(parsed.spec.containers)) {
+        throw new Error('Pod spec must include containers array')
+      }
+
+      if (parsed.spec.containers.length === 0) {
+        throw new Error('Pod spec must include at least one container')
+      }
+
+      // Validate each container
+      for (let i = 0; i < parsed.spec.containers.length; i++) {
+        const container = parsed.spec.containers[i]
+        if (!container || typeof container !== 'object') {
+          throw new Error(`Container at index ${i} must be an object`)
+        }
+
+        if (!container.name || typeof container.name !== 'string') {
+          throw new Error(`Container at index ${i} must have a name`)
+        }
+
+        if (!container.image || typeof container.image !== 'string') {
+          throw new Error(`Container at index ${i} must have an image`)
         }
       }
 
-      if (trimmed.startsWith('name:') && currentSection === 'metadata') {
-        manifest.metadata.name = trimmed.split(':')[1].trim()
+      return parsed
+    } catch (error) {
+      if (error instanceof YAMLException) {
+        throw new Error(`YAML parsing error: ${error.message}`)
       }
-
-      if (currentSection === 'spec') {
-        if (trimmed.startsWith('containers:')) {
-          inContainers = true
-          currentSubSection = 'containers'
-        } else if (trimmed.startsWith('- name:') && inContainers) {
-          if (currentContainer) {
-            manifest.spec.containers.push(currentContainer)
-          }
-          currentContainer = { name: trimmed.split(':')[1].trim() }
-        } else if (trimmed.startsWith('image:') && currentContainer) {
-          currentContainer.image = trimmed.split(':')[1].trim()
-        } else if (trimmed.startsWith('ports:') && currentContainer) {
-          currentContainer.ports = []
-          currentSubSection = 'ports'
-        } else if (trimmed.startsWith('- containerPort:') && currentSubSection === 'ports' && currentContainer) {
-          const port = parseInt(trimmed.split(':')[1].trim())
-          currentContainer.ports.push({ containerPort: port })
-        } else if (trimmed.startsWith('restartPolicy:') && currentSection === 'spec') {
-          manifest.spec.restartPolicy = trimmed.split(':')[1].trim()
-        }
-      }
+      throw error
     }
-
-    if (currentContainer) {
-      manifest.spec.containers.push(currentContainer)
-    }
-
-    const missingFields = requiredFields.filter(field => !foundFields.has(field))
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
-    }
-
-    if (manifest.kind !== 'Pod') {
-      throw new Error('Kind must be "Pod"')
-    }
-
-    if (!manifest.metadata.name) {
-      throw new Error('Missing required field: metadata.name')
-    }
-
-    if (!manifest.spec.containers || manifest.spec.containers.length === 0) {
-      throw new Error('Pod spec must include at least one container')
-    }
-
-    return manifest
   }
 
   const handleCreatePod = async () => {

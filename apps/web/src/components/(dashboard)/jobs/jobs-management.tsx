@@ -59,16 +59,6 @@ export default function JobsManagement() {
     }
   )
 
-  const queuesQuery = trpc.queueRouter.getAllQueues.useQuery(
-    undefined,
-    {
-      onError: (err) => {
-        console.error("Error fetching queues:", err);
-        setError(`Queues API error: ${err.message}`);
-      },
-    },
-  );
-
   const jobYamlQuery = trpc.jobsRouter.getJobYaml.useQuery(
     {
       namespace: selectedJob?.namespace || "",
@@ -109,7 +99,6 @@ export default function JobsManagement() {
       // Use tRPC refetch methods
       await Promise.all([
         jobsQuery.refetch(),
-        queuesQuery.refetch()
       ]);
       setError(null)
     } catch (err) {
@@ -118,7 +107,7 @@ export default function JobsManagement() {
     } finally {
       setLoading(false)
     }
-  }, [jobsQuery, queuesQuery])
+  }, [jobsQuery])
 
   const handleJobClick = useCallback(async (job: JobStatus) => {
     setError(null);

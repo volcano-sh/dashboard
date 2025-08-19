@@ -5,7 +5,6 @@ export interface NavItem {
     icon?: keyof typeof Icons;
     href: string;
     disable?: boolean;
-    label: string;
 }
 
 
@@ -14,28 +13,24 @@ export const navItems: NavItem[] = [
         title: "Dashboard",
         icon: "dashboard",
         href: `/`,
-        label: "Dashboard",
         disable: false,
     },
     {
         title: "Jobs",
-        icon: "Notepad",
+        icon: "notepad",
         href: `/jobs`,
-        label: "Jobs",
         disable: false
     },
     {
         title: "Queues",
-        icon: "Cloud",
+        icon: "cloud",
         href: `/queues`,
-        label: "Queues",
         disable: false
     },
     {
         title: "Pods",
-        icon: "Waypoint",
+        icon: "waypoint",
         href: `/pods`,
-        label: "Pods",
         disable: false
     },
 ]

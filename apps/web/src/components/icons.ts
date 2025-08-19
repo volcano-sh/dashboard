@@ -4,7 +4,7 @@ export type Icon = LucideIcon
 
 export const Icons = {
     dashboard: HomeIcon,
-    Cloud: Cloud,
-    Notepad: NotepadText,
-    Waypoint: Waypoints
+    cloud: Cloud,
+    notepad: NotepadText,
+    waypoint: Waypoints
 }
