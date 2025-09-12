@@ -7,6 +7,7 @@ import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import { useEvent } from "../../contexts/EventContext";
 
 const Pods = () => {
     const [pods, setPods] = useState([]);
@@ -29,6 +30,7 @@ const Pods = () => {
     });
     const [totalPods, setTotalPods] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
+    const { onUpdateEvent } = useEvent();
 
     const fetchPods = useCallback(async () => {
         setLoading(true);
@@ -174,6 +176,38 @@ const Pods = () => {
 
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    }, []);
+
+    useEffect(() => {
+        const handlePodUpdate = (obj) => {
+            if (obj.type === "pod") {
+                const podData = obj.data;
+
+                setCachedPods((prevPods) => {
+                    const pods = prevPods.filter(
+                        (pod) => pod.metadata.name !== podData.metadata.name,
+                    );
+                    if (obj.phase === "DELETED") {
+                        return pods;
+                    } else {
+                        return [...pods, podData];
+                    }
+                });
+            } else if (obj.type === "namespace") {
+                const namespace = obj.data;
+
+                setAllNamespaces((prevNamespaces) => {
+                    if (obj.phase === "DELETED") {
+                        return prevNamespaces.filter((ns) => ns !== namespace);
+                    } else if (!prevNamespaces.includes(namespace)) {
+                        return [...prevNamespaces, namespace];
+                    }
+                    return prevNamespaces;
+                });
+            }
+        };
+
+        onUpdateEvent(handlePodUpdate);
     }, []);
 
     return (

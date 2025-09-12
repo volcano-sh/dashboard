@@ -1,9 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { TableRow, TableCell, Chip, useTheme, alpha } from "@mui/material";
 import { calculateAge } from "../../utils";
 
 const PodRow = ({ pod, getStatusColor, onPodClick }) => {
     const theme = useTheme();
+    const [podAge, setPodAge] = useState(
+        calculateAge(pod.metadata.creationTimestamp),
+    );
+
+    useEffect(() => {
+        var intervalId = setInterval(() => {
+            setPodAge(calculateAge(pod.metadata.creationTimestamp));
+        }, 1000);
+
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, []);
 
     return (
         <TableRow
@@ -90,7 +103,7 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                     fontWeight: 500,
                 }}
             >
-                {calculateAge(pod.metadata.creationTimestamp)}
+                {podAge}
             </TableCell>
         </TableRow>
     );
