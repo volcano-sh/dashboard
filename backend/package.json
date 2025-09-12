@@ -8,8 +8,8 @@
         "dev": "nodemon src/server.js",
         "build": "babel src -d dist",
         "prepare": "npm run build",
-        "test": "vitest",
-        "test:ui": "vitest --ui"
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
     },
     "browser": {
         "fs": false
