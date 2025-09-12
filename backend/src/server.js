@@ -4,6 +4,9 @@ import {
     CoreV1Api,
     CustomObjectsApi,
     KubeConfig,
+    Metrics,
+    topPods,
+    topNodes,
 } from "@kubernetes/client-node";
 import yaml from "js-yaml";
 
@@ -17,6 +20,53 @@ kc.loadFromDefault();
 
 const k8sApi = kc.makeApiClient(CustomObjectsApi);
 const k8sCoreApi = kc.makeApiClient(CoreV1Api);
+
+const metricsClient = new Metrics(kc);
+
+const getPodMetrics = async () => {
+    const pods = await topPods(k8sCoreApi, metricsClient, "default");
+    return pods.map((pod) => {
+        return {
+            name: pod.Pod.metadata?.name,
+            cpu: pod.CPU.CurrentUsage,
+            memory: pod.Memory.CurrentUsage,
+        };
+    });
+};
+
+const getNodeMetrics = async () => {
+    const nodes = await topNodes(k8sCoreApi);
+    return nodes.map((node) => ({ cpu: node.CPU, memory: node.Memory }));
+};
+
+app.get("/api/metrics", async (req, res) => {
+    try {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+
+        const intervalId = setInterval(async () => {
+            try {
+                const nodeMetrics = await getNodeMetrics();
+                const podMetrics = await getPodMetrics();
+                res.write(
+                    `data: ${JSON.stringify({ podMetrics, nodeMetrics }, (_, v) => (typeof v === "bigint" ? v.toString() : v))}\n\n`,
+                );
+            } catch (err) {
+                throw new Error("Error fetching metrics");
+            }
+        }, 1000);
+
+        req.on("close", () => {
+            console.log("Client disconnected.");
+            clearInterval(intervalId);
+            res.end();
+        });
+    } catch (err) {
+        console.log("Error fetching metrics:", err);
+        res.status(500).send("Internal server error");
+    }
+});
 
 app.get("/api/jobs", async (req, res) => {
     try {
