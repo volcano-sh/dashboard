@@ -1,24 +1,39 @@
 name: Formatting Check
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 on:
-    pull_request:
-        branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.js'
+      - '**.jsx'
+      - '**.ts'
+      - '**.tsx'
+      - '**.css'
+      - '**.scss'
+      - '**.md'
+      - '**.json'
+      - 'package.json'
+      - 'package-lock.json'
 
 jobs:
-    format-check:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Install Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20
-                  cache: "npm"
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
 
-            - name: Install dependencies
-              run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-            - name: Run Prettier Check
-              run: npm run format:check || (echo "Code is not formatted! Run 'npm run format' locally." && exit 1)
+      - name: Run Prettier Check
+        run: npm run format:check
