@@ -27,7 +27,7 @@ spec:
           imagePullPolicy: Always
           name: frontend
           ports:
-            - containerPort: 8080
+            - containerPort: 80
               name: frontend
               protocol: TCP
           securityContext:
@@ -151,6 +151,6 @@ spec:
     - name: frontend
       port: 80
       protocol: TCP
-      targetPort: 8080
+      targetPort: 80
   selector:
     app: volcano-dashboard
