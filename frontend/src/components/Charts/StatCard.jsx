@@ -5,18 +5,23 @@ const StatCard = ({ title, value, icon }) => (
     <Paper
         sx={{
             p: 2,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            height: "100%",
         }}
     >
-        <Box>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                flex: 1,
+            }}
+        >
             <Typography variant="subtitle2" color="textSecondary">
                 {title}
             </Typography>
             <Typography variant="h4">{value}</Typography>
         </Box>
-        {icon}
+        <Box mt={2}>{icon}</Box>
     </Paper>
 );
 

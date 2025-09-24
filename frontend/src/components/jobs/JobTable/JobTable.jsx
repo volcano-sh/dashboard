@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
-import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
+import JobTableDeleteDialog from "./JobTableDeleteDialog";
 
 const JobTable = ({
     jobs,
@@ -114,6 +114,8 @@ const JobTable = ({
             <TableContainer
                 component={Paper}
                 sx={{
+                    width: "100%",
+                    maxWidth: "100%",
                     maxHeight: "calc(100vh - 200px)",
                     overflow: "auto",
                     borderRadius: "16px",
@@ -144,7 +146,13 @@ const JobTable = ({
                     },
                 }}
             >
-                <Table stickyHeader>
+                <Table
+                    stickyHeader
+                    sx={{
+                        minWidth: 750,
+                        tableLayout: "auto",
+                    }}
+                >
                     <JobTableHeader
                         filters={filters}
                         uniqueStatuses={uniqueStatuses}

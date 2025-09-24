@@ -227,7 +227,17 @@ const Queues = () => {
     }, [queues]);
 
     return (
-        <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
+        <Box
+            sx={{
+                bgcolor: "background.default",
+                minHeight: "100vh",
+                px: { xs: 0, sm: 3 },
+                py: { xs: 0, sm: 3 },
+                width: "100%",
+                overflow: "hidden",
+                maxWidth: "100vw",
+            }}
+        >
             {error && (
                 <Box sx={{ mt: 2, color: "error.main" }}>
                     <Typography variant="body1">{error}</Typography>

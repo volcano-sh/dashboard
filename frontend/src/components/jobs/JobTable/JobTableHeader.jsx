@@ -100,8 +100,11 @@ const JobTableHeader = ({
                         ),
                         backdropFilter: "blur(8px)",
                         padding: "16px 24px",
-                        minWidth: 140,
+                        minWidth: 250,
                         borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
                     }}
                 >
                     <Typography
@@ -128,7 +131,6 @@ const JobTableHeader = ({
                             padding: "4px 12px",
                             minWidth: "auto",
                             borderRadius: "20px",
-                            marginTop: "8px",
                             fontSize: "0.8rem",
                             fontWeight: 500,
                             letterSpacing: "0.02em",
