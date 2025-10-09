@@ -1,0 +1,11 @@
+{
+    "extends": "@volcano/typescript-config/react-library.json",
+    "exclude": [
+        "dist",
+        "build",
+        "node_modules"
+    ],
+    "compilerOptions": {
+        "strict": true,
+    }
+}
