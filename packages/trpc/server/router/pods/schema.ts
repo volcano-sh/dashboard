@@ -21,3 +21,14 @@ export const createPodInputSchema = z.object({
         spec: z.any(), // Allow flexible spec structure
     }),
 });
+
+export const deletePodInputSchema = z.object({
+    namespace: z.string(),
+    name: z.string(),
+});
+
+export const updatePodInputSchema = z.object({
+    namespace: z.string(),
+    name: z.string(),
+    patchData: z.any(),
+});

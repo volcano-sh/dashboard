@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { trpc } from "@volcano/trpc/react"
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { DataTable } from "../data-table"
-import { columns } from "./columns"
+import { createColumns } from "./columns"
+import { CreateJobDialog } from "./create-job-dialog"
+import { JobEditDialog } from "./job-edit-dialog"
 
 export type JobStatus = {
   name: string;
@@ -38,7 +40,14 @@ export default function JobsManagement() {
   const [error, setError] = useState<string | null>(null)
   const [selectedJob, setSelectedJob] = useState<JobStatus | null>(null)
   const [showJobDetails, setShowJobDetails] = useState(false)
+  const [showCreateJobModal, setShowCreateJobModal] = useState(false)
+  const [showEditJobModal, setShowEditJobModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [jobToEdit, setJobToEdit] = useState<JobStatus | null>(null)
+  const [jobToDelete, setJobToDelete] = useState<JobStatus | null>(null)
   const [totalJobs, setTotalJobs] = useState(0)
+
+  const utils = trpc.useUtils()
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -72,6 +81,94 @@ export default function JobsManagement() {
       },
     },
   );
+
+  const availableNamespaces = jobs ?
+    Array.from(new Set(jobs.map(job => job.namespace).filter(Boolean))).sort()
+    : [];
+
+  const availableQueues = jobs ?
+    Array.from(new Set(jobs.map(job => job.queue).filter(Boolean))).sort()
+    : [];
+
+  const availableStatuses = jobs ?
+    Array.from(new Set(jobs.map(job => job.status).filter(Boolean))).sort()
+    : [];
+
+  const { mutateAsync: deleteJob, isPending: isDeleting } = trpc.jobsRouter.deleteJob.useMutation({
+    onSuccess: async () => {
+      const deletedJobName = jobToDelete?.name
+      setShowDeleteConfirm(false)
+
+      if (jobToDelete) {
+        setJobs(prevJobs =>
+          prevJobs?.filter(j =>
+            !(j.name === jobToDelete.name && j.namespace === jobToDelete.namespace)
+          )
+        )
+        setTotalJobs(prev => Math.max(0, prev - 1))
+      }
+
+      setJobToDelete(null)
+      setError(null)
+
+      setTimeout(async () => {
+        await handleRefresh()
+      }, 2000)
+
+      console.log(`Job "${deletedJobName}" deleted successfully`)
+    },
+    onError: (error) => {
+      setError(`Failed to delete job: ${error.message}`)
+      setShowDeleteConfirm(false)
+    }
+  })
+
+  const handleEdit = useCallback(async (job: JobStatus) => {
+    setError(null);
+
+    try {
+      const yaml = await utils.jobsRouter.getJobYaml.fetch({
+        namespace: job.namespace,
+        name: job.name
+      });
+
+      if (!yaml) {
+        setError("No YAML configuration available for this job");
+      }
+
+      setJobToEdit({ ...job, yaml: yaml || job.yaml || "" });
+      setShowEditJobModal(true);
+    } catch (err) {
+      setError("Failed to fetch job YAML for editing");
+      console.error(err)
+    }
+  }, [utils])
+
+  const handleDelete = useCallback((job: JobStatus) => {
+    setJobToDelete(job)
+    setShowDeleteConfirm(true)
+  }, [])
+
+  const confirmDelete = useCallback(async () => {
+    if (!jobToDelete) return
+
+    try {
+      await deleteJob({
+        namespace: jobToDelete.namespace,
+        name: jobToDelete.name
+      })
+    } catch (err) {
+      console.error("Failed to delete job:", err)
+    }
+  }, [jobToDelete, deleteJob])
+
+  const columns = createColumns({
+    availableNamespaces,
+    availableQueues,
+    availableStatuses,
+    onEdit: handleEdit,
+    onDelete: handleDelete
+  });
 
   // Use tRPC query results to update state
   useEffect(() => {
@@ -123,6 +220,10 @@ export default function JobsManagement() {
     }
   }, [jobYamlQuery]);
 
+  const handleJobCreate = () => {
+    setShowCreateJobModal(true)
+  }
+
   const handlePageSizeChange = (newPageSize: string) => {
     setPagination({
       page: 1, // Reset to first page when changing page size
@@ -166,14 +267,20 @@ export default function JobsManagement() {
     <div className="container mx-auto p-4 mt-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Jobs Status</h1>
-        <Button
-          onClick={handleRefresh}
-          disabled={loading || isRefreshing}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center">
+          <Button
+            onClick={handleRefresh}
+            disabled={loading || isRefreshing}
+            className="flex items-center gap-2 mr-4"
+          >
+            <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={handleJobCreate} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create Job
+          </Button>
+        </div>
       </div>
 
       {/* Error Alert */}
@@ -328,6 +435,56 @@ export default function JobsManagement() {
           )}
         </DialogContent>
       </Dialog>
+
+      {jobToEdit && (
+        <JobEditDialog
+          open={showEditJobModal}
+          setOpen={setShowEditJobModal}
+          handleRefresh={handleRefresh}
+          jobName={jobToEdit.name}
+          jobNamespace={jobToEdit.namespace}
+          initialYaml={jobToEdit.yaml || ""}
+        />
+      )}
+
+      <Dialog open={showDeleteConfirm} onOpenChange={(open) => {
+        if (!isDeleting) setShowDeleteConfirm(open)
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Job</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to delete the job <strong>{jobToDelete?.name}</strong> in namespace <strong>{jobToDelete?.namespace}</strong>?</p>
+            <p className="mt-2 text-sm text-gray-500">This action cannot be undone.</p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <CreateJobDialog open={showCreateJobModal} setOpen={setShowCreateJobModal} handleRefresh={handleRefresh} />
     </div>
   )
 }

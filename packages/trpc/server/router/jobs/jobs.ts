@@ -108,13 +108,33 @@ export const jobsRouter = router({
     updateJob: procedure.input(updateJobInputSchema).mutation(async ({ input }) => {
         const { namespace, name, patchData } = input;
 
-        const response = await k8sApi.patchNamespacedCustomObject({
+        const currentJob = await k8sApi.getNamespacedCustomObject({
             group: "batch.volcano.sh",
             version: "v1alpha1",
             namespace,
             plural: "jobs",
             name,
-            body: patchData,
+        });
+
+        const updatedJob = {
+            ...currentJob,
+            ...patchData,
+            metadata: {
+                ...(currentJob as any).metadata,
+                ...patchData.metadata,
+                resourceVersion: (currentJob as any).metadata?.resourceVersion,
+                uid: (currentJob as any).metadata?.uid,
+                creationTimestamp: (currentJob as any).metadata?.creationTimestamp,
+            },
+        };
+
+        const response = await k8sApi.replaceNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+            body: updatedJob,
         });
 
         return {

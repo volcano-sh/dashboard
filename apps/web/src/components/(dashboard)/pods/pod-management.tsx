@@ -25,8 +25,9 @@ import { useCallback, useEffect, useState } from "react"
 import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
 import { CreatePodDialog } from "./pod-create-dialog"
+import { PodEditDialog } from "./pod-edit-dialog"
 
- 
+
 
 export type PodStatus = {
     name: string;
@@ -44,7 +45,13 @@ export default function PodManagement() {
     const [selectedPod, setSelectedPod] = useState<PodStatus | null>(null)
     const [showPodDetails, setShowPodDetails] = useState(false)
     const [showCreatePodModal, setShowCreatePodModal] = useState(false)
+    const [showEditPodModal, setShowEditPodModal] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [podToEdit, setPodToEdit] = useState<PodStatus | null>(null)
+    const [podToDelete, setPodToDelete] = useState<PodStatus | null>(null)
     const [totalPods, setTotalPods] = useState(0)
+
+    const utils = trpc.useUtils()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -88,29 +95,106 @@ export default function PodManagement() {
         Array.from(new Set(pods.map(pod => pod.status).filter(Boolean))).sort()
         : [];
 
-    const columns = createColumns(availableNamespaces, availableStatuses);
+    const { mutateAsync: deletePod, isPending: isDeleting } = trpc.podRouter.deletePod.useMutation({
+        onSuccess: async () => {
+            const deletedPodName = podToDelete?.name
+            setShowDeleteConfirm(false)
+
+            if (podToDelete) {
+                setPods(prevPods =>
+                    prevPods?.filter(p =>
+                        !(p.name === podToDelete.name && p.namespace === podToDelete.namespace)
+                    )
+                )
+                setTotalPods(prev => Math.max(0, prev - 1))
+            }
+
+            setPodToDelete(null)
+            setError(null)
+
+            setTimeout(async () => {
+                await handleRefresh()
+            }, 2000)
+
+            console.log(`Pod "${deletedPodName}" deleted successfully`)
+        },
+        onError: (error) => {
+            setError(`Failed to delete pod: ${error.message}`)
+            setShowDeleteConfirm(false)
+        }
+    })
+
+    const handleEdit = useCallback(async (pod: PodStatus) => {
+        setError(null);
+
+        try {
+            const yaml = await utils.podRouter.getPodYaml.fetch({
+                namespace: pod.namespace,
+                name: pod.name
+            });
+
+            if (!yaml) {
+                setError("No YAML configuration available for this pod");
+            }
+
+            setPodToEdit({ ...pod, yaml: yaml || pod.yaml || "" });
+            setShowEditPodModal(true);
+        } catch (err) {
+            setError("Failed to fetch pod YAML for editing");
+            console.error(err)
+        }
+    }, [utils])
+
+    const handleDelete = useCallback((pod: PodStatus) => {
+        setPodToDelete(pod)
+        setShowDeleteConfirm(true)
+    }, [])
+
+    const confirmDelete = useCallback(async () => {
+        if (!podToDelete) return
+
+        try {
+            await deletePod({
+                namespace: podToDelete.namespace,
+                name: podToDelete.name
+            })
+        } catch (err) {
+            console.error("Failed to delete pod:", err)
+        }
+    }, [podToDelete, deletePod])
+
+    const columns = createColumns({
+        availableNamespaces,
+        availableStatuses,
+        onEdit: handleEdit,
+        onDelete: handleDelete
+    });
 
     useEffect(() => {
         if (podsQuery.data) {
-            const transformedPods: PodStatus[] = (podsQuery.data.items || []).map((pod: any) => {
-                const createdAt = new Date(pod.metadata?.creationTimestamp || Date.now());
-                const now = new Date();
-                const ageInMs = now.getTime() - createdAt.getTime();
-                const ageInDays = Math.floor(ageInMs / (1000 * 60 * 60 * 24));
-                const age = ageInDays === 0 ? "1d" : `${ageInDays}d`;
+            const transformedPods: PodStatus[] = (podsQuery.data.items || [])
+                .filter((pod: any) => {
+                    return !pod.metadata?.deletionTimestamp;
+                })
+                .map((pod: any) => {
+                    const createdAt = new Date(pod.metadata?.creationTimestamp || Date.now());
+                    const now = new Date();
+                    const ageInMs = now.getTime() - createdAt.getTime();
+                    const ageInDays = Math.floor(ageInMs / (1000 * 60 * 60 * 24));
+                    const age = ageInDays === 0 ? "1d" : `${ageInDays}d`;
 
-                return {
-                    name: pod.metadata?.name || '',
-                    namespace: pod.metadata?.namespace || '',
-                    createdAt,
-                    status: pod.status?.phase?.toLowerCase() || 'unknown',
-                    age,
-                    yaml: pod.yaml || '',
-                };
-            });
+                    return {
+                        name: pod.metadata?.name || '',
+                        namespace: pod.metadata?.namespace || '',
+                        createdAt,
+                        status: pod.status?.phase?.toLowerCase() || 'unknown',
+                        age,
+                        yaml: pod.yaml || '',
+                    };
+                });
 
             setPods(transformedPods);
-            setTotalPods(podsQuery.data.totalCount || 0);
+            setTotalPods(transformedPods.length);
         }
     }, [podsQuery.data]);
 
@@ -352,6 +436,54 @@ export default function PodManagement() {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {podToEdit && (
+                <PodEditDialog
+                    open={showEditPodModal}
+                    setOpen={setShowEditPodModal}
+                    handleRefresh={handleRefresh}
+                    podName={podToEdit.name}
+                    podNamespace={podToEdit.namespace}
+                    initialYaml={podToEdit.yaml || ""}
+                />
+            )}
+
+            <Dialog open={showDeleteConfirm} onOpenChange={(open) => {
+                if (!isDeleting) setShowDeleteConfirm(open)
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Pod</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p>Are you sure you want to delete the pod <strong>{podToDelete?.name}</strong> in namespace <strong>{podToDelete?.namespace}</strong>?</p>
+                        <p className="mt-2 text-sm text-gray-500">This action cannot be undone.</p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDelete}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                "Delete"
+                            )}
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 

@@ -10,15 +10,26 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, Filter } from 'lucide-react'
+import { ArrowUpDown, Edit, Filter, Trash2 } from 'lucide-react'
 import { QueueStatus } from "./queue-management"
 
-export const columns: ColumnDef<QueueStatus>[] = [
+interface CreateColumnsOptions {
+    onEdit?: (queue: QueueStatus) => void
+    onDelete?: (queue: QueueStatus) => void
+}
+
+export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): ColumnDef<QueueStatus>[] => [
     {
         accessorKey: "name",
         header: () => (
-                <span>Name</span>
+            <span>Name</span>
         ),
     },
     {
@@ -110,4 +121,68 @@ export const columns: ColumnDef<QueueStatus>[] = [
             return row.getValue(columnId) === filterValue
         },
     },
-] 
+    {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+            const queue = row.original
+            const isRootQueue = queue.name.toLowerCase() === 'root'
+
+            return (
+                <div className="flex items-center gap-2">
+                    {onEdit && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onEdit(queue)
+                                        }}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Edit queue</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {onDelete && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (!isRootQueue) {
+                                                    onDelete(queue)
+                                                }
+                                            }}
+                                            disabled={isRootQueue}
+                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{isRootQueue ? "Root queue cannot be deleted" : "Delete queue"}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                </div>
+            )
+        },
+    },
+]
+
+export const columns = createColumns({}) 

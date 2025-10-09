@@ -22,8 +22,9 @@ import { trpc } from "@volcano/trpc/react"
 import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { DataTable } from "../data-table"
-import { columns } from "./columns"
+import { createColumns } from "./columns"
 import { CreateQueueDialog } from "./create-queue-dialog"
+import { QueueEditDialog } from "./queue-edit-dialog"
 
 export type QueueStatus = {
     name: string;
@@ -40,7 +41,13 @@ export default function QueueManagement() {
     const [selectedQueue, setSelectedQueue] = useState<QueueStatus | null>(null)
     const [showQueueDetails, setShowQueueDetails] = useState(false)
     const [showCreateQueueModal, setShowCreateQueueModal] = useState(false)
+    const [showEditQueueModal, setShowEditQueueModal] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [queueToEdit, setQueueToEdit] = useState<QueueStatus | null>(null)
+    const [queueToDelete, setQueueToDelete] = useState<QueueStatus | null>(null)
     const [totalQueues, setTotalQueues] = useState(0)
+
+    const utils = trpc.useUtils()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -60,6 +67,87 @@ export default function QueueManagement() {
             },
         }
     )
+
+    const { mutateAsync: deleteQueue, isPending: isDeleting } = trpc.queueRouter.deleteQueue.useMutation({
+        onSuccess: async () => {
+            const deletedQueueName = queueToDelete?.name
+            setShowDeleteConfirm(false)
+
+            if (queueToDelete) {
+                setQueues(prevQueues =>
+                    prevQueues?.filter(q => q.name !== queueToDelete.name)
+                )
+                setTotalQueues(prev => Math.max(0, prev - 1))
+            }
+
+            setQueueToDelete(null)
+            setError(null)
+
+            setTimeout(async () => {
+                await handleRefresh()
+            }, 2000)
+
+            console.log(`Queue "${deletedQueueName}" deleted successfully`)
+        },
+        onError: (error) => {
+            let errorMessage = error.message
+
+            if (errorMessage.includes('root') && errorMessage.includes('can not be deleted')) {
+                errorMessage = "The 'root' queue is a system queue and cannot be deleted."
+            } else if (errorMessage.includes('denied the request')) {
+                const match = errorMessage.match(/denied the request: (.+?)(?:"|$)/)
+                if (match && match[1]) {
+                    errorMessage = match[1]
+                }
+            }
+
+            setError(`Failed to delete queue: ${errorMessage}`)
+            setShowDeleteConfirm(false)
+        }
+    })
+
+    const handleEdit = useCallback(async (queue: QueueStatus) => {
+        setError(null);
+
+        try {
+            // Fetch YAML with explicit parameters using tRPC utils
+            const yaml = await utils.queueRouter.getQueueYaml.fetch({
+                name: queue.name
+            });
+
+            if (!yaml) {
+                setError("No YAML configuration available for this queue");
+            }
+
+            setQueueToEdit({ ...queue, yaml: yaml || queue.yaml || "" });
+            setShowEditQueueModal(true);
+        } catch (err) {
+            setError("Failed to fetch queue YAML for editing");
+            console.error(err)
+        }
+    }, [utils])
+
+    const handleDelete = useCallback((queue: QueueStatus) => {
+        setQueueToDelete(queue)
+        setShowDeleteConfirm(true)
+    }, [])
+
+    const confirmDelete = useCallback(async () => {
+        if (!queueToDelete) return
+
+        try {
+            await deleteQueue({
+                name: queueToDelete.name
+            })
+        } catch (err) {
+            console.error("Failed to delete queue:", err)
+        }
+    }, [queueToDelete, deleteQueue])
+
+    const columns = createColumns({
+        onEdit: handleEdit,
+        onDelete: handleDelete
+    })
 
     const queueYamlQuery = trpc.queueRouter.getQueueYaml.useQuery(
         { name: selectedQueue?.name || "" },
@@ -314,6 +402,53 @@ export default function QueueManagement() {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {queueToEdit && (
+                <QueueEditDialog
+                    open={showEditQueueModal}
+                    setOpen={setShowEditQueueModal}
+                    handleRefresh={handleRefresh}
+                    queueName={queueToEdit.name}
+                    initialYaml={queueToEdit.yaml || ""}
+                />
+            )}
+
+            <Dialog open={showDeleteConfirm} onOpenChange={(open) => {
+                if (!isDeleting) setShowDeleteConfirm(open)
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Queue</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p>Are you sure you want to delete the queue <strong>{queueToDelete?.name}</strong>?</p>
+                        <p className="mt-2 text-sm text-gray-500">This action cannot be undone.</p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDelete}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                "Delete"
+                            )}
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 
