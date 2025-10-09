@@ -12,10 +12,12 @@ interface QueueMetrics {
   name: string
   weight: number
   reclaimable: boolean
-  inqueue: number
-  pending: number
-  running: number
-  unknown: number
+  cpu: string
+  memory: string
+  pods: string
+  cpuCapability: string
+  memoryCapability: string
+  podsCapability: string
 }
 
 interface QueueResourcesBarChartProps {
@@ -41,24 +43,42 @@ const BarChartSkeleton = () => (
 const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResourcesBarChartProps) => {
   const [selectedResource, setSelectedResource] = useState("")
 
+  const parseResourceValue = (value: string): number => {
+    if (!value || value === "0") return 0;
+
+    if (value.endsWith('m')) {
+      return parseInt(value) / 1000;
+    }
+
+    if (value.endsWith('Gi')) {
+      return parseFloat(value);
+    }
+    if (value.endsWith('Mi')) {
+      return parseFloat(value) / 1024;
+    }
+    if (value.endsWith('Ki')) {
+      return parseFloat(value) / (1024 * 1024);
+    }
+
+    return parseFloat(value) || 0;
+  };
+
   // Transform API data to match the expected format
   const transformedData = useMemo(() => {
     return data.map(queue => ({
       metadata: { name: queue.name },
       status: {
         allocated: {
-          inqueue: queue.inqueue,
-          pending: queue.pending,
-          running: queue.running,
-          unknown: queue.unknown,
+          cpu: parseResourceValue(queue.cpu),
+          memory: parseResourceValue(queue.memory),
+          pods: parseResourceValue(queue.pods),
         },
       },
       spec: {
         capability: {
-          inqueue: queue.inqueue + queue.pending + queue.running + queue.unknown,
-          pending: queue.pending + queue.running + queue.unknown,
-          running: queue.running + queue.unknown,
-          unknown: queue.unknown,
+          cpu: parseResourceValue(queue.cpuCapability),
+          memory: parseResourceValue(queue.memoryCapability),
+          pods: parseResourceValue(queue.podsCapability),
         },
       },
     }));
@@ -127,14 +147,6 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
         return "Pod Count"
       case "nvidia.com/gpu":
         return "GPU Count"
-      case "inqueue":
-        return "In Queue Count"
-      case "pending":
-        return "Pending Count"
-      case "running":
-        return "Running Count"
-      case "unknown":
-        return "Unknown Count"
       default:
         return "Amount"
     }
