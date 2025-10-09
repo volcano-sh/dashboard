@@ -17,6 +17,14 @@ RUN npm ci
 # Stage 2: Build the application
 FROM base AS builder
 WORKDIR /app
+
+# Copy package files and install dependencies again to ensure workspace links
+COPY package.json package-lock.json* turbo.json ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/*/package.json ./packages/
+RUN npm ci
+
+# Copy source code and node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -41,16 +49,8 @@ RUN mkdir -p apps/web/.next/cache && \
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
 
-# Handle public directory
-RUN if [ -d "/app/apps/web/public" ]; then \
-      mkdir -p ./public && \
-      cp -r /app/apps/web/public/* ./public/ && \
-      chown -R nextjs:nodejs ./public; \
-    fi
-
-# Copy required node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/node_modules ./node_modules
+# The public directory is often handled by the standalone output.
+# If it's missing, this COPY command will fail. It's removed.
 
 USER nextjs
 
