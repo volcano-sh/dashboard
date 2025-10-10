@@ -150,7 +150,7 @@ const JobTableRow = ({
                         <IconButton
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleOpenDeleteDialog(job);
+                                handleOpenDeleteDialog(job.metadata.name);
                             }}
                             size="small"
                             sx={{
