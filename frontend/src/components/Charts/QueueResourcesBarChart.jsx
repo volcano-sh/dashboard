@@ -1,213 +1,133 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Box, FormControl, MenuItem, Select, Typography } from "@mui/material";
-import { Bar } from "react-chartjs-2";
-import "./chartConfig";
+import React from 'react';
+import { Box, Card, CardContent, Typography, Chip, Paper, FormControl, Select, MenuItem, Fade, alpha } from '@mui/material';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
-const QueueResourcesBarChart = ({ data }) => {
-    const [selectedResource, setSelectedResource] = useState("");
-
-    // Obtain resource type options dynamically
-    const resourceOptions = useMemo(() => {
-        if (!data || data.length === 0) return [];
-
-        const resourceTypes = new Set();
-
-        // Traverse the queue data and obtain all resource types
-        data.forEach((queue) => {
-            const allocated = queue.status?.allocated || {};
-            Object.keys(allocated).forEach((resource) =>
-                resourceTypes.add(resource),
+const QueueResourcesBarChart = ({ 
+    queueResourceData, 
+    selectedResource, 
+    setSelectedResource, 
+    availableResources, 
+    getResourceUnit, 
+    colors 
+}) => {
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <Paper sx={{ 
+                    p: 2, 
+                    bgcolor: colors.white,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    borderRadius: 2
+                }}>
+                    <Typography variant="body2" fontWeight="bold" color="text.primary">{label}</Typography>
+                    {payload.map((entry, index) => (
+                        <Typography key={index} variant="body2" sx={{ color: entry.color }}>
+                            {entry.name}: {entry.value} {getResourceUnit()}
+                        </Typography>
+                    ))}
+                </Paper>
             );
-        });
-
-        // Convert resource type from Set to Array
-        return Array.from(resourceTypes).map((resource) => ({
-            value: resource,
-            label: `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`,
-        }));
-    }, [data]);
-
-    useEffect(() => {
-        // If there is a resource option, the first resource is selected by default
-        if (resourceOptions.length > 0 && !selectedResource) {
-            setSelectedResource(resourceOptions[0].value);
         }
-    }, [resourceOptions, selectedResource]);
-
-    const convertMemoryToGi = (memoryStr) => {
-        if (!memoryStr) return 0;
-        const value = parseInt(memoryStr);
-        if (memoryStr.includes("Gi")) return value;
-        if (memoryStr.includes("Mi")) return value / 1024; // Mi to Gi
-        if (memoryStr.includes("Ki")) return value / 1024 / 1024; // Ki to Gi
-        return value; // default unit Gi
-    };
-
-    const convertCPUToCores = (cpuStr) => {
-        if (!cpuStr) return 0;
-        const value = parseInt(cpuStr);
-        if (typeof cpuStr === "number") {
-            return cpuStr;
-        }
-        return cpuStr.includes("m") ? value / 1000 : value; // m is converted to the number of cores
-    };
-
-    // Process queue data and convert memory and CPU units
-    const processData = (data) => {
-        return data.reduce((acc, queue) => {
-            const name = queue.metadata.name;
-            const allocated = queue.status?.allocated || {};
-            const capability = queue.spec?.capability || {};
-
-            // Handle memory unit conversion
-            const allocatedMemory = convertMemoryToGi(allocated.memory);
-            const capabilityMemory = convertMemoryToGi(capability.memory);
-
-            // Handle CPU unit conversion
-            const allocatedCPU = convertCPUToCores(allocated.cpu);
-            const capabilityCPU = convertCPUToCores(capability.cpu);
-
-            acc[name] = {
-                allocated: {
-                    ...allocated,
-                    memory: allocatedMemory,
-                    cpu: allocatedCPU,
-                },
-                capability: {
-                    ...capability,
-                    memory: capabilityMemory,
-                    cpu: capabilityCPU,
-                },
-            };
-
-            return acc;
-        }, {});
-    };
-
-    // Process queue data
-    const processedData = useMemo(() => processData(data), [data]);
-
-    // Build chart data
-    const chartData = {
-        labels: Object.keys(processedData),
-        datasets: [
-            {
-                label: `${selectedResource.toUpperCase()} Allocated`,
-                data: Object.values(processedData).map(
-                    (q) => q.allocated[selectedResource] || 0,
-                ),
-                backgroundColor: "#2196f3",
-                borderColor: "#1976d2",
-                borderWidth: 1,
-            },
-            {
-                label: `${selectedResource.toUpperCase()} Capacity`,
-                data: Object.values(processedData).map(
-                    (q) => q.capability[selectedResource] || 0,
-                ),
-                backgroundColor: "#4caf50",
-                borderColor: "#388e3c",
-                borderWidth: 1,
-            },
-        ],
-    };
-
-    // Get Y-axis label
-    const getYAxisLabel = () => {
-        switch (selectedResource) {
-            case "memory":
-                return "Memory (Gi)";
-            case "cpu":
-                return "CPU Cores";
-            case "pods":
-                return "Pod Count";
-            case "nvidia.com/gpu":
-                return "GPU Count";
-            default:
-                return "Amount";
-        }
-    };
-
-    const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            x: {
-                ticks: {
-                    autoSkip: false,
-                    maxRotation: 45,
-                    minRotation: 45,
-                    font: { size: 10 },
-                },
-                grid: { display: false },
-            },
-            y: {
-                beginAtZero: true,
-                title: {
-                    display: true,
-                    text: getYAxisLabel(),
-                },
-            },
-        },
-        plugins: {
-            legend: {
-                position: "bottom",
-                align: "start",
-                labels: {
-                    boxWidth: 12,
-                    padding: 8,
-                    font: { size: 11 },
-                },
-            },
-        },
-        layout: {
-            padding: { bottom: 20 },
-        },
+        return null;
     };
 
     return (
-        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 2,
-                }}
-            >
-                <Typography variant="h6">Queue Resources</Typography>
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <Select
-                        value={selectedResource}
-                        onChange={(e) => setSelectedResource(e.target.value)}
-                    >
-                        {resourceOptions.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                                {option.label}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Box>
-
-            <Box sx={{ flex: 1, minHeight: 0, height: "calc(100% - 100px)" }}>
-                {Object.keys(processedData).length > 0 ? (
-                    <Bar
-                        data={chartData}
-                        options={options}
-                        style={{ maxHeight: "100%" }}
-                    />
-                ) : (
-                    <Typography
-                        align="center"
-                        color="text.secondary"
-                        sx={{ mt: 4 }}
-                    >
-                        No data available for selected resource type
-                    </Typography>
-                )}
-            </Box>
-        </Box>
+        <Fade in={true} timeout={1200}>
+            <Card sx={{ 
+                height: 400,
+                bgcolor: colors.white,
+                borderRadius: 3,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                border: `1px solid ${alpha(colors.primary, 0.1)}`
+            }}>
+                <CardContent sx={{ p: 4 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                        <Typography variant="h6" fontWeight="bold" sx={{ color: colors.secondary }}>
+                            Queue Resources
+                        </Typography>
+                        <FormControl size="small">
+                            <Select
+                                value={selectedResource}
+                                onChange={(e) => setSelectedResource(e.target.value)}
+                                sx={{
+                                    minWidth: 140,
+                                    '& .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: alpha(colors.primary, 0.2)
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: colors.primary
+                                    }
+                                }}
+                            >
+                                {availableResources.map((resource) => (
+                                    <MenuItem key={resource} value={resource}>
+                                        {resource.charAt(0).toUpperCase() + resource.slice(1)}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    
+                    {queueResourceData.length > 0 ? (
+                        <Box>
+                            <ResponsiveContainer width="100%" height={240}>
+                                <BarChart data={queueResourceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                    <XAxis 
+                                        dataKey="name" 
+                                        tick={{ fontSize: 12, fill: colors.gray }}
+                                    />
+                                    <YAxis tick={{ fontSize: 12, fill: colors.gray }} />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Bar 
+                                        dataKey="used" 
+                                        fill={colors.primary}
+                                        name={`Used ${getResourceUnit()}`}
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                    <Bar 
+                                        dataKey="total" 
+                                        fill={colors.success}
+                                        name={`Total ${getResourceUnit()}`}
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                            
+                            {/* Bar Chart Legend */}
+                            <Box display="flex" justifyContent="center" gap={2} mt={2}>
+                                <Chip
+                                    label={`Used ${getResourceUnit()}`}
+                                    sx={{
+                                        bgcolor: alpha(colors.primary, 0.1),
+                                        color: colors.primary,
+                                        fontWeight: 500,
+                                        border: `1px solid ${alpha(colors.primary, 0.2)}`
+                                    }}
+                                    variant="outlined"
+                                />
+                                <Chip
+                                    label={`Total ${getResourceUnit()}`}
+                                    sx={{
+                                        bgcolor: alpha(colors.success, 0.1),
+                                        color: colors.success,
+                                        fontWeight: 500,
+                                        border: `1px solid ${alpha(colors.success, 0.2)}`
+                                    }}
+                                    variant="outlined"
+                                />
+                            </Box>
+                        </Box>
+                    ) : (
+                        <Box display="flex" alignItems="center" justifyContent="center" height={280}>
+                            <Typography color="text.secondary" variant="body1">
+                                No queue data available
+                            </Typography>
+                        </Box>
+                    )}
+                </CardContent>
+            </Card>
+        </Fade>
     );
 };
 
