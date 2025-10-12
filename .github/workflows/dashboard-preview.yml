@@ -1,0 +1,64 @@
+name: Dashboard Preview
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dashboard-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up Kubernetes with Kind
+        uses: helm/kind-action@v1.5.0
+        with:
+          cluster_name: volcano
+
+      - name: Apply Volcano Dashboard YAML
+        run: |
+          kubectl create namespace volcano-system || true
+          kubectl apply -f deployment/volcano-dashboard.yaml
+
+      - name: Wait for Dashboard to be Ready
+        run: |
+          kubectl wait --for=condition=ready pod -l app=volcano-dashboard -n volcano-system --timeout=180s
+
+      - name: Port-forward Dashboard Frontend
+        run: |
+          nohup kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system &
+          sleep 10
+
+      - name: Install Puppeteer
+        run: npm install puppeteer
+
+      - name: Take Screenshot of Dashboard
+        run: |
+          node <<EOF
+          const puppeteer = require('puppeteer');
+          (async () => {
+            const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+            const page = await browser.newPage();
+            await page.goto('http://localhost:8080', { waitUntil: 'networkidle2', timeout: 60000 });
+            await page.screenshot({ path: 'dashboard-screenshot.png' });
+            await browser.close();
+          })();
+          EOF
+
+      - name: Upload Screenshot Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dashboard-preview
+          path: dashboard-screenshot.png
