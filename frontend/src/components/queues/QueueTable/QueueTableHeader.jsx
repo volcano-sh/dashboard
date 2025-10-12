@@ -18,7 +18,7 @@ import {
     FilterList,
     UnfoldMore,
 } from "@mui/icons-material";
-
+import Tooltip from "@mui/material/Tooltip";
 const QueueTableHeader = ({
     allocatedFields,
     handleSort,
@@ -105,12 +105,18 @@ const QueueTableHeader = ({
                             >
                                 {sortConfig.field === field ? (
                                     sortConfig.direction === "asc" ? (
-                                        <ArrowUpward fontSize="small" />
+                                        <Tooltip title="Sort by Ascending">
+                                            <ArrowUpward fontSize="small" />
+                                        </Tooltip>
                                     ) : (
-                                        <ArrowDownward fontSize="small" />
+                                        <Tooltip title="Sort by Descending">
+                                            <ArrowDownward fontSize="small" />
+                                        </Tooltip>
                                     )
                                 ) : (
-                                    <UnfoldMore fontSize="small" />
+                                    <Tooltip title={`Sort by ${field}`}>
+                                        <UnfoldMore fontSize="small" />
+                                    </Tooltip>
                                 )}
                             </IconButton>
                         </Box>
@@ -143,12 +149,18 @@ const QueueTableHeader = ({
                         startIcon={
                             sortConfig.field === "creationTime" ? (
                                 sortConfig.direction === "asc" ? (
-                                    <ArrowUpward fontSize="small" />
+                                    <Tooltip title="Descending">
+                                        <ArrowUpward fontSize="small" />
+                                    </Tooltip>
                                 ) : (
-                                    <ArrowDownward fontSize="small" />
+                                    <Tooltip title="Ascending">
+                                        <ArrowDownward fontSize="small" />
+                                    </Tooltip>
                                 )
                             ) : (
-                                <UnfoldMore fontSize="small" />
+                                <Tooltip title="Sort by Creation Time">
+                                    <UnfoldMore fontSize="small" />
+                                </Tooltip>
                             )
                         }
                         sx={{
