@@ -36,6 +36,31 @@ export const fetchAllQueues = async () => {
     }
 };
 
+export function buildQueueTree(queueList) {
+    const tree = {};
+
+    for (const queue of queueList) {
+        const name = queue.metadata?.name;
+        if (!name) continue;
+
+        const parts = name.split("/");
+        let current = tree;
+
+        parts.forEach((part, index) => {
+            if (!current[part]) {
+                current[part] = {
+                    __data__: index === parts.length - 1 ? queue : null,
+                    children: {},
+                };
+            }
+            current = current[part].children;
+        });
+    }
+
+    return tree;
+}
+
+
 export const calculateAge = (creationTimestamp) => {
     const created = new Date(creationTimestamp);
     const now = new Date();
