@@ -13,7 +13,8 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "test:frontend": "npm run test -w frontend",
-        "test:backend": "npm run test -w backend"
+        "test:backend": "npm run test -w backend",
+        "prepare":"husky install"
     },
     "lint-staged": {
         "**/*.{js,jsx,ts,tsx,json,md}": "prettier --write"
