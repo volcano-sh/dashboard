@@ -137,6 +137,116 @@ app.get("/api/job/:namespace/:name/yaml", async (req, res) => {
     }
 });
 
+// Get all PodGroups
+app.get("/api/podgroups", async (req, res) => {
+    try {
+        const namespace = req.query.namespace || "";
+        const searchTerm = req.query.search || "";
+        const statusFilter = req.query.status || "";
+
+        console.log("Fetching podgroups with params:", {
+            namespace,
+            searchTerm,
+            statusFilter,
+        });
+
+        let response;
+        if (namespace === "" || namespace === "All") {
+            response = await k8sApi.listClusterCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "podgroups",
+            });
+        } else {
+            response = await k8sApi.listNamespacedCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                namespace,
+                plural: "podgroups",
+            });
+        }
+
+        // k8sApi (CustomObjectsApi) v1.2.0 ObjectParamAPI returns the body directly
+        let filteredPodGroups = response.items || [];
+
+        if (searchTerm) {
+            filteredPodGroups = filteredPodGroups.filter((pg) =>
+                pg.metadata.name
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase()),
+            );
+        }
+
+        if (statusFilter && statusFilter !== "All") {
+            filteredPodGroups = filteredPodGroups.filter(
+                (pg) => pg.status?.phase === statusFilter,
+            );
+        }
+
+        res.json({
+            items: filteredPodGroups,
+            totalCount: filteredPodGroups.length,
+        });
+    } catch (err) {
+        console.error("Error fetching podgroups:", err);
+        res.status(500).json({
+            error: "Failed to fetch podgroups",
+            details: err.message,
+        });
+    }
+});
+
+// Get details of a specific PodGroup
+app.get("/api/podgroups/:namespace/:name", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            name,
+        });
+        res.json(response);
+    } catch (err) {
+        console.error("Error fetching podgroup:", err);
+        res.status(500).json({
+            error: "Failed to fetch podgroup",
+            details: err.message,
+        });
+    }
+});
+
+// Get YAML of a specific PodGroup
+app.get("/api/podgroups/:namespace/:name/yaml", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            name,
+        });
+
+        const formattedYaml = yaml.dump(response, {
+            indent: 2,
+            lineWidth: -1,
+            noRefs: true,
+            sortKeys: false,
+        });
+
+        res.setHeader("Content-Type", "text/yaml");
+        res.send(formattedYaml);
+    } catch (error) {
+        console.error("Error fetching podgroup YAML:", error);
+        res.status(500).json({
+            error: "Failed to fetch podgroup YAML",
+            details: error.message,
+        });
+    }
+});
+
 // Get details of a specific Queue
 app.get("/api/queues/:name", async (req, res) => {
     const name = req.params.name;
@@ -516,18 +626,15 @@ app.patch("/api/jobs/:namespace/:name", async (req, res) => {
             headers: { "Content-Type": "application/merge-patch+json" },
         };
 
-        const response = await k8sApi.patchNamespacedCustomObject(
-            "batch.volcano.sh",
-            "v1alpha1",
+        const response = await k8sApi.patchNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
             namespace,
-            "jobs",
+            plural: "jobs",
             name,
-            patchData,
-            undefined,
-            undefined,
-            undefined,
+            body: patchData,
             options,
-        );
+        });
 
         res.json({ message: "Job updated successfully", data: response.body });
     } catch (error) {
@@ -544,18 +651,15 @@ app.patch("/api/queues/:namespace/:name", async (req, res) => {
             headers: { "Content-Type": "application/merge-patch+json" },
         };
 
-        const response = await k8sApi.patchNamespacedCustomObject(
-            "scheduling.volcano.sh",
-            "v1alpha1",
+        const response = await k8sApi.patchNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1alpha1",
             namespace,
-            "queues",
+            plural: "queues",
             name,
-            patchData,
-            undefined,
-            undefined,
-            undefined,
+            body: patchData,
             options,
-        );
+        });
 
         res.json({
             message: "Queue updated successfully",

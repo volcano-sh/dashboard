@@ -21,6 +21,9 @@ export const API_ENDPOINTS = {
     pods: {
         list: `${API_CONFIG.baseURL}/api/pods`,
     },
+    podgroups: {
+        list: `${API_CONFIG.baseURL}/api/podgroups`,
+    },
 };
 
 export default API_CONFIG;

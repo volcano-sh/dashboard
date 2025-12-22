@@ -18,6 +18,7 @@ import CloudIcon from "@mui/icons-material/Cloud";
 import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
+import CategoryIcon from "@mui/icons-material/Category";
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
@@ -41,6 +42,7 @@ const Layout = () => {
         { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
         { text: "Queues", icon: <CloudIcon />, path: "/queues" },
         { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
+        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
     ];
 
     return (
