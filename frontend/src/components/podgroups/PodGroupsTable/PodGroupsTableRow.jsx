@@ -1,17 +1,8 @@
 import React from "react";
-import {
-    TableRow,
-    TableCell,
-    Box,
-    useTheme,
-    alpha,
-} from "@mui/material";
+import { TableRow, TableCell, Box, useTheme, alpha } from "@mui/material";
 import JobStatusChip from "../../jobs/JobStatusChip"; // Reuse chip
 
-const PodGroupsTableRow = ({
-    podGroup,
-    handlePodGroupClick,
-}) => {
+const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
     const theme = useTheme();
 
     return (
@@ -122,5 +113,3 @@ const PodGroupsTableRow = ({
 };
 
 export default PodGroupsTableRow;
-
-

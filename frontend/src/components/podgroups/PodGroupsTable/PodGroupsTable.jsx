@@ -96,5 +96,3 @@ const PodGroupsTable = ({
 };
 
 export default PodGroupsTable;
-
-

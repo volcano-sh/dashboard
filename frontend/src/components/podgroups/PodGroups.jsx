@@ -224,4 +224,3 @@ const PodGroups = () => {
 };
 
 export default PodGroups;
-

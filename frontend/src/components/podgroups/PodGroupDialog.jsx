@@ -83,5 +83,3 @@ const PodGroupDialog = ({ open, handleClose, selectedName, selectedYaml }) => {
 };
 
 export default PodGroupDialog;
-
-
