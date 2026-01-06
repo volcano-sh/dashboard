@@ -44,7 +44,7 @@ const CreateDialog = ({
     const [errors, setErrors] = useState({});
 
     const isPod = resourceType === "Pod";
-    const isQueue = resourceType === "Queue";
+
 
     const handleChange = (field) => (event) => {
         let value = event.target.value;

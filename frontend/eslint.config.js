@@ -13,6 +13,7 @@ export default [
             ecmaVersion: 2020,
             globals: {
                 ...globals.browser,
+                ...globals.node,
                 ...vitest.environments.env.globals,
             },
             parserOptions: {
@@ -37,6 +38,15 @@ export default [
             "react-refresh/only-export-components": [
                 "warn",
                 { allowConstantExport: true },
+            ],
+            "react/prop-types": "off",
+            "no-unused-vars": [
+                "error",
+                {
+                    "varsIgnorePattern": "^React$",
+                    "argsIgnorePattern": "^_",
+                    "ignoreRestSiblings": true
+                }
             ],
             ...vitest.configs.recommended.rules,
         },

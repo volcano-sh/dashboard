@@ -18,6 +18,7 @@ const JobFilters = ({
             {options.map((option) => (
                 <MenuItem
                     key={option}
+                    selected={option === currentValue}
                     onClick={() => handleFilterClick(filterType, option)}
                 >
                     {option}

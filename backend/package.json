@@ -9,7 +9,8 @@
         "build": "babel src -d dist",
         "prepare": "npm run build",
         "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "format:check": "prettier --check .",
+        "test": "vitest"
     },
     "browser": {
         "fs": false

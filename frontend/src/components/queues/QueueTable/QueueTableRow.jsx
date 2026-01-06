@@ -36,10 +36,6 @@ const QueueTableRow = ({
         setIsEditDialogOpen(false);
     };
 
-    const handleSaveQueue = (updatedQueue) => {
-        onQueueUpdate(updatedQueue);
-    };
-
     return (
         <>
             <TableRow
@@ -179,6 +175,7 @@ const QueueTableRow = ({
                 open={isEditDialogOpen}
                 queue={queue}
                 onClose={handleCloseEditDialog}
+                onSave={onQueueUpdate}
             />
         </>
     );

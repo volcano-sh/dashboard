@@ -8,7 +8,7 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
     return (
         <TableRow
             hover
-            onClick={(e) => onPodClick(pod)}
+            onClick={() => onPodClick(pod)}
             sx={{
                 height: "60px",
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
