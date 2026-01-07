@@ -45,7 +45,6 @@ const CreateDialog = ({
 
     const isPod = resourceType === "Pod";
 
-
     const handleChange = (field) => (event) => {
         let value = event.target.value;
         if (field === "weight" || field === "containerPort") {

@@ -43,10 +43,10 @@ export default [
             "no-unused-vars": [
                 "error",
                 {
-                    "varsIgnorePattern": "^React$",
-                    "argsIgnorePattern": "^_",
-                    "ignoreRestSiblings": true
-                }
+                    varsIgnorePattern: "^React$",
+                    argsIgnorePattern: "^_",
+                    ignoreRestSiblings: true,
+                },
             ],
             ...vitest.configs.recommended.rules,
         },
