@@ -15,7 +15,6 @@ To contribute to the volcano dashboard project, you need:
 - [`node.js`](https://nodejs.org/en/download) installed on your system
 - A running Kubernetes cluster with [Volcano](https://github.com/volcano-sh/volcano#quick-start-guide) installed
 - Volcano dashboard deployed (see [Installation Guide](README.md#installation) in the main README)
-- Recommended IDE: [`Visual Studio Code`](https://code.visualstudio.com/download)
 
 ## Your First Contribution
 
@@ -29,74 +28,75 @@ Check out the [issues](https://github.com/volcano-sh/dashboard/issues) in this r
 
 When you are willing to take on an issue, you can assign it to yourself. Just reply with `/assign` or `/assign @yourself` on an issue, and the robot will assign the issue to you.
 
+### File an Issue
+
+While we encourage everyone to contribute code, it is also appreciated when someone reports an issue.
+
+Please follow the prompted submission guidelines while opening an issue.
+
 ## Contributor Workflow
 
-### Setting Up Development Environment
+### Development
 
-1. Fork this repository
-
-2. Clone your forked repository:
+1. First of all, `fork` this repo.
+2. Next -> clone your branch.
 
 ```bash
 git clone https://github.com/<your-user-name>/dashboard.git
 ```
 
-**Note:** Replace `<your-user-name>` with your GitHub username.
+`note`: replace `<your-user-name>` with your github username.
 
-3. Navigate to the cloned directory and create a new branch:
+3. Move to cloned dir and if you want to make changes to our codebase then create new branch
 
 ```bash
 cd dashboard/
+
 git checkout -b <your-branch-name>
 ```
 
-4. Install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#install--update-script) (Node Version Manager)
+4. Install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#install--update-script)
 
-5. Use the project's Node.js version:
+5. Use similar version
 
 ```bash
 nvm use
 ```
 
-6. Install dependencies:
+6. Install the dependencies
 
 ```bash
 npm ci
 ```
 
-7. Start the development server:
+7. Run the `dev` script
 
 ```bash
 npm run dev
 ```
 
-### Building Docker Images for Testing
+### Inside kubernetes cluster
 
-If you need to test your changes inside a Kubernetes cluster, you can build Docker images locally:
+You can build the volcano dashboard images locally. Please use the following command to build docker images of volcano dashboard.
 
-1. Build the frontend image:
+Build images.
 
 ```bash
+// build frontend image.
 docker build -t frontend:dev . -f deployment/build/frontend/Dockerfile
-```
-
-2. Build the backend image:
-
-```bash
+// build backend image.
 docker build -t backend:dev . -f deployment/build/backend/Dockerfile
 ```
 
-3. Update the image references in `deployment/volcano-dashboard.yaml` (replace the official images with `frontend:dev` and `backend:dev`) and deploy:
+After that you can replace the images in `volcano-dashboard.yaml` to verify the result.
 
 ```bash
 kubectl apply -f deployment/volcano-dashboard.yaml
 ```
 
-## Code Standards
+## Code Style and Standards
 
-### Code Style and Formatting
-
-Run Prettier to format the code before committing changes:
+- Run prettier to format the code before commiting changes:
 
 ```bash
 npm run format
@@ -104,23 +104,21 @@ npm run format
 
 ## Submitting Pull Requests
 
-### Creating Pull Requests
+We are assuming that you have made the changes in the code by following above guidelines.
 
-When contributing changes, follow these steps:
+When contributing changes, you need to ensure that your commits are properly signed off. This helps maintain accountability and ensures compliance with contribution policies.
 
-1. **Ensure your commits are properly signed off**
+How to [signoff](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) your commit(s)?
 
-All commits must include a sign-off to maintain accountability and ensure compliance with contribution policies.
-
-Commit your changes with sign-off:
+1. Commit Your Changes
 
 ```bash
 git commit -s -m "Your commit message here"
 ```
 
-2. **Verify your commit includes the sign-off**
+2. Verify Your Commit
 
-Check that your commit includes a sign-off line:
+To check if your commit includes a sign-off, run:
 
 ```bash
 git log -1
@@ -128,35 +126,25 @@ git log -1
 
 You should see a line like:
 
-```
+```bash
 Signed-off-by: Your Name <your.email@example.com>
 ```
 
-If you forgot to sign off, amend the commit:
+If you forgot to sign off, amend the commit with:
 
 ```bash
 git commit --amend -s
 ```
 
-3. **Push your changes**
+3. Push Your Changes
 
 ```bash
 git push origin <your-branch>
 ```
 
-4. **Create a pull request**
+4. Create a pull request
 
 Submit a pull request to the [volcano-sh/dashboard](https://github.com/volcano-sh/dashboard) repository. The PR should:
 - Have a clear and descriptive title
 - Include a detailed description of the changes
 - Reference any related issues
-
-### Code Review
-
-To make it easier for your PR to receive reviews:
-- Follow good coding practices and conventions
-- Write clear commit messages
-- Break large changes into smaller, logical commits
-- Respond to review feedback promptly
-
-Thank you for contributing to the Volcano Dashboard project!
