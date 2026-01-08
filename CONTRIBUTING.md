@@ -86,7 +86,7 @@ docker build -t frontend:dev . -f deployment/build/frontend/Dockerfile
 docker build -t backend:dev . -f deployment/build/backend/Dockerfile
 ```
 
-3. Update the image references in `deployment/volcano-dashboard.yaml` and deploy:
+3. Update the image references in `deployment/volcano-dashboard.yaml` (replace the official images with `frontend:dev` and `backend:dev`) and deploy:
 
 ```bash
 kubectl apply -f deployment/volcano-dashboard.yaml

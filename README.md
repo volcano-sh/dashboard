@@ -40,8 +40,8 @@ kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0
 ```
 
 4. Open your browser and navigate to:
-   - For remote access: `http://$YOUR_NODE_IP:8080`
    - For local access: `http://localhost:8080`
+   - For remote access: `http://<NODE_IP>:8080` (replace `<NODE_IP>` with your Kubernetes node's IP address)
 
 ## Contributing
 
