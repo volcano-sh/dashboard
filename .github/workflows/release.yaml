@@ -22,7 +22,11 @@ jobs:
 
       - name: Get tag or branch name
         run: |
-          echo "TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "TAG=latest" >> $GITHUB_ENV
+          else
+            echo "TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
       - name: Update tag for main branch
         if: github.ref == 'refs/heads/main'
         run: |
