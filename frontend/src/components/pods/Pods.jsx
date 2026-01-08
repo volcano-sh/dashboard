@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Button, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import SearchBar from "../Searchbar";
 import TitleComponent from "../Titlecomponent";
@@ -11,7 +11,7 @@ import PodDetailsDialog from "./PodDetailsDialog";
 const Pods = () => {
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [filters, setFilters] = useState({
@@ -111,7 +111,9 @@ const Pods = () => {
                 try {
                     const errData = await response.json();
                     errorMsg = errData.error || response.statusText;
-                } catch {}
+                } catch {
+                    // ignore error
+                }
                 alert("Error creating pod: " + errorMsg);
                 return;
             }

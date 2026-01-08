@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Button, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
@@ -11,7 +11,7 @@ import SearchBar from "../Searchbar";
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [allQueues, setAllQueues] = useState([]);
@@ -89,12 +89,6 @@ const Jobs = () => {
         fetchJobs();
     };
 
-    const handleRefresh = useCallback(() => {
-        setPagination((prev) => ({ ...prev, page: 1 }));
-        setSearchText("");
-        fetchJobs();
-    }, [fetchJobs]);
-
     const handleJobClick = useCallback(async (job) => {
         try {
             setLoading(true);
@@ -160,7 +154,9 @@ const Jobs = () => {
                 try {
                     const errData = await response.json();
                     errorMsg = errData.error || response.statusText;
-                } catch {}
+                } catch {
+                    // ignore error
+                }
                 alert("Error creating job: " + errorMsg);
                 return;
             }

@@ -72,12 +72,7 @@ jobs:
       
       - name: Run Backend Tests
         working-directory: backend
-        run: |
-          if npm run test > /dev/null 2>&1; then
-            npm test
-          else
-            echo "No test script found, skipping tests"
-          fi
+        run: npm test
       
       - name: ✅ Backend Tests Passed
         if: success()

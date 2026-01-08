@@ -3,6 +3,56 @@ import { Box, FormControl, MenuItem, Select, Typography } from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import "./chartConfig";
 
+const convertMemoryToGi = (memoryStr) => {
+    if (!memoryStr) return 0;
+    const value = parseInt(memoryStr);
+    if (memoryStr.includes("Gi")) return value;
+    if (memoryStr.includes("Mi")) return value / 1024; // Mi to Gi
+    if (memoryStr.includes("Ki")) return value / 1024 / 1024; // Ki to Gi
+    return value; // default unit Gi
+};
+
+const convertCPUToCores = (cpuStr) => {
+    if (!cpuStr) return 0;
+    const value = parseInt(cpuStr);
+    if (typeof cpuStr === "number") {
+        return cpuStr;
+    }
+    return cpuStr.includes("m") ? value / 1000 : value; // m is converted to the number of cores
+};
+
+// Process queue data and convert memory and CPU units
+const processData = (data) => {
+    return data.reduce((acc, queue) => {
+        const name = queue.metadata.name;
+        const allocated = queue.status?.allocated || {};
+        const capability = queue.spec?.capability || {};
+
+        // Handle memory unit conversion
+        const allocatedMemory = convertMemoryToGi(allocated.memory);
+        const capabilityMemory = convertMemoryToGi(capability.memory);
+
+        // Handle CPU unit conversion
+        const allocatedCPU = convertCPUToCores(allocated.cpu);
+        const capabilityCPU = convertCPUToCores(capability.cpu);
+
+        acc[name] = {
+            allocated: {
+                ...allocated,
+                memory: allocatedMemory,
+                cpu: allocatedCPU,
+            },
+            capability: {
+                ...capability,
+                memory: capabilityMemory,
+                cpu: capabilityCPU,
+            },
+        };
+
+        return acc;
+    }, {});
+};
+
 const QueueResourcesBarChart = ({ data }) => {
     const [selectedResource, setSelectedResource] = useState("");
 
@@ -33,56 +83,6 @@ const QueueResourcesBarChart = ({ data }) => {
             setSelectedResource(resourceOptions[0].value);
         }
     }, [resourceOptions, selectedResource]);
-
-    const convertMemoryToGi = (memoryStr) => {
-        if (!memoryStr) return 0;
-        const value = parseInt(memoryStr);
-        if (memoryStr.includes("Gi")) return value;
-        if (memoryStr.includes("Mi")) return value / 1024; // Mi to Gi
-        if (memoryStr.includes("Ki")) return value / 1024 / 1024; // Ki to Gi
-        return value; // default unit Gi
-    };
-
-    const convertCPUToCores = (cpuStr) => {
-        if (!cpuStr) return 0;
-        const value = parseInt(cpuStr);
-        if (typeof cpuStr === "number") {
-            return cpuStr;
-        }
-        return cpuStr.includes("m") ? value / 1000 : value; // m is converted to the number of cores
-    };
-
-    // Process queue data and convert memory and CPU units
-    const processData = (data) => {
-        return data.reduce((acc, queue) => {
-            const name = queue.metadata.name;
-            const allocated = queue.status?.allocated || {};
-            const capability = queue.spec?.capability || {};
-
-            // Handle memory unit conversion
-            const allocatedMemory = convertMemoryToGi(allocated.memory);
-            const capabilityMemory = convertMemoryToGi(capability.memory);
-
-            // Handle CPU unit conversion
-            const allocatedCPU = convertCPUToCores(allocated.cpu);
-            const capabilityCPU = convertCPUToCores(capability.cpu);
-
-            acc[name] = {
-                allocated: {
-                    ...allocated,
-                    memory: allocatedMemory,
-                    cpu: allocatedCPU,
-                },
-                capability: {
-                    ...capability,
-                    memory: capabilityMemory,
-                    cpu: capabilityCPU,
-                },
-            };
-
-            return acc;
-        }, {});
-    };
 
     // Process queue data
     const processedData = useMemo(() => processData(data), [data]);

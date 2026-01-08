@@ -4,7 +4,6 @@ import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
-import { calculateSuccessRate } from "./utils";
 
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState({
