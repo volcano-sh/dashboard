@@ -17,7 +17,7 @@ const Jobs = () => {
     const [allQueues, setAllQueues] = useState([]);
     const [filters, setFilters] = useState({
         status: "All",
-        namespace: "default",
+        namespace: "All",
         queue: "All",
     });
     const [selectedJobYaml, setSelectedJobYaml] = useState("");
@@ -42,13 +42,18 @@ const Jobs = () => {
         setError(null);
 
         try {
+            const params = {
+                search: searchText,
+                queue: filters.queue,
+                status: filters.status,
+            };
+
+            if (filters.namespace !== "All") {
+                params.namespace = filters.namespace;
+            }
+
             const response = await axios.get(`/api/jobs`, {
-                params: {
-                    search: searchText,
-                    namespace: filters.namespace,
-                    queue: filters.queue,
-                    status: filters.status,
-                },
+                params: params,
             });
 
             if (response.status !== 200) {
@@ -187,9 +192,12 @@ const Jobs = () => {
             const statusMatch =
                 filters.status === "All" ||
                 (job.status && job.status.state.phase === filters.status);
+            const namespaceMatch =
+                filters.namespace === "All" || 
+                job.metadata.namespace === filters.namespace;
             const queueMatch =
                 filters.queue === "All" || job.spec.queue === filters.queue;
-            return statusMatch && queueMatch;
+            return statusMatch && namespaceMatch && queueMatch;
         });
     }, [jobs, filters]);
 
