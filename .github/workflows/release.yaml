@@ -22,7 +22,6 @@ jobs:
       - name: Get tag or branch name
         run: |
           echo "TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          
       - name: Update tag for main branch
         if: github.ref == 'refs/heads/main'
         run: |
