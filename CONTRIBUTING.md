@@ -6,95 +6,97 @@ There are various ways in which you can contribute to this project such as `upda
 
 When making any critical change to this repository, please first discuss the change you wish to make via issue, email, or any other method with the [owners](https://github.com/volcano-sh/dashboard/blob/main/OWNERS) of this repository before making a change.
 
-## Getting Started
-
-Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE.
+## Before You Get Started
 
 ### Prerequisites
 
-Please follow the [guide](https://github.com/volcano-sh/volcano#quick-start-guide) to install volcano first.
+To contribute to the volcano dashboard project, you need:
 
-### Install volcano dashboard
+- [`node.js`](https://nodejs.org/en/download) installed on your system
+- A running Kubernetes cluster with [Volcano](https://github.com/volcano-sh/volcano#quick-start-guide) installed
+- Volcano dashboard deployed (see [Installation Guide](README.md#installation) in the main README)
+- Recommended IDE: [`Visual Studio Code`](https://code.visualstudio.com/download)
 
-Login one node of your kubernetes cluster and execute the following command to install volcano dashboard.
+## Your First Contribution
 
-```bash
-kubectl create ns volcano-system
+We are always in need of help, be it fixing documentation, reporting bugs, or writing code. Look at places where you feel best coding practices aren't followed, code refactoring is needed, or tests are missing.
 
-kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/main/deployment/volcano-dashboard.yaml
-```
+### Find Something to Work On
 
-Then use the following command to map the traffic to node.
+Check out the [issues](https://github.com/volcano-sh/dashboard/issues) in this repository. Issues labeled [good first issue](https://github.com/volcano-sh/dashboard/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) are great starting points for new contributors.
 
-```bash
-kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0.0.0.0
-```
+### Work on an Issue
 
-Access the dashboard by navigate to `http://$YOUR_NODE_IP:8080` in your browser.
+When you are willing to take on an issue, you can assign it to yourself. Just reply with `/assign` or `/assign @yourself` on an issue, and the robot will assign the issue to you.
 
-If running locally navigate to `http://localhost:8080`
+## Contributor Workflow
 
-### Development
+### Setting Up Development Environment
 
-1. First of all, `fork` this repo.
-2. Next -> clone your branch.
+1. Fork this repository
+
+2. Clone your forked repository:
 
 ```bash
 git clone https://github.com/<your-user-name>/dashboard.git
 ```
 
-`note`: replace `<your-user-name>` with your github username.
+**Note:** Replace `<your-user-name>` with your GitHub username.
 
-3. Move to cloned dir and if you want to make changes to our codebase then create new branch
+3. Navigate to the cloned directory and create a new branch:
 
 ```bash
 cd dashboard/
-
 git checkout -b <your-branch-name>
 ```
 
-4. Install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#install--update-script)
+4. Install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#install--update-script) (Node Version Manager)
 
-5. Use similar version
+5. Use the project's Node.js version:
 
 ```bash
 nvm use
 ```
 
-6. Install the dependencies
+6. Install dependencies:
 
 ```bash
 npm ci
 ```
 
-7. Run the `dev` script
+7. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-### Inside kubernetes cluster
+### Building Docker Images for Testing
 
-You can build the volcano dashboard images locally. Please use the following command to build docker images of volcano dashboard.
+If you need to test your changes inside a Kubernetes cluster, you can build Docker images locally:
 
-Build images.
+1. Build the frontend image:
 
 ```bash
-// build frontend image.
 docker build -t frontend:dev . -f deployment/build/frontend/Dockerfile
-// build backend image.
+```
+
+2. Build the backend image:
+
+```bash
 docker build -t backend:dev . -f deployment/build/backend/Dockerfile
 ```
 
-After that you can replace the images in `volcano-dashboard.yaml` to verify the result.
+3. Update the image references in `deployment/volcano-dashboard.yaml` and deploy:
 
 ```bash
 kubectl apply -f deployment/volcano-dashboard.yaml
 ```
 
-## Code Style and Standards
+## Code Standards
 
-- Run prettier to format the code before commiting changes:
+### Code Style and Formatting
+
+Run Prettier to format the code before committing changes:
 
 ```bash
 npm run format
@@ -102,21 +104,23 @@ npm run format
 
 ## Submitting Pull Requests
 
-We are assuming that you have made the changes in the code by following above guidelines.
+### Creating Pull Requests
 
-When contributing changes, you need to ensure that your commits are properly signed off. This helps maintain accountability and ensures compliance with contribution policies.
+When contributing changes, follow these steps:
 
-How to [signoff](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt--s) your commit(s)?
+1. **Ensure your commits are properly signed off**
 
-1. Commit Your Changes
+All commits must include a sign-off to maintain accountability and ensure compliance with contribution policies.
+
+Commit your changes with sign-off:
 
 ```bash
 git commit -s -m "Your commit message here"
 ```
 
-2. Verify Your Commit
+2. **Verify your commit includes the sign-off**
 
-To check if your commit includes a sign-off, run:
+Check that your commit includes a sign-off line:
 
 ```bash
 git log -1
@@ -124,18 +128,35 @@ git log -1
 
 You should see a line like:
 
-```bash
+```
 Signed-off-by: Your Name <your.email@example.com>
 ```
 
-If you forgot to sign off, amend the commit with:
+If you forgot to sign off, amend the commit:
 
 ```bash
 git commit --amend -s
 ```
 
-3. Push Your Changes
+3. **Push your changes**
 
 ```bash
 git push origin <your-branch>
 ```
+
+4. **Create a pull request**
+
+Submit a pull request to the [volcano-sh/dashboard](https://github.com/volcano-sh/dashboard) repository. The PR should:
+- Have a clear and descriptive title
+- Include a detailed description of the changes
+- Reference any related issues
+
+### Code Review
+
+To make it easier for your PR to receive reviews:
+- Follow good coding practices and conventions
+- Write clear commit messages
+- Break large changes into smaller, logical commits
+- Respond to review feedback promptly
+
+Thank you for contributing to the Volcano Dashboard project!
