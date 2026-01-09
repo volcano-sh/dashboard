@@ -134,6 +134,14 @@ rules:
       - create
       - update
       - patch 
+  - apiGroups:
+      - scheduling.volcano.sh
+    resources:
+      - podgroups
+    verbs:
+      - get
+      - list
+      - watch
 ---
 
 # volcano dashboard service
