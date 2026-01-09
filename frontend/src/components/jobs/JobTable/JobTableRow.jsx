@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import {
     TableRow,
     TableCell,
@@ -16,6 +17,7 @@ const JobTableRow = ({
     handleJobClick,
     handleOpenDeleteDialog,
     onJobUpdate, // Function to update job after edit
+    visibleColumns,
 }) => {
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -59,114 +61,130 @@ const JobTableRow = ({
                     },
                 }}
             >
-                <TableCell
-                    sx={{
-                        padding: "16px 24px",
-                        fontWeight: 600,
-                        color: theme.palette.text.primary,
-                        letterSpacing: "0.01em",
-                    }}
-                >
-                    {job.metadata.name}
-                </TableCell>
-
-                <TableCell
-                    sx={{
-                        padding: "16px 24px",
-                        fontWeight: 500,
-                        fontSize: "0.95rem",
-                    }}
-                >
-                    {job.metadata.namespace}
-                </TableCell>
-
-                <TableCell
-                    sx={{
-                        padding: "16px 24px",
-                        fontWeight: 500,
-                        fontSize: "0.95rem",
-                    }}
-                >
-                    {job.spec.queue || "N/A"}
-                </TableCell>
-
-                <TableCell
-                    sx={{
-                        padding: "16px 24px",
-                        fontSize: "0.9rem",
-                        color: alpha(theme.palette.text.primary, 0.85),
-                    }}
-                >
-                    {new Date(job.metadata.creationTimestamp).toLocaleString()}
-                </TableCell>
-
-                <TableCell sx={{ padding: "16px 24px" }}>
-                    <Box
+                {visibleColumns.name && (
+                    <TableCell
                         sx={{
-                            display: "inline-block",
-                            transition: "all 0.3s ease",
-                            "&:hover": {
-                                transform: "translateY(-2px)",
-                                filter: "brightness(1.05)",
-                            },
-                            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                            borderRadius: "15px",
+                            padding: "16px 24px",
+                            fontWeight: 600,
+                            color: theme.palette.text.primary,
+                            letterSpacing: "0.01em",
                         }}
                     >
-                        <JobStatusChip
-                            status={
-                                job.status ? job.status.state.phase : "Unknown"
-                            }
+                        {job.metadata.name}
+                    </TableCell>
+                )}
+
+                {visibleColumns.namespace && (
+                    <TableCell
+                        sx={{
+                            padding: "16px 24px",
+                            fontWeight: 500,
+                            fontSize: "0.95rem",
+                        }}
+                    >
+                        {job.metadata.namespace}
+                    </TableCell>
+                )}
+
+                {visibleColumns.queue && (
+                    <TableCell
+                        sx={{
+                            padding: "16px 24px",
+                            fontWeight: 500,
+                            fontSize: "0.95rem",
+                        }}
+                    >
+                        {job.spec.queue || "N/A"}
+                    </TableCell>
+                )}
+
+                {visibleColumns.creationTime && (
+                    <TableCell
+                        sx={{
+                            padding: "16px 24px",
+                            fontSize: "0.9rem",
+                            color: alpha(theme.palette.text.primary, 0.85),
+                        }}
+                    >
+                        {new Date(
+                            job.metadata.creationTimestamp,
+                        ).toLocaleString()}
+                    </TableCell>
+                )}
+
+                {visibleColumns.status && (
+                    <TableCell sx={{ padding: "16px 24px" }}>
+                        <Box
                             sx={{
-                                height: "30px",
-                                fontWeight: 600,
-                                fontSize: "0.8rem",
-                                padding: "0 12px",
-                                color: "common.white",
+                                display: "inline-block",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    filter: "brightness(1.05)",
+                                },
+                                boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
                                 borderRadius: "15px",
                             }}
-                        />
-                    </Box>
-                </TableCell>
-
-                <TableCell sx={{ padding: "16px 24px" }}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                        <IconButton
-                            onClick={handleOpenEditDialog}
-                            size="small"
-                            sx={{
-                                color: theme.palette.primary.main,
-                                "&:hover": {
-                                    backgroundColor: alpha(
-                                        theme.palette.primary.main,
-                                        0.1,
-                                    ),
-                                },
-                            }}
                         >
-                            <Edit fontSize="small" />
-                        </IconButton>
+                            <JobStatusChip
+                                status={
+                                    job.status
+                                        ? job.status.state.phase
+                                        : "Unknown"
+                                }
+                                sx={{
+                                    height: "30px",
+                                    fontWeight: 600,
+                                    fontSize: "0.8rem",
+                                    padding: "0 12px",
+                                    color: "common.white",
+                                    borderRadius: "15px",
+                                }}
+                            />
+                        </Box>
+                    </TableCell>
+                )}
+                {visibleColumns.actions && (
+                    <TableCell sx={{ padding: "16px 24px" }}>
+                        <Box display="flex" alignItems="center" gap={2}>
+                            <IconButton
+                                onClick={handleOpenEditDialog}
+                                size="small"
+                                sx={{
+                                    color: theme.palette.primary.main,
+                                    "&:hover": {
+                                        backgroundColor: alpha(
+                                            theme.palette.primary.main,
+                                            0.1,
+                                        ),
+                                    },
+                                }}
+                            >
+                                <Edit fontSize="small" />
+                            </IconButton>
 
-                        <IconButton
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDeleteDialog(job);
-                            }}
-                            size="small"
-                            sx={{
-                                color: theme.palette.error.main,
-                                "&:hover": {
-                                    backgroundColor: alpha(
-                                        theme.palette.error.main,
-                                        0.1,
-                                    ),
-                                },
-                            }}
-                        >
-                            <Delete fontSize="small" />
-                        </IconButton>
-                    </Box>
-                </TableCell>
+                            <IconButton
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDeleteDialog(job.metadata.name);
+                                }}
+                                size="small"
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    "&:hover": {
+                                        backgroundColor: alpha(
+                                            theme.palette.error.main,
+                                            0.1,
+                                        ),
+                                    },
+                                }}
+                            >
+                                <Delete fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    </TableCell>
+                )}
+
             </TableRow>
 
             {/* Edit Dialog */}
@@ -180,4 +198,34 @@ const JobTableRow = ({
     );
 };
 
+JobTableRow.propTypes = {
+    job: PropTypes.shape({
+        metadata: PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired,
+            creationTimestamp: PropTypes.string.isRequired,
+        }).isRequired,
+        spec: PropTypes.shape({
+            queue: PropTypes.string,
+        }),
+        status: PropTypes.shape({
+            state: PropTypes.shape({
+                phase: PropTypes.string,
+            }),
+        }),
+    }).isRequired,
+    handleJobClick: PropTypes.func.isRequired,
+    handleOpenDeleteDialog: PropTypes.func,
+    onJobUpdate: PropTypes.func,
+    visibleColumns: PropTypes.shape({
+        name: PropTypes.bool.isRequired,
+        namespace: PropTypes.bool.isRequired,
+        queue: PropTypes.bool.isRequired,
+        creationTime: PropTypes.bool.isRequired,
+        status: PropTypes.bool.isRequired,
+        actions: PropTypes.bool.isRequired,
+    }).isRequired,
+};
+
 export default JobTableRow;
+
