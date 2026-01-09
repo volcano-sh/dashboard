@@ -40,4 +40,42 @@ describe("backend", () => {
         expect(res.body.items).toHaveLength(2);
         expect(res.body.items[0].metadata.name).toBe("job1");
     });
+
+    it("should fetch podgroups", async () => {
+        const mockResponse = {
+            items: [
+                {
+                    metadata: { name: "pg1", namespace: "default" },
+                    status: { phase: "Running" },
+                },
+                {
+                    metadata: { name: "pg2", namespace: "default" },
+                    status: { phase: "Pending" },
+                },
+            ],
+        };
+
+        const stub = sandbox.stub(
+            CustomObjectsApi.prototype,
+            "listClusterCustomObject",
+        );
+
+        // Updated for OBJECT arguments using sinon matchers
+        stub.withArgs(
+            sinon.match({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "podgroups",
+            }),
+        ).resolves(mockResponse);
+
+        // Fallback for others
+        stub.resolves({ items: [] });
+
+        const res = await request(app).get("/api/podgroups");
+
+        expect(res.status).toBe(200);
+        expect(res.body.items).toHaveLength(2);
+        expect(res.body.items[0].metadata.name).toBe("pg1");
+    });
 });

@@ -7,6 +7,7 @@ const menuItems = [
     { text: "Jobs", path: "/jobs" },
     { text: "Queues", path: "/queues" },
     { text: "Pods", path: "/pods" },
+    { text: "PodGroups", path: "/podgroups" },
 ];
 
 describe("Layout", () => {
@@ -43,7 +44,7 @@ describe("Layout", () => {
         expect(drawer).toHaveStyle("width: 60px");
     });
 
-    it("should have 4 navigation items", () => {
+    it("should have 5 navigation items", () => {
         render(
             <MemoryRouter>
                 <Layout />
@@ -52,7 +53,7 @@ describe("Layout", () => {
 
         const navigationItems = screen.getAllByRole("link");
 
-        expect(navigationItems).toHaveLength(4);
+        expect(navigationItems).toHaveLength(5);
 
         navigationItems.forEach((item, index) => {
             const { text, path } = menuItems[index];
