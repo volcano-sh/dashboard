@@ -7,6 +7,8 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import ErrorDisplay from "../dashboard/ErrorDisplay";
+
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -209,10 +211,12 @@ const Jobs = () => {
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
+             <ErrorDisplay
+              message={error}
+              onRetry={fetchJobs}
+            />
+         )}
+
             <TitleComponent text="Volcano Jobs Status" />
             <Box>
                 <SearchBar

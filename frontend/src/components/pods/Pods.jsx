@@ -7,6 +7,7 @@ import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import ErrorDisplay from "../dashboard/ErrorDisplay";
 
 const Pods = () => {
     const [pods, setPods] = useState([]);
@@ -181,10 +182,12 @@ const Pods = () => {
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
+                <ErrorDisplay
+                    message={error}
+                    onRetry={fetchPods}
+                />
             )}
+
             <TitleComponent text="Volcano Pods Status" />
             <Box>
                 <SearchBar
