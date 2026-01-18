@@ -6,33 +6,35 @@ There are various ways in which you can contribute to this project such as `upda
 
 When making any critical change to this repository, please first discuss the change you wish to make via issue, email, or any other method with the [owners](https://github.com/volcano-sh/dashboard/blob/main/OWNERS) of this repository before making a change.
 
-## Getting Started
-
-Make sure [`node.js`](https://nodejs.org/en/download) is installed on your system and we prefer [`visual-studio-code`](https://code.visualstudio.com/download) as IDE.
+## Before You Get Started
 
 ### Prerequisites
 
-Please follow the [guide](https://github.com/volcano-sh/volcano#quick-start-guide) to install volcano first.
+To contribute to the volcano dashboard project, you need:
 
-### Install volcano dashboard
+- [`node.js`](https://nodejs.org/en/download) installed on your system
+- A running Kubernetes cluster with [Volcano](https://github.com/volcano-sh/volcano#quick-start-guide) installed
+- Volcano dashboard deployed (see [Installation Guide](README.md#installation) in the main README)
 
-Login one node of your kubernetes cluster and execute the following command to install volcano dashboard.
+## Your First Contribution
 
-```bash
-kubectl create ns volcano-system
+We are always in need of help, be it fixing documentation, reporting bugs, or writing code. Look at places where you feel best coding practices aren't followed, code refactoring is needed, or tests are missing.
 
-kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/main/deployment/volcano-dashboard.yaml
-```
+### Find Something to Work On
 
-Then use the following command to map the traffic to node.
+Check out the [issues](https://github.com/volcano-sh/dashboard/issues) in this repository. Issues labeled [good first issue](https://github.com/volcano-sh/dashboard/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) are great starting points for new contributors.
 
-```bash
-kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0.0.0.0
-```
+### Work on an Issue
 
-Access the dashboard by navigate to `http://$YOUR_NODE_IP:8080` in your browser.
+When you are willing to take on an issue, you can assign it to yourself. Just reply with `/assign` or `/assign @yourself` on an issue, and the robot will assign the issue to you.
 
-If running locally navigate to `http://localhost:8080`
+### File an Issue
+
+While we encourage everyone to contribute code, it is also appreciated when someone reports an issue.
+
+Please follow the prompted submission guidelines while opening an issue.
+
+## Contributor Workflow
 
 ### Development
 
@@ -139,3 +141,10 @@ git commit --amend -s
 ```bash
 git push origin <your-branch>
 ```
+
+4. Create a pull request
+
+Submit a pull request to the [volcano-sh/dashboard](https://github.com/volcano-sh/dashboard) repository. The PR should:
+- Have a clear and descriptive title
+- Include a detailed description of the changes
+- Reference any related issues

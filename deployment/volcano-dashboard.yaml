@@ -125,6 +125,14 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - scheduling.volcano.sh
+    resources:
+      - podgroups
+    verbs:
+      - get
+      - list
+      - watch
 ---
 # Volcano Dashboard Service
 apiVersion: v1

@@ -33,4 +33,10 @@ export const navItems: NavItem[] = [
         href: `/pods`,
         disable: false
     },
+    {
+        title: "PodGroups",
+        icon: "container",
+        href: `/podgroups`,
+        disable: false
+    },
 ]
