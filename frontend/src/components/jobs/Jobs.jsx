@@ -72,6 +72,16 @@ const Jobs = () => {
         fetchAllQueues().then(setAllQueues);
     }, [fetchJobs]);
 
+
+    useEffect(() => {
+  // TEMPORARY: Show test dialog to validate YAML <-> Summary toggle
+  setSelectedJobName("demo-job");
+  setSelectedJobYaml(
+    "apiVersion: batch.volcano.sh/v1alpha1\nkind: Job\nmetadata:\n  name: demo-job\n  namespace: default\nspec:\n  queue: default-queue"
+  );
+  setOpenDialog(true);
+   }, []);
+
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
         const endIndex = startIndex + pagination.rowsPerPage;
