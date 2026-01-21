@@ -1,7 +1,10 @@
+
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { TableRow, TableCell, Box, Chip, useTheme, alpha } from "@mui/material";
-import { Delete } from "@mui/icons-material";
+import { Delete, Edit } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
+
 import Edit from "@mui/icons-material/Edit";
 import EditQueueDialog from "./EditQueueDialog";
 
@@ -11,6 +14,8 @@ const QueueTableRow = ({
     handleQueueClick,
     handleOpenDeleteDialog,
     onQueueUpdate,
+    visibleColumns
+
 }) => {
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -65,20 +70,21 @@ const QueueTableRow = ({
                     },
                 }}
             >
-                <TableCell
-                    sx={{
-                        padding: "16px 24px",
-                        fontWeight: 600,
-                        color: theme.palette.text.primary,
-                        letterSpacing: "0.01em",
-                    }}
-                >
-                    {queue.metadata.name}
-                </TableCell>
-
-                {allocatedFields.map((field) => (
+                {visibleColumns.name && (
                     <TableCell
-                        key={field}
+                        sx={{
+                            padding: "16px 24px",
+                            fontWeight: 600,
+                            color: theme.palette.text.primary,
+                            letterSpacing: "0.01em",
+                        }}
+                    >
+                        {queue.metadata.name}
+                    </TableCell>
+                )}
+
+                {visibleColumns.allocatedCpu && (
+                    <TableCell
                         sx={{
                             padding: "16px 24px",
                             fontFamily: theme.typography.fontFamily,
@@ -87,90 +93,128 @@ const QueueTableRow = ({
                             fontWeight: 500,
                         }}
                     >
-                        {queue.status?.allocated?.[field] || "0"}
+                        {queue.status?.allocated?.cpu || "0"}
                     </TableCell>
-                ))}
+                )}
 
-                <TableCell
-                    sx={{
-                        padding: "16px 24px",
-                        fontSize: "0.9rem",
-                        color: alpha(theme.palette.text.primary, 0.85),
-                    }}
-                >
-                    {new Date(
-                        queue.metadata.creationTimestamp,
-                    ).toLocaleString()}
-                </TableCell>
-
-                <TableCell sx={{ padding: "16px 24px" }}>
-                    <Chip
-                        label={queue.status ? queue.status.state : "Unknown"}
+                {visibleColumns.allocatedMemory && (
+                    <TableCell
                         sx={{
-                            bgcolor: getStateColor(
-                                queue.status ? queue.status.state : "Unknown",
-                            ),
-                            color: "common.white",
-                            height: "30px",
-                            fontWeight: 600,
-                            fontSize: "0.8rem",
-                            letterSpacing: "0.02em",
-                            borderRadius: "15px",
-                            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                            padding: "0 12px",
-                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                            "&:hover": {
-                                transform: "translateY(-2px)",
-                                boxShadow: "0 5px 10px rgba(0, 0, 0, 0.2)",
-                                filter: "brightness(1.05)",
-                            },
+                            padding: "16px 24px",
+                            fontFamily: theme.typography.fontFamily,
+                            fontVariantNumeric: "tabular-nums",
+                            fontSize: "0.95rem",
+                            fontWeight: 500,
                         }}
-                    />
-                </TableCell>
+                    >
+                        {queue.status?.allocated?.memory || "0"}
+                    </TableCell>
+                )}
 
-                <TableCell sx={{ padding: "16px 24px" }}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                        <IconButton
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEditDialog();
-                            }}
-                            size="small"
+                {visibleColumns.allocatedPods && (
+                    <TableCell
+                        sx={{
+                            padding: "16px 24px",
+                            fontFamily: theme.typography.fontFamily,
+                            fontVariantNumeric: "tabular-nums",
+                            fontSize: "0.95rem",
+                            fontWeight: 500,
+                        }}
+                    >
+                        {queue.status?.allocated?.pods || "0"}
+                    </TableCell>
+                )}
+
+                {visibleColumns.creationTime && (
+                    <TableCell
+                        sx={{
+                            padding: "16px 24px",
+                            fontSize: "0.9rem",
+                            color: alpha(theme.palette.text.primary, 0.85),
+                        }}
+                    >
+                        {new Date(
+                            queue.metadata.creationTimestamp,
+                        ).toLocaleString()}
+                    </TableCell>
+                )}
+
+                {visibleColumns.state && (
+                    <TableCell sx={{ padding: "16px 24px" }}>
+                        <Chip
+                            label={
+                                queue.status ? queue.status.state : "Unknown"
+                            }
                             sx={{
-                                color: theme.palette.primary.main,
+                                bgcolor: getStateColor(
+                                    queue.status
+                                        ? queue.status.state
+                                        : "Unknown",
+                                ),
+                                color: "common.white",
+                                height: "30px",
+                                fontWeight: 600,
+                                fontSize: "0.8rem",
+                                letterSpacing: "0.02em",
+                                borderRadius: "15px",
+                                boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
+                                padding: "0 12px",
+                                transition:
+                                    "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                 "&:hover": {
-                                    backgroundColor: alpha(
-                                        theme.palette.primary.main,
-                                        0.1,
-                                    ),
+                                    transform: "translateY(-2px)",
+                                    boxShadow: "0 5px 10px rgba(0, 0, 0, 0.2)",
+                                    filter: "brightness(1.05)",
                                 },
                             }}
-                        >
-                            <Edit fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDeleteDialog(queue.metadata.name);
-                            }}
-                            size="small"
-                            sx={{
-                                color: theme.palette.error.main,
-                                "&:hover": {
-                                    backgroundColor: alpha(
-                                        theme.palette.error.main,
-                                        0.1,
-                                    ),
-                                },
-                            }}
-                        >
-                            <Delete fontSize="small" />
-                        </IconButton>
-                    </Box>
-                </TableCell>
+                        />
+                    </TableCell>
+                )}
+
+                {visibleColumns.actions && (
+                    <TableCell sx={{ padding: "16px 24px" }}>
+                        <Box display="flex" alignItems="center" gap={2}>
+                            <IconButton
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenEditDialog();
+                                }}
+                                size="small"
+                                sx={{
+                                    color: theme.palette.primary.main,
+                                    "&:hover": {
+                                        backgroundColor: alpha(
+                                            theme.palette.primary.main,
+                                            0.1,
+                                        ),
+                                    },
+                                }}
+                            >
+                                <Edit fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDeleteDialog(queue.metadata.name);
+                                }}
+                                size="small"
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    "&:hover": {
+                                        backgroundColor: alpha(
+                                            theme.palette.error.main,
+                                            0.1,
+                                        ),
+                                    },
+                                }}
+                            >
+                                <Delete fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    </TableCell>
+                )}
             </TableRow>
 
-            {/* Edit Dialog */}
             <EditQueueDialog
                 open={isEditDialogOpen}
                 queue={queue}
@@ -179,6 +223,37 @@ const QueueTableRow = ({
             />
         </>
     );
+};
+
+QueueTableRow.propTypes = {
+    queue: PropTypes.shape({
+        metadata: PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string,
+            creationTimestamp: PropTypes.string.isRequired,
+        }).isRequired,
+        status: PropTypes.shape({
+            state: PropTypes.string,
+            allocated: PropTypes.shape({
+                cpu: PropTypes.string,
+                memory: PropTypes.string,
+                pods: PropTypes.string,
+            }),
+        }),
+    }).isRequired,
+    allocatedFields: PropTypes.arrayOf(PropTypes.string).isRequired,
+    handleQueueClick: PropTypes.func.isRequired,
+    handleOpenDeleteDialog: PropTypes.func.isRequired,
+    onQueueUpdate: PropTypes.func,
+    visibleColumns: PropTypes.shape({
+        name: PropTypes.bool.isRequired,
+        allocatedCpu: PropTypes.bool.isRequired,
+        allocatedMemory: PropTypes.bool.isRequired,
+        allocatedPods: PropTypes.bool.isRequired,
+        creationTime: PropTypes.bool.isRequired,
+        state: PropTypes.bool.isRequired,
+        actions: PropTypes.bool.isRequired,
+    }).isRequired,
 };
 
 export default QueueTableRow;

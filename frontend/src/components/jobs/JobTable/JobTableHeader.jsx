@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import {
     TableHead,
     TableRow,
@@ -204,6 +205,22 @@ const JobTableHeader = ({
             </TableRow>
         </TableHead>
     );
+};
+
+JobTableHeader.propTypes = {
+    filters: PropTypes.shape({
+        status: PropTypes.string,
+        namespace: PropTypes.string,
+        queue: PropTypes.string,
+    }).isRequired,
+    uniqueStatuses: PropTypes.arrayOf(PropTypes.string).isRequired,
+    allNamespaces: PropTypes.arrayOf(PropTypes.string).isRequired,
+    allQueues: PropTypes.arrayOf(PropTypes.string).isRequired,
+    anchorEl: PropTypes.object,
+    handleFilterClick: PropTypes.func.isRequired,
+    handleFilterClose: PropTypes.func.isRequired,
+    sortDirection: PropTypes.string.isRequired,
+    toggleSortDirection: PropTypes.func.isRequired,
 };
 
 export default JobTableHeader;
