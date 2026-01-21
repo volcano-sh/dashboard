@@ -12,6 +12,8 @@ import {
     Toolbar,
     Typography,
     Tooltip,
+    Badge,
+    Chip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -19,6 +21,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import CategoryIcon from "@mui/icons-material/Category";
+
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
@@ -52,6 +55,7 @@ const Layout = () => {
                 sx={{
                     zIndex: (theme) => theme.zIndex.drawer + 1,
                     bgcolor: headerGrey,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)", // Enhanced shadow
                 }}
             >
                 <Toolbar>
@@ -64,17 +68,31 @@ const Layout = () => {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography
-                        variant="h6"
-                        noWrap
-                        component="div"
-                        sx={{
-                            color: "#ffffff",
-                            fontWeight: 500,
-                        }}
-                    >
-                        Volcano Dashboard
-                    </Typography>
+                    
+                    {/* Enhanced Logo Section */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <img
+                            src={volcanoLogo}
+                            alt="Volcano Logo"
+                            style={{
+                                width: "32px",
+                                height: "32px",
+                                borderRadius: "6px"
+                            }}
+                        />
+                        <Typography
+                            variant="h6"
+                            noWrap
+                            component="div"
+                            sx={{
+                                color: "#ffffff",
+                                fontWeight: 600,
+                                letterSpacing: "0.5px"
+                            }}
+                        >
+                            Volcano Dashboard
+                        </Typography>
+                    </Box>
                 </Toolbar>
             </AppBar>
 
@@ -87,51 +105,95 @@ const Layout = () => {
                     [`& .MuiDrawer-paper`]: {
                         width: open ? drawerWidth : 60,
                         boxSizing: "border-box",
-                        backgroundColor: "#f5f5f5",
+                        backgroundColor: "#fafafa", // Slightly lighter background
                         transition: "width 0.2s",
                         overflowX: "hidden",
                         display: "flex",
                         flexDirection: "column",
+                        borderRight: "1px solid rgba(0,0,0,0.08)", // Subtle border
+                        boxShadow: "2px 0 8px rgba(0,0,0,0.05)", // Subtle shadow
                     },
                 }}
             >
                 <Toolbar />
-                <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
+                
+                {/* Enhanced Navigation Header */}
+                {open && (
+                    <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+                        <Typography 
+                            variant="overline" 
+                            sx={{ 
+                                color: "text.secondary",
+                                fontWeight: 600,
+                                letterSpacing: "1px",
+                                fontSize: "0.7rem"
+                            }}
+                        >
+                            NAVIGATION
+                        </Typography>
+                    </Box>
+                )}
+
+                <Box sx={{ overflow: "hidden auto", flexGrow: 1, px: 1 }}>
                     <List>
                         {menuItems.map((item) => {
+                            const isActive = location.pathname === item.path;
+                            
                             const listItem = (
                                 <ListItem
                                     key={item.text}
                                     component={Link}
                                     to={item.path}
-                                    className={
-                                        location.pathname === item.path
-                                            ? "active"
-                                            : ""
-                                    }
                                     sx={{
-                                        "&.active": {
-                                            bgcolor: "rgba(0, 0, 0, 0.08)",
-                                            "& .MuiListItemIcon-root": {
-                                                color: volcanoOrange,
-                                            },
-                                            "& .MuiListItemText-primary": {
-                                                color: volcanoOrange,
-                                                fontWeight: 500,
-                                            },
-                                        },
+                                        color: "inherit",
+                                        textDecoration: "none",
+                                        borderRadius: 2,
+                                        mb: 0.5,
+                                        position: "relative",
+                                        minHeight: 48,
+                                        justifyContent: open ? "flex-start" : "center",
+                                        px: open ? 2 : 1, // Better padding for centering
+                                        bgcolor: isActive ? `${volcanoOrange}15` : "transparent",
+                                        border: isActive ? `1px solid ${volcanoOrange}30` : "1px solid transparent",
                                         "&:hover": {
-                                            backgroundColor:
-                                                "rgba(0, 0, 0, 0.1)",
+                                            backgroundColor: isActive ? `${volcanoOrange}20` : "rgba(0, 0, 0, 0.04)",
                                         },
+                                        "& .MuiListItemIcon-root": {
+                                            color: isActive ? volcanoOrange : "text.secondary",
+                                            minWidth: 40,
+                                            justifyContent: "center",
+                                            mr: open ? 0 : 0 // Center icons when collapsed
+                                        },
+                                        "& .MuiListItemText-primary": {
+                                            fontWeight: isActive ? 600 : 500,
+                                            color: isActive ? volcanoOrange : "text.primary",
+                                            fontSize: "0.9rem"
+                                        }
                                     }}
                                 >
                                     <ListItemIcon>{item.icon}</ListItemIcon>
                                     {open && (
                                         <ListItemText primary={item.text} />
                                     )}
+                                    
+                                    {/* Active indicator line */}
+                                    {isActive && (
+                                        <Box
+                                            sx={{
+                                                position: "absolute",
+                                                left: 0,
+                                                top: "50%",
+                                                transform: "translateY(-50%)",
+                                                width: 3,
+                                                height: 24,
+                                                bgcolor: volcanoOrange,
+                                                borderRadius: "0 2px 2px 0"
+                                            }}
+                                        />
+                                    )}
                                 </ListItem>
                             );
+                            
                             return !open ? (
                                 <Tooltip
                                     key={item.text}
@@ -148,47 +210,51 @@ const Layout = () => {
                         })}
                     </List>
                 </Box>
-                {/* Logo and text part */}
+                
+                {/* Enhanced Logo section */}
                 <Box
                     sx={{
-                        p: 1,
+                        p: open ? 2 : 1,
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "center",
                         alignItems: "center",
                         mt: "auto",
                         mb: 1,
-                        // borderTop: "1px solid rgba(0, 0, 0, 0.12)",
+                        borderTop: "1px solid rgba(0, 0, 0, 0.08)", // Subtle divider
                     }}
                 >
                     <img
                         src={volcanoLogo}
                         alt="Volcano Logo"
                         style={{
-                            maxWidth: open ? "150px" : "60px",
+                            maxWidth: open ? "120px" : "40px", // Slightly smaller when expanded
                             height: "auto",
                             transition: "max-width 0.2s",
-                            marginBottom: "1px",
+                            marginBottom: open ? "8px" : "4px",
                         }}
                     />
-                    {/* {open && (
-            <Typography
-              sx={{
-                fontWeight: 700,
-                color: "#000",
-                fontSize: "1.4rem",
-                letterSpacing: "0.1em",
-                mt: -6,
-              }}
-            >
-              VOLCANO
-            </Typography>
-          )} */}
+                    {open && (
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                fontWeight: 500,
+                                textAlign: "center"
+                            }}
+                        >
+                        </Typography>
+                    )}
                 </Box>
             </Drawer>
+            
             <Box
                 component="main"
-                sx={{ flexGrow: 1, p: 3, backgroundColor: "white" }}
+                sx={{ 
+                    flexGrow: 1, 
+                    p: 3, 
+                    backgroundColor: "#fafafa" // Consistent background
+                }}
             >
                 <Toolbar />
                 <Outlet />
