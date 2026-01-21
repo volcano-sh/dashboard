@@ -172,6 +172,7 @@ const QueueResourcesBarChart = ({ data }) => {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    gap: 2,
                     mb: 2,
                 }}
             >

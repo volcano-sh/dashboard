@@ -85,6 +85,8 @@ const PodsTable = ({
         <TableContainer
             component={Paper}
             sx={{
+                width: "100%",
+                maxWidth: "100%",
                 maxHeight: "calc(100vh - 200px)",
                 overflow: "auto",
                 borderRadius: "16px",
@@ -109,7 +111,13 @@ const PodsTable = ({
                 },
             }}
         >
-            <Table stickyHeader>
+            <Table
+                stickyHeader
+                sx={{
+                    minWidth: 750,
+                    tableLayout: "auto",
+                }}
+            >
                 <TableHeader
                     filters={filters}
                     anchorEl={anchorEl}

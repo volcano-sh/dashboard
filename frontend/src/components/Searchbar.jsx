@@ -53,7 +53,7 @@ const SearchBar = ({
                                     className="border rounded-pill overflow-hidden shadow-sm bg-white"
                                     style={{
                                         height: "35px",
-                                        maxWidth: "250px",
+                                        maxWidth: "300px",
                                     }}
                                 >
                                     <Button
@@ -104,7 +104,7 @@ const SearchBar = ({
 
                             <Col
                                 xs="auto"
-                                className="d-flex align-items-center gap-2"
+                                className="d-flex flex-wrap align-items-center gap-2"
                             >
                                 <Button
                                     variant="outline-danger"
