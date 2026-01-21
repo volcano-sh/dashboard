@@ -116,12 +116,19 @@ const JobTableHeader = ({
                         onClick={toggleSortDirection}
                         startIcon={
                             sortDirection === "desc" ? (
-                                <ArrowDownward fontSize="small" />
-                            ) : sortDirection === "asc" ? (
-                                <ArrowUpward fontSize="small" />
-                            ) : (
-                                <UnfoldMore fontSize="small" />
-                            )
+                                        <Tooltip title="ascending">
+                                            <ArrowDownward fontSize="small" />
+                                        </Tooltip>
+                                    ) : sortDirection === "asc" ? (
+                                        <Tooltip title="descending">
+                                            <ArrowUpward fontSize="small" />
+                                        </Tooltip>
+                                    ) : (
+                                        <Tooltip title="Sort by Creation Time">
+                                            <UnfoldMore fontSize="small" />
+                                        </Tooltip>
+                                    )
+
                         }
                         sx={{
                             textTransform: "none",
