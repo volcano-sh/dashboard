@@ -26,7 +26,15 @@ import volcanoLogo from "../assets/volcano-icon-color.svg";
 const Layout = () => {
     // Hooks must be used inside component functions
     const location = useLocation();
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(window.innerWidth >= 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setOpen(window.innerWidth >= 768);
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     // constants can be kept outside the component
     const volcanoOrange = "#E34C26"; // orange red theme
