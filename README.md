@@ -30,7 +30,7 @@ kubectl create ns volcano-system
 2. Deploy the volcano dashboard:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/main/deployment/volcano-dashboard.yaml
+kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/release-0.2/deployment/volcano-dashboard.yaml
 ```
 
 3. Access the dashboard by port-forwarding the service:
