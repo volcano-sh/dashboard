@@ -15,6 +15,7 @@ You can follow the [design doc](docs/design.md) to learn more about the design d
 ### Prerequisites
 
 Before installing the volcano dashboard, please ensure you have:
+
 - A running Kubernetes cluster
 - `kubectl` configured to access your cluster
 - Helm 3 installed locally
@@ -43,8 +44,8 @@ kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0
 ```
 
 4. Open your browser and navigate to:
-   - For local access: `http://localhost:8080`
-   - For remote access: `http://<NODE_IP>:8080` (replace `<NODE_IP>` with your Kubernetes node's IP address)
+    - For local access: `http://localhost:8080`
+    - For remote access: `http://<NODE_IP>:8080` (replace `<NODE_IP>` with your Kubernetes node's IP address)
 
 ## Contributing
 

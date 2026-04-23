@@ -84,7 +84,12 @@ Build images.
 ```bash
 npm run build:image
 ```
+
+Validate chart rendering.
+
+```bash
 helm template volcano-dashboard helm/volcano-dashboard --namespace volcano-system
+```
 
 After that you can override the chart image values to verify the result.
 
@@ -148,6 +153,7 @@ git push origin <your-branch>
 4. Create a pull request
 
 Submit a pull request to the [volcano-sh/dashboard](https://github.com/volcano-sh/dashboard) repository. The PR should:
+
 - Have a clear and descriptive title
 - Include a detailed description of the changes
 - Reference any related issues

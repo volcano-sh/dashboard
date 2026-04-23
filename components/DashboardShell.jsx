@@ -301,7 +301,8 @@ export default function DashboardShell({ children }) {
                 <Box
                     sx={{
                         borderTop: "1px solid rgba(0, 0, 0, 0.08)",
-                        p: 1,
+                        px: 0,
+                        py: 1,
                         display: "flex",
                         flexDirection: "column",
                         gap: 1,
@@ -322,7 +323,8 @@ export default function DashboardShell({ children }) {
                             gap: 1.25,
                             justifyContent: open ? "space-between" : "center",
                             minHeight: 34,
-                            px: open ? 0.75 : 0,
+                            mx: open ? 1.25 : 0.75,
+                            px: open ? 1.25 : 1,
                             "&:hover": {
                                 backgroundColor: "rgba(0, 0, 0, 0.08)",
                             },
