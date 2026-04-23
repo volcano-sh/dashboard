@@ -3,11 +3,14 @@ import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 const menuItems = [
-    { text: "Dashboard", path: "/dashboard" },
-    { text: "Jobs", path: "/jobs" },
+    { text: "Overview", path: "/dashboard" },
     { text: "Queues", path: "/queues" },
+    { text: "Jobs", path: "/jobs" },
+    { text: "Pod Groups", path: "/podgroups" },
     { text: "Pods", path: "/pods" },
-    { text: "PodGroups", path: "/podgroups" },
+    { text: "Configuration", path: "/configuration" },
+    { text: "Settings", path: "/settings" },
+    { text: "Documentation", path: "/documentation" },
 ];
 
 describe("Layout", () => {
@@ -37,14 +40,14 @@ describe("Layout", () => {
 
         const drawer = screen.getByTestId("sidebar-drawer");
 
-        expect(drawer).toHaveStyle("width: 240px");
+        expect(drawer).toHaveStyle("width: 280px");
 
         fireEvent.click(menuButton);
 
         expect(drawer).toHaveStyle("width: 60px");
     });
 
-    it("should have 5 navigation items", () => {
+    it("should render clickable navigation items", () => {
         render(
             <MemoryRouter>
                 <Layout />
@@ -53,7 +56,7 @@ describe("Layout", () => {
 
         const navigationItems = screen.getAllByRole("link");
 
-        expect(navigationItems).toHaveLength(5);
+        expect(navigationItems).toHaveLength(8);
 
         navigationItems.forEach((item, index) => {
             const { text, path } = menuItems[index];
@@ -61,6 +64,36 @@ describe("Layout", () => {
             expect(item).toHaveAttribute("href", path);
             expect(item).toHaveTextContent(new RegExp(`^${text}$`, "i"));
         });
+    });
+
+    it("should render disabled navigation placeholders", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        ["Events", "Metrics"].forEach((text) => {
+            const item = screen.getByText(text);
+            expect(item).toBeInTheDocument();
+            expect(item.closest("a")).not.toBeInTheDocument();
+        });
+    });
+
+    it("should expand the admin menu", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /toggle admin menu/i }),
+        );
+
+        expect(screen.getByText(/admin@example.com/i)).toBeInTheDocument();
+        expect(screen.getByText(/cluster administrator/i)).toBeInTheDocument();
+        expect(screen.getByText(/logout/i)).toBeInTheDocument();
     });
 
     it("should render logo", () => {
