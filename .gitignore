@@ -1,13 +1,11 @@
 # dependencies
 node_modules
-backend/node_modules
-backend/dist
-
-backend/.env
-frontend/.env
-
-frontend/node_modules
-frontend/build
+.next
+out
+coverage
+dist
+.env
+.env.local
 
 # misc
 .DS_Store

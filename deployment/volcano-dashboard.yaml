@@ -23,44 +23,33 @@ spec:
           type: RuntimeDefault
       serviceAccountName: volcano-dashboard
       containers:
-        - image: volcanosh/vc-dashboard-frontend:latest
+        - image: volcanosh/volcano-dashboard:latest
           imagePullPolicy: Always
-          name: frontend
+          name: dashboard
           ports:
-            - containerPort: 8080
-              name: frontend
+            - containerPort: 3000
+              name: http
               protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
+                - ALL
             runAsNonRoot: true
-            runAsUser: 1000
-          volumeMounts:
-            - mountPath: /var/cache/nginx
-              name: nginx-cache
-            - mountPath: /run
-              name: nginx-run
-        - image: volcanosh/vc-dashboard-backend:latest
-          imagePullPolicy: Always
-          name: backend
-          ports:
-            - containerPort: 3001
-              name: backend
-              protocol: TCP
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
-      volumes:
-        - name: nginx-cache
-          emptyDir: {}
-        - name: nginx-run
-          emptyDir: {}
+            runAsUser: 1001
+            runAsGroup: 1001
 ---
 
 # volcano dashboard serviceAccount
@@ -133,7 +122,7 @@ rules:
       - delete
       - create
       - update
-      - patch 
+      - patch
   - apiGroups:
       - scheduling.volcano.sh
     resources:
@@ -152,13 +141,9 @@ metadata:
   namespace: volcano-system
 spec:
   ports:
-    - name: backend
-      port: 3001
-      protocol: TCP
-      targetPort: 3001
-    - name: frontend
+    - name: http
       port: 80
       protocol: TCP
-      targetPort: 8080
+      targetPort: http
   selector:
     app: volcano-dashboard

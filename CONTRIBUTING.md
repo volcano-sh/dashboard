@@ -82,13 +82,10 @@ You can build the volcano dashboard images locally. Please use the following com
 Build images.
 
 ```bash
-// build frontend image.
-docker build -t frontend:dev . -f deployment/build/frontend/Dockerfile
-// build backend image.
-docker build -t backend:dev . -f deployment/build/backend/Dockerfile
+npm run build:image
 ```
 
-After that you can replace the images in `volcano-dashboard.yaml` to verify the result.
+After that you can replace the image in `volcano-dashboard.yaml` to verify the result.
 
 ```bash
 kubectl apply -f deployment/volcano-dashboard.yaml
