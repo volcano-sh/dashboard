@@ -84,11 +84,17 @@ Build images.
 ```bash
 npm run build:image
 ```
+helm template volcano-dashboard helm/volcano-dashboard --namespace volcano-system
 
-After that you can replace the image in `volcano-dashboard.yaml` to verify the result.
+After that you can override the chart image values to verify the result.
 
 ```bash
-kubectl apply -f deployment/volcano-dashboard.yaml
+helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
+  --namespace volcano-system \
+  --create-namespace \
+  --set image.repository=volcano-dashboard \
+  --set image.tag=dev \
+  --set image.pullPolicy=IfNotPresent
 ```
 
 ## Code Style and Standards

@@ -17,6 +17,7 @@ You can follow the [design doc](docs/design.md) to learn more about the design d
 Before installing the volcano dashboard, please ensure you have:
 - A running Kubernetes cluster
 - `kubectl` configured to access your cluster
+- Helm 3 installed locally
 - Volcano installed on your cluster (follow the [Volcano Quick Start Guide](https://github.com/volcano-sh/volcano#quick-start-guide))
 
 ### Install Volcano Dashboard
@@ -30,7 +31,9 @@ kubectl create ns volcano-system
 2. Deploy the volcano dashboard:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/volcano-sh/dashboard/main/deployment/volcano-dashboard.yaml
+helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
+  --namespace volcano-system \
+  --create-namespace
 ```
 
 3. Access the dashboard by port-forwarding the service:

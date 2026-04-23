@@ -1,0 +1,67 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: volcano-system
+
+image:
+    repository: volcanosh/volcano-dashboard
+    pullPolicy: Always
+    tag: latest
+
+imagePullSecrets: []
+
+serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+rbac:
+    create: true
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    seLinuxOptions:
+        level: s0:c123,c456
+    seccompProfile:
+        type: RuntimeDefault
+
+securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+        drop:
+            - ALL
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+
+service:
+    type: ClusterIP
+    port: 80
+    targetPort: http
+
+containerPort: 3000
+
+livenessProbe:
+    httpGet:
+        path: /
+        port: http
+    initialDelaySeconds: 20
+    periodSeconds: 20
+
+readinessProbe:
+    httpGet:
+        path: /
+        port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

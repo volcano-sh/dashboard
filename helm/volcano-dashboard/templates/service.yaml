@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "volcano-dashboard.fullname" . }}
+  namespace: {{ include "volcano-dashboard.namespace" . }}
+  labels:
+    {{- include "volcano-dashboard.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetPort }}
+  selector:
+    {{- include "volcano-dashboard.selectorLabels" . | nindent 4 }}
