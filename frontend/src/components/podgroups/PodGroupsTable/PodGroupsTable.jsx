@@ -6,8 +6,6 @@ import {
     Paper,
     TableRow,
     TableCell,
-    useTheme,
-    alpha,
 } from "@mui/material";
 import PodGroupsTableHeader from "./PodGroupsTableHeader";
 import PodGroupsTableRow from "./PodGroupsTableRow";
@@ -24,8 +22,6 @@ const PodGroupsTable = ({
     sortDirection,
     toggleSortDirection,
 }) => {
-    const theme = useTheme();
-
     return (
         <React.Fragment>
             <TableContainer
@@ -33,30 +29,22 @@ const PodGroupsTable = ({
                 sx={{
                     maxHeight: "calc(100vh - 200px)",
                     overflow: "auto",
-                    borderRadius: "16px",
-                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
-                    background: `linear-gradient(to bottom, ${alpha(theme.palette.background.paper, 0.9)}, ${theme.palette.background.paper})`,
-                    backdropFilter: "blur(10px)",
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    border: "1px solid #dfe3e8",
+                    borderRadius: 1.5,
+                    boxShadow: "none",
                     "&::-webkit-scrollbar": {
                         width: "10px",
                         height: "10px",
                     },
                     "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                        backgroundColor: "#d7dce1",
                         borderRadius: "5px",
                         "&:hover": {
-                            backgroundColor: alpha(
-                                theme.palette.primary.main,
-                                0.3,
-                            ),
+                            backgroundColor: "#c2c8cf",
                         },
                     },
                     "&::-webkit-scrollbar-track": {
-                        backgroundColor: alpha(
-                            theme.palette.primary.main,
-                            0.05,
-                        ),
+                        backgroundColor: "#f3f4f6",
                         borderRadius: "5px",
                     },
                 }}

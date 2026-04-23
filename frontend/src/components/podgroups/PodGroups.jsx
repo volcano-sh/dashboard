@@ -1,20 +1,29 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Typography, useTheme } from "@mui/material";
-import axios from "axios";
+import React, { useCallback, useMemo, useState } from "react";
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    InputAdornment,
+    LinearProgress,
+    TextField,
+    Typography,
+    useTheme,
+} from "@mui/material";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { escape } from "lodash";
-import TitleComponent from "../Titlecomponent";
-import { fetchAllNamespaces } from "../utils";
+import {
+    fetchNamespaces,
+    fetchPodGroupYaml,
+    fetchPodGroups,
+    getApiErrorMessage,
+} from "../../api/dashboard";
 import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
-import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
+import { Plus, RefreshCw, Search } from "lucide-react";
 
 const PodGroups = () => {
-    const [podGroups, setPodGroups] = useState([]);
-    const [cachedPodGroups, setCachedPodGroups] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "All",
@@ -32,46 +41,46 @@ const PodGroups = () => {
         page: 1,
         rowsPerPage: 10,
     });
-    const [totalItems, setTotalItems] = useState(0);
     const [sortDirection, setSortDirection] = useState("desc");
+    const [actionError, setActionError] = useState(null);
+    const queryClient = useQueryClient();
 
-    const fetchPodGroups = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const podGroupParams = {
+        search: searchText,
+        namespace: filters.namespace,
+        status: filters.status,
+    };
 
-        try {
-            const response = await axios.get(`/api/podgroups`, {
-                params: {
-                    search: searchText,
-                    namespace: filters.namespace,
-                    status: filters.status,
-                },
-            });
+    const {
+        data: podGroupsData,
+        error: podGroupsError,
+        isFetching: podGroupsFetching,
+        isLoading: podGroupsLoading,
+        refetch: refetchPodGroups,
+    } = useQuery({
+        queryKey: ["podgroups", searchText, filters.namespace, filters.status],
+        queryFn: () => fetchPodGroups(podGroupParams),
+    });
 
-            if (response.status !== 200) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+    const { data: allNamespaces = [] } = useQuery({
+        queryKey: ["namespaces"],
+        queryFn: fetchNamespaces,
+    });
 
-            const data = response.data;
-            setCachedPodGroups(data.items || []);
-            setTotalItems(data.totalCount || 0);
-        } catch (err) {
-            setError("Failed to fetch podgroups: " + err.message);
-            setCachedPodGroups([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [searchText, filters]);
+    const cachedPodGroups = useMemo(
+        () => podGroupsData?.items || [],
+        [podGroupsData],
+    );
+    const totalItems = podGroupsData?.totalCount || 0;
+    const loading = podGroupsLoading || podGroupsFetching;
+    const error = podGroupsError
+        ? getApiErrorMessage(podGroupsError, "Failed to fetch podgroups")
+        : actionError;
 
-    useEffect(() => {
-        fetchPodGroups();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPodGroups]);
-
-    useEffect(() => {
+    const podGroups = useMemo(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
         const endIndex = startIndex + pagination.rowsPerPage;
-        setPodGroups(cachedPodGroups.slice(startIndex, endIndex));
+        return cachedPodGroups.slice(startIndex, endIndex);
     }, [cachedPodGroups, pagination]);
 
     const handleSearch = (event) => {
@@ -82,40 +91,48 @@ const PodGroups = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchPodGroups();
     };
 
-    const handleClick = useCallback(async (pg) => {
-        try {
-            setLoading(true);
-            const response = await axios.get(
-                `/api/podgroups/${pg.metadata.namespace}/${pg.metadata.name}/yaml`,
-                { responseType: "text" },
-            );
+    const handleClick = useCallback(
+        async (pg) => {
+            try {
+                setActionError(null);
+                const yaml = await queryClient.fetchQuery({
+                    queryKey: [
+                        "podGroupYaml",
+                        pg.metadata.namespace,
+                        pg.metadata.name,
+                    ],
+                    queryFn: () =>
+                        fetchPodGroupYaml(
+                            pg.metadata.namespace,
+                            pg.metadata.name,
+                        ),
+                });
 
-            const formattedYaml = response.data
-                .split("\n")
-                .map((line) => {
-                    const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                    if (keyMatch) {
-                        const [, indent, key] = keyMatch;
-                        const value = line.slice(keyMatch[0].length);
-                        return `${indent}<span class="yaml-key">${escape(key)}</span>:${escape(value)}`;
-                    }
-                    return escape(line);
-                })
-                .join("\n");
+                const formattedYaml = yaml
+                    .split("\n")
+                    .map((line) => {
+                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
+                        if (keyMatch) {
+                            const [, indent, key] = keyMatch;
+                            const value = line.slice(keyMatch[0].length);
+                            return `${indent}<span class="yaml-key">${escape(key)}</span>:${escape(value)}`;
+                        }
+                        return escape(line);
+                    })
+                    .join("\n");
 
-            setSelectedName(pg.metadata.name);
-            setSelectedYaml(formattedYaml);
-            setOpenDialog(true);
-        } catch (err) {
-            console.error("Failed to fetch YAML:", err);
-            setError("Failed to fetch YAML: " + err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+                setSelectedName(pg.metadata.name);
+                setSelectedYaml(formattedYaml);
+                setOpenDialog(true);
+            } catch (err) {
+                console.error("Failed to fetch YAML:", err);
+                setActionError(getApiErrorMessage(err, "Failed to fetch YAML"));
+            }
+        },
+        [queryClient],
+    );
 
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
@@ -171,30 +188,89 @@ const PodGroups = () => {
     };
 
     return (
-        <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
-            {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
-            <TitleComponent text="Volcano PodGroups" />
-            <Box>
-                <SearchBar
-                    searchText={searchText}
-                    handleSearch={handleSearch}
-                    handleClearSearch={handleClearSearch}
-                    handleRefresh={fetchPodGroups}
-                    fetchData={fetchPodGroups}
-                    isRefreshing={loading}
-                    placeholder="Search PodGroups..."
-                    refreshLabel="Refresh Listings"
-                    createlabel="Create PodGroup"
-                    dialogTitle="Create PodGroup"
-                    dialogResourceNameLabel="Name"
-                    dialogResourceType="PodGroup"
-                    onCreateClick={handleCreate}
-                />
+        <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 3 }}>
+            <Box sx={{ mb: 3 }}>
+                <Typography
+                    component="h1"
+                    sx={{ fontSize: 24, fontWeight: 700 }}
+                >
+                    Pod Groups
+                </Typography>
             </Box>
+            {error && (
+                <Card
+                    sx={{
+                        border: "1px solid #f5c2c7",
+                        boxShadow: "none",
+                        mb: 2,
+                    }}
+                >
+                    <CardContent sx={{ py: 1.5 }}>
+                        <Typography
+                            color={theme.palette.error.main}
+                            sx={{ fontSize: 14 }}
+                        >
+                            {error}
+                        </Typography>
+                    </CardContent>
+                </Card>
+            )}
+            <Box
+                sx={{
+                    alignItems: { xs: "stretch", md: "center" },
+                    display: "flex",
+                    flexDirection: { xs: "column", md: "row" },
+                    gap: 1.5,
+                    justifyContent: "space-between",
+                    mb: 2,
+                }}
+            >
+                <TextField
+                    onChange={handleSearch}
+                    placeholder="Search PodGroups..."
+                    size="small"
+                    value={searchText}
+                    sx={{ minWidth: 280 }}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <Search size={18} />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+                <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
+                    <Button
+                        onClick={handleClearSearch}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Clear
+                    </Button>
+                    <Button
+                        disabled={loading}
+                        onClick={() => refetchPodGroups()}
+                        startIcon={<RefreshCw size={17} />}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        onClick={handleCreate}
+                        startIcon={<Plus size={16} />}
+                        sx={{
+                            bgcolor: "#ff4d2d",
+                            textTransform: "none",
+                            "&:hover": { bgcolor: "#e84325" },
+                        }}
+                        variant="contained"
+                    >
+                        Create PodGroup
+                    </Button>
+                </Box>
+            </Box>
+            {loading && <LinearProgress sx={{ mb: 2 }} />}
             <PodGroupsTable
                 podGroups={sortedPodGroups}
                 handlePodGroupClick={handleClick}

@@ -1,20 +1,31 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Typography, useTheme } from "@mui/material";
-import axios from "axios";
-import TitleComponent from "../Titlecomponent";
-import { fetchAllNamespaces, fetchAllQueues } from "../utils";
+import React, { useCallback, useMemo, useState } from "react";
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    InputAdornment,
+    LinearProgress,
+    TextField,
+    Typography,
+    useTheme,
+} from "@mui/material";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    createJob,
+    fetchJobYaml,
+    fetchJobs,
+    fetchNamespaces,
+    fetchQueues,
+    getApiErrorMessage,
+} from "../../api/dashboard";
 import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
-import SearchBar from "../Searchbar";
+import CreateJobDialog from "./JobTable/CreateJobDialog";
+import { Plus, RefreshCw, Search } from "lucide-react";
 
 const Jobs = () => {
-    const [jobs, setJobs] = useState([]);
-    const [cachedJobs, setCachedJobs] = useState([]);
-    const [, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
-    const [allQueues, setAllQueues] = useState([]);
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "default",
@@ -22,6 +33,7 @@ const Jobs = () => {
     });
     const [selectedJobYaml, setSelectedJobYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState({
         status: null,
         namespace: null,
@@ -34,48 +46,55 @@ const Jobs = () => {
         page: 1,
         rowsPerPage: 10,
     });
-    const [totalJobs, setTotalJobs] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
+    const [actionError, setActionError] = useState(null);
+    const queryClient = useQueryClient();
 
-    const fetchJobs = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const jobParams = {
+        search: searchText,
+        namespace: filters.namespace,
+        queue: filters.queue,
+        status: filters.status,
+    };
 
-        try {
-            const response = await axios.get(`/api/jobs`, {
-                params: {
-                    search: searchText,
-                    namespace: filters.namespace,
-                    queue: filters.queue,
-                    status: filters.status,
-                },
-            });
+    const {
+        data: jobsData,
+        error: jobsError,
+        isFetching: jobsFetching,
+        isLoading: jobsLoading,
+        refetch: refetchJobs,
+    } = useQuery({
+        queryKey: [
+            "jobs",
+            searchText,
+            filters.namespace,
+            filters.queue,
+            filters.status,
+        ],
+        queryFn: () => fetchJobs(jobParams),
+    });
 
-            if (response.status !== 200) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+    const { data: allNamespaces = [] } = useQuery({
+        queryKey: ["namespaces"],
+        queryFn: fetchNamespaces,
+    });
 
-            const data = response.data;
-            setCachedJobs(data.items || []);
-            setTotalJobs(data.totalCount || 0);
-        } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
-            setCachedJobs([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [searchText, filters]);
+    const { data: allQueues = [] } = useQuery({
+        queryKey: ["queues", "all"],
+        queryFn: fetchQueues,
+    });
 
-    useEffect(() => {
-        fetchJobs();
-        fetchAllNamespaces().then(setAllNamespaces);
-        fetchAllQueues().then(setAllQueues);
-    }, [fetchJobs]);
+    const cachedJobs = useMemo(() => jobsData?.items || [], [jobsData]);
+    const totalJobs = jobsData?.totalCount || 0;
+    const loading = jobsLoading || jobsFetching;
+    const error = jobsError
+        ? getApiErrorMessage(jobsError, "Failed to fetch jobs")
+        : actionError;
 
-    useEffect(() => {
+    const jobs = useMemo(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
         const endIndex = startIndex + pagination.rowsPerPage;
-        setJobs(cachedJobs.slice(startIndex, endIndex));
+        return cachedJobs.slice(startIndex, endIndex);
     }, [cachedJobs, pagination]);
 
     const handleSearch = (event) => {
@@ -86,40 +105,47 @@ const Jobs = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchJobs();
     };
 
-    const handleJobClick = useCallback(async (job) => {
-        try {
-            setLoading(true);
-            const response = await axios.get(
-                `/api/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
-                { responseType: "text" },
-            );
+    const handleJobClick = useCallback(
+        async (job) => {
+            try {
+                setActionError(null);
+                const yaml = await queryClient.fetchQuery({
+                    queryKey: [
+                        "jobYaml",
+                        job.metadata.namespace,
+                        job.metadata.name,
+                    ],
+                    queryFn: () =>
+                        fetchJobYaml(job.metadata.namespace, job.metadata.name),
+                });
 
-            const formattedYaml = response.data
-                .split("\n")
-                .map((line) => {
-                    const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                    if (keyMatch) {
-                        const [, indent, key] = keyMatch;
-                        const value = line.slice(keyMatch[0].length);
-                        return `${indent}<span class="yaml-key">${key}</span>:${value}`;
-                    }
-                    return line;
-                })
-                .join("\n");
+                const formattedYaml = yaml
+                    .split("\n")
+                    .map((line) => {
+                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
+                        if (keyMatch) {
+                            const [, indent, key] = keyMatch;
+                            const value = line.slice(keyMatch[0].length);
+                            return `${indent}<span class="yaml-key">${key}</span>:${value}`;
+                        }
+                        return line;
+                    })
+                    .join("\n");
 
-            setSelectedJobName(job.metadata.name);
-            setSelectedJobYaml(formattedYaml);
-            setOpenDialog(true);
-        } catch (err) {
-            console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+                setSelectedJobName(job.metadata.name);
+                setSelectedJobYaml(formattedYaml);
+                setOpenDialog(true);
+            } catch (err) {
+                console.error("Failed to fetch job YAML:", err);
+                setActionError(
+                    getApiErrorMessage(err, "Failed to fetch job YAML"),
+                );
+            }
+        },
+        [queryClient],
+    );
 
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
@@ -143,27 +169,12 @@ const Jobs = () => {
 
     const handleCreateJob = async (newJob) => {
         try {
-            const response = await fetch("/api/jobs", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newJob),
-            });
-
-            if (!response.ok) {
-                let errorMsg = "Unknown error";
-                try {
-                    const errData = await response.json();
-                    errorMsg = errData.error || response.statusText;
-                } catch {
-                    // ignore error
-                }
-                alert("Error creating job: " + errorMsg);
-                return;
-            }
-
+            await createJob(newJob);
             alert("Job created successfully!");
+            setCreateDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["jobs"] });
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(getApiErrorMessage(err, "Error creating job"));
         }
     };
 
@@ -207,30 +218,89 @@ const Jobs = () => {
     }, []);
 
     return (
-        <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
-            {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
-            <TitleComponent text="Volcano Jobs Status" />
-            <Box>
-                <SearchBar
-                    searchText={searchText}
-                    handleSearch={handleSearch}
-                    handleClearSearch={handleClearSearch}
-                    handleRefresh={fetchJobs}
-                    fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
-                    dialogResourceType="Job"
-                    onCreateClick={handleCreateJob}
-                />
+        <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 3 }}>
+            <Box sx={{ mb: 3 }}>
+                <Typography
+                    component="h1"
+                    sx={{ fontSize: 24, fontWeight: 700 }}
+                >
+                    Jobs
+                </Typography>
             </Box>
+            {error && (
+                <Card
+                    sx={{
+                        border: "1px solid #f5c2c7",
+                        boxShadow: "none",
+                        mb: 2,
+                    }}
+                >
+                    <CardContent sx={{ py: 1.5 }}>
+                        <Typography
+                            color={theme.palette.error.main}
+                            sx={{ fontSize: 14 }}
+                        >
+                            {error}
+                        </Typography>
+                    </CardContent>
+                </Card>
+            )}
+            <Box
+                sx={{
+                    alignItems: { xs: "stretch", md: "center" },
+                    display: "flex",
+                    flexDirection: { xs: "column", md: "row" },
+                    gap: 1.5,
+                    justifyContent: "space-between",
+                    mb: 2,
+                }}
+            >
+                <TextField
+                    onChange={handleSearch}
+                    placeholder="Search jobs..."
+                    size="small"
+                    value={searchText}
+                    sx={{ minWidth: 280 }}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <Search size={18} />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+                <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
+                    <Button
+                        onClick={handleClearSearch}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Clear
+                    </Button>
+                    <Button
+                        onClick={() => refetchJobs()}
+                        disabled={loading}
+                        startIcon={<RefreshCw size={17} />}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        onClick={() => setCreateDialogOpen(true)}
+                        startIcon={<Plus size={16} />}
+                        sx={{
+                            bgcolor: "#ff4d2d",
+                            textTransform: "none",
+                            "&:hover": { bgcolor: "#e84325" },
+                        }}
+                        variant="contained"
+                    >
+                        Create Job
+                    </Button>
+                </Box>
+            </Box>
+            {loading && <LinearProgress sx={{ mb: 2 }} />}
             <JobTable
                 jobs={sortedJobs}
                 handleJobClick={handleJobClick}
@@ -243,7 +313,9 @@ const Jobs = () => {
                 handleFilterClose={handleFilterClose}
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
-                reloadJobs={fetchJobs}
+                reloadJobs={() =>
+                    queryClient.invalidateQueries({ queryKey: ["jobs"] })
+                }
             />
             <JobPagination
                 pagination={pagination}
@@ -256,6 +328,14 @@ const Jobs = () => {
                 handleClose={handleCloseDialog}
                 selectedJobName={selectedJobName}
                 selectedJobYaml={selectedJobYaml}
+            />
+            <CreateJobDialog
+                open={createDialogOpen}
+                onClose={() => setCreateDialogOpen(false)}
+                onCreate={handleCreateJob}
+                title="Create a Job"
+                resourceNameLabel="Job Name"
+                resourceType="Job"
             />
         </Box>
     );

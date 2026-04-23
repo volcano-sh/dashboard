@@ -1,25 +1,37 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Box, Typography, useTheme } from "@mui/material";
-import axios from "axios";
-import SearchBar from "../Searchbar";
-import TitleComponent from "../Titlecomponent";
-import { fetchAllNamespaces } from "../utils";
+import React, { useCallback, useMemo, useState } from "react";
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    InputAdornment,
+    LinearProgress,
+    TextField,
+    Typography,
+    useTheme,
+} from "@mui/material";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import CreateDialog from "../CreateDialog";
+import {
+    createPod,
+    fetchNamespaces,
+    fetchPodYaml,
+    fetchPods,
+    getApiErrorMessage,
+} from "../../api/dashboard";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import { Plus, RefreshCw, Search } from "lucide-react";
 
 const Pods = () => {
-    const [pods, setPods] = useState([]);
-    const [cachedPods, setCachedPods] = useState([]);
-    const [, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "default",
     });
     const [selectedPodYaml, setSelectedPodYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
     const [selectedPodName, setSelectedPodName] = useState("");
@@ -27,46 +39,42 @@ const Pods = () => {
         page: 1,
         rowsPerPage: 10,
     });
-    const [totalPods, setTotalPods] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
+    const [actionError, setActionError] = useState(null);
+    const queryClient = useQueryClient();
 
-    const fetchPods = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const podParams = {
+        search: searchText,
+        namespace: filters.namespace,
+        status: filters.status,
+    };
 
-        try {
-            const response = await axios.get(`/api/pods`, {
-                params: {
-                    search: searchText,
-                    namespace: filters.namespace,
-                    status: filters.status,
-                },
-            });
+    const {
+        data: podsData,
+        error: podsError,
+        isFetching: podsFetching,
+        isLoading: podsLoading,
+    } = useQuery({
+        queryKey: ["pods", searchText, filters.namespace, filters.status],
+        queryFn: () => fetchPods(podParams),
+    });
 
-            if (response.status !== 200) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+    const { data: allNamespaces = [] } = useQuery({
+        queryKey: ["namespaces"],
+        queryFn: fetchNamespaces,
+    });
 
-            const data = response.data;
-            setCachedPods(data.items || []);
-            setTotalPods(data.totalCount || 0);
-        } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
-            setCachedPods([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [searchText, filters]);
+    const cachedPods = useMemo(() => podsData?.items || [], [podsData]);
+    const totalPods = podsData?.totalCount || 0;
+    const loading = podsLoading || podsFetching;
+    const error = podsError
+        ? getApiErrorMessage(podsError, "Failed to fetch pods")
+        : actionError;
 
-    useEffect(() => {
-        fetchPods();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPods]);
-
-    useEffect(() => {
+    const pods = useMemo(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
         const endIndex = startIndex + pagination.rowsPerPage;
-        setPods(cachedPods.slice(startIndex, endIndex));
+        return cachedPods.slice(startIndex, endIndex);
     }, [cachedPods, pagination]);
 
     const handleSearch = (event) => {
@@ -77,85 +85,64 @@ const Pods = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchPods();
     };
 
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
-        fetchPods();
-    }, [fetchPods]);
-
-    const fetchData = async () => {
-        try {
-            const response = await fetch("/api/pods");
-            if (response.ok) {
-                const data = await response.json();
-                setPods(data);
-            }
-        } catch (error) {
-            console.error("Error fetching pods:", error);
-        }
-    };
+        queryClient.invalidateQueries({ queryKey: ["pods"] });
+    }, [queryClient]);
 
     const handleCreatePod = async (newPod) => {
         try {
-            const response = await fetch("/api/pods", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newPod),
-            });
-
-            if (!response.ok) {
-                let errorMsg = "Unknown error";
-                try {
-                    const errData = await response.json();
-                    errorMsg = errData.error || response.statusText;
-                } catch {
-                    // ignore error
-                }
-                alert("Error creating pod: " + errorMsg);
-                return;
-            }
-
+            await createPod(newPod);
             alert("Pod created successfully!");
-            await fetchData(); // Now fetchData is defined in the same scope
+            setCreateDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["pods"] });
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(getApiErrorMessage(err, "Error creating pod"));
         }
     };
 
-    const handlePodClick = useCallback(async (pod) => {
-        try {
-            setLoading(true);
-            const response = await axios.get(
-                `/api/pod/${pod.metadata.namespace}/${pod.metadata.name}/yaml`,
-                { responseType: "text" },
-            );
+    const handlePodClick = useCallback(
+        async (pod) => {
+            try {
+                setActionError(null);
+                const yaml = await queryClient.fetchQuery({
+                    queryKey: [
+                        "podYaml",
+                        pod.metadata.namespace,
+                        pod.metadata.name,
+                    ],
+                    queryFn: () =>
+                        fetchPodYaml(pod.metadata.namespace, pod.metadata.name),
+                });
 
-            const formattedYaml = response.data
-                .split("\n")
-                .map((line) => {
-                    const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                    if (keyMatch) {
-                        const [, indent, key] = keyMatch;
-                        const value = line.slice(keyMatch[0].length);
-                        return `${indent}<span class="yaml-key">${key}</span>:${value}`;
-                    }
-                    return line;
-                })
-                .join("\n");
+                const formattedYaml = yaml
+                    .split("\n")
+                    .map((line) => {
+                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
+                        if (keyMatch) {
+                            const [, indent, key] = keyMatch;
+                            const value = line.slice(keyMatch[0].length);
+                            return `${indent}<span class="yaml-key">${key}</span>:${value}`;
+                        }
+                        return line;
+                    })
+                    .join("\n");
 
-            setSelectedPodName(pod.metadata.name);
-            setSelectedPodYaml(formattedYaml);
-            setOpenDialog(true);
-        } catch (err) {
-            console.error("Failed to fetch pod YAML:", err);
-            setError("Failed to fetch pod YAML: " + err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+                setSelectedPodName(pod.metadata.name);
+                setSelectedPodYaml(formattedYaml);
+                setOpenDialog(true);
+            } catch (err) {
+                console.error("Failed to fetch pod YAML:", err);
+                setActionError(
+                    getApiErrorMessage(err, "Failed to fetch pod YAML"),
+                );
+            }
+        },
+        [queryClient],
+    );
 
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
@@ -179,30 +166,89 @@ const Pods = () => {
     }, []);
 
     return (
-        <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
-            {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
-            <TitleComponent text="Volcano Pods Status" />
-            <Box>
-                <SearchBar
-                    searchText={searchText}
-                    handleSearch={handleSearch}
-                    handleClearSearch={handleClearSearch}
-                    handleRefresh={handleRefresh}
-                    fetchData={fetchPods}
-                    isRefreshing={false} // Update if needed
-                    placeholder="Search Pods..."
-                    refreshLabel="Refresh Pods"
-                    createlabel="Create Pod"
-                    dialogTitle="Create a Pod"
-                    dialogResourceNameLabel="Pod Name"
-                    dialogResourceType="Pod"
-                    onCreateClick={handleCreatePod}
-                />
+        <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 3 }}>
+            <Box sx={{ mb: 3 }}>
+                <Typography
+                    component="h1"
+                    sx={{ fontSize: 24, fontWeight: 700 }}
+                >
+                    Pods
+                </Typography>
             </Box>
+            {error && (
+                <Card
+                    sx={{
+                        border: "1px solid #f5c2c7",
+                        boxShadow: "none",
+                        mb: 2,
+                    }}
+                >
+                    <CardContent sx={{ py: 1.5 }}>
+                        <Typography
+                            color={theme.palette.error.main}
+                            sx={{ fontSize: 14 }}
+                        >
+                            {error}
+                        </Typography>
+                    </CardContent>
+                </Card>
+            )}
+            <Box
+                sx={{
+                    alignItems: { xs: "stretch", md: "center" },
+                    display: "flex",
+                    flexDirection: { xs: "column", md: "row" },
+                    gap: 1.5,
+                    justifyContent: "space-between",
+                    mb: 2,
+                }}
+            >
+                <TextField
+                    onChange={handleSearch}
+                    placeholder="Search Pods..."
+                    size="small"
+                    value={searchText}
+                    sx={{ minWidth: 280 }}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <Search size={18} />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+                <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
+                    <Button
+                        onClick={handleClearSearch}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Clear
+                    </Button>
+                    <Button
+                        disabled={loading}
+                        onClick={handleRefresh}
+                        startIcon={<RefreshCw size={17} />}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        onClick={() => setCreateDialogOpen(true)}
+                        startIcon={<Plus size={16} />}
+                        sx={{
+                            bgcolor: "#ff4d2d",
+                            textTransform: "none",
+                            "&:hover": { bgcolor: "#e84325" },
+                        }}
+                        variant="contained"
+                    >
+                        Create Pod
+                    </Button>
+                </Box>
+            </Box>
+            {loading && <LinearProgress sx={{ mb: 2 }} />}
             <PodsTable
                 pods={pods}
                 filters={filters}
@@ -222,6 +268,14 @@ const Pods = () => {
                 podName={selectedPodName}
                 podYaml={selectedPodYaml}
                 onClose={handleCloseDialog}
+            />
+            <CreateDialog
+                open={createDialogOpen}
+                onClose={() => setCreateDialogOpen(false)}
+                onCreate={handleCreatePod}
+                title="Create a Pod"
+                resourceNameLabel="Pod Name"
+                resourceType="Pod"
             />
         </Box>
     );
