@@ -19,6 +19,11 @@ serviceAccount:
 rbac:
     create: true
 
+schedulerConfig:
+    namespace: volcano-system
+    name: volcano-scheduler-configmap
+    key: ""
+
 podAnnotations: {}
 podLabels: {}
 

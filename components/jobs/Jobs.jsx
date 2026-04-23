@@ -46,7 +46,7 @@ const Jobs = () => {
         page: 1,
         rowsPerPage: 10,
     });
-    const [sortDirection, setSortDirection] = useState("");
+    const [sortDirection, setSortDirection] = useState("desc");
     const [actionError, setActionError] = useState(null);
     const queryClient = useQueryClient();
 
@@ -55,6 +55,10 @@ const Jobs = () => {
         namespace: filters.namespace,
         queue: filters.queue,
         status: filters.status,
+        page: pagination.page,
+        limit: pagination.rowsPerPage,
+        sortBy: "metadata.creationTimestamp",
+        sortOrder: sortDirection,
     };
 
     const {
@@ -70,6 +74,9 @@ const Jobs = () => {
             filters.namespace,
             filters.queue,
             filters.status,
+            pagination.page,
+            pagination.rowsPerPage,
+            sortDirection,
         ],
         queryFn: () => fetchJobs(jobParams),
     });
@@ -84,18 +91,12 @@ const Jobs = () => {
         queryFn: fetchQueues,
     });
 
-    const cachedJobs = useMemo(() => jobsData?.items || [], [jobsData]);
+    const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
     const totalJobs = jobsData?.totalCount || 0;
     const loading = jobsLoading || jobsFetching;
     const error = jobsError
         ? getApiErrorMessage(jobsError, "Failed to fetch jobs")
         : actionError;
-
-    const jobs = useMemo(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        return cachedJobs.slice(startIndex, endIndex);
-    }, [cachedJobs, pagination]);
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -188,33 +189,19 @@ const Jobs = () => {
         return [
             "All",
             ...new Set(
-                jobs.map((job) => job.status?.state.phase).filter(Boolean),
+                jobs
+                    .map(
+                        (job) =>
+                            job.summary?.status || job.status?.state?.phase,
+                    )
+                    .filter(Boolean),
             ),
         ];
     }, [jobs]);
 
-    const filteredJobs = useMemo(() => {
-        return jobs.filter((job) => {
-            const statusMatch =
-                filters.status === "All" ||
-                (job.status && job.status.state.phase === filters.status);
-            const queueMatch =
-                filters.queue === "All" || job.spec.queue === filters.queue;
-            return statusMatch && queueMatch;
-        });
-    }, [jobs, filters]);
-
-    const sortedJobs = useMemo(() => {
-        return [...filteredJobs].sort((a, b) => {
-            const compareResult =
-                new Date(b.metadata.creationTimestamp) -
-                new Date(a.metadata.creationTimestamp);
-            return sortDirection === "desc" ? compareResult : -compareResult;
-        });
-    }, [filteredJobs, sortDirection]);
-
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
     return (
@@ -302,7 +289,7 @@ const Jobs = () => {
             </Box>
             {loading && <LinearProgress sx={{ mb: 2 }} />}
             <JobTable
-                jobs={sortedJobs}
+                jobs={jobs}
                 handleJobClick={handleJobClick}
                 filters={filters}
                 uniqueStatuses={uniqueStatuses}

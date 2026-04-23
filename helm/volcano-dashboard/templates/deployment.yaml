@@ -37,6 +37,13 @@ spec:
             - containerPort: {{ .Values.containerPort }}
               name: http
               protocol: TCP
+          env:
+            - name: SCHEDULER_CONFIG_NAMESPACE
+              value: {{ .Values.schedulerConfig.namespace | quote }}
+            - name: SCHEDULER_CONFIG_NAME
+              value: {{ .Values.schedulerConfig.name | quote }}
+            - name: SCHEDULER_CONFIG_KEY
+              value: {{ .Values.schedulerConfig.key | quote }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

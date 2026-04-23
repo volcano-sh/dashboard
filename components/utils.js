@@ -19,7 +19,7 @@ export const fetchAllNamespaces = async () => {
 
 export const fetchAllQueues = async () => {
     try {
-        const response = await fetch(`/api/all-queues`);
+        const response = await fetch(`/api/queues`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

@@ -41,6 +41,7 @@ import {
     fetchJobs,
     fetchPods,
     fetchQueueList,
+    fetchSchedulerConfig,
     getApiErrorMessage,
 } from "../../lib/client/dashboard-api";
 
@@ -48,98 +49,22 @@ const iconProps = { size: 28, strokeWidth: 1.8 };
 
 const numberFormat = new Intl.NumberFormat("en-US");
 
-const fallbackRiskQueues = [
-    {
-        name: "team-a",
-        pending: 30,
-        cpu: 85,
-        memory: 70,
-        gpu: 20,
-        guarantee: 50,
-        deserved: 80,
-        capability: 100,
-        health: "Hot",
-        reason: "usage high",
-    },
-    {
-        name: "team-b",
-        pending: 25,
-        cpu: 20,
-        memory: 15,
-        gpu: 0,
-        guarantee: 30,
-        deserved: 30,
-        capability: 50,
-        health: "Starving",
-        reason: "pending high",
-    },
-    {
-        name: "research",
-        pending: 10,
-        cpu: 40,
-        memory: 35,
-        gpu: 5,
-        guarantee: 60,
-        deserved: 60,
-        capability: 60,
-        health: "Blocked",
-        reason: "parent limit",
-    },
-    {
-        name: "ai-lab",
-        pending: 10,
-        cpu: 40,
-        memory: 30,
-        gpu: 0,
-        guarantee: 20,
-        deserved: 40,
-        capability: 50,
-        health: "Blocked",
-        reason: "parent limit",
-    },
-    {
-        name: "devops",
-        pending: 0,
-        cpu: 10,
-        memory: 10,
-        gpu: 0,
-        guarantee: 10,
-        deserved: 10,
-        capability: 20,
-        health: "Idle",
-        reason: "reclaimable",
-    },
-    {
-        name: "testing",
-        pending: 0,
-        cpu: 30,
-        memory: 20,
-        gpu: 0,
-        guarantee: 10,
-        deserved: 20,
-        capability: 30,
-        health: "Healthy",
-        reason: "normal",
-    },
-];
-
-const trendPoints = [
-    620, 700, 650, 680, 640, 660, 610, 690, 635, 670, 615, 705, 630, 665, 690,
-    610, 655, 700, 620, 670, 640, 660, 615, 690, 635, 665, 610, 680, 625, 675,
-];
-
-const throughputBars = [
-    140, 115, 130, 150, 100, 110, 120, 155, 130, 180, 170, 110, 175, 100, 115,
-    125, 130, 115, 180, 100, 185, 150, 180, 105, 155, 90, 135, 105, 150, 95,
-];
-
 const getJobPhase = (job) =>
-    job?.status?.state?.phase || job?.status?.phase || job?.status?.state || "";
+    job?.summary?.status ||
+    job?.status?.state?.phase ||
+    job?.status?.phase ||
+    job?.status?.state ||
+    "";
 
-const getQueueName = (queue) => queue?.metadata?.name || queue?.name || "-";
+const getQueueName = (queue) =>
+    queue?.summary?.name || queue?.metadata?.name || queue?.name || "-";
 
 const getQueueStatus = (queue) => {
-    const state = queue?.status?.state || queue?.status?.phase || "";
+    const state =
+        queue?.summary?.status ||
+        queue?.status?.state ||
+        queue?.status?.phase ||
+        "";
     return state === "Open" || state === "Active";
 };
 
@@ -159,6 +84,7 @@ const getResource = (queue, section, resource) => {
 };
 
 const getUsagePercent = (queue, resource) => {
+    if (queue?.summary?.usage?.[resource]) return queue.summary.usage[resource];
     const allocated = getResource(queue, "allocated", resource);
     const capability = getResource(queue, "capability", resource);
     if (!capability) return 0;
@@ -166,10 +92,12 @@ const getUsagePercent = (queue, resource) => {
 };
 
 const getPending = (queue) =>
+    queue?.summary?.pending?.cpu ||
     getResource(queue, "pending", "cpu") ||
     getResource(queue, "inqueue", "cpu");
 
 const getQueueHealth = (queue) => {
+    if (queue?.summary?.health) return queue.summary.health;
     const cpu = getUsagePercent(queue, "cpu");
     const memory = getUsagePercent(queue, "memory");
     const pending = getPending(queue);
@@ -347,6 +275,14 @@ const ResourceUsageBars = ({ data }) => (
 );
 
 const LineSparkline = ({ points }) => {
+    if (points.length < 2) {
+        return (
+            <EmptyChart>
+                Not enough historical data from current resources.
+            </EmptyChart>
+        );
+    }
+
     const width = 460;
     const height = 145;
     const min = Math.min(...points);
@@ -382,32 +318,55 @@ const LineSparkline = ({ points }) => {
     );
 };
 
-const ThroughputChart = ({ bars }) => (
+const EmptyChart = ({ children }) => (
     <Box
         sx={{
-            alignItems: "end",
-            borderBottom: "1px solid #cfd5dd",
-            borderLeft: "1px solid #cfd5dd",
+            alignItems: "center",
+            border: "1px dashed #cfd5dd",
+            color: "text.secondary",
             display: "flex",
-            gap: 0.7,
+            fontSize: 12,
             height: 165,
-            px: 1,
-            pt: 1,
+            justifyContent: "center",
         }}
     >
-        {bars.map((value, index) => (
-            <Box
-                key={`${value}-${index}`}
-                sx={{
-                    bgcolor: "#c9ced6",
-                    border: "1px solid #77808d",
-                    height: `${Math.max((value / 250) * 100, 8)}%`,
-                    width: "100%",
-                }}
-            />
-        ))}
+        {children}
     </Box>
 );
+
+const ThroughputChart = ({ bars }) => {
+    if (!bars.length) {
+        return <EmptyChart>No scheduled job data available.</EmptyChart>;
+    }
+
+    const max = Math.max(...bars);
+    return (
+        <Box
+            sx={{
+                alignItems: "end",
+                borderBottom: "1px solid #cfd5dd",
+                borderLeft: "1px solid #cfd5dd",
+                display: "flex",
+                gap: 0.7,
+                height: 165,
+                px: 1,
+                pt: 1,
+            }}
+        >
+            {bars.map((value, index) => (
+                <Box
+                    key={`${value}-${index}`}
+                    sx={{
+                        bgcolor: "#c9ced6",
+                        border: "1px solid #77808d",
+                        height: `${Math.max((value / max) * 100, 8)}%`,
+                        width: "100%",
+                    }}
+                />
+            ))}
+        </Box>
+    );
+};
 
 const Dashboard = () => {
     const {
@@ -437,12 +396,22 @@ const Dashboard = () => {
         queryKey: ["dashboard", "pods"],
         queryFn: () => fetchPods({ limit: 1000 }),
     });
+    const {
+        data: schedulerConfig,
+        error: schedulerError,
+        isFetching: schedulerFetching,
+        refetch: refetchSchedulerConfig,
+    } = useQuery({
+        queryKey: ["dashboard", "scheduler", "config"],
+        queryFn: fetchSchedulerConfig,
+    });
 
     const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
     const queues = useMemo(() => queuesData?.items || [], [queuesData]);
     const pods = useMemo(() => podsData?.items || [], [podsData]);
-    const loading = jobsFetching || queuesFetching || podsFetching;
-    const error = jobsError || queuesError || podsError;
+    const loading =
+        jobsFetching || queuesFetching || podsFetching || schedulerFetching;
+    const error = jobsError || queuesError || podsError || schedulerError;
 
     const summary = useMemo(() => {
         const totalJobs = jobs.length;
@@ -454,7 +423,7 @@ const Dashboard = () => {
         ).length;
         const activeQueues = queues.filter(getQueueStatus).length;
         const runningPods = pods.filter(
-            (pod) => pod?.status?.phase === "Running",
+            (pod) => (pod?.summary?.status || pod?.status?.phase) === "Running",
         ).length;
 
         return {
@@ -500,11 +469,11 @@ const Dashboard = () => {
             .sort((a, b) => b.pending + b.cpu - (a.pending + a.cpu))
             .slice(0, 6);
 
-        return visible.length ? visible : fallbackRiskQueues;
+        return visible;
     }, [queues]);
 
     const quickStats = useMemo(() => {
-        const active = summary.activeQueues || 36;
+        const active = summary.activeQueues;
         const pending = riskQueues.filter((queue) => queue.pending > 0).length;
         const hot = riskQueues.filter((queue) => queue.health === "Hot").length;
         const starving = riskQueues.filter(
@@ -516,13 +485,17 @@ const Dashboard = () => {
 
         return {
             active,
-            blocked: blocked || 3,
-            hot: hot || 7,
-            invalid: 2,
-            pending: pending || 14,
-            starving: starving || 5,
+            blocked,
+            hot,
+            invalid: queues.filter(
+                (queue) =>
+                    !Object.keys(queue.summary?.resources?.capability || {})
+                        .length,
+            ).length,
+            pending,
+            starving,
         };
-    }, [riskQueues, summary.activeQueues]);
+    }, [queues, riskQueues, summary.activeQueues]);
 
     const resourceUsage = useMemo(() => {
         const derived = queues
@@ -534,22 +507,67 @@ const Dashboard = () => {
             .sort((a, b) => b.usage - a.usage)
             .slice(0, 6);
 
-        return derived.length
-            ? derived
-            : [
-                  { name: "root", usage: 84 },
-                  { name: "prod", usage: 66 },
-                  { name: "dev", usage: 45 },
-                  { name: "research", usage: 38 },
-                  { name: "ai", usage: 28 },
-                  { name: "others", usage: 18 },
-              ];
+        return derived;
     }, [queues]);
+
+    const pendingTrend = useMemo(() => {
+        const pendingJobs = jobs.filter(
+            (job) => getJobPhase(job) === "Pending",
+        );
+        if (pendingJobs.length < 2) return [];
+        return pendingJobs
+            .slice()
+            .sort(
+                (a, b) =>
+                    new Date(a.metadata?.creationTimestamp) -
+                    new Date(b.metadata?.creationTimestamp),
+            )
+            .map((_, index) => index + 1);
+    }, [jobs]);
+
+    const throughputBars = useMemo(() => {
+        const scheduledJobs = jobs.filter((job) =>
+            ["Running", "Completed", "Succeeded"].includes(getJobPhase(job)),
+        );
+        return scheduledJobs
+            .slice(-30)
+            .map((job) => Math.max(job.summary?.tasks?.length || 1, 1));
+    }, [jobs]);
+
+    const schedulerRows = useMemo(
+        () => [
+            ["Scheduler Name", schedulerConfig?.scheduler?.name],
+            [
+                "Actions",
+                schedulerConfig?.scheduler?.actions?.length
+                    ? schedulerConfig.scheduler.actions.join(", ")
+                    : "-",
+            ],
+            ["Queue Ordering", schedulerConfig?.policies?.queueOrder],
+            ["Job Order", schedulerConfig?.policies?.jobOrder],
+            ["Resource Order", schedulerConfig?.policies?.resourceOrder],
+            ["Node Order", schedulerConfig?.policies?.nodeOrder],
+            [
+                "Plugins",
+                schedulerConfig?.plugins?.length
+                    ? schedulerConfig.plugins
+                          .map((plugin) => plugin.name)
+                          .join(", ")
+                    : "-",
+            ],
+            [
+                "Preemption",
+                schedulerConfig?.preemption?.enabled ? "Enabled" : "Disabled",
+            ],
+        ],
+        [schedulerConfig],
+    );
 
     const handleRefresh = () => {
         refetchJobs();
         refetchQueues();
         refetchPods();
+        refetchSchedulerConfig();
     };
 
     return (
@@ -620,40 +638,40 @@ const Dashboard = () => {
                 }}
             >
                 <SummaryCard
-                    detail="+12 vs 15m ago"
+                    detail="from Kubernetes API"
                     icon={<BriefcaseBusiness {...iconProps} />}
                     title="Total Jobs"
-                    value={numberFormat.format(summary.totalJobs || 1256)}
+                    value={numberFormat.format(summary.totalJobs)}
                 />
                 <SummaryCard
-                    detail="51.9%"
+                    detail="current state"
                     icon={<PlayCircle {...iconProps} />}
                     title="Running Jobs"
-                    value={numberFormat.format(summary.runningJobs || 652)}
+                    value={numberFormat.format(summary.runningJobs)}
                 />
                 <SummaryCard
-                    detail="48.1%"
+                    detail="current state"
                     icon={<TimerReset {...iconProps} />}
                     title="Pending Jobs"
-                    value={numberFormat.format(summary.pendingJobs || 604)}
+                    value={numberFormat.format(summary.pendingJobs)}
                 />
                 <SummaryCard
-                    detail="of 142 total"
+                    detail={`of ${numberFormat.format(queues.length)} total`}
                     icon={<Layers {...iconProps} />}
                     title="Active Queues"
-                    value={numberFormat.format(summary.activeQueues || 36)}
+                    value={numberFormat.format(summary.activeQueues)}
                 />
                 <SummaryCard
-                    detail="+18 vs 15m ago"
+                    detail="current state"
                     icon={<BoxIcon {...iconProps} />}
                     title="Running Pods"
-                    value={numberFormat.format(summary.runningPods || 1278)}
+                    value={numberFormat.format(summary.runningPods)}
                 />
                 <SummaryCard
-                    detail="Preemptable: On"
+                    detail={`${schedulerConfig?.plugins?.length || 0} plugins`}
                     icon={<SlidersHorizontal {...iconProps} />}
                     title="Scheduler Policy"
-                    value="capacity"
+                    value={schedulerConfig?.scheduler?.name || "-"}
                 />
             </Box>
 
@@ -820,22 +838,13 @@ const Dashboard = () => {
                                 gridTemplateColumns: "1fr 1fr",
                             }}
                         >
-                            {[
-                                ["Scheduler Policy", "capacity"],
-                                ["Reclaimable", "On"],
-                                ["Preemptable", "On"],
-                                ["Queue Ordering", "priority"],
-                                ["Backfill", "Enabled"],
-                                ["Permit Plugin", "Enabled"],
-                                ["Gang Scheduling", "Enabled"],
-                                ["Node Order", "binpack"],
-                            ].map(([label, value]) => (
+                            {schedulerRows.map(([label, value]) => (
                                 <Box key={label}>
                                     <Typography sx={{ fontSize: 12 }}>
                                         {label}
                                     </Typography>
                                     <Typography sx={{ fontSize: 12 }}>
-                                        {value}
+                                        {value || "-"}
                                     </Typography>
                                 </Box>
                             ))}
@@ -848,23 +857,19 @@ const Dashboard = () => {
                             Allocation Rule Check
                         </Typography>
                         {[
+                            ["✓", "Queues loaded from API", queues.length],
+                            ["✓", "Jobs loaded from API", jobs.length],
+                            ["✓", "Pods loaded from API", pods.length],
                             [
-                                "✓",
-                                "Guarantee <= Deserved <= Capability",
-                                "138 / 142",
+                                schedulerConfig ? "✓" : "×",
+                                "Scheduler ConfigMap readable",
+                                schedulerConfig?.target?.name || "-",
                             ],
                             [
-                                "✓",
-                                "Children Guarantee <= Parent Capability",
-                                "139 / 142",
+                                quickStats.invalid === 0 ? "✓" : "×",
+                                "Queues with missing capability",
+                                quickStats.invalid,
                             ],
-                            [
-                                "✓",
-                                "Resource Usage within Capability",
-                                "136 / 142",
-                            ],
-                            ["×", "Missing Any Field (G / D / C)", "4"],
-                            ["×", "Invalid Value", "2"],
                         ].map(([mark, label, count]) => (
                             <Box
                                 key={label}
@@ -952,7 +957,7 @@ const Dashboard = () => {
                         <ListChecks size={14} />
                         Total Pending Jobs
                     </Box>
-                    <LineSparkline points={trendPoints} />
+                    <LineSparkline points={pendingTrend} />
                 </Panel>
                 <Panel>
                     <Typography sx={{ fontSize: 16, fontWeight: 800, mb: 1 }}>

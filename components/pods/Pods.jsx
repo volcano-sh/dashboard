@@ -39,7 +39,7 @@ const Pods = () => {
         page: 1,
         rowsPerPage: 10,
     });
-    const [sortDirection, setSortDirection] = useState("");
+    const [sortDirection, setSortDirection] = useState("desc");
     const [actionError, setActionError] = useState(null);
     const queryClient = useQueryClient();
 
@@ -47,6 +47,10 @@ const Pods = () => {
         search: searchText,
         namespace: filters.namespace,
         status: filters.status,
+        page: pagination.page,
+        limit: pagination.rowsPerPage,
+        sortBy: "metadata.creationTimestamp",
+        sortOrder: sortDirection,
     };
 
     const {
@@ -55,7 +59,15 @@ const Pods = () => {
         isFetching: podsFetching,
         isLoading: podsLoading,
     } = useQuery({
-        queryKey: ["pods", searchText, filters.namespace, filters.status],
+        queryKey: [
+            "pods",
+            searchText,
+            filters.namespace,
+            filters.status,
+            pagination.page,
+            pagination.rowsPerPage,
+            sortDirection,
+        ],
         queryFn: () => fetchPods(podParams),
     });
 
@@ -64,18 +76,12 @@ const Pods = () => {
         queryFn: fetchNamespaces,
     });
 
-    const cachedPods = useMemo(() => podsData?.items || [], [podsData]);
+    const pods = useMemo(() => podsData?.items || [], [podsData]);
     const totalPods = podsData?.totalCount || 0;
     const loading = podsLoading || podsFetching;
     const error = podsError
         ? getApiErrorMessage(podsError, "Failed to fetch pods")
         : actionError;
-
-    const pods = useMemo(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        return cachedPods.slice(startIndex, endIndex);
-    }, [cachedPods, pagination]);
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -163,6 +169,7 @@ const Pods = () => {
 
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
     return (

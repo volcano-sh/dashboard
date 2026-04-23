@@ -24,9 +24,12 @@ rules:
       - get
       - list
       - watch
+      - create
+      - delete
   - apiGroups:
       - ""
     resources:
+      - configmaps
       - namespaces
     verbs:
       - get
@@ -53,6 +56,7 @@ rules:
       - get
       - list
       - watch
+      - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

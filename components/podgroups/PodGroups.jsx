@@ -49,6 +49,10 @@ const PodGroups = () => {
         search: searchText,
         namespace: filters.namespace,
         status: filters.status,
+        page: pagination.page,
+        limit: pagination.rowsPerPage,
+        sortBy: "metadata.creationTimestamp",
+        sortOrder: sortDirection,
     };
 
     const {
@@ -58,7 +62,15 @@ const PodGroups = () => {
         isLoading: podGroupsLoading,
         refetch: refetchPodGroups,
     } = useQuery({
-        queryKey: ["podgroups", searchText, filters.namespace, filters.status],
+        queryKey: [
+            "podgroups",
+            searchText,
+            filters.namespace,
+            filters.status,
+            pagination.page,
+            pagination.rowsPerPage,
+            sortDirection,
+        ],
         queryFn: () => fetchPodGroups(podGroupParams),
     });
 
@@ -67,7 +79,7 @@ const PodGroups = () => {
         queryFn: fetchNamespaces,
     });
 
-    const cachedPodGroups = useMemo(
+    const podGroups = useMemo(
         () => podGroupsData?.items || [],
         [podGroupsData],
     );
@@ -76,12 +88,6 @@ const PodGroups = () => {
     const error = podGroupsError
         ? getApiErrorMessage(podGroupsError, "Failed to fetch podgroups")
         : actionError;
-
-    const podGroups = useMemo(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        return cachedPodGroups.slice(startIndex, endIndex);
-    }, [cachedPodGroups, pagination]);
 
     const handleSearch = (event) => {
         setSearchText(event.target.value);
@@ -164,22 +170,16 @@ const PodGroups = () => {
         return [
             "All",
             ...new Set(
-                cachedPodGroups.map((pg) => pg.status?.phase).filter(Boolean),
+                podGroups
+                    .map((pg) => pg.summary?.status || pg.status?.phase)
+                    .filter(Boolean),
             ),
         ];
-    }, [cachedPodGroups]);
-
-    const sortedPodGroups = useMemo(() => {
-        return [...podGroups].sort((a, b) => {
-            const compareResult =
-                new Date(b.metadata.creationTimestamp) -
-                new Date(a.metadata.creationTimestamp);
-            return sortDirection === "desc" ? compareResult : -compareResult;
-        });
-    }, [podGroups, sortDirection]);
+    }, [podGroups]);
 
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
     // For now, no creation dialog
@@ -272,7 +272,7 @@ const PodGroups = () => {
             </Box>
             {loading && <LinearProgress sx={{ mb: 2 }} />}
             <PodGroupsTable
-                podGroups={sortedPodGroups}
+                podGroups={podGroups}
                 handlePodGroupClick={handleClick}
                 filters={filters}
                 uniqueStatuses={uniqueStatuses}
