@@ -65,6 +65,11 @@ export const fetchQueues = async () => {
     return ["All", ...new Set(items.map((item) => item.metadata.name))];
 };
 
+export const fetchQueueList = async (params) => {
+    const response = await axios.get("/api/queues", { params });
+    return response.data;
+};
+
 export const getApiErrorMessage = (error, fallback) => {
     const apiMessage =
         error?.response?.data?.error ||
