@@ -4,8 +4,10 @@ import {
     Box,
     Card,
     CardContent,
+    Chip,
     Divider,
     LinearProgress,
+    Stack,
     Tab,
     Table,
     TableBody,
@@ -17,10 +19,24 @@ import {
     Typography,
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import BalanceIcon from "@mui/icons-material/Balance";
+import ChecklistRtlIcon from "@mui/icons-material/ChecklistRtl";
+import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
+import HubOutlinedIcon from "@mui/icons-material/HubOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import PieChartOutlineIcon from "@mui/icons-material/PieChartOutline";
+import ViewListOutlinedIcon from "@mui/icons-material/ViewListOutlined";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSchedulerConfig } from "../../lib/client/dashboard-api";
 
-const tabs = ["Scheduler Configuration", "Policies", "Plugins", "Preemption"];
+const tabs = [
+    "Scheduler Configuration",
+    "Scheduling Flow",
+    "Plugins",
+    "Raw Scheduler YAML",
+];
 
 const tableSx = {
     "& .MuiTableCell-root": {
@@ -104,6 +120,46 @@ const EmptyState = ({ children }) => (
     </Box>
 );
 
+const pluginIconMap = {
+    gang: HubOutlinedIcon,
+    priority: BalanceIcon,
+    drf: BalanceIcon,
+    predicates: FilterAltOutlinedIcon,
+    nodeorder: ViewListOutlinedIcon,
+    binpack: Inventory2OutlinedIcon,
+    proportion: PieChartOutlineIcon,
+    conformance: ChecklistRtlIcon,
+    overcommit: Inventory2OutlinedIcon,
+};
+
+const PluginIcon = ({ name }) => {
+    const IconComponent =
+        pluginIconMap[String(name || "").toLowerCase()] || ChecklistRtlIcon;
+
+    return (
+        <Box
+            sx={{
+                alignItems: "center",
+                color: "#1f2328",
+                display: "inline-flex",
+                flexShrink: 0,
+                justifyContent: "center",
+            }}
+        >
+            <IconComponent sx={{ fontSize: 24 }} />
+        </Box>
+    );
+};
+
+const flowCardBorder = "#dfe3e8";
+const flowMutedBorder = "#e6e8eb";
+const flowHeaderBg = "#f7f8fa";
+const flowPanelBg = "#fbfcfd";
+const flowStepBg = "#f6f8fa";
+const flowTextPrimary = "#1f2328";
+const flowTextSecondary = "#57606a";
+const flowStageWidth = 304;
+
 const SchedulerPanel = ({ config }) => {
     const actions = config?.scheduler?.actions || [];
     const sections = [
@@ -124,16 +180,6 @@ const SchedulerPanel = ({ config }) => {
                 ? actions.map((action, index) => [String(index + 1), action])
                 : [["Actions", "-"]],
         },
-        {
-            title: "Runtime Options",
-            description: "Top-level scheduler policy fields parsed from YAML.",
-            rows: [
-                ["Queue Ordering", config?.policies?.queueOrder],
-                ["Job Order", config?.policies?.jobOrder],
-                ["Resource Order", config?.policies?.resourceOrder],
-                ["Node Order", config?.policies?.nodeOrder],
-            ],
-        },
     ];
 
     return (
@@ -146,107 +192,606 @@ const SchedulerPanel = ({ config }) => {
                 ConfigMap.
             </Typography>
             <SectionGrid sections={sections} />
+        </Box>
+    );
+};
+
+const SchedulingFlowPanel = ({ config }) => {
+    const flow = config?.flow || {};
+    const flowActions = flow.actions || [];
+    const stepsByAction = flow.stepsByAction || {};
+
+    return (
+        <Box>
             <Box
                 sx={{
                     border: "1px solid #e1e4e8",
                     borderRadius: 1,
                     mt: 2,
-                    p: 2,
+                    overflow: "hidden",
                 }}
             >
-                <Typography sx={{ fontSize: 15, fontWeight: 700, mb: 1 }}>
-                    Scheduling Flow
-                </Typography>
-                {actions.length ? (
-                    <Box
-                        sx={{
-                            alignItems: "center",
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 1.5,
-                        }}
+                <Box sx={{ p: 2, pb: 1 }}>
+                    <Typography sx={{ fontSize: 15, fontWeight: 700 }}>
+                        Scheduling Flow
+                    </Typography>
+                    <Typography
+                        color="text.secondary"
+                        sx={{ fontSize: 12, mt: 0.5 }}
                     >
-                        {actions.map((action, index) => (
-                            <React.Fragment key={action}>
-                                <Box
-                                    sx={{
-                                        bgcolor: "#fafafa",
-                                        border: "1px solid #e6e8eb",
-                                        borderRadius: 1,
-                                        minWidth: 140,
-                                        p: 2,
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    <Typography
-                                        sx={{ fontSize: 14, fontWeight: 700 }}
+                        A configuration-driven view of how Volcano actions
+                        enter derived hooks and invoke enabled plugins when
+                        needed.
+                    </Typography>
+                </Box>
+                {flowActions.length ? (
+                    <Box sx={{ px: 2, pb: 2 }}>
+                        <Box
+                            sx={{
+                                alignItems: "stretch",
+                                display: "flex",
+                                flexDirection: { xs: "column", xl: "row" },
+                                gap: 1.5,
+                                overflowX: "auto",
+                                pb: 0.5,
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    alignItems: "flex-start",
+                                    bgcolor: flowPanelBg,
+                                    border: `1px solid ${flowCardBorder}`,
+                                    borderRadius: 2,
+                                    display: "flex",
+                                    flexShrink: 0,
+                                    justifyContent: "center",
+                                    minHeight: { xs: "auto", xl: 188 },
+                                    minWidth: { xs: "100%", xl: 156 },
+                                    p: 1.75,
+                                }}
+                            >
+                                <Box sx={{ textAlign: "center", width: "100%" }}>
+                                    <Box
+                                        sx={{
+                                            alignItems: "center",
+                                            bgcolor: "white",
+                                            border: `1px solid ${flowMutedBorder}`,
+                                            borderRadius: 1,
+                                            display: "inline-flex",
+                                            justifyContent: "center",
+                                            mb: 1,
+                                            p: 0.85,
+                                        }}
                                     >
-                                        {action}
-                                    </Typography>
+                                        <ChecklistRtlIcon
+                                            sx={{
+                                                color: flowTextSecondary,
+                                                fontSize: 20,
+                                            }}
+                                        />
+                                    </Box>
                                     <Typography
-                                        color="text.secondary"
-                                        sx={{ fontSize: 12 }}
+                                        sx={{
+                                            color: flowTextPrimary,
+                                            fontSize: 14,
+                                            fontWeight: 700,
+                                            letterSpacing: 0.1,
+                                        }}
                                     >
-                                        Step {index + 1}
+                                        Job Submission
                                     </Typography>
+                                    <Box
+                                        sx={{
+                                            color: flowTextSecondary,
+                                            fontSize: 11.5,
+                                            lineHeight: 1.45,
+                                            mt: 0.6,
+                                            mx: "auto",
+                                            maxWidth: 116,
+                                        }}
+                                    >
+                                        Scheduler receives the job and applies
+                                        configured actions in order.
+                                    </Box>
                                 </Box>
-                                {index < actions.length - 1 && (
-                                    <ArrowForwardIcon
-                                        sx={{ color: "text.secondary" }}
-                                    />
-                                )}
-                            </React.Fragment>
-                        ))}
+                            </Box>
+                            {flowActions.map((action, index) => {
+                                const steps = stepsByAction[action.name] || [];
+
+                                return (
+                                    <React.Fragment key={action.name}>
+                                        <Box
+                                            sx={{
+                                                alignItems: "center",
+                                                color: flowTextSecondary,
+                                                display: "flex",
+                                                flexShrink: 0,
+                                                justifyContent: "center",
+                                                minHeight: { xs: 32, xl: "auto" },
+                                                px: { xs: 0, xl: 0.15 },
+                                            }}
+                                        >
+                                            <ArrowForwardIcon
+                                                sx={{
+                                                    fontSize: 24,
+                                                    transform: {
+                                                        xs: "rotate(90deg)",
+                                                        xl: "none",
+                                                    },
+                                                }}
+                                            />
+                                        </Box>
+                                        <Box
+                                            sx={{
+                                                bgcolor: "white",
+                                                border: `1px solid ${flowCardBorder}`,
+                                                borderRadius: 2,
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                flexGrow: 1,
+                                                maxWidth: {
+                                                    xs: "100%",
+                                                    xl: flowStageWidth,
+                                                },
+                                                minWidth: {
+                                                    xs: "100%",
+                                                    xl: flowStageWidth,
+                                                },
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            <Box
+                                                sx={{
+                                                    bgcolor: flowHeaderBg,
+                                                    borderBottom: `1px solid ${flowCardBorder}`,
+                                                    px: 1.5,
+                                                    py: 1.1,
+                                                }}
+                                            >
+                                                <Stack
+                                                    alignItems="center"
+                                                    direction="row"
+                                                    spacing={1}
+                                                    sx={{ mb: 0.2 }}
+                                                >
+                                                    <Box
+                                                        sx={{
+                                                            alignItems:
+                                                                "center",
+                                                            bgcolor: "#2f353d",
+                                                            borderRadius:
+                                                                "50%",
+                                                            color: "white",
+                                                            display:
+                                                                "inline-flex",
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            height: 22,
+                                                            justifyContent:
+                                                                "center",
+                                                            width: 22,
+                                                        }}
+                                                    >
+                                                        {action.order}
+                                                    </Box>
+                                                    <Typography
+                                                        sx={{
+                                                            color: flowTextPrimary,
+                                                            fontSize: 14,
+                                                            fontWeight: 700,
+                                                            letterSpacing: 0.2,
+                                                        }}
+                                                    >
+                                                        {action.title}
+                                                    </Typography>
+                                                </Stack>
+                                                <Typography
+                                                    sx={{
+                                                        color: flowTextPrimary,
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        lineHeight: 1.35,
+                                                        pl: 3.25,
+                                                    }}
+                                                >
+                                                    ({action.subtitle})
+                                                </Typography>
+                                            </Box>
+                                            <Box sx={{ p: 1.5 }}>
+                                                <Typography
+                                                    sx={{
+                                                        color: flowTextPrimary,
+                                                        fontSize: 12,
+                                                        fontWeight: 700,
+                                                        lineHeight: 1.45,
+                                                        mb: 1.25,
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    Goal:{" "}
+                                                    <Box
+                                                        component="span"
+                                                        sx={{
+                                                            color: flowTextSecondary,
+                                                            fontWeight: 500,
+                                                        }}
+                                                    >
+                                                        {action.goal}
+                                                    </Box>
+                                                </Typography>
+                                                {steps.length ? (
+                                                    <Stack spacing={1}>
+                                                        {steps.map((step) => (
+                                                            <Box
+                                                                key={`${action.name}-${step.hook}`}
+                                                                sx={{
+                                                                    alignItems:
+                                                                        "stretch",
+                                                                    display:
+                                                                        "flex",
+                                                                    gap: 0.75,
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    sx={{
+                                                                        alignItems:
+                                                                            "center",
+                                                                        bgcolor:
+                                                                            flowStepBg,
+                                                                        border: `1px solid ${flowMutedBorder}`,
+                                                                        borderRadius: 1,
+                                                                        color:
+                                                                            flowTextPrimary,
+                                                                        display:
+                                                                            "inline-flex",
+                                                                        flexShrink: 0,
+                                                                        fontSize: 11,
+                                                                        fontWeight: 700,
+                                                                        lineHeight: 1.2,
+                                                                        justifyContent:
+                                                                            "center",
+                                                                        minHeight: 32,
+                                                                        minWidth: 54,
+                                                                        px: 0.75,
+                                                                    }}
+                                                                >
+                                                                    {step.label}
+                                                                </Box>
+                                                                <Box
+                                                                    sx={{
+                                                                        alignItems:
+                                                                            "center",
+                                                                        color:
+                                                                            flowTextSecondary,
+                                                                        display:
+                                                                            "flex",
+                                                                        flexShrink: 0,
+                                                                        px: 0.15,
+                                                                    }}
+                                                                >
+                                                                    <ArrowForwardIcon
+                                                                        sx={{
+                                                                            fontSize: 16,
+                                                                        }}
+                                                                    />
+                                                                </Box>
+                                                                <Stack
+                                                                    spacing={1}
+                                                                    sx={{
+                                                                        flex: 1,
+                                                                    }}
+                                                                >
+                                                                    {step.plugins
+                                                                        .length ? (
+                                                                        step.plugins.map(
+                                                                            (
+                                                                                plugin,
+                                                                            ) => (
+                                                                                <Box
+                                                                                    key={`${action.name}-${step.hook}-${plugin.name}`}
+                                                                                    sx={{
+                                                                                        bgcolor: flowPanelBg,
+                                                                                        border: `1px solid ${flowMutedBorder}`,
+                                                                                        borderRadius: 1.5,
+                                                                                        minHeight: 72,
+                                                                                        p: 0.9,
+                                                                                    }}
+                                                                                >
+                                                                                    <Stack
+                                                                                        direction="row"
+                                                                                        spacing={
+                                                                                            0.9
+                                                                                        }
+                                                                                    >
+                                                                                        <PluginIcon
+                                                                                            name={
+                                                                                                plugin.name
+                                                                                            }
+                                                                                        />
+                                                                                        <Box
+                                                                                            sx={{
+                                                                                                minWidth: 0,
+                                                                                            }}
+                                                                                        >
+                                                                                            <Stack
+                                                                                                alignItems="center"
+                                                                                                direction="row"
+                                                                                                spacing={
+                                                                                                    0.5
+                                                                                                }
+                                                                                                sx={{
+                                                                                                    flexWrap: "wrap",
+                                                                                                    mb: 0.15,
+                                                                                                }}
+                                                                                            >
+                                                                                            <Typography
+                                                                                                sx={{
+                                                                                                    color: flowTextPrimary,
+                                                                                                    fontSize: 12.5,
+                                                                                                    fontWeight: 700,
+                                                                                                    lineHeight: 1.3,
+                                                                                                }}
+                                                                                            >
+                                                                                                    {plugin.name}
+                                                                                                </Typography>
+                                                                                                <Chip
+                                                                                                    label={
+                                                                                                        step.hook
+                                                                                                    }
+                                                                                                    size="small"
+                                                                                                    sx={{
+                                                                                                        bgcolor: "white",
+                                                                                                        borderColor: flowMutedBorder,
+                                                                                                        color: flowTextSecondary,
+                                                                                                        fontSize: 10,
+                                                                                                        height: 19,
+                                                                                                    }}
+                                                                                                    variant="outlined"
+                                                                                                />
+                                                                                            </Stack>
+                                                                                            <Typography
+                                                                                                sx={{
+                                                                                                    color: flowTextSecondary,
+                                                                                                    display: "-webkit-box",
+                                                                                                    fontSize: 11.5,
+                                                                                                    lineHeight: 1.45,
+                                                                                                    minHeight: 32,
+                                                                                                    overflow: "hidden",
+                                                                                                    WebkitBoxOrient:
+                                                                                                        "vertical",
+                                                                                                    WebkitLineClamp: 2,
+                                                                                                }}
+                                                                                            >
+                                                                                                {
+                                                                                                    plugin.description
+                                                                                                }
+                                                                                            </Typography>
+                                                                                            {Object.keys(
+                                                                                                plugin.arguments ||
+                                                                                                    {},
+                                                                                            )
+                                                                                                .length ? (
+                                                                                                <Typography
+                                                                                                    sx={{
+                                                                                                        color: flowTextSecondary,
+                                                                                                        fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace",
+                                                                                                        fontSize: 10,
+                                                                                                        mt: 0.55,
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {valueOrDash(
+                                                                                                        plugin.arguments,
+                                                                                                    )}
+                                                                                                </Typography>
+                                                                                            ) : null}
+                                                                                        </Box>
+                                                                                    </Stack>
+                                                                                </Box>
+                                                                            ),
+                                                                        )
+                                                                    ) : (
+                                                                        <Box
+                                                                            sx={{
+                                                                                border: `1px dashed ${flowMutedBorder}`,
+                                                                                borderRadius: 1.5,
+                                                                                color: flowTextSecondary,
+                                                                                fontSize: 11.5,
+                                                                                p: 1,
+                                                                            }}
+                                                                        >
+                                                                            No mapped plugin in
+                                                                            this step.
+                                                                        </Box>
+                                                                    )}
+                                                                </Stack>
+                                                            </Box>
+                                                        ))}
+                                                    </Stack>
+                                                ) : (
+                                                    <EmptyState>
+                                                        No derived steps
+                                                        available for this
+                                                        action.
+                                                    </EmptyState>
+                                                )}
+                                            </Box>
+                                            <Box
+                                                sx={{
+                                                    bgcolor: flowHeaderBg,
+                                                    borderTop: `1px solid ${flowCardBorder}`,
+                                                    px: 1.5,
+                                                    py: 1,
+                                                }}
+                                            >
+                                                <Typography
+                                                    sx={{
+                                                        color: flowTextPrimary,
+                                                        fontSize: 12.5,
+                                                        fontWeight: 700,
+                                                        mb: 0.45,
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    Result
+                                                </Typography>
+                                                <Stack
+                                                    direction={{
+                                                        xs: "column",
+                                                        sm: "row",
+                                                    }}
+                                                    spacing={1.5}
+                                                    sx={{
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "center",
+                                                        rowGap: 0.4,
+                                                    }}
+                                                >
+                                                    <Stack
+                                                        alignItems="center"
+                                                        direction="row"
+                                                        spacing={0.75}
+                                                    >
+                                                        <CheckIcon
+                                                            sx={{
+                                                                fontSize: 16,
+                                                            }}
+                                                        />
+                                                        <Typography
+                                                            sx={{
+                                                                fontSize: 12,
+                                                                fontWeight: 600,
+                                                            }}
+                                                        >
+                                                            {action.resultSuccess}
+                                                        </Typography>
+                                                    </Stack>
+                                                    <Typography
+                                                        sx={{
+                                                            color: flowTextSecondary,
+                                                            fontSize: 12,
+                                                        }}
+                                                    >
+                                                        /
+                                                    </Typography>
+                                                    <Stack
+                                                        alignItems="center"
+                                                        direction="row"
+                                                        spacing={0.75}
+                                                    >
+                                                        <CloseIcon
+                                                            sx={{
+                                                                fontSize: 16,
+                                                            }}
+                                                        />
+                                                        <Typography
+                                                            sx={{
+                                                                fontSize: 12,
+                                                                fontWeight: 600,
+                                                            }}
+                                                        >
+                                                            {action.resultFailure}
+                                                        </Typography>
+                                                    </Stack>
+                                                </Stack>
+                                            </Box>
+                                        </Box>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </Box>
+                        <Box
+                            sx={{
+                                bgcolor: flowPanelBg,
+                                border: `1px solid ${flowMutedBorder}`,
+                                borderRadius: 1,
+                                mt: 2.5,
+                                p: 1.5,
+                            }}
+                        >
+                            <Typography
+                                sx={{ fontSize: 12, fontWeight: 700, mb: 0.75 }}
+                            >
+                                Flow Legend
+                            </Typography>
+                            <Typography
+                                color="text.secondary"
+                                sx={{ fontSize: 12, mb: 0.5 }}
+                            >
+                                <strong>Configured:</strong>{" "}
+                                {flow.legend?.configured ||
+                                    "Actions, tiers, and plugins come directly from the active scheduler ConfigMap."}
+                            </Typography>
+                            <Typography
+                                color="text.secondary"
+                                sx={{ fontSize: 12, mb: 0.5 }}
+                            >
+                                <strong>Derived:</strong>{" "}
+                                {flow.legend?.derived ||
+                                    "Hooks and action-to-plugin relationships are derived from Volcano scheduling semantics."}
+                            </Typography>
+                            <Typography
+                                color="text.secondary"
+                                sx={{ fontSize: 12 }}
+                            >
+                                <strong>Step order:</strong> Plugins rendered
+                                in the same step participate in the same hook of
+                                that action, following the configured scheduling
+                                order.
+                            </Typography>
+                        </Box>
                     </Box>
                 ) : (
-                    <EmptyState>No scheduler actions found.</EmptyState>
+                    <Box sx={{ px: 2, pb: 2 }}>
+                        <EmptyState>No scheduler actions found.</EmptyState>
+                    </Box>
                 )}
             </Box>
         </Box>
     );
 };
 
-const PoliciesPanel = ({ config }) => {
-    const policies = config?.policies || {};
-    const sections = [
-        {
-            title: "Queue Strategy",
-            rows: [["Queue Ordering", policies.queueOrder]],
-        },
-        {
-            title: "Job Order",
-            rows: [["Job Order", policies.jobOrder]],
-        },
-        {
-            title: "Resource Sort Policy",
-            rows: [["Resource Order", policies.resourceOrder]],
-        },
-        {
-            title: "Node Sort Policy",
-            rows: [["Node Order", policies.nodeOrder]],
-        },
-        {
-            title: "Backfill Policy",
-            rows: [["Backfill", policies.backfill]],
-        },
-        {
-            title: "Reclaim Policy",
-            rows: [["Reclaim", policies.reclaim]],
-        },
-    ];
-
+const RawYamlPanel = ({ config }) => {
     return (
         <Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, mb: 2 }}>
-                Policies
-            </Typography>
-            <SectionGrid sections={sections} />
+            <Box
+                sx={{
+                    bgcolor: flowPanelBg,
+                    border: `1px solid ${flowMutedBorder}`,
+                    borderRadius: 1,
+                    mt: 3,
+                    p: 1.5,
+                }}
+            >
+                <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1 }}>
+                    Raw Scheduler YAML
+                </Typography>
+                <Box
+                    component="pre"
+                    sx={{
+                        bgcolor: "white",
+                        border: `1px solid ${flowMutedBorder}`,
+                        borderRadius: 1,
+                        color: flowTextPrimary,
+                        fontFamily:
+                            "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace",
+                        fontSize: 12,
+                        lineHeight: 1.5,
+                        maxHeight: 280,
+                        overflow: "auto",
+                        p: 1.5,
+                        whiteSpace: "pre-wrap",
+                    }}
+                >
+                    {config?.rawYaml || "No raw YAML available."}
+                </Box>
+            </Box>
         </Box>
     );
 };
 
 const PluginsPanel = ({ config }) => {
-    const plugins = config?.plugins || [];
+    const plugins = config?.flow?.plugins || config?.plugins || [];
     const tiers = Object.entries(
         plugins.reduce((grouped, plugin) => {
             const tier = plugin.tier || "default";
@@ -327,6 +872,14 @@ const PluginsPanel = ({ config }) => {
                                                 ? "Enabled"
                                                 : "Disabled"}
                                         </Typography>
+                                        <Typography
+                                            color="text.secondary"
+                                            sx={{ fontSize: 11, mt: 0.5 }}
+                                        >
+                                            {plugin.actions?.length
+                                                ? `Actions: ${plugin.actions.join(", ")}`
+                                                : "Action mapping unavailable"}
+                                        </Typography>
                                     </Box>
                                 ))}
                             </Box>
@@ -350,6 +903,8 @@ const PluginsPanel = ({ config }) => {
                             <TableCell>Plugin Name</TableCell>
                             <TableCell>Tier</TableCell>
                             <TableCell>Status</TableCell>
+                            <TableCell>Hooks</TableCell>
+                            <TableCell>Actions</TableCell>
                             <TableCell>Arguments</TableCell>
                         </TableRow>
                     </TableHead>
@@ -365,13 +920,23 @@ const PluginsPanel = ({ config }) => {
                                             : "Disabled"}
                                     </TableCell>
                                     <TableCell>
+                                        {plugin.hooks?.length
+                                            ? plugin.hooks.join(", ")
+                                            : "Unavailable"}
+                                    </TableCell>
+                                    <TableCell>
+                                        {plugin.actions?.length
+                                            ? plugin.actions.join(", ")
+                                            : "Unavailable"}
+                                    </TableCell>
+                                    <TableCell>
                                         {valueOrDash(plugin.arguments)}
                                     </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4}>
+                                <TableCell colSpan={6}>
                                     No plugin details available.
                                 </TableCell>
                             </TableRow>
@@ -379,65 +944,6 @@ const PluginsPanel = ({ config }) => {
                     </TableBody>
                 </Table>
             </TableContainer>
-        </Box>
-    );
-};
-
-const PreemptionPanel = ({ config }) => {
-    const preemption = config?.preemption || {};
-    return (
-        <Box>
-            <Typography sx={{ fontSize: 17, fontWeight: 700 }}>
-                Preemption Configuration
-            </Typography>
-            <Typography color="text.secondary" sx={{ fontSize: 13, mb: 2 }}>
-                Live preemption-related scheduler options parsed from ConfigMap.
-            </Typography>
-            <SectionGrid
-                sections={[
-                    {
-                        title: "Preemption",
-                        rows: [
-                            ["Preemption", preemption.enabled],
-                            [
-                                "Victim Selection Policy",
-                                preemption.victimSelection,
-                            ],
-                        ],
-                    },
-                    {
-                        title: "Raw Preemption Config",
-                        rows: [["Config", preemption.raw]],
-                    },
-                ]}
-            />
-            <Box
-                sx={{
-                    border: "1px solid #e1e4e8",
-                    borderRadius: 1,
-                    mt: 2,
-                    p: 1.5,
-                }}
-            >
-                <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1 }}>
-                    Raw Scheduler YAML
-                </Typography>
-                <Box
-                    component="pre"
-                    sx={{
-                        bgcolor: "#f7f8fa",
-                        border: "1px solid #e6e8eb",
-                        borderRadius: 1,
-                        fontSize: 12,
-                        maxHeight: 260,
-                        overflow: "auto",
-                        p: 1.5,
-                        whiteSpace: "pre-wrap",
-                    }}
-                >
-                    {config?.rawYaml || "No raw YAML available."}
-                </Box>
-            </Box>
         </Box>
     );
 };
@@ -462,9 +968,9 @@ const Configuration = () => {
     const tabContent = useMemo(
         () => [
             <SchedulerPanel config={config} key="scheduler" />,
-            <PoliciesPanel config={config} key="policies" />,
+            <SchedulingFlowPanel config={config} key="flow" />,
             <PluginsPanel config={config} key="plugins" />,
-            <PreemptionPanel config={config} key="preemption" />,
+            <RawYamlPanel config={config} key="raw-yaml" />,
         ],
         [config],
     );

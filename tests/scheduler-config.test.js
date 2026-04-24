@@ -51,6 +51,102 @@ describe("scheduler config parser", () => {
                 arguments: { strict: true },
             },
         ]);
+        expect(config.flow.actions).toEqual([
+            {
+                name: "enqueue",
+                order: 1,
+                title: "ENQUEUE",
+                subtitle: "Admit into Queue",
+                goal: "Decide whether the job can enter the scheduling queue.",
+                resultSuccess: "Admitted to queue",
+                resultFailure: "Rejected",
+            },
+            {
+                name: "allocate",
+                order: 2,
+                title: "ALLOCATE",
+                subtitle: "Allocate Resources",
+                goal: "Find and reserve the best node(s) for the job.",
+                resultSuccess: "Bind to node(s)",
+                resultFailure: "Keep waiting",
+            },
+            {
+                name: "backfill",
+                order: 3,
+                title: "BACKFILL",
+                subtitle: "Utilize Idle Resources",
+                goal: "Schedule lower-priority or BestEffort jobs using idle resources.",
+                resultSuccess: "Utilize idle resources",
+                resultFailure: "No resources",
+            },
+        ]);
+        expect(config.flow.hooksByAction).toMatchObject({
+            allocate: ["Allocatable", "PredicateFn", "NodeOrderFn", "JobReady"],
+            backfill: ["PredicateFn", "NodeOrderFn"],
+        });
+        expect(config.flow.plugins).toEqual([
+            {
+                tier: "enqueue",
+                name: "gang",
+                enabled: true,
+                arguments: { strict: true },
+                description: "Ensure gang scheduling constraints.",
+                hooks: [
+                    "JobEnqueueable",
+                    "JobEnqueued",
+                    "JobReady",
+                    "JobPipelined",
+                ],
+                actions: ["enqueue", "allocate"],
+                hookMappingAvailable: true,
+            },
+        ]);
+        expect(config.flow.stepsByAction.enqueue).toEqual([
+            {
+                order: 1,
+                hook: "JobEnqueueable",
+                label: "Step 1",
+                plugins: [
+                    {
+                        tier: "enqueue",
+                        name: "gang",
+                        enabled: true,
+                        arguments: { strict: true },
+                        description: "Ensure gang scheduling constraints.",
+                        hooks: [
+                            "JobEnqueueable",
+                            "JobEnqueued",
+                            "JobReady",
+                            "JobPipelined",
+                        ],
+                        actions: ["enqueue", "allocate"],
+                        hookMappingAvailable: true,
+                    },
+                ],
+            },
+            {
+                order: 2,
+                hook: "JobEnqueued",
+                label: "Step 2",
+                plugins: [
+                    {
+                        tier: "enqueue",
+                        name: "gang",
+                        enabled: true,
+                        arguments: { strict: true },
+                        description: "Ensure gang scheduling constraints.",
+                        hooks: [
+                            "JobEnqueueable",
+                            "JobEnqueued",
+                            "JobReady",
+                            "JobPipelined",
+                        ],
+                        actions: ["enqueue", "allocate"],
+                        hookMappingAvailable: true,
+                    },
+                ],
+            },
+        ]);
         expect(config.preemption).toMatchObject({
             enabled: true,
             victimSelection: "BestEffort",
