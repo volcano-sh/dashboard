@@ -10,6 +10,10 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
 import JobEditDialog from "./JobEditDialog";
+import {
+    tableIdentifierSx,
+    tableTimestampSx,
+} from "../../scheduling/tableDataStyles";
 
 const JobTableRow = ({
     job,
@@ -65,6 +69,7 @@ const JobTableRow = ({
                         fontWeight: 600,
                         color: theme.palette.text.primary,
                         letterSpacing: "0.01em",
+                        ...tableIdentifierSx,
                     }}
                 >
                     {job.metadata.name}
@@ -74,7 +79,7 @@ const JobTableRow = ({
                     sx={{
                         padding: "16px 24px",
                         fontWeight: 500,
-                        fontSize: "0.95rem",
+                        ...tableIdentifierSx,
                     }}
                 >
                     {job.metadata.namespace}
@@ -84,7 +89,7 @@ const JobTableRow = ({
                     sx={{
                         padding: "16px 24px",
                         fontWeight: 500,
-                        fontSize: "0.95rem",
+                        ...tableIdentifierSx,
                     }}
                 >
                     {job.spec.queue || "N/A"}
@@ -93,8 +98,8 @@ const JobTableRow = ({
                 <TableCell
                     sx={{
                         padding: "16px 24px",
-                        fontSize: "0.9rem",
                         color: alpha(theme.palette.text.primary, 0.85),
+                        ...tableTimestampSx,
                     }}
                 >
                     {new Date(job.metadata.creationTimestamp).toLocaleString()}

@@ -1,0 +1,89 @@
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+    name: demo-job-prod
+    namespace: volcano-demo
+    labels:
+        demo.volcano.sh/sample: "true"
+spec:
+    minAvailable: 1
+    queue: demo-prod-team-b
+    schedulerName: volcano
+    maxRetry: 1
+    tasks:
+        - name: worker
+          replicas: 1
+          template:
+              spec:
+                  restartPolicy: Never
+                  containers:
+                      - name: worker
+                        image: busybox:1.36.1
+                        command:
+                            - sh
+                            - -c
+                            - echo "demo-job-prod-team-b running"; sleep 86400
+                        resources:
+                            requests:
+                                cpu: 50m
+                                memory: 64Mi
+---
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+    name: demo-job-team-a
+    namespace: volcano-demo
+    labels:
+        demo.volcano.sh/sample: "true"
+spec:
+    minAvailable: 1
+    queue: demo-prod-team-a
+    schedulerName: volcano
+    maxRetry: 1
+    tasks:
+        - name: worker
+          replicas: 1
+          template:
+              spec:
+                  restartPolicy: Never
+                  containers:
+                      - name: worker
+                        image: busybox:1.36.1
+                        command:
+                            - sh
+                            - -c
+                            - echo "demo-job-team-a running"; sleep 86400
+                        resources:
+                            requests:
+                                cpu: 50m
+                                memory: 64Mi
+---
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+    name: demo-job-research
+    namespace: volcano-demo
+    labels:
+        demo.volcano.sh/sample: "true"
+spec:
+    minAvailable: 1
+    queue: demo-research-ml
+    schedulerName: volcano
+    maxRetry: 1
+    tasks:
+        - name: worker
+          replicas: 1
+          template:
+              spec:
+                  restartPolicy: Never
+                  containers:
+                      - name: worker
+                        image: busybox:1.36.1
+                        command:
+                            - sh
+                            - -c
+                            - echo "demo-job-research running"; sleep 86400
+                        resources:
+                            requests:
+                                cpu: 50m
+                                memory: 64Mi

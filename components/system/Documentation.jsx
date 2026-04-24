@@ -1,25 +1,28 @@
 import React from "react";
 import { Box, Card, CardContent, Divider, Typography } from "@mui/material";
-import { BookOpen, Code, ExternalLink, FileText } from "lucide-react";
+import CodeOutlinedIcon from "@mui/icons-material/CodeOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import OpenInNewOutlinedIcon from "@mui/icons-material/OpenInNewOutlined";
 
 const documentCards = [
     {
         title: "Dashboard Guide",
         description:
             "Understand the overview, queue health panels, and scheduler checks.",
-        icon: <BookOpen size={20} strokeWidth={1.8} />,
+        icon: <MenuBookOutlinedIcon sx={{ fontSize: 20 }} />,
     },
     {
         title: "Configuration Reference",
         description:
             "Review queue, policy, plugin, and preemption configuration fields.",
-        icon: <FileText size={20} strokeWidth={1.8} />,
+        icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />,
     },
     {
         title: "API Integration",
         description:
             "Map the static wireframe data to backend and Kubernetes API endpoints.",
-        icon: <Code size={20} strokeWidth={1.8} />,
+        icon: <CodeOutlinedIcon sx={{ fontSize: 20 }} />,
     },
 ];
 
@@ -96,7 +99,9 @@ const Documentation = () => {
                                     <Typography sx={{ fontSize: 13 }}>
                                         Open documentation
                                     </Typography>
-                                    <ExternalLink size={15} strokeWidth={1.8} />
+                                    <OpenInNewOutlinedIcon
+                                        sx={{ fontSize: 15 }}
+                                    />
                                 </Box>
                             </Box>
                         ))}

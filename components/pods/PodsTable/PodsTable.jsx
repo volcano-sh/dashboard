@@ -4,6 +4,8 @@ import {
     Table,
     TableBody,
     Paper,
+    TableCell,
+    TableRow,
     useTheme,
 } from "@mui/material";
 import TableHeader from "./TableHeader";
@@ -12,46 +14,14 @@ import PodRow from "./PodRow";
 const PodsTable = ({
     pods,
     filters,
-    allNamespaces,
     sortDirection,
     onSortDirectionToggle,
-    onFilterChange,
     onPodClick,
 }) => {
     const theme = useTheme();
-    const [anchorEl, setAnchorEl] = React.useState({
-        status: null,
-        namespace: null,
-    });
-
-    const handleFilterClick = React.useCallback((filterType, event) => {
-        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
-    }, []);
-
-    const handleFilterClose = React.useCallback(
-        (filterType, value) => {
-            onFilterChange(filterType, value);
-            setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
-        },
-        [onFilterChange],
-    );
-
-    const filteredPods = React.useMemo(
-        () =>
-            pods.filter(
-                (pod) =>
-                    (filters.status === "All" ||
-                        (pod.status && pod.status.phase === filters.status)) &&
-                    (!filters.queue ||
-                        filters.queue === "All" ||
-                        pod.spec.queue === filters.queue),
-            ),
-        [pods, filters],
-    );
-
     const sortedPods = React.useMemo(
         () =>
-            [...filteredPods].sort((a, b) => {
+            [...pods].sort((a, b) => {
                 const compareResult =
                     new Date(b.metadata.creationTimestamp) -
                     new Date(a.metadata.creationTimestamp);
@@ -59,7 +29,7 @@ const PodsTable = ({
                     ? compareResult
                     : -compareResult;
             }),
-        [filteredPods, sortDirection],
+        [pods, sortDirection],
     );
 
     const getStatusColor = React.useCallback(
@@ -109,22 +79,26 @@ const PodsTable = ({
             <Table stickyHeader>
                 <TableHeader
                     filters={filters}
-                    anchorEl={anchorEl}
-                    handleFilterClick={handleFilterClick}
-                    handleFilterClose={handleFilterClose}
-                    allNamespaces={allNamespaces}
                     onSortDirectionToggle={onSortDirectionToggle}
                     sortDirection={sortDirection}
                 />
                 <TableBody>
-                    {sortedPods.map((pod) => (
-                        <PodRow
-                            key={`${pod.metadata.namespace}-${pod.metadata.name}`}
-                            pod={pod}
-                            getStatusColor={getStatusColor}
-                            onPodClick={onPodClick}
-                        />
-                    ))}
+                    {sortedPods.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={6} align="center">
+                                No pods found.
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        sortedPods.map((pod) => (
+                            <PodRow
+                                key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                pod={pod}
+                                getStatusColor={getStatusColor}
+                                onPodClick={onPodClick}
+                            />
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>

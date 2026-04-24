@@ -16,6 +16,7 @@ const PodGroupsTable = ({
     filters,
     uniqueStatuses,
     allNamespaces,
+    allQueues,
     anchorEl,
     handleFilterClick,
     handleFilterClose,
@@ -54,6 +55,7 @@ const PodGroupsTable = ({
                         filters={filters}
                         uniqueStatuses={uniqueStatuses}
                         allNamespaces={allNamespaces}
+                        allQueues={allQueues}
                         anchorEl={anchorEl}
                         handleFilterClick={handleFilterClick}
                         handleFilterClose={handleFilterClose}

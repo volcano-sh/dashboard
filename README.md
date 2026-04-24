@@ -47,6 +47,22 @@ kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0
     - For local access: `http://localhost:8080`
     - For remote access: `http://<NODE_IP>:8080` (replace `<NODE_IP>` with your Kubernetes node's IP address)
 
+## Optional Sample Data
+
+If you want a quick set of demo queues, podgroups, and pods for UI validation,
+you can install the sample manifests under
+[`examples/cluster-samples`](examples/cluster-samples/README.md):
+
+```bash
+kubectl apply -f examples/cluster-samples/
+```
+
+To remove them:
+
+```bash
+kubectl delete -f examples/cluster-samples/
+```
+
 ## Contributing
 
 You can follow our [CONTRIBUTING.md](CONTRIBUTING.md).

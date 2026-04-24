@@ -5,9 +5,9 @@ import {
     DialogContent,
     DialogActions,
     Box,
+    Button,
     Typography,
 } from "@mui/material";
-import { Button } from "react-bootstrap";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 
@@ -110,29 +110,34 @@ const CreateJobDialog = ({
             <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
                 <Button
                     onClick={handleClose}
-                    style={{
-                        backgroundColor: "#f4f4f4",
+                    variant="outlined"
+                    sx={{
                         color: primaryColor,
-                        border: "1.5px solid " + primaryColor,
+                        borderColor: primaryColor,
                         fontWeight: 600,
-                        borderRadius: 7,
+                        borderRadius: "7px",
                         minWidth: 110,
-                        transition: "all 0.2s",
+                        "&:hover": {
+                            borderColor: primaryColor,
+                            bgcolor: "rgba(227,76,38,0.04)",
+                        },
                     }}
                 >
                     Cancel
                 </Button>
                 <Button
                     onClick={handleSubmit}
-                    style={{
-                        backgroundColor: primaryColor,
+                    variant="contained"
+                    sx={{
+                        bgcolor: primaryColor,
                         color: "#fff",
-                        border: "none",
                         fontWeight: 600,
-                        borderRadius: 7,
+                        borderRadius: "7px",
                         minWidth: 110,
                         boxShadow: "0 3px 10px 0 rgba(227,76,38,0.14)",
-                        transition: "all 0.2s",
+                        "&:hover": {
+                            bgcolor: "#cb3f1c",
+                        },
                     }}
                     disabled={!yamlText.trim()}
                 >

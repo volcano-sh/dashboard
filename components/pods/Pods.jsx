@@ -6,15 +6,18 @@ import {
     CardContent,
     InputAdornment,
     LinearProgress,
-    TextField,
     Typography,
     useTheme,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CreateDialog from "../CreateDialog";
 import {
     createPod,
     fetchNamespaces,
+    fetchQueues,
     fetchPodYaml,
     fetchPods,
     getApiErrorMessage,
@@ -22,12 +25,13 @@ import {
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
-import { Plus, RefreshCw, Search } from "lucide-react";
+import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
 
 const Pods = () => {
     const [filters, setFilters] = useState({
         status: "All",
-        namespace: "default",
+        namespace: "All",
+        queue: "All",
     });
     const [selectedPodYaml, setSelectedPodYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
@@ -46,6 +50,7 @@ const Pods = () => {
     const podParams = {
         search: searchText,
         namespace: filters.namespace,
+        queue: filters.queue,
         status: filters.status,
         page: pagination.page,
         limit: pagination.rowsPerPage,
@@ -63,6 +68,7 @@ const Pods = () => {
             "pods",
             searchText,
             filters.namespace,
+            filters.queue,
             filters.status,
             pagination.page,
             pagination.rowsPerPage,
@@ -76,6 +82,11 @@ const Pods = () => {
         queryFn: fetchNamespaces,
     });
 
+    const { data: allQueues = [] } = useQuery({
+        queryKey: ["queues", "all"],
+        queryFn: fetchQueues,
+    });
+
     const pods = useMemo(() => podsData?.items || [], [podsData]);
     const totalPods = podsData?.totalCount || 0;
     const loading = podsLoading || podsFetching;
@@ -83,15 +94,20 @@ const Pods = () => {
         ? getApiErrorMessage(podsError, "Failed to fetch pods")
         : actionError;
 
-    const handleSearch = (event) => {
+    const handleSearch = useCallback((event) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
-    };
+    }, []);
 
-    const handleClearSearch = () => {
+    const handleResetFilters = useCallback(() => {
         setSearchText("");
+        setFilters({
+            status: "All",
+            namespace: "All",
+            queue: "All",
+        });
         setPagination((prev) => ({ ...prev, page: 1 }));
-    };
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -159,6 +175,57 @@ const Pods = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
+    const filterFields = useMemo(
+        () => [
+            {
+                key: "namespace",
+                label: "Namespace",
+                onChange: (value) => handleFilterChange("namespace", value),
+                options: allNamespaces,
+                type: "select",
+                value: filters.namespace,
+            },
+            {
+                key: "queue",
+                label: "Queue",
+                onChange: (value) => handleFilterChange("queue", value),
+                options: allQueues,
+                type: "select",
+                value: filters.queue,
+            },
+            {
+                key: "search",
+                label: "Search",
+                onChange: (value) => handleSearch({ target: { value } }),
+                placeholder: "Search name, label, queue...",
+                sx: {
+                    flex: { xs: "1 1 100%", lg: "0 0 320px" },
+                    minWidth: { xs: "100%", lg: 320 },
+                },
+                textFieldProps: {
+                    InputProps: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                        ),
+                    },
+                },
+                type: "text",
+                value: searchText,
+            },
+        ],
+        [
+            allNamespaces,
+            allQueues,
+            filters.namespace,
+            filters.queue,
+            handleFilterChange,
+            handleSearch,
+            searchText,
+        ],
+    );
+
     const handlePaginationChange = useCallback((newPage, newRowsPerPage) => {
         setPagination((prev) => ({
             ...prev,
@@ -202,7 +269,7 @@ const Pods = () => {
             )}
             <Box
                 sx={{
-                    alignItems: { xs: "stretch", md: "center" },
+                    alignItems: { xs: "stretch", md: "flex-start" },
                     display: "flex",
                     flexDirection: { xs: "column", md: "row" },
                     gap: 1.5,
@@ -210,32 +277,21 @@ const Pods = () => {
                     mb: 2,
                 }}
             >
-                <TextField
-                    onChange={handleSearch}
-                    placeholder="Search Pods..."
-                    size="small"
-                    value={searchText}
-                    sx={{ minWidth: 280 }}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Search size={18} />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
+                <Box sx={{ flex: 1 }}>
+                    <SchedulingTableFilters fields={filterFields} />
+                </Box>
                 <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
                     <Button
-                        onClick={handleClearSearch}
+                        onClick={handleResetFilters}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
-                        Clear
+                        Reset
                     </Button>
                     <Button
                         disabled={loading}
                         onClick={handleRefresh}
-                        startIcon={<RefreshCw size={17} />}
+                        startIcon={<RefreshIcon fontSize="small" />}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
@@ -243,7 +299,7 @@ const Pods = () => {
                     </Button>
                     <Button
                         onClick={() => setCreateDialogOpen(true)}
-                        startIcon={<Plus size={16} />}
+                        startIcon={<AddIcon fontSize="small" />}
                         sx={{
                             bgcolor: "#ff4d2d",
                             textTransform: "none",
@@ -260,6 +316,7 @@ const Pods = () => {
                 pods={pods}
                 filters={filters}
                 allNamespaces={allNamespaces}
+                allQueues={allQueues}
                 sortDirection={sortDirection}
                 onSortDirectionToggle={toggleSortDirection}
                 onFilterChange={handleFilterChange}

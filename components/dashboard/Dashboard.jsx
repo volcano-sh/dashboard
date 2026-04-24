@@ -17,26 +17,24 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
+import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
+import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
+import LocalFireDepartmentOutlinedIcon from "@mui/icons-material/LocalFireDepartmentOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PlayCircleOutlineOutlinedIcon from "@mui/icons-material/PlayCircleOutlineOutlined";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import { useQuery } from "@tanstack/react-query";
-import {
-    AlertTriangle,
-    Box as BoxIcon,
-    BriefcaseBusiness,
-    ChevronDown,
-    ChevronRight,
-    Clock3,
-    Flame,
-    Layers,
-    ListChecks,
-    LockKeyhole,
-    PlayCircle,
-    RefreshCw,
-    Settings,
-    SlidersHorizontal,
-    TimerReset,
-    TrendingUp,
-    UsersRound,
-} from "lucide-react";
 import {
     fetchJobs,
     fetchPods,
@@ -45,7 +43,7 @@ import {
     getApiErrorMessage,
 } from "../../lib/client/dashboard-api";
 
-const iconProps = { size: 28, strokeWidth: 1.8 };
+const iconProps = { sx: { fontSize: 28 } };
 
 const numberFormat = new Intl.NumberFormat("en-US");
 
@@ -179,7 +177,7 @@ const QuickCheckCard = ({
                 </Typography>
                 <Typography sx={{ fontSize: 12 }}>{subtitle}</Typography>
                 <Button
-                    endIcon={<ChevronRight size={14} />}
+                    endIcon={<ChevronRightIcon sx={{ fontSize: 14 }} />}
                     size="small"
                     sx={{ mt: 0.5, p: 0, textTransform: "none" }}
                 >
@@ -584,7 +582,7 @@ const Dashboard = () => {
                     <Select
                         size="small"
                         value="15m"
-                        IconComponent={ChevronDown}
+                        IconComponent={ExpandMoreIcon}
                         sx={{ fontSize: 13, minWidth: 130 }}
                     >
                         <MenuItem value="15m">
@@ -595,7 +593,7 @@ const Dashboard = () => {
                                     gap: 1,
                                 }}
                             >
-                                <Clock3 size={17} />
+                                <AccessTimeOutlinedIcon sx={{ fontSize: 17 }} />
                                 Last 15m
                             </Box>
                         </MenuItem>
@@ -603,14 +601,14 @@ const Dashboard = () => {
                     <Button
                         disabled={loading}
                         onClick={handleRefresh}
-                        startIcon={<RefreshCw size={17} />}
+                        startIcon={<RefreshIcon sx={{ fontSize: 17 }} />}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
                         Refresh
                     </Button>
                     <Button sx={{ minWidth: 40, px: 1.25 }} variant="outlined">
-                        <Settings size={18} />
+                        <SettingsOutlinedIcon sx={{ fontSize: 18 }} />
                     </Button>
                 </Box>
             </Box>
@@ -639,37 +637,37 @@ const Dashboard = () => {
             >
                 <SummaryCard
                     detail="from Kubernetes API"
-                    icon={<BriefcaseBusiness {...iconProps} />}
+                    icon={<WorkOutlineOutlinedIcon {...iconProps} />}
                     title="Total Jobs"
                     value={numberFormat.format(summary.totalJobs)}
                 />
                 <SummaryCard
                     detail="current state"
-                    icon={<PlayCircle {...iconProps} />}
+                    icon={<PlayCircleOutlineOutlinedIcon {...iconProps} />}
                     title="Running Jobs"
                     value={numberFormat.format(summary.runningJobs)}
                 />
                 <SummaryCard
                     detail="current state"
-                    icon={<TimerReset {...iconProps} />}
+                    icon={<HourglassEmptyOutlinedIcon {...iconProps} />}
                     title="Pending Jobs"
                     value={numberFormat.format(summary.pendingJobs)}
                 />
                 <SummaryCard
                     detail={`of ${numberFormat.format(queues.length)} total`}
-                    icon={<Layers {...iconProps} />}
+                    icon={<LayersOutlinedIcon {...iconProps} />}
                     title="Active Queues"
                     value={numberFormat.format(summary.activeQueues)}
                 />
                 <SummaryCard
                     detail="current state"
-                    icon={<BoxIcon {...iconProps} />}
+                    icon={<Inventory2OutlinedIcon {...iconProps} />}
                     title="Running Pods"
                     value={numberFormat.format(summary.runningPods)}
                 />
                 <SummaryCard
                     detail={`${schedulerConfig?.plugins?.length || 0} plugins`}
-                    icon={<SlidersHorizontal {...iconProps} />}
+                    icon={<TuneOutlinedIcon {...iconProps} />}
                     title="Scheduler Policy"
                     value={schedulerConfig?.scheduler?.name || "-"}
                 />
@@ -689,42 +687,42 @@ const Dashboard = () => {
                 }}
             >
                 <QuickCheckCard
-                    icon={<UsersRound {...iconProps} />}
+                    icon={<Groups2OutlinedIcon {...iconProps} />}
                     subtitle="Active Queues"
                     title="Q-Active"
                     value={quickStats.active}
                 />
                 <QuickCheckCard
                     color="#ff8500"
-                    icon={<Clock3 {...iconProps} />}
+                    icon={<AccessTimeOutlinedIcon {...iconProps} />}
                     subtitle="Queues w/ Pending"
                     title="Q-Pending"
                     value={quickStats.pending}
                 />
                 <QuickCheckCard
                     color="#f12f2f"
-                    icon={<Flame {...iconProps} />}
+                    icon={<LocalFireDepartmentOutlinedIcon {...iconProps} />}
                     subtitle="Usage > 80%"
                     title="Q-Hot"
                     value={quickStats.hot}
                 />
                 <QuickCheckCard
                     color="#ff8500"
-                    icon={<TrendingUp {...iconProps} />}
+                    icon={<TrendingUpIcon {...iconProps} />}
                     subtitle="Pending high, usage low"
                     title="Q-Starving"
                     value={quickStats.starving}
                 />
                 <QuickCheckCard
                     color="#6f42c1"
-                    icon={<LockKeyhole {...iconProps} />}
+                    icon={<LockOutlinedIcon {...iconProps} />}
                     subtitle="Blocked by parent"
                     title="Q-Blocked"
                     value={quickStats.blocked}
                 />
                 <QuickCheckCard
                     color="#f12f2f"
-                    icon={<AlertTriangle {...iconProps} />}
+                    icon={<WarningAmberOutlinedIcon {...iconProps} />}
                     subtitle="Config invalid"
                     title="Q-Invalid"
                     value={quickStats.invalid}
@@ -901,7 +899,7 @@ const Dashboard = () => {
                             </Box>
                         ))}
                         <Button
-                            endIcon={<ChevronRight size={14} />}
+                            endIcon={<ChevronRightIcon sx={{ fontSize: 14 }} />}
                             size="small"
                             sx={{ mt: 0.5, p: 0, textTransform: "none" }}
                         >
@@ -931,7 +929,7 @@ const Dashboard = () => {
                             Queue Resource Usage (Aggregate)
                         </Typography>
                         <Button
-                            endIcon={<ChevronDown size={14} />}
+                            endIcon={<ExpandMoreIcon sx={{ fontSize: 14 }} />}
                             size="small"
                             variant="outlined"
                         >
@@ -954,7 +952,7 @@ const Dashboard = () => {
                             ml: 4,
                         }}
                     >
-                        <ListChecks size={14} />
+                        <FactCheckOutlinedIcon sx={{ fontSize: 14 }} />
                         Total Pending Jobs
                     </Box>
                     <LineSparkline points={pendingTrend} />
@@ -974,7 +972,7 @@ const Dashboard = () => {
                             mb: 1,
                         }}
                     >
-                        <ListChecks size={14} />
+                        <FactCheckOutlinedIcon sx={{ fontSize: 14 }} />
                         Scheduled Jobs
                     </Box>
                     <ThroughputChart bars={throughputBars} />

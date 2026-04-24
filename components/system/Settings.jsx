@@ -8,12 +8,15 @@ import {
     Switch,
     Typography,
 } from "@mui/material";
-import { Bell, Database, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
+import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 
 const settingSections = [
     {
         title: "Cluster Access",
-        icon: <ShieldCheck size={20} strokeWidth={1.8} />,
+        icon: <VerifiedUserOutlinedIcon sx={{ fontSize: 20 }} />,
         rows: [
             ["Current Role", "Cluster administrator"],
             ["Namespace Scope", "All namespaces"],
@@ -22,7 +25,7 @@ const settingSections = [
     },
     {
         title: "Dashboard Preferences",
-        icon: <SlidersHorizontal size={20} strokeWidth={1.8} />,
+        icon: <TuneOutlinedIcon sx={{ fontSize: 20 }} />,
         rows: [
             ["Default Landing Page", "Overview"],
             ["Queue View", "Tree"],
@@ -31,7 +34,7 @@ const settingSections = [
     },
     {
         title: "Data Source",
-        icon: <Database size={20} strokeWidth={1.8} />,
+        icon: <StorageOutlinedIcon sx={{ fontSize: 20 }} />,
         rows: [
             ["Kubernetes API", "Connected"],
             ["Scheduler Metrics", "Connected"],
@@ -134,7 +137,9 @@ const Settings = () => {
                                 gap: 1,
                             }}
                         >
-                            <Bell size={20} strokeWidth={1.8} />
+                            <NotificationsNoneOutlinedIcon
+                                sx={{ fontSize: 20 }}
+                            />
                             <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
                                 Notifications
                             </Typography>

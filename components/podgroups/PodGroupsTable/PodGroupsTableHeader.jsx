@@ -21,6 +21,7 @@ const PodGroupsTableHeader = ({
     filters,
     uniqueStatuses,
     allNamespaces,
+    allQueues,
     anchorEl,
     handleFilterClick,
     handleFilterClose,
@@ -128,13 +129,37 @@ const PodGroupsTableHeader = ({
                         borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                     }}
                 >
-                    <Typography
-                        variant="subtitle1"
-                        fontWeight="700"
-                        color="text.primary"
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                        }}
                     >
-                        Queue
-                    </Typography>
+                        <Typography
+                            variant="subtitle1"
+                            fontWeight="700"
+                            color="text.primary"
+                        >
+                            Queue
+                        </Typography>
+                        <Button
+                            size="small"
+                            startIcon={<FilterList fontSize="small" />}
+                            onClick={(e) => handleFilterClick("queue", e)}
+                            sx={getFilterButtonStyle(filters.queue !== "All")}
+                        >
+                            {filters.queue}
+                        </Button>
+                        <JobFilters
+                            filterType="queue"
+                            currentValue={filters.queue}
+                            options={allQueues}
+                            handleFilterClick={handleFilterClick}
+                            handleFilterClose={handleFilterClose}
+                            anchorEl={anchorEl.queue}
+                        />
+                    </Box>
                 </TableCell>
 
                 <TableCell

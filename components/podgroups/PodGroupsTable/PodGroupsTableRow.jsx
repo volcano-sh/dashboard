@@ -1,6 +1,11 @@
 import React from "react";
 import { TableRow, TableCell, Box, useTheme, alpha } from "@mui/material";
 import JobStatusChip from "../../jobs/JobStatusChip"; // Reuse chip
+import {
+    tableIdentifierSx,
+    tableNumericSx,
+    tableTimestampSx,
+} from "../../scheduling/tableDataStyles";
 
 const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
     const theme = useTheme();
@@ -35,6 +40,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                     fontWeight: 600,
                     color: theme.palette.text.primary,
                     letterSpacing: "0.01em",
+                    ...tableIdentifierSx,
                 }}
             >
                 {podGroup.metadata.name}
@@ -44,7 +50,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                 sx={{
                     padding: "16px 24px",
                     fontWeight: 500,
-                    fontSize: "0.95rem",
+                    ...tableIdentifierSx,
                 }}
             >
                 {podGroup.metadata.namespace}
@@ -54,7 +60,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                 sx={{
                     padding: "16px 24px",
                     fontWeight: 500,
-                    fontSize: "0.95rem",
+                    ...tableIdentifierSx,
                 }}
             >
                 {podGroup.spec.queue || "N/A"}
@@ -64,7 +70,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                 sx={{
                     padding: "16px 24px",
                     fontWeight: 500,
-                    fontSize: "0.95rem",
+                    ...tableNumericSx,
                 }}
             >
                 {podGroup.spec.minMember || "N/A"}
@@ -73,8 +79,8 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
             <TableCell
                 sx={{
                     padding: "16px 24px",
-                    fontSize: "0.9rem",
                     color: alpha(theme.palette.text.primary, 0.85),
+                    ...tableTimestampSx,
                 }}
             >
                 {new Date(podGroup.metadata.creationTimestamp).toLocaleString()}

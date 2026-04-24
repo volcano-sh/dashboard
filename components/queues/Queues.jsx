@@ -16,28 +16,30 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    TextField,
     Typography,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import CloseIcon from "@mui/icons-material/Close";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
+import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import axios from "axios";
-import {
-    ChevronDown,
-    ChevronRight,
-    Edit3,
-    Folder,
-    FolderOpen,
-    MoreVertical,
-    Plus,
-    RefreshCw,
-    Search,
-    Settings,
-    X,
-} from "lucide-react";
 import CreateDialog from "../CreateDialog";
 import QueuePagination from "./QueuePagination";
 import { buildQueueTree } from "./utils/queueTreeBuilder";
+import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
+import {
+    tableIdentifierSx,
+    tableNumericSx,
+} from "../scheduling/tableDataStyles";
 
-const iconProps = { size: 18, strokeWidth: 1.8 };
+const iconProps = { sx: { fontSize: 18 } };
 
 const formatResource = (value, fallback = "0") => {
     if (value === undefined || value === null || value === "") return fallback;
@@ -239,25 +241,25 @@ const QueueTreeItem = ({
                 >
                     {hasChildren ? (
                         expanded ? (
-                            <ChevronDown size={15} />
+                            <ExpandMoreIcon sx={{ fontSize: 15 }} />
                         ) : (
-                            <ChevronRight size={15} />
+                            <ChevronRightIcon sx={{ fontSize: 15 }} />
                         )
                     ) : (
                         <Box sx={{ width: 15 }} />
                     )}
                 </IconButton>
                 {expanded && hasChildren ? (
-                    <FolderOpen size={17} strokeWidth={1.8} />
+                    <FolderOpenOutlinedIcon sx={{ fontSize: 17 }} />
                 ) : (
-                    <Folder size={17} strokeWidth={1.8} />
+                    <FolderOutlinedIcon sx={{ fontSize: 17 }} />
                 )}
                 <Typography sx={{ flexGrow: 1, fontSize: 14 }}>
                     {getQueueName(node)}
                 </Typography>
                 {selected && (
                     <IconButton size="small" sx={{ height: 26, width: 26 }}>
-                        <MoreVertical size={16} />
+                        <MoreVertIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                 )}
             </Box>
@@ -318,14 +320,14 @@ const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
                     <Button
                         disabled
                         size="small"
-                        startIcon={<Edit3 size={15} />}
+                        startIcon={<EditOutlinedIcon fontSize="small" />}
                         sx={{ textTransform: "none" }}
                         variant="contained"
                     >
                         Edit
                     </Button>
                     <IconButton onClick={onClose} size="small">
-                        <X {...iconProps} />
+                        <CloseIcon {...iconProps} />
                     </IconButton>
                 </Box>
             </Box>
@@ -349,7 +351,7 @@ const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
                             width: 48,
                         }}
                     >
-                        <Folder size={25} strokeWidth={1.8} />
+                        <FolderOutlinedIcon sx={{ fontSize: 25 }} />
                     </Box>
                     <Box>
                         <Typography sx={{ fontSize: 18, fontWeight: 700 }}>
@@ -555,7 +557,7 @@ const QueueHierarchyView = ({
                         Queue Hierarchy ({totalQueues || visibleRows.length})
                     </Typography>
                     <IconButton size="small">
-                        <Settings size={17} strokeWidth={1.8} />
+                        <SettingsOutlinedIcon sx={{ fontSize: 17 }} />
                     </IconButton>
                 </Box>
                 <TableContainer sx={{ overflowX: "auto" }}>
@@ -704,12 +706,16 @@ const QueueHierarchyView = ({
                                                     >
                                                         {hasChildren ? (
                                                             expanded ? (
-                                                                <ChevronDown
-                                                                    size={15}
+                                                                <ExpandMoreIcon
+                                                                    sx={{
+                                                                        fontSize: 15,
+                                                                    }}
                                                                 />
                                                             ) : (
-                                                                <ChevronRight
-                                                                    size={15}
+                                                                <ChevronRightIcon
+                                                                    sx={{
+                                                                        fontSize: 15,
+                                                                    }}
                                                                 />
                                                             )
                                                         ) : (
@@ -721,21 +727,23 @@ const QueueHierarchyView = ({
                                                         )}
                                                     </IconButton>
                                                     {expanded && hasChildren ? (
-                                                        <FolderOpen
-                                                            size={16}
-                                                            strokeWidth={1.8}
+                                                        <FolderOpenOutlinedIcon
+                                                            sx={{
+                                                                fontSize: 16,
+                                                            }}
                                                         />
                                                     ) : (
-                                                        <Folder
-                                                            size={16}
-                                                            strokeWidth={1.8}
+                                                        <FolderOutlinedIcon
+                                                            sx={{
+                                                                fontSize: 16,
+                                                            }}
                                                         />
                                                     )}
                                                     <Typography
                                                         sx={{
                                                             color: "#1677ff",
-                                                            fontSize: 13,
                                                             fontWeight: 700,
+                                                            ...tableIdentifierSx,
                                                         }}
                                                     >
                                                         {queueName}
@@ -759,13 +767,15 @@ const QueueHierarchyView = ({
                                                         }}
                                                     />
                                                     <Typography
-                                                        sx={{ fontSize: 12 }}
+                                                        sx={tableNumericSx}
                                                     >
                                                         {getStatus(node)}
                                                     </Typography>
                                                 </Box>
                                             </TableCell>
-                                            <TableCell>{level}</TableCell>
+                                            <TableCell sx={tableNumericSx}>
+                                                {level}
+                                            </TableCell>
                                             <TableCell>
                                                 <UsageMeter
                                                     percent={getUsagePercent(
@@ -782,40 +792,42 @@ const QueueHierarchyView = ({
                                                     )}
                                                 />
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getPendingCpu(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getPendingMemory(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getGuaranteeCpu(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getGuaranteeMemory(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getDeservedCpu(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getDeservedMemory(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getCapabilityCpu(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {getCapabilityMemory(node)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {node.status?.running ||
                                                     "0 / 0"}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={tableNumericSx}>
                                                 {node.status?.pendingJobs || 0}
                                             </TableCell>
                                             <TableCell>
                                                 <IconButton size="small">
-                                                    <MoreVertical size={16} />
+                                                    <MoreVertIcon
+                                                        sx={{ fontSize: 16 }}
+                                                    />
                                                 </IconButton>
                                             </TableCell>
                                         </TableRow>
@@ -882,6 +894,9 @@ const Queues = () => {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, rowsPerPage: 10 });
     const [totalQueues, setTotalQueues] = useState(0);
+    const [filters, setFilters] = useState({
+        queue: "All",
+    });
 
     const fetchQueues = useCallback(async () => {
         setLoading(true);
@@ -890,6 +905,7 @@ const Queues = () => {
             const params = {
                 search: searchText,
                 state: "All",
+                queue: filters.queue,
                 page: pagination.page,
                 limit: pagination.rowsPerPage,
             };
@@ -904,7 +920,7 @@ const Queues = () => {
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.rowsPerPage, searchText]);
+    }, [filters.queue, pagination.page, pagination.rowsPerPage, searchText]);
 
     useEffect(() => {
         fetchQueues();
@@ -944,10 +960,18 @@ const Queues = () => {
         }
     };
 
-    const handleSearch = (event) => {
+    const handleSearch = useCallback((event) => {
         setSearchText(event.target.value);
         setPagination((previous) => ({ ...previous, page: 1 }));
-    };
+    }, []);
+
+    const handleResetFilters = useCallback(() => {
+        setSearchText("");
+        setFilters({
+            queue: "All",
+        });
+        setPagination((previous) => ({ ...previous, page: 1 }));
+    }, []);
 
     const handleChangePage = (event, newPage) => {
         setPagination((previous) => ({ ...previous, page: newPage }));
@@ -960,6 +984,49 @@ const Queues = () => {
             page: 1,
         }));
     };
+
+    const queueFilterOptions = useMemo(
+        () => ["All", ...new Set(queues.map((queue) => getQueueName(queue)))],
+        [queues],
+    );
+
+    const filterFields = useMemo(
+        () => [
+            {
+                key: "queue",
+                label: "Queue",
+                onChange: (value) => {
+                    setFilters((prev) => ({ ...prev, queue: value }));
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                },
+                options: queueFilterOptions,
+                type: "select",
+                value: filters.queue,
+            },
+            {
+                key: "search",
+                label: "Search",
+                onChange: (value) => handleSearch({ target: { value } }),
+                placeholder: "Search name, label, parent...",
+                sx: {
+                    flex: { xs: "1 1 100%", lg: "0 0 320px" },
+                    minWidth: { xs: "100%", lg: 320 },
+                },
+                textFieldProps: {
+                    InputProps: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                        ),
+                    },
+                },
+                type: "text",
+                value: searchText,
+            },
+        ],
+        [filters.queue, handleSearch, queueFilterOptions, searchText],
+    );
 
     return (
         <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 3 }}>
@@ -990,7 +1057,7 @@ const Queues = () => {
 
             <Box
                 sx={{
-                    alignItems: { xs: "stretch", md: "center" },
+                    alignItems: { xs: "stretch", md: "flex-start" },
                     display: "flex",
                     flexDirection: { xs: "column", md: "row" },
                     gap: 1.5,
@@ -998,27 +1065,21 @@ const Queues = () => {
                     mb: 2,
                 }}
             >
-                <Box sx={{ alignItems: "center", display: "flex", gap: 2 }}>
-                    <TextField
-                        onChange={handleSearch}
-                        placeholder="Search queues..."
-                        size="small"
-                        value={searchText}
-                        sx={{ minWidth: 260 }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search size={18} />
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
+                <Box sx={{ flex: 1 }}>
+                    <SchedulingTableFilters fields={filterFields} />
                 </Box>
                 <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
                     <Button
+                        onClick={handleResetFilters}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Reset
+                    </Button>
+                    <Button
                         disabled={loading}
                         onClick={fetchQueues}
-                        startIcon={<RefreshCw size={17} />}
+                        startIcon={<RefreshIcon fontSize="small" />}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
@@ -1026,7 +1087,7 @@ const Queues = () => {
                     </Button>
                     <Button
                         disabled
-                        startIcon={<Edit3 size={16} />}
+                        startIcon={<EditOutlinedIcon fontSize="small" />}
                         sx={{ textTransform: "none" }}
                         variant="contained"
                     >
@@ -1034,7 +1095,7 @@ const Queues = () => {
                     </Button>
                     <Button
                         onClick={() => setCreateDialogOpen(true)}
-                        startIcon={<Plus size={16} />}
+                        startIcon={<AddIcon fontSize="small" />}
                         sx={{
                             bgcolor: "#ff4d2d",
                             textTransform: "none",

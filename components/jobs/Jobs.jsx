@@ -6,10 +6,12 @@ import {
     CardContent,
     InputAdornment,
     LinearProgress,
-    TextField,
     Typography,
     useTheme,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     createJob,
@@ -23,12 +25,12 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import CreateJobDialog from "./JobTable/CreateJobDialog";
-import { Plus, RefreshCw, Search } from "lucide-react";
+import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
 
 const Jobs = () => {
     const [filters, setFilters] = useState({
         status: "All",
-        namespace: "default",
+        namespace: "All",
         queue: "All",
     });
     const [selectedJobYaml, setSelectedJobYaml] = useState("");
@@ -98,15 +100,25 @@ const Jobs = () => {
         ? getApiErrorMessage(jobsError, "Failed to fetch jobs")
         : actionError;
 
-    const handleSearch = (event) => {
+    const handleSearch = useCallback((event) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
-    };
+    }, []);
 
-    const handleClearSearch = () => {
+    const handleResetFilters = useCallback(() => {
         setSearchText("");
+        setFilters({
+            status: "All",
+            namespace: "All",
+            queue: "All",
+        });
         setPagination((prev) => ({ ...prev, page: 1 }));
-    };
+        setAnchorEl({
+            status: null,
+            namespace: null,
+            queue: null,
+        });
+    }, []);
 
     const handleJobClick = useCallback(
         async (job) => {
@@ -199,6 +211,63 @@ const Jobs = () => {
         ];
     }, [jobs]);
 
+    const filterFields = useMemo(
+        () => [
+            {
+                key: "namespace",
+                label: "Namespace",
+                onChange: (value) =>
+                    setFilters((prev) => ({ ...prev, namespace: value })),
+                options: allNamespaces,
+                type: "select",
+                value: filters.namespace,
+            },
+            {
+                key: "queue",
+                label: "Queue",
+                onChange: (value) =>
+                    setFilters((prev) => ({ ...prev, queue: value })),
+                options: allQueues,
+                type: "select",
+                value: filters.queue,
+            },
+            {
+                key: "search",
+                label: "Search",
+                onChange: (value) => handleSearch({ target: { value } }),
+                placeholder: "Search name, label, queue...",
+                sx: {
+                    flex: { xs: "1 1 100%", lg: "0 0 320px" },
+                    minWidth: { xs: "100%", lg: 320 },
+                },
+                textFieldProps: {
+                    InputProps: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                        ),
+                    },
+                },
+                type: "text",
+                value: searchText,
+            },
+        ],
+        [
+            allNamespaces,
+            allQueues,
+            filters.namespace,
+            filters.queue,
+            handleSearch,
+            searchText,
+        ],
+    );
+
+    const handleFilterValueChange = useCallback((key, value) => {
+        setFilters((prev) => ({ ...prev, [key]: value }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
+
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -234,7 +303,7 @@ const Jobs = () => {
             )}
             <Box
                 sx={{
-                    alignItems: { xs: "stretch", md: "center" },
+                    alignItems: { xs: "stretch", md: "flex-start" },
                     display: "flex",
                     flexDirection: { xs: "column", md: "row" },
                     gap: 1.5,
@@ -242,32 +311,29 @@ const Jobs = () => {
                     mb: 2,
                 }}
             >
-                <TextField
-                    onChange={handleSearch}
-                    placeholder="Search jobs..."
-                    size="small"
-                    value={searchText}
-                    sx={{ minWidth: 280 }}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Search size={18} />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
+                <Box sx={{ flex: 1 }}>
+                    <SchedulingTableFilters
+                        fields={filterFields.map((field) => ({
+                            ...field,
+                            onChange: (value) =>
+                                field.key === "search"
+                                    ? field.onChange(value)
+                                    : handleFilterValueChange(field.key, value),
+                        }))}
+                    />
+                </Box>
                 <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
                     <Button
-                        onClick={handleClearSearch}
+                        onClick={handleResetFilters}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
-                        Clear
+                        Reset
                     </Button>
                     <Button
                         onClick={() => refetchJobs()}
                         disabled={loading}
-                        startIcon={<RefreshCw size={17} />}
+                        startIcon={<RefreshIcon fontSize="small" />}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
@@ -275,7 +341,7 @@ const Jobs = () => {
                     </Button>
                     <Button
                         onClick={() => setCreateDialogOpen(true)}
-                        startIcon={<Plus size={16} />}
+                        startIcon={<AddIcon fontSize="small" />}
                         sx={{
                             bgcolor: "#ff4d2d",
                             textTransform: "none",

@@ -14,24 +14,21 @@ import {
     Typography,
     Tooltip,
 } from "@mui/material";
-import {
-    Bell,
-    Box as BoxIcon,
-    BriefcaseBusiness,
-    ChevronDown,
-    ChartNoAxesCombined,
-    ChevronUp,
-    CircleUserRound,
-    FileText,
-    Home,
-    ListTree,
-    LogOut,
-    Mail,
-    Menu,
-    Network,
-    Settings,
-    Settings2,
-} from "lucide-react";
+import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import DeviceHubOutlinedIcon from "@mui/icons-material/DeviceHubOutlined";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import MenuIcon from "@mui/icons-material/Menu";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
+import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 
 const Layout = () => {
     // Hooks must be used inside component functions
@@ -43,7 +40,7 @@ const Layout = () => {
     const headerGrey = "#424242"; // dark gray top stripe
     const drawerWidth = 280;
     const collapsedDrawerWidth = 60;
-    const iconProps = { size: 18, strokeWidth: 1.8 };
+    const iconProps = { sx: { fontSize: 18 } };
 
     const handleDrawerToggle = () => {
         setOpen(!open);
@@ -58,7 +55,7 @@ const Layout = () => {
             items: [
                 {
                     text: "Overview",
-                    icon: <Home {...iconProps} />,
+                    icon: <HomeOutlinedIcon {...iconProps} />,
                     path: "/dashboard",
                 },
             ],
@@ -68,17 +65,17 @@ const Layout = () => {
             items: [
                 {
                     text: "Queues",
-                    icon: <ListTree {...iconProps} />,
+                    icon: <DeviceHubOutlinedIcon {...iconProps} />,
                     path: "/queues",
                 },
                 {
                     text: "Jobs",
-                    icon: <BriefcaseBusiness {...iconProps} />,
+                    icon: <WorkOutlineOutlinedIcon {...iconProps} />,
                     path: "/jobs",
                 },
                 {
                     text: "Pod Groups",
-                    icon: <Network {...iconProps} />,
+                    icon: <DeviceHubOutlinedIcon {...iconProps} />,
                     path: "/podgroups",
                 },
             ],
@@ -88,7 +85,7 @@ const Layout = () => {
             items: [
                 {
                     text: "Pods",
-                    icon: <BoxIcon {...iconProps} />,
+                    icon: <Inventory2OutlinedIcon {...iconProps} />,
                     path: "/pods",
                 },
             ],
@@ -98,12 +95,12 @@ const Layout = () => {
             items: [
                 {
                     text: "Events",
-                    icon: <Bell {...iconProps} />,
+                    icon: <NotificationsNoneOutlinedIcon {...iconProps} />,
                     disabled: true,
                 },
                 {
                     text: "Metrics",
-                    icon: <ChartNoAxesCombined {...iconProps} />,
+                    icon: <QueryStatsOutlinedIcon {...iconProps} />,
                     disabled: true,
                 },
             ],
@@ -113,7 +110,7 @@ const Layout = () => {
             items: [
                 {
                     text: "Configuration",
-                    icon: <Settings2 {...iconProps} />,
+                    icon: <TuneOutlinedIcon {...iconProps} />,
                     path: "/configuration",
                 },
             ],
@@ -123,12 +120,12 @@ const Layout = () => {
     const footerItems = [
         {
             text: "Settings",
-            icon: <Settings {...iconProps} />,
+            icon: <SettingsOutlinedIcon {...iconProps} />,
             path: "/settings",
         },
         {
             text: "Documentation",
-            icon: <FileText {...iconProps} />,
+            icon: <DescriptionOutlinedIcon {...iconProps} />,
             path: "/documentation",
         },
     ];
@@ -238,7 +235,7 @@ const Layout = () => {
                         edge="start"
                         sx={{ mr: 2, color: "white" }}
                     >
-                        <Menu size={20} strokeWidth={1.8} />
+                        <MenuIcon sx={{ fontSize: 20 }} />
                     </IconButton>
                     <Typography
                         variant="h6"
@@ -347,7 +344,7 @@ const Layout = () => {
                                 gap: 1,
                             }}
                         >
-                            <CircleUserRound {...iconProps} />
+                            <AccountCircleOutlinedIcon {...iconProps} />
                             {open && (
                                 <Typography sx={{ fontSize: 13 }}>
                                     admin
@@ -356,9 +353,9 @@ const Layout = () => {
                         </Box>
                         {open &&
                             (adminOpen ? (
-                                <ChevronUp {...iconProps} />
+                                <ExpandLessIcon {...iconProps} />
                             ) : (
-                                <ChevronDown {...iconProps} />
+                                <ExpandMoreIcon {...iconProps} />
                             ))}
                     </ListItemButton>
                     {open && adminOpen && (
@@ -383,7 +380,7 @@ const Layout = () => {
                                     py: 1.25,
                                 }}
                             >
-                                <Mail {...iconProps} />
+                                <MailOutlineIcon {...iconProps} />
                                 <Box>
                                     <Typography sx={{ fontSize: 13 }}>
                                         admin@example.com
@@ -403,7 +400,7 @@ const Layout = () => {
                                     px: 1.5,
                                 }}
                             >
-                                <LogOut {...iconProps} />
+                                <LogoutOutlinedIcon {...iconProps} />
                                 <Typography sx={{ fontSize: 13 }}>
                                     Logout
                                 </Typography>

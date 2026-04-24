@@ -1,6 +1,10 @@
 import React from "react";
 import { TableRow, TableCell, Chip, useTheme, alpha } from "@mui/material";
 import { calculateAge } from "../../utils";
+import {
+    tableIdentifierSx,
+    tableTimestampSx,
+} from "../../scheduling/tableDataStyles";
 
 const PodRow = ({ pod, getStatusColor, onPodClick }) => {
     const theme = useTheme();
@@ -35,6 +39,7 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                     fontWeight: 600,
                     color: theme.palette.text.primary,
                     letterSpacing: "0.01em",
+                    ...tableIdentifierSx,
                 }}
             >
                 {pod.metadata.name}
@@ -43,8 +48,8 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
             <TableCell
                 sx={{
                     padding: "16px 24px",
-                    fontSize: "0.95rem",
                     fontWeight: 500,
+                    ...tableIdentifierSx,
                 }}
             >
                 {pod.metadata.namespace}
@@ -53,8 +58,18 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
             <TableCell
                 sx={{
                     padding: "16px 24px",
-                    fontSize: "0.9rem",
                     color: alpha(theme.palette.text.primary, 0.85),
+                    ...tableIdentifierSx,
+                }}
+            >
+                {pod.summary?.queue || "N/A"}
+            </TableCell>
+
+            <TableCell
+                sx={{
+                    padding: "16px 24px",
+                    color: alpha(theme.palette.text.primary, 0.85),
+                    ...tableTimestampSx,
                 }}
             >
                 {new Date(pod.metadata.creationTimestamp).toLocaleString()}
@@ -86,8 +101,8 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
             <TableCell
                 sx={{
                     padding: "16px 24px",
-                    fontSize: "0.95rem",
                     fontWeight: 500,
+                    ...tableTimestampSx,
                 }}
             >
                 {calculateAge(pod.metadata.creationTimestamp)}

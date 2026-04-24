@@ -6,13 +6,16 @@ import {
     CardContent,
     InputAdornment,
     LinearProgress,
-    TextField,
     Typography,
     useTheme,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { escape } from "lodash";
 import {
+    fetchQueues,
     fetchNamespaces,
     fetchPodGroupYaml,
     fetchPodGroups,
@@ -21,18 +24,20 @@ import {
 import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
-import { Plus, RefreshCw, Search } from "lucide-react";
+import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
 
 const PodGroups = () => {
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "All",
+        queue: "All",
     });
     const [selectedYaml, setSelectedYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [anchorEl, setAnchorEl] = useState({
         status: null,
         namespace: null,
+        queue: null,
     });
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
@@ -48,6 +53,7 @@ const PodGroups = () => {
     const podGroupParams = {
         search: searchText,
         namespace: filters.namespace,
+        queue: filters.queue,
         status: filters.status,
         page: pagination.page,
         limit: pagination.rowsPerPage,
@@ -66,6 +72,7 @@ const PodGroups = () => {
             "podgroups",
             searchText,
             filters.namespace,
+            filters.queue,
             filters.status,
             pagination.page,
             pagination.rowsPerPage,
@@ -79,6 +86,11 @@ const PodGroups = () => {
         queryFn: fetchNamespaces,
     });
 
+    const { data: allQueues = [] } = useQuery({
+        queryKey: ["queues", "all"],
+        queryFn: fetchQueues,
+    });
+
     const podGroups = useMemo(
         () => podGroupsData?.items || [],
         [podGroupsData],
@@ -89,15 +101,25 @@ const PodGroups = () => {
         ? getApiErrorMessage(podGroupsError, "Failed to fetch podgroups")
         : actionError;
 
-    const handleSearch = (event) => {
+    const handleSearch = useCallback((event) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
-    };
+    }, []);
 
-    const handleClearSearch = () => {
+    const handleResetFilters = useCallback(() => {
         setSearchText("");
+        setFilters({
+            status: "All",
+            namespace: "All",
+            queue: "All",
+        });
         setPagination((prev) => ({ ...prev, page: 1 }));
-    };
+        setAnchorEl({
+            status: null,
+            namespace: null,
+            queue: null,
+        });
+    }, []);
 
     const handleClick = useCallback(
         async (pg) => {
@@ -177,6 +199,63 @@ const PodGroups = () => {
         ];
     }, [podGroups]);
 
+    const handleFilterValueChange = useCallback((key, value) => {
+        setFilters((prev) => ({ ...prev, [key]: value }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
+
+    const filterFields = useMemo(
+        () => [
+            {
+                key: "namespace",
+                label: "Namespace",
+                onChange: (value) =>
+                    handleFilterValueChange("namespace", value),
+                options: allNamespaces,
+                type: "select",
+                value: filters.namespace,
+            },
+            {
+                key: "queue",
+                label: "Queue",
+                onChange: (value) => handleFilterValueChange("queue", value),
+                options: allQueues,
+                type: "select",
+                value: filters.queue,
+            },
+            {
+                key: "search",
+                label: "Search",
+                onChange: (value) => handleSearch({ target: { value } }),
+                placeholder: "Search name, label, queue...",
+                sx: {
+                    flex: { xs: "1 1 100%", lg: "0 0 320px" },
+                    minWidth: { xs: "100%", lg: 320 },
+                },
+                textFieldProps: {
+                    InputProps: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                        ),
+                    },
+                },
+                type: "text",
+                value: searchText,
+            },
+        ],
+        [
+            allNamespaces,
+            allQueues,
+            filters.namespace,
+            filters.queue,
+            handleFilterValueChange,
+            handleSearch,
+            searchText,
+        ],
+    );
+
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -217,7 +296,7 @@ const PodGroups = () => {
             )}
             <Box
                 sx={{
-                    alignItems: { xs: "stretch", md: "center" },
+                    alignItems: { xs: "stretch", md: "flex-start" },
                     display: "flex",
                     flexDirection: { xs: "column", md: "row" },
                     gap: 1.5,
@@ -225,32 +304,21 @@ const PodGroups = () => {
                     mb: 2,
                 }}
             >
-                <TextField
-                    onChange={handleSearch}
-                    placeholder="Search PodGroups..."
-                    size="small"
-                    value={searchText}
-                    sx={{ minWidth: 280 }}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Search size={18} />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
+                <Box sx={{ flex: 1 }}>
+                    <SchedulingTableFilters fields={filterFields} />
+                </Box>
                 <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
                     <Button
-                        onClick={handleClearSearch}
+                        onClick={handleResetFilters}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
-                        Clear
+                        Reset
                     </Button>
                     <Button
                         disabled={loading}
                         onClick={() => refetchPodGroups()}
-                        startIcon={<RefreshCw size={17} />}
+                        startIcon={<RefreshIcon fontSize="small" />}
                         sx={{ textTransform: "none" }}
                         variant="outlined"
                     >
@@ -258,7 +326,7 @@ const PodGroups = () => {
                     </Button>
                     <Button
                         onClick={handleCreate}
-                        startIcon={<Plus size={16} />}
+                        startIcon={<AddIcon fontSize="small" />}
                         sx={{
                             bgcolor: "#ff4d2d",
                             textTransform: "none",
@@ -277,6 +345,7 @@ const PodGroups = () => {
                 filters={filters}
                 uniqueStatuses={uniqueStatuses}
                 allNamespaces={allNamespaces}
+                allQueues={allQueues}
                 anchorEl={anchorEl}
                 handleFilterClick={handleFilterClick}
                 handleFilterClose={handleFilterClose}

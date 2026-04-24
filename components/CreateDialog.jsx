@@ -8,14 +8,16 @@ import {
     Box,
     FormControlLabel,
     Checkbox,
+    Button,
     IconButton,
     Accordion,
     AccordionSummary,
     AccordionDetails,
     Typography,
 } from "@mui/material";
-import { Button } from "react-bootstrap";
-import { Plus, Minus, ChevronDown } from "lucide-react";
+import AddIcon from "@mui/icons-material/Add";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 const primaryColor = "#E34C26";
 
@@ -296,7 +298,9 @@ const CreateDialog = ({
             }}
         >
             <AccordionSummary
-                expandIcon={<ChevronDown size={18} color="#888" />}
+                expandIcon={
+                    <ExpandMoreIcon sx={{ color: "#888", fontSize: 18 }} />
+                }
             >
                 <Typography sx={{ fontWeight: 500 }}>
                     {section.charAt(0).toUpperCase() + section.slice(1)}{" "}
@@ -346,7 +350,7 @@ const CreateDialog = ({
                                 },
                             }}
                         >
-                            <Plus size={18} />
+                            <AddIcon fontSize="small" />
                         </IconButton>
                     </Box>
                     {queueData[section].scalars.map((scalar, idx) => (
@@ -398,7 +402,7 @@ const CreateDialog = ({
                                     ml: 1,
                                 }}
                             >
-                                <Minus size={16} />
+                                <RemoveIcon fontSize="small" />
                             </IconButton>
                         </Box>
                     ))}
@@ -546,29 +550,34 @@ const CreateDialog = ({
             <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
                 <Button
                     onClick={onClose}
-                    style={{
-                        backgroundColor: "#f4f4f4",
+                    variant="outlined"
+                    sx={{
                         color: primaryColor,
-                        border: "1.5px solid " + primaryColor,
+                        borderColor: primaryColor,
                         fontWeight: 600,
-                        borderRadius: 7,
+                        borderRadius: "7px",
                         minWidth: 110,
-                        transition: "all 0.2s",
+                        "&:hover": {
+                            borderColor: primaryColor,
+                            bgcolor: "rgba(227,76,38,0.04)",
+                        },
                     }}
                 >
                     Cancel
                 </Button>
                 <Button
                     onClick={handleSubmit}
-                    style={{
-                        backgroundColor: primaryColor,
+                    variant="contained"
+                    sx={{
+                        bgcolor: primaryColor,
                         color: "#fff",
-                        border: "none",
                         fontWeight: 600,
-                        borderRadius: 7,
+                        borderRadius: "7px",
                         minWidth: 110,
                         boxShadow: "0 3px 10px 0 rgba(227,76,38,0.14)",
-                        transition: "all 0.2s",
+                        "&:hover": {
+                            bgcolor: "#cb3f1c",
+                        },
                     }}
                 >
                     Create
