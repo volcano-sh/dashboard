@@ -15,6 +15,7 @@ import {
     Tooltip,
 } from "@mui/material";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
+import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import DeviceHubOutlinedIcon from "@mui/icons-material/DeviceHubOutlined";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -26,7 +27,6 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 
@@ -66,17 +66,17 @@ const Layout = () => {
                 {
                     text: "Queues",
                     icon: <DeviceHubOutlinedIcon {...iconProps} />,
-                    path: "/queues",
+                    path: "/scheduling/queues",
                 },
                 {
                     text: "Jobs",
                     icon: <WorkOutlineOutlinedIcon {...iconProps} />,
-                    path: "/jobs",
+                    path: "/scheduling/jobs",
                 },
                 {
                     text: "Pod Groups",
                     icon: <DeviceHubOutlinedIcon {...iconProps} />,
-                    path: "/podgroups",
+                    path: "/scheduling/podgroups",
                 },
             ],
         },
@@ -86,7 +86,7 @@ const Layout = () => {
                 {
                     text: "Pods",
                     icon: <Inventory2OutlinedIcon {...iconProps} />,
-                    path: "/pods",
+                    path: "/workload/pods",
                 },
             ],
         },
@@ -111,18 +111,18 @@ const Layout = () => {
                 {
                     text: "Configuration",
                     icon: <TuneOutlinedIcon {...iconProps} />,
-                    path: "/configuration",
+                    path: "/system/configuration",
+                },
+                {
+                    text: "Cluster Information",
+                    icon: <DnsOutlinedIcon {...iconProps} />,
+                    path: "/system/cluster-information",
                 },
             ],
         },
     ];
 
     const footerItems = [
-        {
-            text: "Settings",
-            icon: <SettingsOutlinedIcon {...iconProps} />,
-            path: "/settings",
-        },
         {
             text: "Documentation",
             icon: <DescriptionOutlinedIcon {...iconProps} />,
@@ -131,7 +131,10 @@ const Layout = () => {
     ];
 
     const renderMenuItem = (item) => {
-        const active = item.path && location.pathname === item.path;
+        const active =
+            item.path &&
+            (location.pathname === item.path ||
+                location.pathname.startsWith(`${item.path}/`));
         const itemStyles = {
             minHeight: 38,
             mx: open ? 1.25 : 0.75,

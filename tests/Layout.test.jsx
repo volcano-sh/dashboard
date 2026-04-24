@@ -4,12 +4,12 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 const menuItems = [
     { text: "Overview", path: "/dashboard" },
-    { text: "Queues", path: "/queues" },
-    { text: "Jobs", path: "/jobs" },
-    { text: "Pod Groups", path: "/podgroups" },
-    { text: "Pods", path: "/pods" },
-    { text: "Configuration", path: "/configuration" },
-    { text: "Settings", path: "/settings" },
+    { text: "Queues", path: "/scheduling/queues" },
+    { text: "Jobs", path: "/scheduling/jobs" },
+    { text: "Pod Groups", path: "/scheduling/podgroups" },
+    { text: "Pods", path: "/workload/pods" },
+    { text: "Configuration", path: "/system/configuration" },
+    { text: "Cluster Information", path: "/system/cluster-information" },
     { text: "Documentation", path: "/documentation" },
 ];
 
