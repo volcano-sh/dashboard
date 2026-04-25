@@ -295,7 +295,7 @@ const SchedulingFlowPanel = ({ config }) => {
                                     </Box>
                                 </Box>
                             </Box>
-                            {flowActions.map((action, index) => {
+                            {flowActions.map((action) => {
                                 const steps = stepsByAction[action.name] || [];
 
                                 return (
