@@ -12,6 +12,7 @@ import {
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+import { API_BASE } from "../../../lib/client/dashboard-api";
 
 const QueueTable = ({
     sortedQueues,
@@ -56,7 +57,7 @@ const QueueTable = ({
             setIsDeleting(true);
 
             const response = await fetch(
-                `/api/queues/${encodeURIComponent(queueToDelete)}`,
+                `${API_BASE}/queues/${encodeURIComponent(queueToDelete)}`,
                 {
                     method: "DELETE",
                     headers: {

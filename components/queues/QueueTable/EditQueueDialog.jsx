@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { API_BASE } from "../../../lib/client/dashboard-api";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
@@ -216,11 +217,14 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
 
             setSaving(true);
 
-            const resp = await fetch(`/api/queues/${updated.metadata.name}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ spec: updated.spec }),
-            });
+            const resp = await fetch(
+                `${API_BASE}/queues/${updated.metadata.name}`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ spec: updated.spec }),
+                },
+            );
 
             if (!resp.ok) {
                 const contentType = resp.headers.get("content-type");

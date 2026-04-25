@@ -35,6 +35,7 @@ import {
     fetchPodLogs,
     fetchPodYaml,
     getApiErrorMessage,
+    API_BASE,
 } from "../../lib/client/dashboard-api";
 import { calculateAge } from "../utils";
 
@@ -236,7 +237,7 @@ const podLogsStreamUrl = ({ container, name, namespace, tailLines }) => {
         follow: "true",
         tailLines: String(tailLines || 200),
     });
-    return `${protocol}://${window.location.host}/api/pods/${encodeURIComponent(
+    return `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
         namespace,
     )}/${encodeURIComponent(name)}/logs/stream?${params.toString()}`;
 };
@@ -1132,7 +1133,7 @@ const PodTerminalView = ({ pod }) => {
 
             const protocol =
                 window.location.protocol === "https:" ? "wss" : "ws";
-            const url = `${protocol}://${window.location.host}/api/pods/${encodeURIComponent(
+            const url = `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
                 namespace,
             )}/${encodeURIComponent(name)}/terminal?container=${encodeURIComponent(
                 selectedContainer,

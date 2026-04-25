@@ -13,9 +13,9 @@ const app = next({ dev, hostname: nextHostname, port });
 const handle = app.getRequestHandler();
 
 const terminalPathPattern =
-    /^\/api\/pods\/([^/]+)\/([^/]+)\/terminal\/?$/;
+    /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/terminal\/?$/;
 const podLogsStreamPathPattern =
-    /^\/api\/pods\/([^/]+)\/([^/]+)\/logs\/stream\/?$/;
+    /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/logs\/stream\/?$/;
 
 const terminalCommand = "/bin/sh";
 const kubernetesExecProtocols = [

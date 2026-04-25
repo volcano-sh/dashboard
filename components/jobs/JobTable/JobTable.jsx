@@ -10,6 +10,7 @@ import {
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
+import { API_BASE } from "../../../lib/client/dashboard-api";
 
 const JobTable = ({
     jobs,
@@ -53,7 +54,7 @@ const JobTable = ({
         try {
             const { namespace, name } = jobToDelete.metadata;
             const response = await fetch(
-                `/api/jobs/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`,
+                `${API_BASE}/jobs/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`,
                 {
                     method: "DELETE",
                     headers: {

@@ -30,6 +30,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import axios from "axios";
+import { API_BASE } from "../../lib/client/dashboard-api";
 import CreateDialog from "../CreateDialog";
 import QueuePagination from "./QueuePagination";
 import { buildQueueTree } from "./utils/queueTreeBuilder";
@@ -910,7 +911,7 @@ const Queues = () => {
                 limit: pagination.rowsPerPage,
             };
 
-            const response = await axios.get("/api/queues", { params });
+            const response = await axios.get(`${API_BASE}/queues`, { params });
             setQueues(response.data.items || []);
             setTotalQueues(response.data.totalCount || 0);
         } catch (err) {
@@ -942,7 +943,7 @@ const Queues = () => {
     const handleCreateQueue = async (newQueue) => {
         try {
             setLoading(true);
-            const response = await axios.post("/api/queues", newQueue);
+            const response = await axios.post(`${API_BASE}/queues`, newQueue);
 
             if (response.status !== 201) {
                 alert("Failed to create queue: " + response.statusText);

@@ -16,6 +16,7 @@ import { UnfoldLess, UnfoldMore as UnfoldMoreIcon } from "@mui/icons-material";
 import QueueTableHeader from "../QueueTable/QueueTableHeader";
 import QueueTreeNode from "./QueueTreeNode";
 import QueueTableDeleteDialog from "../QueueTable/QueueTableDeleteDialog";
+import { API_BASE } from "../../../lib/client/dashboard-api";
 import {
     buildQueueTree,
     filterTreeWithAncestors,
@@ -138,7 +139,7 @@ const QueueTreeView = ({
             setIsDeleting(true);
 
             const response = await fetch(
-                `/api/queues/${encodeURIComponent(queueToDelete)}`,
+                `${API_BASE}/queues/${encodeURIComponent(queueToDelete)}`,
                 {
                     method: "DELETE",
                     headers: {

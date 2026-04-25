@@ -1,21 +1,25 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { handleApiRequest } from "../lib/server/volcano-api";
 
-const request = (path) => new Request(`http://localhost${path}`);
+const apiDir = join(process.cwd(), "app", "api");
+const versionedApiDir = join(apiDir, "v1");
 
 describe("volcano API routing", () => {
-    it.each([
-        ["/api/job/default/demo/yaml", ["job", "default", "demo", "yaml"]],
-        ["/api/pod/default/demo/yaml", ["pod", "default", "demo", "yaml"]],
-        ["/api/queue/root/yaml", ["queue", "root", "yaml"]],
-        ["/api/all-jobs", ["all-jobs"]],
-        ["/api/all-queues", ["all-queues"]],
-        ["/api/all-pods", ["all-pods"]],
-    ])("returns 404 for removed legacy route %s", async (path, segments) => {
-        const response = await handleApiRequest(request(path), segments);
-        const body = await response.json();
+    it("keeps dashboard API routes under /api/v1", () => {
+        expect(existsSync(versionedApiDir)).toBe(true);
 
-        expect(response.status).toBe(404);
-        expect(body).toEqual({ error: "Not Found" });
+        [
+            "cluster-info",
+            "jobs",
+            "namespaces",
+            "podgroups",
+            "pods",
+            "queues",
+            "scheduler",
+        ].forEach((resource) => {
+            expect(existsSync(join(versionedApiDir, resource))).toBe(true);
+            expect(existsSync(join(apiDir, resource))).toBe(false);
+        });
     });
 });

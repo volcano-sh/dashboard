@@ -1,6 +1,8 @@
+import { API_BASE } from "../lib/client/dashboard-api";
+
 export const fetchAllNamespaces = async () => {
     try {
-        const response = await fetch(`/api/namespaces`);
+        const response = await fetch(`${API_BASE}/namespaces`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -19,7 +21,7 @@ export const fetchAllNamespaces = async () => {
 
 export const fetchAllQueues = async () => {
     try {
-        const response = await fetch(`/api/queues`);
+        const response = await fetch(`${API_BASE}/queues`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
