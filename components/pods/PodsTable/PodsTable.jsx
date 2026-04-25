@@ -6,19 +6,17 @@ import {
     Paper,
     TableCell,
     TableRow,
-    useTheme,
 } from "@mui/material";
 import TableHeader from "./TableHeader";
 import PodRow from "./PodRow";
 
 const PodsTable = ({
     pods,
-    filters,
+    selectedPod,
     sortDirection,
     onSortDirectionToggle,
     onPodClick,
 }) => {
-    const theme = useTheme();
     const sortedPods = React.useMemo(
         () =>
             [...pods].sort((a, b) => {
@@ -30,24 +28,6 @@ const PodsTable = ({
                     : -compareResult;
             }),
         [pods, sortDirection],
-    );
-
-    const getStatusColor = React.useCallback(
-        (status) => {
-            switch (status) {
-                case "Failed":
-                    return theme.palette.error.main;
-                case "Pending":
-                    return theme.palette.warning.main;
-                case "Running":
-                    return theme.palette.success.main;
-                case "Succeeded":
-                    return theme.palette.info.main;
-                default:
-                    return theme.palette.grey[500];
-            }
-        },
-        [theme],
     );
 
     return (
@@ -78,7 +58,6 @@ const PodsTable = ({
         >
             <Table stickyHeader>
                 <TableHeader
-                    filters={filters}
                     onSortDirectionToggle={onSortDirectionToggle}
                     sortDirection={sortDirection}
                 />
@@ -93,8 +72,13 @@ const PodsTable = ({
                         sortedPods.map((pod) => (
                             <PodRow
                                 key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                isSelected={
+                                    selectedPod?.metadata?.namespace ===
+                                        pod.metadata.namespace &&
+                                    selectedPod?.metadata?.name ===
+                                        pod.metadata.name
+                                }
                                 pod={pod}
-                                getStatusColor={getStatusColor}
                                 onPodClick={onPodClick}
                             />
                         ))

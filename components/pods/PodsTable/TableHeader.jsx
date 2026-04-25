@@ -3,14 +3,14 @@ import {
     TableHead,
     TableRow,
     TableCell,
-    Button,
     Typography,
     useTheme,
-    alpha,
+    IconButton,
+    Box,
 } from "@mui/material";
 import { ArrowDownward, ArrowUpward, UnfoldMore } from "@mui/icons-material";
 
-const TableHeader = ({ filters, onSortDirectionToggle, sortDirection }) => {
+const TableHeader = ({ onSortDirectionToggle, sortDirection }) => {
     const theme = useTheme();
 
     return (
@@ -27,106 +27,49 @@ const TableHeader = ({ filters, onSortDirectionToggle, sortDirection }) => {
                     <TableCell
                         key={header}
                         sx={{
-                            backgroundColor: alpha(
-                                theme.palette.background.paper,
-                                0.8,
-                            ),
-                            backdropFilter: "blur(8px)",
-                            padding: "16px 24px",
+                            backgroundColor: "#fafbfc",
+                            padding: "12px 18px",
                             minWidth: 140,
-                            borderBottom: `2px solid ${alpha(
-                                theme.palette.primary.main,
-                                0.2,
-                            )}`,
+                            borderBottom: `1px solid ${theme.palette.divider}`,
                         }}
                     >
-                        <Typography
-                            variant="subtitle1"
-                            fontWeight="700"
-                            color="text.primary"
-                            sx={{ letterSpacing: "0.02em" }}
+                        <Box
+                            sx={{
+                                alignItems: "center",
+                                display: "flex",
+                                gap: 0.75,
+                            }}
                         >
-                            {header}
-                        </Typography>
-                        {header === "Creation Time" && (
-                            <Button
-                                size="small"
-                                onClick={onSortDirectionToggle}
-                                startIcon={
-                                    sortDirection === "desc" ? (
-                                        <ArrowDownward fontSize="small" />
-                                    ) : sortDirection === "asc" ? (
-                                        <ArrowUpward fontSize="small" />
-                                    ) : (
-                                        <UnfoldMore fontSize="small" />
-                                    )
-                                }
+                            <Typography
+                                color="text.primary"
                                 sx={{
-                                    textTransform: "none",
-                                    padding: "4px 12px",
-                                    minWidth: "auto",
-                                    borderRadius: "20px",
-                                    marginTop: "8px",
-                                    fontSize: "0.8rem",
-                                    fontWeight: 500,
-                                    letterSpacing: "0.02em",
-                                    transition:
-                                        "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                                    backgroundColor: alpha(
-                                        theme.palette.primary.main,
-                                        0.1,
-                                    ),
-                                    color: theme.palette.primary.main,
-                                    "&:hover": {
-                                        backgroundColor: alpha(
-                                            theme.palette.primary.main,
-                                            0.15,
-                                        ),
-                                        transform: "translateY(-2px)",
-                                        boxShadow: `0 4px 8px ${alpha(
-                                            theme.palette.primary.main,
-                                            0.2,
-                                        )}`,
-                                    },
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    letterSpacing: "0.01em",
                                 }}
                             >
-                                Sort
-                            </Button>
-                        )}
-                        {header === "Namespace" &&
-                            filters.namespace !== "All" && (
-                                <Typography
+                                {header}
+                            </Typography>
+                            {header === "Creation Time" && (
+                                <IconButton
+                                    onClick={onSortDirectionToggle}
+                                    size="small"
                                     sx={{
-                                        color: theme.palette.primary.main,
-                                        fontSize: 12,
-                                        mt: 0.75,
+                                        color: "text.secondary",
+                                        height: 24,
+                                        width: 24,
                                     }}
                                 >
-                                    {filters.namespace}
-                                </Typography>
+                                    {sortDirection === "desc" ? (
+                                        <ArrowDownward fontSize="inherit" />
+                                    ) : sortDirection === "asc" ? (
+                                        <ArrowUpward fontSize="inherit" />
+                                    ) : (
+                                        <UnfoldMore fontSize="inherit" />
+                                    )}
+                                </IconButton>
                             )}
-                        {header === "Queue" && filters.queue !== "All" && (
-                            <Typography
-                                sx={{
-                                    color: theme.palette.primary.main,
-                                    fontSize: 12,
-                                    mt: 0.75,
-                                }}
-                            >
-                                {filters.queue}
-                            </Typography>
-                        )}
-                        {header === "Status" && filters.status !== "All" && (
-                            <Typography
-                                sx={{
-                                    color: theme.palette.primary.main,
-                                    fontSize: 12,
-                                    mt: 0.75,
-                                }}
-                            >
-                                {filters.status}
-                            </Typography>
-                        )}
+                        </Box>
                     </TableCell>
                 ))}
             </TableRow>

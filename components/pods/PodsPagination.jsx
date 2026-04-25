@@ -1,7 +1,12 @@
 import React from "react";
 import { Box, MenuItem, Pagination, Select, Typography } from "@mui/material";
 
-const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
+const PodsPagination = ({
+    compact = false,
+    totalPods,
+    pagination,
+    onPaginationChange,
+}) => {
     const handleChangePage = (event, newPage) => {
         onPaginationChange(newPage, null);
     };
@@ -15,8 +20,10 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
             sx={{
                 mt: 2,
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: compact ? "flex-start" : "space-between",
                 alignItems: "center",
+                flexWrap: "wrap",
+                gap: compact ? 1 : 0,
             }}
         >
             <Select
@@ -31,13 +38,15 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
             <Box
                 sx={{
                     display: "flex",
-                    justifyContent: "space-between",
+                    justifyContent: compact ? "flex-start" : "space-between",
                     alignItems: "center",
-                    mt: 2,
-                    mb: 2,
+                    mt: compact ? 0 : 2,
+                    mb: compact ? 0 : 2,
+                    gap: 1.5,
+                    flexWrap: "wrap",
                 }}
             >
-                <Typography variant="body2" sx={{ mr: 2 }}>
+                <Typography variant="body2" sx={{ mr: compact ? 0 : 2 }}>
                     Total Pods: {totalPods}
                 </Typography>
                 <Pagination

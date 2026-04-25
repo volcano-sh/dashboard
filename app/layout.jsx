@@ -1,4 +1,5 @@
 import "./globals.css";
+import "@xterm/xterm/css/xterm.css";
 import Providers from "./providers";
 
 export const metadata = {

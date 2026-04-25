@@ -1,44 +1,42 @@
 import React from "react";
-import { TableRow, TableCell, Chip, useTheme, alpha } from "@mui/material";
+import { TableRow, TableCell, useTheme, alpha } from "@mui/material";
 import { calculateAge } from "../../utils";
 import {
     tableIdentifierSx,
     tableTimestampSx,
 } from "../../scheduling/tableDataStyles";
+import PodStatusChip from "../PodStatusChip";
 
-const PodRow = ({ pod, getStatusColor, onPodClick }) => {
+const PodRow = ({ isSelected, pod, onPodClick }) => {
     const theme = useTheme();
+    const selectedBg = alpha("#f97316", 0.08);
 
     return (
         <TableRow
             hover
             onClick={() => onPodClick(pod)}
             sx={{
-                height: "60px",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                bgcolor: isSelected ? selectedBg : "#ffffff",
+                height: 56,
+                transition:
+                    "background-color 0.2s ease, border-color 0.2s ease",
                 "&:hover": {
-                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                    "& .MuiTableCell-root": {
-                        color: theme.palette.primary.main,
-                    },
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-                    transform: "translateY(-2px)",
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
                 },
                 cursor: "pointer",
                 "&:last-child td, &:last-child th": {
                     borderBottom: 0,
                 },
                 "& td": {
-                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    borderBottom: `1px solid ${theme.palette.divider}`,
                 },
             }}
         >
             <TableCell
                 sx={{
-                    padding: "16px 24px",
+                    padding: "12px 18px",
                     fontWeight: 600,
                     color: theme.palette.text.primary,
-                    letterSpacing: "0.01em",
                     ...tableIdentifierSx,
                 }}
             >
@@ -47,8 +45,7 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
 
             <TableCell
                 sx={{
-                    padding: "16px 24px",
-                    fontWeight: 500,
+                    padding: "12px 18px",
                     ...tableIdentifierSx,
                 }}
             >
@@ -57,7 +54,7 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
 
             <TableCell
                 sx={{
-                    padding: "16px 24px",
+                    padding: "12px 18px",
                     color: alpha(theme.palette.text.primary, 0.85),
                     ...tableIdentifierSx,
                 }}
@@ -67,7 +64,7 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
 
             <TableCell
                 sx={{
-                    padding: "16px 24px",
+                    padding: "12px 18px",
                     color: alpha(theme.palette.text.primary, 0.85),
                     ...tableTimestampSx,
                 }}
@@ -75,33 +72,13 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                 {new Date(pod.metadata.creationTimestamp).toLocaleString()}
             </TableCell>
 
-            <TableCell sx={{ padding: "16px 24px" }}>
-                <Chip
-                    label={pod.status?.phase || "Unknown"}
-                    sx={{
-                        bgcolor: getStatusColor(pod.status?.phase || "Unknown"),
-                        color: "common.white",
-                        height: "30px",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        letterSpacing: "0.02em",
-                        borderRadius: "15px",
-                        boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                        padding: "0 12px",
-                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                        "&:hover": {
-                            transform: "translateY(-2px)",
-                            boxShadow: "0 5px 10px rgba(0, 0, 0, 0.2)",
-                            filter: "brightness(1.05)",
-                        },
-                    }}
-                />
+            <TableCell sx={{ padding: "12px 18px" }}>
+                <PodStatusChip status={pod.status?.phase || "Unknown"} />
             </TableCell>
 
             <TableCell
                 sx={{
-                    padding: "16px 24px",
-                    fontWeight: 500,
+                    padding: "12px 18px",
                     ...tableTimestampSx,
                 }}
             >

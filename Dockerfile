@@ -40,6 +40,8 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/app/api-reference/config/next-config-js/output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/server.js ./server.js
+COPY --from=builder --chown=nextjs:nodejs /app/lib/server ./lib/server
 
 USER nextjs
 

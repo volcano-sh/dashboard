@@ -18,13 +18,12 @@ import {
     createPod,
     fetchNamespaces,
     fetchQueues,
-    fetchPodYaml,
     fetchPods,
     getApiErrorMessage,
 } from "../../lib/client/dashboard-api";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
-import PodDetailsDialog from "./PodDetailsDialog";
+import PodsDetailWorkspace from "./PodsDetailWorkspace";
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
 
 const Pods = () => {
@@ -33,12 +32,11 @@ const Pods = () => {
         namespace: "All",
         queue: "All",
     });
-    const [selectedPodYaml, setSelectedPodYaml] = useState("");
-    const [openDialog, setOpenDialog] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
-    const [selectedPodName, setSelectedPodName] = useState("");
+    const [selectedPod, setSelectedPod] = useState(null);
+    const [selectedTab, setSelectedTab] = useState("overview");
     const [pagination, setPagination] = useState({
         page: 1,
         rowsPerPage: 10,
@@ -126,48 +124,15 @@ const Pods = () => {
         }
     };
 
-    const handlePodClick = useCallback(
-        async (pod) => {
-            try {
-                setActionError(null);
-                const yaml = await queryClient.fetchQuery({
-                    queryKey: [
-                        "podYaml",
-                        pod.metadata.namespace,
-                        pod.metadata.name,
-                    ],
-                    queryFn: () =>
-                        fetchPodYaml(pod.metadata.namespace, pod.metadata.name),
-                });
+    const handlePodClick = useCallback((pod) => {
+        setActionError(null);
+        setSelectedPod(pod);
+        setSelectedTab("overview");
+    }, []);
 
-                const formattedYaml = yaml
-                    .split("\n")
-                    .map((line) => {
-                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                        if (keyMatch) {
-                            const [, indent, key] = keyMatch;
-                            const value = line.slice(keyMatch[0].length);
-                            return `${indent}<span class="yaml-key">${key}</span>:${value}`;
-                        }
-                        return line;
-                    })
-                    .join("\n");
-
-                setSelectedPodName(pod.metadata.name);
-                setSelectedPodYaml(formattedYaml);
-                setOpenDialog(true);
-            } catch (err) {
-                console.error("Failed to fetch pod YAML:", err);
-                setActionError(
-                    getApiErrorMessage(err, "Failed to fetch pod YAML"),
-                );
-            }
-        },
-        [queryClient],
-    );
-
-    const handleCloseDialog = useCallback(() => {
-        setOpenDialog(false);
+    const handleCloseDetails = useCallback(() => {
+        setSelectedPod(null);
+        setSelectedTab("overview");
     }, []);
 
     const handleFilterChange = useCallback((filterType, value) => {
@@ -226,6 +191,20 @@ const Pods = () => {
         ],
     );
 
+    const selectedStateFilterFields = useMemo(
+        () => [
+            {
+                key: "namespace",
+                label: "Namespace",
+                onChange: (value) => handleFilterChange("namespace", value),
+                options: allNamespaces,
+                type: "select",
+                value: filters.namespace,
+            },
+        ],
+        [allNamespaces, filters.namespace, handleFilterChange],
+    );
+
     const handlePaginationChange = useCallback((newPage, newRowsPerPage) => {
         setPagination((prev) => ({
             ...prev,
@@ -267,72 +246,90 @@ const Pods = () => {
                     </CardContent>
                 </Card>
             )}
-            <Box
-                sx={{
-                    alignItems: { xs: "stretch", md: "flex-start" },
-                    display: "flex",
-                    flexDirection: { xs: "column", md: "row" },
-                    gap: 1.5,
-                    justifyContent: "space-between",
-                    mb: 2,
-                }}
-            >
-                <Box sx={{ flex: 1 }}>
-                    <SchedulingTableFilters fields={filterFields} />
-                </Box>
-                <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
-                    <Button
-                        onClick={handleResetFilters}
-                        sx={{ textTransform: "none" }}
-                        variant="outlined"
-                    >
-                        Reset
-                    </Button>
-                    <Button
-                        disabled={loading}
-                        onClick={handleRefresh}
-                        startIcon={<RefreshIcon fontSize="small" />}
-                        sx={{ textTransform: "none" }}
-                        variant="outlined"
-                    >
-                        Refresh
-                    </Button>
-                    <Button
-                        onClick={() => setCreateDialogOpen(true)}
-                        startIcon={<AddIcon fontSize="small" />}
+            {!selectedPod && (
+                <Box
+                    sx={{
+                        alignItems: { xs: "stretch", md: "flex-start" },
+                        display: "flex",
+                        flexDirection: { xs: "column", md: "row" },
+                        gap: 1.5,
+                        justifyContent: "space-between",
+                        mb: 2,
+                    }}
+                >
+                    <Box sx={{ flex: 1 }}>
+                        <SchedulingTableFilters fields={filterFields} />
+                    </Box>
+                    <Box
                         sx={{
-                            bgcolor: "#ff4d2d",
-                            textTransform: "none",
-                            "&:hover": { bgcolor: "#e84325" },
+                            alignItems: "center",
+                            display: "flex",
+                            gap: 1.5,
                         }}
-                        variant="contained"
                     >
-                        Create Pod
-                    </Button>
+                        <Button
+                            onClick={handleResetFilters}
+                            sx={{ textTransform: "none" }}
+                            variant="outlined"
+                        >
+                            Reset
+                        </Button>
+                        <Button
+                            disabled={loading}
+                            onClick={handleRefresh}
+                            startIcon={<RefreshIcon fontSize="small" />}
+                            sx={{ textTransform: "none" }}
+                            variant="outlined"
+                        >
+                            Refresh
+                        </Button>
+                        <Button
+                            onClick={() => setCreateDialogOpen(true)}
+                            startIcon={<AddIcon fontSize="small" />}
+                            sx={{
+                                bgcolor: "#ff4d2d",
+                                textTransform: "none",
+                                "&:hover": { bgcolor: "#e84325" },
+                            }}
+                            variant="contained"
+                        >
+                            Create Pod
+                        </Button>
+                    </Box>
                 </Box>
-            </Box>
+            )}
             {loading && <LinearProgress sx={{ mb: 2 }} />}
-            <PodsTable
-                pods={pods}
-                filters={filters}
-                allNamespaces={allNamespaces}
-                allQueues={allQueues}
-                sortDirection={sortDirection}
-                onSortDirectionToggle={toggleSortDirection}
-                onFilterChange={handleFilterChange}
-                onPodClick={handlePodClick}
-            />
-            <PodsPagination
-                totalPods={totalPods}
-                pagination={pagination}
-                onPaginationChange={handlePaginationChange}
-            />
-            <PodDetailsDialog
-                open={openDialog}
-                podName={selectedPodName}
-                podYaml={selectedPodYaml}
-                onClose={handleCloseDialog}
-            />
+            {selectedPod ? (
+                <PodsDetailWorkspace
+                    namespaceFilterFields={selectedStateFilterFields}
+                    onCloseDetails={handleCloseDetails}
+                    onPaginationChange={handlePaginationChange}
+                    onPodClick={handlePodClick}
+                    onSortDirectionToggle={toggleSortDirection}
+                    pagination={pagination}
+                    pods={pods}
+                    selectedPod={selectedPod}
+                    selectedTab={selectedTab}
+                    setSelectedTab={setSelectedTab}
+                    sortDirection={sortDirection}
+                    totalPods={totalPods}
+                />
+            ) : (
+                <Box>
+                    <PodsTable
+                        pods={pods}
+                        selectedPod={selectedPod}
+                        sortDirection={sortDirection}
+                        onSortDirectionToggle={toggleSortDirection}
+                        onPodClick={handlePodClick}
+                    />
+                    <PodsPagination
+                        totalPods={totalPods}
+                        pagination={pagination}
+                        onPaginationChange={handlePaginationChange}
+                    />
+                </Box>
+            )}
             <CreateDialog
                 open={createDialogOpen}
                 onClose={() => setCreateDialogOpen(false)}
