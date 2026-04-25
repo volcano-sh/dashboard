@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    AppBar,
     Box,
     Drawer,
     IconButton,
@@ -13,13 +12,14 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    Toolbar,
     Tooltip,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
-import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import DeviceHubOutlinedIcon from "@mui/icons-material/DeviceHubOutlined";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -33,7 +33,6 @@ import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 
-const headerGrey = "#424242";
 const drawerWidth = 280;
 const collapsedDrawerWidth = 60;
 const iconProps = { sx: { fontSize: 18 } };
@@ -119,9 +118,17 @@ const footerItems = [
 ];
 
 export default function DashboardShell({ children }) {
+    const theme = useTheme();
+    const isOverlayDrawer = useMediaQuery(theme.breakpoints.down("lg"));
     const pathname = usePathname();
     const [open, setOpen] = useState(true);
     const [adminOpen, setAdminOpen] = useState(false);
+
+    useEffect(() => {
+        setOpen((previous) =>
+            isOverlayDrawer ? false : previous === false ? false : true,
+        );
+    }, [isOverlayDrawer]);
 
     const renderMenuItem = (item) => {
         const active =
@@ -184,6 +191,11 @@ export default function DashboardShell({ children }) {
                 component={Link}
                 href={item.path}
                 className={active ? "active" : ""}
+                onClick={() => {
+                    if (isOverlayDrawer) {
+                        setOpen(false);
+                    }
+                }}
                 sx={itemStyles}
             >
                 <ListItemIcon
@@ -213,200 +225,246 @@ export default function DashboardShell({ children }) {
         );
     };
 
-    return (
-        <Box sx={{ display: "flex", minHeight: "100vh" }}>
-            <AppBar
-                position="fixed"
+    const drawerPaperSx = useMemo(
+        () => ({
+            width: isOverlayDrawer
+                ? drawerWidth
+                : open
+                  ? drawerWidth
+                  : collapsedDrawerWidth,
+            boxSizing: "border-box",
+            backgroundColor: "#f5f5f5",
+            transition: "width 0.2s",
+            overflowX: "hidden",
+            display: "flex",
+            flexDirection: "column",
+        }),
+        [isOverlayDrawer, open],
+    );
+
+    const drawerContent = (
+        <>
+            <Box
                 sx={{
-                    zIndex: (theme) => theme.zIndex.drawer + 1,
-                    bgcolor: headerGrey,
+                    alignItems: "center",
+                    borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
+                    display: "flex",
+                    gap: open ? 1.25 : 0,
+                    justifyContent: open ? "flex-start" : "center",
+                    minHeight: 58,
+                    px: open ? 1.5 : 0,
                 }}
             >
-                <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="toggle drawer"
-                        onClick={() => setOpen((value) => !value)}
-                        edge="start"
-                        sx={{ mr: 2, color: "white" }}
-                    >
-                        <MenuIcon sx={{ fontSize: 20 }} />
-                    </IconButton>
+                <IconButton
+                    aria-label="toggle drawer"
+                    onClick={() => setOpen((value) => !value)}
+                    size="small"
+                    sx={{ color: "text.primary" }}
+                >
+                    <MenuIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+                {open && (
                     <Typography
-                        variant="h6"
-                        noWrap
                         component="div"
-                        sx={{ color: "#ffffff", fontWeight: 500 }}
+                        noWrap
+                        sx={{ color: "text.primary", fontWeight: 600 }}
                     >
                         Volcano Dashboard
                     </Typography>
-                </Toolbar>
-            </AppBar>
-
-            <Drawer
-                data-testid="sidebar-drawer"
-                variant="permanent"
+                )}
+            </Box>
+            <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
+                {menuSections.map((section, sectionIndex) => (
+                    <Box
+                        key={section.title || "primary"}
+                        sx={{
+                            borderTop:
+                                sectionIndex === 0
+                                    ? "none"
+                                    : "1px solid rgba(0, 0, 0, 0.08)",
+                            pt: sectionIndex === 0 ? 1 : 1.25,
+                            mt: sectionIndex === 0 ? 0 : 0.75,
+                        }}
+                    >
+                        {open && section.title && (
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: "text.secondary",
+                                    display: "block",
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    letterSpacing: "0.03em",
+                                    px: 2,
+                                    pb: 0.5,
+                                    textTransform: "uppercase",
+                                }}
+                            >
+                                {section.title}
+                            </Typography>
+                        )}
+                        <List dense disablePadding>
+                            {section.items.map(renderMenuItem)}
+                        </List>
+                    </Box>
+                ))}
+            </Box>
+            <Box
                 sx={{
-                    width: open ? drawerWidth : collapsedDrawerWidth,
-                    flexShrink: 0,
-                    [`& .MuiDrawer-paper`]: {
-                        width: open ? drawerWidth : collapsedDrawerWidth,
-                        boxSizing: "border-box",
-                        backgroundColor: "#f5f5f5",
-                        transition: "width 0.2s",
-                        overflowX: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
-                    },
+                    borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+                    px: 0,
+                    py: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    mt: "auto",
                 }}
             >
-                <Toolbar />
-                <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
-                    {menuSections.map((section, sectionIndex) => (
-                        <Box
-                            key={section.title || "primary"}
-                            sx={{
-                                borderTop:
-                                    sectionIndex === 0
-                                        ? "none"
-                                        : "1px solid rgba(0, 0, 0, 0.08)",
-                                pt: sectionIndex === 0 ? 1 : 1.25,
-                                mt: sectionIndex === 0 ? 0 : 0.75,
-                            }}
-                        >
-                            {open && section.title && (
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: "text.secondary",
-                                        display: "block",
-                                        fontSize: 11,
-                                        fontWeight: 600,
-                                        letterSpacing: "0.03em",
-                                        px: 2,
-                                        pb: 0.5,
-                                        textTransform: "uppercase",
-                                    }}
-                                >
-                                    {section.title}
-                                </Typography>
-                            )}
-                            <List dense disablePadding>
-                                {section.items.map(renderMenuItem)}
-                            </List>
-                        </Box>
-                    ))}
-                </Box>
-                <Box
+                <List dense disablePadding>
+                    {footerItems.map(renderMenuItem)}
+                </List>
+                <ListItemButton
+                    aria-expanded={adminOpen}
+                    aria-label="Toggle admin menu"
+                    onClick={() => setAdminOpen((value) => !value)}
                     sx={{
-                        borderTop: "1px solid rgba(0, 0, 0, 0.08)",
-                        px: 0,
-                        py: 1,
+                        alignItems: "center",
+                        borderRadius: "6px",
                         display: "flex",
-                        flexDirection: "column",
-                        gap: 1,
-                        mt: "auto",
+                        gap: 1.25,
+                        justifyContent: open ? "space-between" : "center",
+                        minHeight: 34,
+                        mx: open ? 1.25 : 0.75,
+                        px: open ? 1.25 : 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(0, 0, 0, 0.08)",
+                        },
                     }}
                 >
-                    <List dense disablePadding>
-                        {footerItems.map(renderMenuItem)}
-                    </List>
-                    <ListItemButton
-                        aria-expanded={adminOpen}
-                        aria-label="Toggle admin menu"
-                        onClick={() => setAdminOpen((value) => !value)}
+                    <Box
                         sx={{
                             alignItems: "center",
-                            borderRadius: "6px",
                             display: "flex",
-                            gap: 1.25,
-                            justifyContent: open ? "space-between" : "center",
-                            minHeight: 34,
-                            mx: open ? 1.25 : 0.75,
-                            px: open ? 1.25 : 1,
-                            "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.08)",
-                            },
+                            gap: 1,
+                        }}
+                    >
+                        <AccountCircleOutlinedIcon {...iconProps} />
+                        {open && (
+                            <Typography sx={{ fontSize: 13 }}>admin</Typography>
+                        )}
+                    </Box>
+                    {open &&
+                        (adminOpen ? (
+                            <ExpandLessIcon {...iconProps} />
+                        ) : (
+                            <ExpandMoreIcon {...iconProps} />
+                        ))}
+                </ListItemButton>
+                {open && adminOpen && (
+                    <Box
+                        sx={{
+                            bgcolor: "#ffffff",
+                            border: "1px solid rgba(0, 0, 0, 0.12)",
+                            borderRadius: 1,
+                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.12)",
+                            mx: 0.5,
+                            overflow: "hidden",
                         }}
                     >
                         <Box
                             sx={{
                                 alignItems: "center",
+                                borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
                                 display: "flex",
                                 gap: 1,
+                                px: 1.5,
+                                py: 1.25,
                             }}
                         >
-                            <AccountCircleOutlinedIcon {...iconProps} />
-                            {open && (
+                            <MailOutlineIcon {...iconProps} />
+                            <Box>
                                 <Typography sx={{ fontSize: 13 }}>
-                                    admin
+                                    admin@example.com
                                 </Typography>
-                            )}
-                        </Box>
-                        {open &&
-                            (adminOpen ? (
-                                <ExpandLessIcon {...iconProps} />
-                            ) : (
-                                <ExpandMoreIcon {...iconProps} />
-                            ))}
-                    </ListItemButton>
-                    {open && adminOpen && (
-                        <Box
-                            sx={{
-                                bgcolor: "#ffffff",
-                                border: "1px solid rgba(0, 0, 0, 0.12)",
-                                borderRadius: 1,
-                                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.12)",
-                                mx: 0.5,
-                                overflow: "hidden",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    alignItems: "center",
-                                    borderBottom:
-                                        "1px solid rgba(0, 0, 0, 0.08)",
-                                    display: "flex",
-                                    gap: 1,
-                                    px: 1.5,
-                                    py: 1.25,
-                                }}
-                            >
-                                <MailOutlineIcon {...iconProps} />
-                                <Box>
-                                    <Typography sx={{ fontSize: 13 }}>
-                                        admin@example.com
-                                    </Typography>
-                                    <Typography
-                                        color="text.secondary"
-                                        sx={{ fontSize: 11 }}
-                                    >
-                                        Cluster administrator
-                                    </Typography>
-                                </Box>
+                                <Typography
+                                    color="text.secondary"
+                                    sx={{ fontSize: 11 }}
+                                >
+                                    Cluster administrator
+                                </Typography>
                             </Box>
-                            <ListItemButton
-                                sx={{ gap: 1, minHeight: 40, px: 1.5 }}
-                            >
-                                <LogoutOutlinedIcon {...iconProps} />
-                                <Typography sx={{ fontSize: 13 }}>
-                                    Logout
-                                </Typography>
-                            </ListItemButton>
                         </Box>
-                    )}
-                    <img
-                        src="/volcano-icon-color.svg"
-                        alt="Volcano Logo"
-                        style={{
-                            alignSelf: "center",
-                            maxWidth: open ? "120px" : "36px",
-                            height: "auto",
-                            transition: "max-width 0.2s",
-                        }}
-                    />
-                </Box>
-            </Drawer>
+                        <ListItemButton sx={{ gap: 1, minHeight: 40, px: 1.5 }}>
+                            <LogoutOutlinedIcon {...iconProps} />
+                            <Typography sx={{ fontSize: 13 }}>
+                                Logout
+                            </Typography>
+                        </ListItemButton>
+                    </Box>
+                )}
+                <img
+                    src="/volcano-icon-color.svg"
+                    alt="Volcano Logo"
+                    style={{
+                        alignSelf: "center",
+                        maxWidth: open ? "120px" : "36px",
+                        height: "auto",
+                        transition: "max-width 0.2s",
+                    }}
+                />
+            </Box>
+        </>
+    );
+
+    return (
+        <Box sx={{ display: "flex", minHeight: "100vh" }}>
+            {isOverlayDrawer && !open && (
+                <IconButton
+                    aria-label="open navigation"
+                    onClick={() => setOpen(true)}
+                    size="small"
+                    sx={{
+                        bgcolor: "#ffffff",
+                        border: "1px solid rgba(0, 0, 0, 0.12)",
+                        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.12)",
+                        left: 12,
+                        position: "fixed",
+                        top: 12,
+                        zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1,
+                        "&:hover": { bgcolor: "#f8fafc" },
+                    }}
+                >
+                    <MenuIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+            )}
+
+            {isOverlayDrawer ? (
+                <Drawer
+                    data-testid="sidebar-drawer"
+                    ModalProps={{ keepMounted: true }}
+                    onClose={() => setOpen(false)}
+                    open={open}
+                    sx={{
+                        [`& .MuiDrawer-paper`]: drawerPaperSx,
+                    }}
+                    variant="temporary"
+                >
+                    {drawerContent}
+                </Drawer>
+            ) : (
+                <Drawer
+                    data-testid="sidebar-drawer"
+                    sx={{
+                        width: open ? drawerWidth : collapsedDrawerWidth,
+                        flexShrink: 0,
+                        [`& .MuiDrawer-paper`]: drawerPaperSx,
+                    }}
+                    variant="permanent"
+                >
+                    {drawerContent}
+                </Drawer>
+            )}
+
             <Box
                 component="main"
                 sx={{
@@ -416,7 +474,6 @@ export default function DashboardShell({ children }) {
                     minWidth: 0,
                 }}
             >
-                <Toolbar />
                 {children}
             </Box>
         </Box>
