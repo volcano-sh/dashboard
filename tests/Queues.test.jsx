@@ -1,6 +1,7 @@
 import Queues from "../components/queues/Queues";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("axios");
 
@@ -46,6 +47,20 @@ const queueResponse = {
 };
 
 describe("Queues", () => {
+    const renderQueues = () => {
+        const queryClient = new QueryClient({
+            defaultOptions: {
+                queries: { retry: false },
+            },
+        });
+
+        return render(
+            <QueryClientProvider client={queryClient}>
+                <Queues />
+            </QueryClientProvider>,
+        );
+    };
+
     beforeEach(() => {
         const storage = {};
         vi.stubGlobal("localStorage", {
@@ -58,7 +73,7 @@ describe("Queues", () => {
     });
 
     it("should render hierarchy only and open details after selecting a queue", async () => {
-        render(<Queues />);
+        renderQueues();
 
         expect(
             screen.getByRole("heading", { name: /queues/i }),
@@ -74,7 +89,7 @@ describe("Queues", () => {
         fireEvent.click(screen.getByText("prod"));
 
         await waitFor(() => {
-            expect(screen.getByText(/queue details/i)).toBeInTheDocument();
+            expect(screen.getByText(/queue: prod/i)).toBeInTheDocument();
         });
         expect(screen.getByText("Create Queue")).toBeInTheDocument();
     });

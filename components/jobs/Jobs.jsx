@@ -1,20 +1,26 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
+    Alert,
     Box,
     Button,
     Card,
     CardContent,
+    CircularProgress,
     InputAdornment,
     LinearProgress,
+    Stack,
     Typography,
     useTheme,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     createJob,
+    fetchJob,
+    fetchJobEvents,
     fetchJobYaml,
     fetchJobs,
     fetchNamespaces,
@@ -23,9 +29,205 @@ import {
 } from "../../lib/client/dashboard-api";
 import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
-import JobDialog from "./JobDialog";
 import CreateJobDialog from "./JobTable/CreateJobDialog";
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
+import ResourceDetailDrawer from "../details/ResourceDetailDrawer";
+import YamlViewer from "../details/YamlViewer";
+import {
+    DetailCard,
+    DetailRow,
+    EventsTable,
+    MetadataChips,
+} from "../details/DetailComponents";
+import JobStatusChip from "./JobStatusChip";
+
+const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
+
+const JobOverview = ({ job }) => (
+    <Stack spacing={2}>
+        <Box
+            sx={{
+                display: "grid",
+                gap: 2,
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            }}
+        >
+            <DetailCard title="Basic Information">
+                <DetailRow label="Name" value={job?.metadata?.name} />
+                <DetailRow label="Namespace" value={job?.metadata?.namespace} />
+                <DetailRow label="Queue" value={job?.spec?.queue} />
+                <DetailRow
+                    label="Created"
+                    value={formatDate(job?.metadata?.creationTimestamp)}
+                />
+                <DetailRow
+                    label="Labels"
+                    valueNode={<MetadataChips items={job?.metadata?.labels} />}
+                />
+            </DetailCard>
+            <DetailCard title="Scheduling">
+                <DetailRow
+                    label="Min Available"
+                    value={
+                        job?.spec?.minAvailable || job?.spec?.minAvailable === 0
+                            ? String(job.spec.minAvailable)
+                            : "-"
+                    }
+                />
+                <DetailRow
+                    label="Tasks"
+                    value={String(job?.spec?.tasks?.length || 0)}
+                />
+                <DetailRow
+                    label="Plugins"
+                    value={
+                        Object.keys(job?.spec?.plugins || {}).join(", ") || "-"
+                    }
+                />
+                <DetailRow
+                    label="Status"
+                    valueNode={
+                        <JobStatusChip
+                            status={
+                                job?.summary?.status ||
+                                job?.status?.state?.phase ||
+                                "Unknown"
+                            }
+                        />
+                    }
+                />
+            </DetailCard>
+        </Box>
+        <DetailCard title="Tasks">
+            <Box sx={{ display: "grid", gap: 1 }}>
+                {(job?.spec?.tasks || []).length === 0 ? (
+                    <Typography color="text.secondary" sx={{ fontSize: 13 }}>
+                        No tasks available.
+                    </Typography>
+                ) : (
+                    job.spec.tasks.map((task) => (
+                        <Box
+                            key={task.name}
+                            sx={{
+                                border: "1px solid #dfe3e8",
+                                borderRadius: 1,
+                                p: 1.25,
+                            }}
+                        >
+                            <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                                {task.name}
+                            </Typography>
+                            <Typography
+                                color="text.secondary"
+                                sx={{ fontSize: 12 }}
+                            >
+                                Replicas: {task.replicas || 1}
+                            </Typography>
+                        </Box>
+                    ))
+                )}
+            </Box>
+        </DetailCard>
+    </Stack>
+);
+
+const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
+    const namespace = job?.metadata?.namespace;
+    const name = job?.metadata?.name;
+    const {
+        data: detail,
+        error,
+        isLoading,
+    } = useQuery({
+        enabled: Boolean(namespace && name),
+        initialData: job || undefined,
+        queryFn: () => fetchJob(namespace, name),
+        queryKey: ["job", namespace, name],
+    });
+    const yamlQuery = useQuery({
+        enabled: Boolean(namespace && name && selectedTab === "yaml"),
+        queryFn: () => fetchJobYaml(namespace, name),
+        queryKey: ["jobYaml", namespace, name],
+    });
+    const eventsQuery = useQuery({
+        enabled: Boolean(namespace && name && selectedTab === "events"),
+        queryFn: () => fetchJobEvents(namespace, name),
+        queryKey: ["jobEvents", namespace, name],
+    });
+    const jobData = detail || job;
+
+    return (
+        <ResourceDetailDrawer
+            activeTab={selectedTab}
+            icon={<WorkOutlineIcon sx={{ fontSize: 18 }} />}
+            meta={[
+                { label: "Namespace", value: namespace },
+                { label: "Queue", value: jobData?.spec?.queue },
+                {
+                    label: "Status",
+                    valueNode: (
+                        <JobStatusChip
+                            status={
+                                jobData?.summary?.status ||
+                                jobData?.status?.state?.phase ||
+                                "Unknown"
+                            }
+                        />
+                    ),
+                },
+            ]}
+            onClose={onClose}
+            onTabChange={setSelectedTab}
+            open={Boolean(job)}
+            tabs={[
+                { label: "Overview", value: "overview" },
+                { label: "YAML", value: "yaml" },
+                { label: "Events", value: "events" },
+            ]}
+            title={`Job: ${name || "-"}`}
+            renderTab={(tab) => {
+                if (isLoading && !jobData) {
+                    return (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                py: 6,
+                            }}
+                        >
+                            <CircularProgress size={22} />
+                        </Box>
+                    );
+                }
+                if (error) {
+                    return (
+                        <Alert severity="error" sx={{ boxShadow: "none" }}>
+                            {getApiErrorMessage(error, "Failed to fetch job")}
+                        </Alert>
+                    );
+                }
+                if (tab === "yaml") {
+                    return (
+                        <YamlViewer
+                            data={yamlQuery.data}
+                            error={yamlQuery.error}
+                            fill
+                            isLoading={
+                                yamlQuery.isLoading || yamlQuery.isFetching
+                            }
+                        />
+                    );
+                }
+                if (tab === "events") {
+                    return (
+                        <EventsTable events={eventsQuery.data?.items || []} />
+                    );
+                }
+                return <JobOverview job={jobData} />;
+            }}
+        />
+    );
+};
 
 const Jobs = () => {
     const [filters, setFilters] = useState({
@@ -33,8 +235,8 @@ const Jobs = () => {
         namespace: "All",
         queue: "All",
     });
-    const [selectedJobYaml, setSelectedJobYaml] = useState("");
-    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedJob, setSelectedJob] = useState(null);
+    const [selectedTab, setSelectedTab] = useState("overview");
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState({
         status: null,
@@ -43,7 +245,6 @@ const Jobs = () => {
     });
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
-    const [selectedJobName, setSelectedJobName] = useState("");
     const [pagination, setPagination] = useState({
         page: 1,
         rowsPerPage: 10,
@@ -120,48 +321,10 @@ const Jobs = () => {
         });
     }, []);
 
-    const handleJobClick = useCallback(
-        async (job) => {
-            try {
-                setActionError(null);
-                const yaml = await queryClient.fetchQuery({
-                    queryKey: [
-                        "jobYaml",
-                        job.metadata.namespace,
-                        job.metadata.name,
-                    ],
-                    queryFn: () =>
-                        fetchJobYaml(job.metadata.namespace, job.metadata.name),
-                });
-
-                const formattedYaml = yaml
-                    .split("\n")
-                    .map((line) => {
-                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                        if (keyMatch) {
-                            const [, indent, key] = keyMatch;
-                            const value = line.slice(keyMatch[0].length);
-                            return `${indent}<span class="yaml-key">${key}</span>:${value}`;
-                        }
-                        return line;
-                    })
-                    .join("\n");
-
-                setSelectedJobName(job.metadata.name);
-                setSelectedJobYaml(formattedYaml);
-                setOpenDialog(true);
-            } catch (err) {
-                console.error("Failed to fetch job YAML:", err);
-                setActionError(
-                    getApiErrorMessage(err, "Failed to fetch job YAML"),
-                );
-            }
-        },
-        [queryClient],
-    );
-
-    const handleCloseDialog = useCallback(() => {
-        setOpenDialog(false);
+    const handleJobClick = useCallback((job) => {
+        setActionError(null);
+        setSelectedJob(job);
+        setSelectedTab("overview");
     }, []);
 
     const handleChangePage = useCallback((event, newPage) => {
@@ -376,11 +539,11 @@ const Jobs = () => {
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />
-            <JobDialog
-                open={openDialog}
-                handleClose={handleCloseDialog}
-                selectedJobName={selectedJobName}
-                selectedJobYaml={selectedJobYaml}
+            <JobDetailsDrawer
+                job={selectedJob}
+                onClose={() => setSelectedJob(null)}
+                selectedTab={selectedTab}
+                setSelectedTab={setSelectedTab}
             />
             <CreateJobDialog
                 open={createDialogOpen}

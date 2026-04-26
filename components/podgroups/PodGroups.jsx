@@ -1,30 +1,213 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
+    Alert,
     Box,
     Button,
     Card,
     CardContent,
+    CircularProgress,
     InputAdornment,
     LinearProgress,
+    Stack,
     Typography,
     useTheme,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { escape } from "lodash";
+import { useQuery } from "@tanstack/react-query";
 import {
     fetchQueues,
     fetchNamespaces,
+    fetchPodGroup,
     fetchPodGroupYaml,
     fetchPodGroups,
     getApiErrorMessage,
 } from "../../lib/client/dashboard-api";
 import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
-import PodGroupDialog from "./PodGroupDialog"; // Need to create this
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
+import ResourceDetailDrawer from "../details/ResourceDetailDrawer";
+import YamlViewer from "../details/YamlViewer";
+import {
+    DetailCard,
+    DetailRow,
+    MetadataChips,
+} from "../details/DetailComponents";
+import JobStatusChip from "../jobs/JobStatusChip";
+
+const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
+
+const PodGroupOverview = ({ podGroup }) => (
+    <Stack spacing={2}>
+        <Box
+            sx={{
+                display: "grid",
+                gap: 2,
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            }}
+        >
+            <DetailCard title="Basic Information">
+                <DetailRow label="Name" value={podGroup?.metadata?.name} />
+                <DetailRow
+                    label="Namespace"
+                    value={podGroup?.metadata?.namespace}
+                />
+                <DetailRow label="Queue" value={podGroup?.spec?.queue} />
+                <DetailRow
+                    label="Created"
+                    value={formatDate(podGroup?.metadata?.creationTimestamp)}
+                />
+                <DetailRow
+                    label="Labels"
+                    valueNode={
+                        <MetadataChips items={podGroup?.metadata?.labels} />
+                    }
+                />
+            </DetailCard>
+            <DetailCard title="Scheduling">
+                <DetailRow
+                    label="Min Member"
+                    value={String(podGroup?.spec?.minMember ?? "-")}
+                />
+                <DetailRow
+                    label="Priority Class"
+                    value={podGroup?.spec?.priorityClassName}
+                />
+                <DetailRow
+                    label="Phase"
+                    valueNode={
+                        <JobStatusChip
+                            status={
+                                podGroup?.summary?.status ||
+                                podGroup?.status?.phase ||
+                                "Unknown"
+                            }
+                        />
+                    }
+                />
+            </DetailCard>
+        </Box>
+        <DetailCard title="Resources">
+            <DetailRow
+                label="Min Resources"
+                value={
+                    podGroup?.spec?.minResources
+                        ? JSON.stringify(podGroup.spec.minResources)
+                        : "-"
+                }
+            />
+            <DetailRow
+                label="Running"
+                value={String(podGroup?.status?.running ?? "-")}
+            />
+            <DetailRow
+                label="Succeeded"
+                value={String(podGroup?.status?.succeeded ?? "-")}
+            />
+            <DetailRow
+                label="Failed"
+                value={String(podGroup?.status?.failed ?? "-")}
+            />
+        </DetailCard>
+    </Stack>
+);
+
+const PodGroupDetailsDrawer = ({
+    onClose,
+    podGroup,
+    selectedTab,
+    setSelectedTab,
+}) => {
+    const namespace = podGroup?.metadata?.namespace;
+    const name = podGroup?.metadata?.name;
+    const {
+        data: detail,
+        error,
+        isLoading,
+    } = useQuery({
+        enabled: Boolean(namespace && name),
+        initialData: podGroup || undefined,
+        queryFn: () => fetchPodGroup(namespace, name),
+        queryKey: ["podgroup", namespace, name],
+    });
+    const yamlQuery = useQuery({
+        enabled: Boolean(namespace && name && selectedTab === "yaml"),
+        queryFn: () => fetchPodGroupYaml(namespace, name),
+        queryKey: ["podGroupYaml", namespace, name],
+    });
+    const podGroupData = detail || podGroup;
+
+    return (
+        <ResourceDetailDrawer
+            activeTab={selectedTab}
+            icon={<AccountTreeOutlinedIcon sx={{ fontSize: 18 }} />}
+            meta={[
+                { label: "Namespace", value: namespace },
+                { label: "Queue", value: podGroupData?.spec?.queue },
+                {
+                    label: "Status",
+                    valueNode: (
+                        <JobStatusChip
+                            status={
+                                podGroupData?.summary?.status ||
+                                podGroupData?.status?.phase ||
+                                "Unknown"
+                            }
+                        />
+                    ),
+                },
+            ]}
+            onClose={onClose}
+            onTabChange={setSelectedTab}
+            open={Boolean(podGroup)}
+            tabs={[
+                { label: "Overview", value: "overview" },
+                { label: "YAML", value: "yaml" },
+            ]}
+            title={`PodGroup: ${name || "-"}`}
+            renderTab={(tab) => {
+                if (isLoading && !podGroupData) {
+                    return (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                py: 6,
+                            }}
+                        >
+                            <CircularProgress size={22} />
+                        </Box>
+                    );
+                }
+                if (error) {
+                    return (
+                        <Alert severity="error" sx={{ boxShadow: "none" }}>
+                            {getApiErrorMessage(
+                                error,
+                                "Failed to fetch podgroup",
+                            )}
+                        </Alert>
+                    );
+                }
+                if (tab === "yaml") {
+                    return (
+                        <YamlViewer
+                            data={yamlQuery.data}
+                            error={yamlQuery.error}
+                            fill
+                            isLoading={
+                                yamlQuery.isLoading || yamlQuery.isFetching
+                            }
+                        />
+                    );
+                }
+                return <PodGroupOverview podGroup={podGroupData} />;
+            }}
+        />
+    );
+};
 
 const PodGroups = () => {
     const [filters, setFilters] = useState({
@@ -32,8 +215,8 @@ const PodGroups = () => {
         namespace: "All",
         queue: "All",
     });
-    const [selectedYaml, setSelectedYaml] = useState("");
-    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedPodGroup, setSelectedPodGroup] = useState(null);
+    const [selectedTab, setSelectedTab] = useState("overview");
     const [anchorEl, setAnchorEl] = useState({
         status: null,
         namespace: null,
@@ -41,14 +224,12 @@ const PodGroups = () => {
     });
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
-    const [selectedName, setSelectedName] = useState("");
     const [pagination, setPagination] = useState({
         page: 1,
         rowsPerPage: 10,
     });
     const [sortDirection, setSortDirection] = useState("desc");
     const [actionError, setActionError] = useState(null);
-    const queryClient = useQueryClient();
 
     const podGroupParams = {
         search: searchText,
@@ -121,49 +302,10 @@ const PodGroups = () => {
         });
     }, []);
 
-    const handleClick = useCallback(
-        async (pg) => {
-            try {
-                setActionError(null);
-                const yaml = await queryClient.fetchQuery({
-                    queryKey: [
-                        "podGroupYaml",
-                        pg.metadata.namespace,
-                        pg.metadata.name,
-                    ],
-                    queryFn: () =>
-                        fetchPodGroupYaml(
-                            pg.metadata.namespace,
-                            pg.metadata.name,
-                        ),
-                });
-
-                const formattedYaml = yaml
-                    .split("\n")
-                    .map((line) => {
-                        const keyMatch = line.match(/^(\s*)([^:\s]+):/);
-                        if (keyMatch) {
-                            const [, indent, key] = keyMatch;
-                            const value = line.slice(keyMatch[0].length);
-                            return `${indent}<span class="yaml-key">${escape(key)}</span>:${escape(value)}`;
-                        }
-                        return escape(line);
-                    })
-                    .join("\n");
-
-                setSelectedName(pg.metadata.name);
-                setSelectedYaml(formattedYaml);
-                setOpenDialog(true);
-            } catch (err) {
-                console.error("Failed to fetch YAML:", err);
-                setActionError(getApiErrorMessage(err, "Failed to fetch YAML"));
-            }
-        },
-        [queryClient],
-    );
-
-    const handleCloseDialog = useCallback(() => {
-        setOpenDialog(false);
+    const handleClick = useCallback((pg) => {
+        setActionError(null);
+        setSelectedPodGroup(pg);
+        setSelectedTab("overview");
     }, []);
 
     const handleChangePage = useCallback((event, newPage) => {
@@ -358,11 +500,11 @@ const PodGroups = () => {
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />
-            <PodGroupDialog
-                open={openDialog}
-                handleClose={handleCloseDialog}
-                selectedName={selectedName}
-                selectedYaml={selectedYaml}
+            <PodGroupDetailsDrawer
+                onClose={() => setSelectedPodGroup(null)}
+                podGroup={selectedPodGroup}
+                selectedTab={selectedTab}
+                setSelectedTab={setSelectedTab}
             />
         </Box>
     );

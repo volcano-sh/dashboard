@@ -30,11 +30,14 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import axios from "axios";
-import { API_BASE } from "../../lib/client/dashboard-api";
+import { useQuery } from "@tanstack/react-query";
+import { API_BASE, fetchQueueYaml } from "../../lib/client/dashboard-api";
 import CreateDialog from "../CreateDialog";
 import QueuePagination from "./QueuePagination";
 import { buildQueueTree } from "./utils/queueTreeBuilder";
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
+import ResourceDetailDrawer from "../details/ResourceDetailDrawer";
+import YamlViewer from "../details/YamlViewer";
 import {
     tableIdentifierSx,
     tableNumericSx,
@@ -283,151 +286,119 @@ const QueueTreeItem = ({
     );
 };
 
-const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
-    if (!selectedQueue) {
-        return (
-            <Paper
-                sx={{ border: "1px solid #dfe3e8", boxShadow: "none", p: 2 }}
-            >
-                <Typography color="text.secondary" sx={{ fontSize: 14 }}>
-                    Select a queue to view details.
-                </Typography>
-            </Paper>
-        );
-    }
-
-    return (
+const QueueOverviewPanel = ({ queueMap, selectedQueue }) => (
+    <Box
+        sx={{
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+        }}
+    >
         <Paper
             sx={{
                 border: "1px solid #dfe3e8",
-                borderRadius: 1.5,
+                borderRadius: 1,
                 boxShadow: "none",
-                minHeight: 680,
+                p: 2,
             }}
         >
-            <Box
-                sx={{
-                    alignItems: "center",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    px: 2,
-                    py: 1.5,
-                }}
-            >
-                <Typography sx={{ fontSize: 15, fontWeight: 700 }}>
-                    Queue Details
-                </Typography>
-                <Box sx={{ display: "flex", gap: 1 }}>
-                    <Button
-                        disabled
-                        size="small"
-                        startIcon={<EditOutlinedIcon fontSize="small" />}
-                        sx={{ textTransform: "none" }}
-                        variant="contained"
-                    >
-                        Edit
-                    </Button>
-                    <IconButton onClick={onClose} size="small">
-                        <CloseIcon {...iconProps} />
-                    </IconButton>
-                </Box>
-            </Box>
-            <Box sx={{ p: 2 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 1.25 }}>
+                Basic Information
+            </Typography>
+            <DetailRow
+                label="Path"
+                value={buildPath(selectedQueue, queueMap)}
+            />
+            <DetailRow label="Priority" value="0" />
+            <DetailRow
+                label="Preemptable"
+                value={String(selectedQueue?.spec?.reclaimable ?? true)}
+            />
+            <DetailRow
+                label="Reclaimable"
+                value={String(selectedQueue?.spec?.reclaimable ?? true)}
+            />
+            <DetailRow
+                label="Created At"
+                value={formatDate(selectedQueue?.metadata?.creationTimestamp)}
+            />
+            <DetailRow
+                label="Updated At"
+                value={formatDate(
+                    selectedQueue?.metadata?.managedFields?.[0]?.time ||
+                        selectedQueue?.metadata?.creationTimestamp,
+                )}
+            />
+        </Paper>
+        <Paper
+            sx={{
+                border: "1px solid #dfe3e8",
+                borderRadius: 1,
+                boxShadow: "none",
+                p: 2,
+            }}
+        >
+            <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 1.25 }}>
+                Resource Usage
+            </Typography>
+            <ResourcePair
+                title="Allocated"
+                cpu={getAllocatedCpu(selectedQueue)}
+                memory={getAllocatedMemory(selectedQueue)}
+            />
+            <ResourcePair
+                title="Pending"
+                cpu={getPendingCpu(selectedQueue)}
+                memory={getPendingMemory(selectedQueue)}
+            />
+            <Box sx={{ display: "grid", gap: 1.1 }}>
                 <Box
                     sx={{
                         alignItems: "center",
-                        display: "flex",
-                        gap: 1.5,
-                        mb: 2,
+                        display: "grid",
+                        gap: 1,
+                        gridTemplateColumns: "64px 1fr",
                     }}
                 >
-                    <Box
-                        sx={{
-                            alignItems: "center",
-                            bgcolor: "#f3f4f6",
-                            borderRadius: "50%",
-                            display: "flex",
-                            height: 48,
-                            justifyContent: "center",
-                            width: 48,
-                        }}
-                    >
-                        <FolderOutlinedIcon sx={{ fontSize: 25 }} />
-                    </Box>
-                    <Box>
-                        <Typography sx={{ fontSize: 18, fontWeight: 700 }}>
-                            {getQueueName(selectedQueue)}
-                        </Typography>
-                        <Chip
-                            label={getStatus(selectedQueue)}
-                            size="small"
-                            sx={{
-                                bgcolor: "#dbf5e4",
-                                color: "#15803d",
-                                fontSize: 11,
-                                height: 20,
-                            }}
-                        />
-                    </Box>
+                    <Typography sx={{ fontSize: 12 }}>CPU</Typography>
+                    <UsageMeter
+                        percent={getUsagePercent(selectedQueue, "cpu")}
+                    />
                 </Box>
-                <DetailRow
-                    label="Path"
-                    value={buildPath(selectedQueue, queueMap)}
-                />
-                <DetailRow label="Priority" value="0" />
-                <Divider sx={{ my: 1.5 }} />
-                <ResourcePair
-                    title="Allocated"
-                    cpu={getAllocatedCpu(selectedQueue)}
-                    memory={getAllocatedMemory(selectedQueue)}
-                />
-                <ResourcePair
-                    title="Pending"
-                    cpu={getPendingCpu(selectedQueue)}
-                    memory={getPendingMemory(selectedQueue)}
-                />
-                <Box sx={{ mb: 1.5 }}>
-                    <Typography
-                        color="text.secondary"
-                        sx={{ fontSize: 12, fontWeight: 700, mb: 1 }}
-                    >
-                        Resource Usage
-                    </Typography>
-                    <Box sx={{ display: "grid", gap: 1.1 }}>
-                        <Box
-                            sx={{
-                                alignItems: "center",
-                                display: "grid",
-                                gap: 1,
-                                gridTemplateColumns: "64px 1fr",
-                            }}
-                        >
-                            <Typography sx={{ fontSize: 12 }}>CPU</Typography>
-                            <UsageMeter
-                                percent={getUsagePercent(selectedQueue, "cpu")}
-                            />
-                        </Box>
-                        <Box
-                            sx={{
-                                alignItems: "center",
-                                display: "grid",
-                                gap: 1,
-                                gridTemplateColumns: "64px 1fr",
-                            }}
-                        >
-                            <Typography sx={{ fontSize: 12 }}>
-                                Memory
-                            </Typography>
-                            <UsageMeter
-                                percent={getUsagePercent(
-                                    selectedQueue,
-                                    "memory",
-                                )}
-                            />
-                        </Box>
-                    </Box>
+                <Box
+                    sx={{
+                        alignItems: "center",
+                        display: "grid",
+                        gap: 1,
+                        gridTemplateColumns: "64px 1fr",
+                    }}
+                >
+                    <Typography sx={{ fontSize: 12 }}>Memory</Typography>
+                    <UsageMeter
+                        percent={getUsagePercent(selectedQueue, "memory")}
+                    />
                 </Box>
-                <Divider sx={{ my: 1.5 }} />
+            </Box>
+        </Paper>
+        <Paper
+            sx={{
+                border: "1px solid #dfe3e8",
+                borderRadius: 1,
+                boxShadow: "none",
+                gridColumn: { md: "1 / -1" },
+                p: 2,
+            }}
+        >
+            <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 1.25 }}>
+                Capacity
+            </Typography>
+            <Box
+                sx={{
+                    display: "grid",
+                    gap: 2,
+                    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
+                }}
+            >
                 <ResourcePair
                     title="Guarantee"
                     cpu={getGuaranteeCpu(selectedQueue)}
@@ -443,30 +414,75 @@ const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
                     cpu={getCapabilityCpu(selectedQueue)}
                     memory={getCapabilityMemory(selectedQueue)}
                 />
-                <Divider sx={{ my: 1.5 }} />
-                <DetailRow
-                    label="Preemptable"
-                    value={String(selectedQueue?.spec?.reclaimable ?? true)}
-                />
-                <DetailRow
-                    label="Reclaimable"
-                    value={String(selectedQueue?.spec?.reclaimable ?? true)}
-                />
-                <DetailRow
-                    label="Created At"
-                    value={formatDate(
-                        selectedQueue?.metadata?.creationTimestamp,
-                    )}
-                />
-                <DetailRow
-                    label="Updated At"
-                    value={formatDate(
-                        selectedQueue?.metadata?.managedFields?.[0]?.time ||
-                            selectedQueue?.metadata?.creationTimestamp,
-                    )}
-                />
             </Box>
         </Paper>
+    </Box>
+);
+
+const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
+    const [selectedTab, setSelectedTab] = useState("overview");
+    const queueName = getQueueName(selectedQueue);
+    const yamlQuery = useQuery({
+        enabled: Boolean(selectedQueue && selectedTab === "yaml"),
+        queryFn: () => fetchQueueYaml(queueName),
+        queryKey: ["queueYaml", queueName],
+    });
+
+    return (
+        <ResourceDetailDrawer
+            activeTab={selectedTab}
+            icon={<FolderOutlinedIcon sx={{ fontSize: 18 }} />}
+            meta={[
+                {
+                    label: "Path",
+                    value: selectedQueue
+                        ? buildPath(selectedQueue, queueMap)
+                        : "-",
+                },
+                {
+                    label: "Parent",
+                    value: selectedQueue?.spec?.parent || "root",
+                },
+                {
+                    label: "Status",
+                    valueNode: selectedQueue ? (
+                        <Chip
+                            label={getStatus(selectedQueue)}
+                            size="small"
+                            sx={{
+                                bgcolor: "#dbf5e4",
+                                color: "#15803d",
+                                fontSize: 11,
+                                height: 20,
+                            }}
+                        />
+                    ) : null,
+                },
+            ]}
+            onClose={onClose}
+            onTabChange={setSelectedTab}
+            open={Boolean(selectedQueue)}
+            tabs={[
+                { label: "Overview", value: "overview" },
+                { label: "YAML", value: "yaml" },
+            ]}
+            title={`Queue: ${queueName}`}
+            renderTab={(tab) =>
+                tab === "yaml" ? (
+                    <YamlViewer
+                        data={yamlQuery.data}
+                        error={yamlQuery.error}
+                        fill
+                        isLoading={yamlQuery.isLoading || yamlQuery.isFetching}
+                    />
+                ) : (
+                    <QueueOverviewPanel
+                        queueMap={queueMap}
+                        selectedQueue={selectedQueue}
+                    />
+                )
+            }
+        />
     );
 };
 
@@ -530,9 +546,7 @@ const QueueHierarchyView = ({
                 gap: 2,
                 gridTemplateColumns: {
                     xs: "1fr",
-                    xl: selectedQueue
-                        ? "minmax(820px, 1fr) 360px"
-                        : "minmax(820px, 1fr)",
+                    xl: "minmax(820px, 1fr)",
                 },
             }}
         >
@@ -859,29 +873,11 @@ const QueueHierarchyView = ({
                     />
                 </Box>
             </Paper>
-            {selectedQueue && (
-                <Box
-                    sx={{
-                        animation: "queueDetailSlideIn 180ms ease-out",
-                        "@keyframes queueDetailSlideIn": {
-                            from: {
-                                opacity: 0,
-                                transform: "translateX(24px)",
-                            },
-                            to: {
-                                opacity: 1,
-                                transform: "translateX(0)",
-                            },
-                        },
-                    }}
-                >
-                    <QueueDetailsPanel
-                        onClose={onCloseQueueDetails}
-                        selectedQueue={selectedQueue}
-                        queueMap={queueMap}
-                    />
-                </Box>
-            )}
+            <QueueDetailsPanel
+                onClose={onCloseQueueDetails}
+                selectedQueue={selectedQueue}
+                queueMap={queueMap}
+            />
         </Box>
     );
 };
