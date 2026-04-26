@@ -44,6 +44,17 @@ spec:
               value: {{ .Values.schedulerConfig.name | quote }}
             - name: SCHEDULER_CONFIG_KEY
               value: {{ .Values.schedulerConfig.key | quote }}
+            {{- if or .Values.auth.existingSecret .Values.auth.config }}
+            - name: AUTH_CONFIG_FILE
+              value: "/etc/volcano-dashboard/{{ .Values.auth.configSecretKey }}"
+            {{- end }}
+          {{- if or .Values.auth.existingSecret .Values.auth.config }}
+          volumeMounts:
+            - name: auth-config
+              mountPath: "/etc/volcano-dashboard/{{ .Values.auth.configSecretKey }}"
+              subPath: {{ .Values.auth.configSecretKey | quote }}
+              readOnly: true
+          {{- end }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -65,4 +76,13 @@ spec:
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or .Values.auth.existingSecret .Values.auth.config }}
+      volumes:
+        - name: auth-config
+          secret:
+            secretName: {{ include "volcano-dashboard.authSecretName" . }}
+            items:
+              - key: {{ .Values.auth.configSecretKey | quote }}
+                path: {{ .Values.auth.configSecretKey | quote }}
       {{- end }}

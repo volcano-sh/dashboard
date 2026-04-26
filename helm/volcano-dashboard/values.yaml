@@ -24,6 +24,12 @@ schedulerConfig:
     name: volcano-scheduler-configmap
     key: ""
 
+auth:
+    mode: local
+    existingSecret: ""
+    configSecretKey: auth.yaml
+    config: ""
+
 podAnnotations: {}
 podLabels: {}
 

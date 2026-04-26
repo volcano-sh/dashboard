@@ -62,3 +62,14 @@ Resolve the namespace for rendered namespaced resources.
 {{- define "volcano-dashboard.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride -}}
 {{- end -}}
+
+{{/*
+Resolve the auth config Secret name when auth config is mounted.
+*/}}
+{{- define "volcano-dashboard.authSecretName" -}}
+{{- if .Values.auth.existingSecret -}}
+{{- .Values.auth.existingSecret -}}
+{{- else -}}
+{{- printf "%s-auth" (include "volcano-dashboard.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
