@@ -9,13 +9,10 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import CreateDialog from "../CreateDialog";
 import {
-    createPod,
     fetchNamespaces,
     fetchQueues,
     fetchPods,
@@ -32,7 +29,6 @@ const Pods = () => {
         namespace: "All",
         queue: "All",
     });
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
     const [selectedPod, setSelectedPod] = useState(null);
@@ -112,17 +108,6 @@ const Pods = () => {
         setSearchText("");
         queryClient.invalidateQueries({ queryKey: ["pods"] });
     }, [queryClient]);
-
-    const handleCreatePod = async (newPod) => {
-        try {
-            await createPod(newPod);
-            alert("Pod created successfully!");
-            setCreateDialogOpen(false);
-            queryClient.invalidateQueries({ queryKey: ["pods"] });
-        } catch (err) {
-            alert(getApiErrorMessage(err, "Error creating pod"));
-        }
-    };
 
     const handlePodClick = useCallback((pod) => {
         setActionError(null);
@@ -283,18 +268,6 @@ const Pods = () => {
                         >
                             Refresh
                         </Button>
-                        <Button
-                            onClick={() => setCreateDialogOpen(true)}
-                            startIcon={<AddIcon fontSize="small" />}
-                            sx={{
-                                bgcolor: "#ff4d2d",
-                                textTransform: "none",
-                                "&:hover": { bgcolor: "#e84325" },
-                            }}
-                            variant="contained"
-                        >
-                            Create Pod
-                        </Button>
                     </Box>
                 </Box>
             )}
@@ -330,14 +303,6 @@ const Pods = () => {
                     />
                 </Box>
             )}
-            <CreateDialog
-                open={createDialogOpen}
-                onClose={() => setCreateDialogOpen(false)}
-                onCreate={handleCreatePod}
-                title="Create a Pod"
-                resourceNameLabel="Pod Name"
-                resourceType="Pod"
-            />
         </Box>
     );
 };
