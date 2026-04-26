@@ -119,10 +119,16 @@ const footerItems = [
 
 export default function DashboardShell({ children }) {
     const theme = useTheme();
-    const isOverlayDrawer = useMediaQuery(theme.breakpoints.down("lg"));
+    const overlayDrawerMatch = useMediaQuery(theme.breakpoints.down("lg"));
     const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(true);
     const [adminOpen, setAdminOpen] = useState(false);
+    const isOverlayDrawer = mounted && overlayDrawerMatch;
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         setOpen((previous) =>
