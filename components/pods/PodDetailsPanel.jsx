@@ -23,13 +23,16 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
-import { useQuery } from "@tanstack/react-query";
+import SyncIcon from "@mui/icons-material/Sync";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PodStatusChip from "./PodStatusChip";
 import {
+    deletePod,
     fetchPodEvents,
     fetchPod,
     fetchPodLogs,
@@ -240,6 +243,13 @@ const podLogsStreamUrl = ({ container, name, namespace, tailLines }) => {
     return `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
         namespace,
     )}/${encodeURIComponent(name)}/logs/stream?${params.toString()}`;
+};
+
+const podEventsStreamUrl = ({ name, namespace }) => {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    return `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
+        namespace,
+    )}/${encodeURIComponent(name)}/events/stream`;
 };
 
 const getTerminalSession = (key, url) => {
@@ -822,13 +832,14 @@ const PodLogsView = ({
                     sx={{ minWidth: 180 }}
                     value={container}
                 >
-                    {(containers.length ? containers : [container || "main"]).map(
-                        (item) => (
-                            <MenuItem key={item} value={item}>
-                                {item}
-                            </MenuItem>
-                        ),
-                    )}
+                    {(containers.length
+                        ? containers
+                        : [container || "main"]
+                    ).map((item) => (
+                        <MenuItem key={item} value={item}>
+                            {item}
+                        </MenuItem>
+                    ))}
                 </Select>
             </Stack>
 
@@ -1008,11 +1019,114 @@ const PodLogsView = ({
 };
 
 const PodEventsView = ({ name, namespace }) => {
+    const [events, setEvents] = React.useState([]);
+    const [watchError, setWatchError] = React.useState("");
     const { data, error, isFetching, isLoading } = useQuery({
         enabled: Boolean(namespace && name),
         queryFn: () => fetchPodEvents(namespace, name),
         queryKey: ["podEvents", namespace, name],
     });
+
+    React.useEffect(() => {
+        setEvents(data?.items || []);
+    }, [data]);
+
+    React.useEffect(() => {
+        if (!namespace || !name) {
+            setWatchError("");
+            return undefined;
+        }
+
+        let disposed = false;
+        let retryTimer;
+        let socket;
+        let retryCount = 0;
+
+        const connect = () => {
+            if (disposed) {
+                return;
+            }
+
+            socket = new WebSocket(podEventsStreamUrl({ name, namespace }));
+
+            socket.addEventListener("open", () => {
+                if (!disposed) {
+                    retryCount = 0;
+                    setWatchError("");
+                }
+            });
+
+            socket.addEventListener("message", (message) => {
+                if (disposed) {
+                    return;
+                }
+
+                try {
+                    const payload = JSON.parse(message.data);
+                    if (payload?.type === "ERROR") {
+                        setWatchError(
+                            payload.error || "Pod event stream failed.",
+                        );
+                        return;
+                    }
+
+                    const incoming = payload?.event;
+                    if (!incoming) {
+                        return;
+                    }
+
+                    setEvents((current) => {
+                        const key =
+                            incoming.uid ||
+                            incoming.name ||
+                            `${incoming.reason}:${incoming.message}`;
+                        const withoutExisting = current.filter((item) => {
+                            const itemKey =
+                                item.uid ||
+                                item.name ||
+                                `${item.reason}:${item.message}`;
+                            return itemKey !== key;
+                        });
+
+                        if (payload.type === "DELETED") {
+                            return withoutExisting;
+                        }
+
+                        return [incoming, ...withoutExisting].sort(
+                            (a, b) =>
+                                new Date(b.lastTimestamp || 0) -
+                                new Date(a.lastTimestamp || 0),
+                        );
+                    });
+                } catch {
+                    setWatchError(
+                        "Received an invalid pod event stream message.",
+                    );
+                }
+            });
+
+            socket.addEventListener("close", () => {
+                if (disposed) {
+                    return;
+                }
+
+                retryCount += 1;
+                retryTimer = window.setTimeout(
+                    connect,
+                    Math.min(5000, 700 * retryCount),
+                );
+            });
+        };
+
+        setWatchError("");
+        connect();
+
+        return () => {
+            disposed = true;
+            window.clearTimeout(retryTimer);
+            socket?.close(1000, "events panel detached");
+        };
+    }, [name, namespace]);
 
     if (isLoading || isFetching) {
         return (
@@ -1038,20 +1152,27 @@ const PodEventsView = ({ name, namespace }) => {
     }
 
     return (
-        <PlainTable
-            columns={[
-                { key: "type", label: "Type" },
-                { key: "reason", label: "Reason" },
-                { key: "message", label: "Message" },
-                { key: "count", label: "Count" },
-                { key: "lastTimestamp", label: "Last Seen" },
-            ]}
-            rows={(data?.items || []).map((event) => ({
-                ...event,
-                lastTimestamp: formatDateTime(event.lastTimestamp),
-            }))}
-            emptyText="No pod events available."
-        />
+        <Box>
+            {watchError && (
+                <Alert severity="warning" sx={{ boxShadow: "none", mb: 1.5 }}>
+                    {watchError}
+                </Alert>
+            )}
+            <PlainTable
+                columns={[
+                    { key: "type", label: "Type" },
+                    { key: "reason", label: "Reason" },
+                    { key: "message", label: "Message" },
+                    { key: "count", label: "Count" },
+                    { key: "lastTimestamp", label: "Last Seen" },
+                ]}
+                rows={events.map((event) => ({
+                    ...event,
+                    lastTimestamp: formatDateTime(event.lastTimestamp),
+                }))}
+                emptyText="No pod events available."
+            />
+        </Box>
     );
 };
 
@@ -1079,127 +1200,126 @@ const PodTerminalView = ({ pod }) => {
             return undefined;
         }
 
-        Promise.all([
-            import("@xterm/xterm"),
-            import("@xterm/addon-fit"),
-        ]).then(([xtermModule, fitModule]) => {
-            if (disposed || !terminalRef.current) {
-                return;
-            }
-
-            const term = new xtermModule.Terminal({
-                allowProposedApi: false,
-                cursorBlink: true,
-                convertEol: true,
-                fontFamily:
-                    '"Roboto Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
-                fontSize: 12.5,
-                lineHeight: 1.35,
-                scrollback: 5000,
-                theme: {
-                    background: "#171717",
-                    black: "#171717",
-                    blue: "#60a5fa",
-                    brightBlack: "#6b7280",
-                    brightBlue: "#93c5fd",
-                    brightCyan: "#67e8f9",
-                    brightGreen: "#86efac",
-                    brightMagenta: "#f0abfc",
-                    brightRed: "#fca5a5",
-                    brightWhite: "#ffffff",
-                    brightYellow: "#fde68a",
-                    cursor: "#e5e7eb",
-                    cyan: "#22d3ee",
-                    foreground: "#e5e7eb",
-                    green: "#4ade80",
-                    magenta: "#e879f9",
-                    red: "#f87171",
-                    selectionBackground: "#374151",
-                    white: "#e5e7eb",
-                    yellow: "#facc15",
-                },
-            });
-            const fitAddon = new fitModule.FitAddon();
-            term.loadAddon(fitAddon);
-            term.open(terminalRef.current);
-            fitAddon.fit();
-            term.focus();
-
-            termRef.current = term;
-            fitAddonRef.current = fitAddon;
-            term.writeln(
-                `Connecting to ${namespace}/${name} (${selectedContainer})...`,
-            );
-
-            const protocol =
-                window.location.protocol === "https:" ? "wss" : "ws";
-            const url = `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
-                namespace,
-            )}/${encodeURIComponent(name)}/terminal?container=${encodeURIComponent(
-                selectedContainer,
-            )}`;
-            session = getTerminalSession(sessionKey, url);
-            socketRef.current = session.socket;
-            setConnected(session.connected);
-
-            if (session.buffer.length > 0) {
-                term.write(session.buffer.join(""));
-            }
-
-            sessionListener = (event) => {
-                if (disposed) {
+        Promise.all([import("@xterm/xterm"), import("@xterm/addon-fit")]).then(
+            ([xtermModule, fitModule]) => {
+                if (disposed || !terminalRef.current) {
                     return;
                 }
 
-                if (event.type === "open") {
-                    term.focus();
-                    return;
-                }
-
-                if (event.type === "message") {
-                    if (event.data.startsWith("Connected to ")) {
-                        setConnected(true);
-                    }
-                    term.write(event.data);
-                    return;
-                }
-
-                if (event.type === "close") {
-                    setConnected(false);
-                    const closeEvent = event.event;
-                    const suffix =
-                        closeEvent?.code || closeEvent?.reason
-                            ? ` (${closeEvent.code || "unknown"}${
-                                  closeEvent.reason
-                                      ? ` ${closeEvent.reason}`
-                                      : ""
-                              })`
-                            : "";
-                    const state = event.wasConnected
-                        ? "disconnected"
-                        : "closed before Kubernetes exec was ready";
-                    term.writeln(`\r\n[terminal ${state}${suffix}]`);
-                    return;
-                }
-
-                if (event.type === "error") {
-                    term.writeln("\r\n[terminal connection error]");
-                }
-            };
-
-            session.listeners.add(sessionListener);
-
-            dataDisposable = term.onData((data) => {
-                if (session?.socket.readyState === WebSocket.OPEN) {
-                    session.socket.send(data);
-                }
-            });
-
-            resizeObserver = new ResizeObserver(() => {
+                const term = new xtermModule.Terminal({
+                    allowProposedApi: false,
+                    cursorBlink: true,
+                    convertEol: true,
+                    fontFamily:
+                        '"Roboto Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+                    fontSize: 12.5,
+                    lineHeight: 1.35,
+                    scrollback: 5000,
+                    theme: {
+                        background: "#171717",
+                        black: "#171717",
+                        blue: "#60a5fa",
+                        brightBlack: "#6b7280",
+                        brightBlue: "#93c5fd",
+                        brightCyan: "#67e8f9",
+                        brightGreen: "#86efac",
+                        brightMagenta: "#f0abfc",
+                        brightRed: "#fca5a5",
+                        brightWhite: "#ffffff",
+                        brightYellow: "#fde68a",
+                        cursor: "#e5e7eb",
+                        cyan: "#22d3ee",
+                        foreground: "#e5e7eb",
+                        green: "#4ade80",
+                        magenta: "#e879f9",
+                        red: "#f87171",
+                        selectionBackground: "#374151",
+                        white: "#e5e7eb",
+                        yellow: "#facc15",
+                    },
+                });
+                const fitAddon = new fitModule.FitAddon();
+                term.loadAddon(fitAddon);
+                term.open(terminalRef.current);
                 fitAddon.fit();
-            });
-            resizeObserver.observe(terminalRef.current);
-        });
+                term.focus();
+
+                termRef.current = term;
+                fitAddonRef.current = fitAddon;
+                term.writeln(
+                    `Connecting to ${namespace}/${name} (${selectedContainer})...`,
+                );
+
+                const protocol =
+                    window.location.protocol === "https:" ? "wss" : "ws";
+                const url = `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
+                    namespace,
+                )}/${encodeURIComponent(name)}/terminal?container=${encodeURIComponent(
+                    selectedContainer,
+                )}`;
+                session = getTerminalSession(sessionKey, url);
+                socketRef.current = session.socket;
+                setConnected(session.connected);
+
+                if (session.buffer.length > 0) {
+                    term.write(session.buffer.join(""));
+                }
+
+                sessionListener = (event) => {
+                    if (disposed) {
+                        return;
+                    }
+
+                    if (event.type === "open") {
+                        term.focus();
+                        return;
+                    }
+
+                    if (event.type === "message") {
+                        if (event.data.startsWith("Connected to ")) {
+                            setConnected(true);
+                        }
+                        term.write(event.data);
+                        return;
+                    }
+
+                    if (event.type === "close") {
+                        setConnected(false);
+                        const closeEvent = event.event;
+                        const suffix =
+                            closeEvent?.code || closeEvent?.reason
+                                ? ` (${closeEvent.code || "unknown"}${
+                                      closeEvent.reason
+                                          ? ` ${closeEvent.reason}`
+                                          : ""
+                                  })`
+                                : "";
+                        const state = event.wasConnected
+                            ? "disconnected"
+                            : "closed before Kubernetes exec was ready";
+                        term.writeln(`\r\n[terminal ${state}${suffix}]`);
+                        return;
+                    }
+
+                    if (event.type === "error") {
+                        term.writeln("\r\n[terminal connection error]");
+                    }
+                };
+
+                session.listeners.add(sessionListener);
+
+                dataDisposable = term.onData((data) => {
+                    if (session?.socket.readyState === WebSocket.OPEN) {
+                        session.socket.send(data);
+                    }
+                });
+
+                resizeObserver = new ResizeObserver(() => {
+                    fitAddon.fit();
+                });
+                resizeObserver.observe(terminalRef.current);
+            },
+        );
 
         return () => {
             disposed = true;
@@ -1256,7 +1376,9 @@ const PodTerminalView = ({ pod }) => {
                 >
                     <Typography
                         sx={{
-                            color: connected ? "success.main" : "text.secondary",
+                            color: connected
+                                ? "success.main"
+                                : "text.secondary",
                             fontSize: 12,
                             fontWeight: 700,
                         }}
@@ -1300,12 +1422,16 @@ const PodDetailsPanel = ({
     const [selectedLogContainer, setSelectedLogContainer] = React.useState("");
     const [logTailLines, setLogTailLines] = React.useState(200);
     const [logFollow, setLogFollow] = React.useState(false);
+    const [actionError, setActionError] = React.useState("");
+    const [actionPending, setActionPending] = React.useState("");
+    const queryClient = useQueryClient();
     const namespace = selectedPod?.metadata?.namespace;
     const name = selectedPod?.metadata?.name;
     const {
         data: pod,
         error,
         isLoading,
+        refetch,
     } = useQuery({
         enabled: Boolean(namespace && name),
         initialData: selectedPod || undefined,
@@ -1331,6 +1457,63 @@ const PodDetailsPanel = ({
             setSelectedLogContainer(containers[0]);
         }
     }, [containers, selectedLogContainer]);
+
+    const handleSync = async () => {
+        if (!namespace || !name) {
+            return;
+        }
+
+        setActionError("");
+        setActionPending("sync");
+        try {
+            await Promise.all([
+                refetch(),
+                queryClient.invalidateQueries({ queryKey: ["pods"] }),
+                queryClient.invalidateQueries({
+                    queryKey: ["podYaml", namespace, name],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["podEvents", namespace, name],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["podLogs", namespace, name],
+                }),
+            ]);
+        } catch (syncError) {
+            setActionError(
+                getApiErrorMessage(syncError, "Failed to sync pod details"),
+            );
+        } finally {
+            setActionPending("");
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!namespace || !name) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Delete pod ${namespace}/${name}? This action cannot be undone.`,
+        );
+        if (!confirmed) {
+            return;
+        }
+
+        setActionError("");
+        setActionPending("delete");
+        try {
+            await deletePod(namespace, name);
+            await queryClient.invalidateQueries({ queryKey: ["pods"] });
+            onClose?.();
+        } catch (deleteError) {
+            setActionError(
+                getApiErrorMessage(deleteError, "Failed to delete pod"),
+            );
+        } finally {
+            setActionPending("");
+        }
+    };
 
     if (!selectedPod) {
         return (
@@ -1480,10 +1663,62 @@ const PodDetailsPanel = ({
                             </Box>
                         </Stack>
                     </Box>
-                    <IconButton onClick={onClose} size="small">
-                        <CloseIcon fontSize="small" />
-                    </IconButton>
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: "center", flexShrink: 0 }}
+                    >
+                        <Button
+                            disabled={Boolean(actionPending)}
+                            onClick={handleSync}
+                            size="small"
+                            startIcon={<SyncIcon fontSize="small" />}
+                            sx={{
+                                borderColor: "#16a34a",
+                                color: "#15803d",
+                                minWidth: 82,
+                                textTransform: "none",
+                                "&:hover": {
+                                    bgcolor: "rgba(22, 163, 74, 0.08)",
+                                    borderColor: "#15803d",
+                                },
+                            }}
+                            variant="outlined"
+                        >
+                            {actionPending === "sync" ? "Syncing" : "Sync"}
+                        </Button>
+                        <Button
+                            disabled={Boolean(actionPending)}
+                            onClick={handleDelete}
+                            size="small"
+                            startIcon={<DeleteOutlineIcon fontSize="small" />}
+                            sx={{
+                                borderColor: "#dc2626",
+                                color: "#dc2626",
+                                minWidth: 84,
+                                textTransform: "none",
+                                "&:hover": {
+                                    bgcolor: "rgba(220, 38, 38, 0.08)",
+                                    borderColor: "#b91c1c",
+                                },
+                            }}
+                            variant="outlined"
+                        >
+                            {actionPending === "delete" ? "Deleting" : "Delete"}
+                        </Button>
+                        <IconButton onClick={onClose} size="small">
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </Stack>
                 </Box>
+                {actionError && (
+                    <Alert
+                        severity="error"
+                        sx={{ boxShadow: "none", mt: 1.25 }}
+                    >
+                        {actionError}
+                    </Alert>
+                )}
             </Box>
 
             <Tabs
