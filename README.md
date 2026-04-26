@@ -37,6 +37,37 @@ helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
   --create-namespace
 ```
 
+By default, the dashboard runs in local authentication mode with the built-in
+development account `admin` / `admin`. For production deployments, create a
+Secret with your own JWT secret and bcrypt password hashes, then pass it to the
+chart:
+
+```yaml
+mode: local
+jwt:
+    issuer: volcano-dashboard
+    secret: change-this-secret
+    expiresIn: 8h
+    rememberExpiresIn: 30d
+localUsers:
+    - username: admin
+      displayName: Administrator
+      passwordHash: "$2b$12$..."
+```
+
+```bash
+kubectl create secret generic volcano-dashboard-auth \
+  --namespace volcano-system \
+  --from-file=auth.yaml=./auth.yaml
+
+helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
+  --namespace volcano-system \
+  --set auth.existingSecret=volcano-dashboard-auth
+```
+
+Use `mode: local-sso` and add an `sso` block with OIDC issuer/client settings
+when you want both local login and SSO.
+
 3. Access the dashboard by port-forwarding the service:
 
 ```bash

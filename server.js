@@ -2,6 +2,7 @@ import { createServer, request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import next from "next";
 import WebSocket, { WebSocketServer } from "ws";
+import { verifyAuthToken } from "./lib/server/auth.js";
 import { getKubernetesClients } from "./lib/server/kubernetes.js";
 
 const dev = process.env.NODE_ENV !== "production";
@@ -12,8 +13,7 @@ const port = Number.parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev, hostname: nextHostname, port });
 const handle = app.getRequestHandler();
 
-const terminalPathPattern =
-    /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/terminal\/?$/;
+const terminalPathPattern = /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/terminal\/?$/;
 const podLogsStreamPathPattern =
     /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/logs\/stream\/?$/;
 const podEventsStreamPathPattern =
@@ -49,6 +49,56 @@ const logHttpRequest = (request, response, startedAt) => {
     );
 };
 
+const protectedApiPathPattern = /^\/api\/v1(\/|$)/;
+const publicApiPathPattern = /^\/api\/v1\/auth(\/|$)/;
+
+const getBearerToken = (request) => {
+    const header = request.headers.authorization || "";
+    const match = header.match(/^Bearer\s+(.+)$/i);
+    return match?.[1] || "";
+};
+
+const isProtectedApiRequest = (requestUrl) => {
+    const url = new URL(requestUrl || "/", "http://localhost");
+    return (
+        protectedApiPathPattern.test(url.pathname) &&
+        !publicApiPathPattern.test(url.pathname)
+    );
+};
+
+const rejectHttpUnauthorized = (response, message) => {
+    response.statusCode = 401;
+    response.setHeader("Content-Type", "application/json");
+    response.end(
+        JSON.stringify({
+            error: "Unauthorized",
+            message: message || "Authentication required.",
+        }),
+    );
+};
+
+const rejectUpgradeUnauthorized = (socket, message) => {
+    socket.write(
+        "HTTP/1.1 401 Unauthorized\r\n" +
+            "Connection: close\r\n" +
+            "Content-Type: application/json\r\n" +
+            "\r\n" +
+            JSON.stringify({
+                error: "Unauthorized",
+                message: message || "Authentication required.",
+            }),
+    );
+    socket.destroy();
+};
+
+const verifyUpgradeToken = async (url) => {
+    const token = url.searchParams.get("token") || "";
+    if (!token) {
+        throw new Error("Missing websocket token.");
+    }
+    return verifyAuthToken(token);
+};
+
 const closeQuietly = (target) => {
     try {
         target?.close?.();
@@ -67,11 +117,24 @@ await app.prepare();
 app.didWebSocketSetup = true;
 const nextUpgradeHandler = app.upgradeHandler;
 
-const server = createServer((request, response) => {
+const server = createServer(async (request, response) => {
     const startedAt = process.hrtime.bigint();
     response.on("finish", () => {
         logHttpRequest(request, response, startedAt);
     });
+
+    if (isProtectedApiRequest(request.url || "/")) {
+        try {
+            await verifyAuthToken(getBearerToken(request));
+        } catch (error) {
+            rejectHttpUnauthorized(
+                response,
+                error?.message || "Authentication required.",
+            );
+            return;
+        }
+    }
+
     handle(request, response);
 });
 
@@ -202,9 +265,7 @@ const createKubernetesPodEventsWatchRequest = async ({ name, namespace }) => {
     }
 
     const url = new URL(cluster.server);
-    url.pathname = `/api/v1/namespaces/${encodeURIComponent(
-        namespace,
-    )}/events`;
+    url.pathname = `/api/v1/namespaces/${encodeURIComponent(namespace)}/events`;
     url.search = "";
     url.searchParams.set("watch", "true");
     url.searchParams.set("allowWatchBookmarks", "true");
@@ -369,9 +430,7 @@ terminalServer.on("connection", async (browserSocket, request, context) => {
                 connectionContext,
                 `error=${error?.message || error}`,
             );
-            send(
-                `Terminal connection failed: ${error?.message || error}\r\n`,
-            );
+            send(`Terminal connection failed: ${error?.message || error}\r\n`);
             closeQuietly(browserSocket);
         });
     } catch (error) {
@@ -618,7 +677,7 @@ podEventsServer.on("connection", async (browserSocket, request, context) => {
     }
 });
 
-server.on("upgrade", (request, socket, head) => {
+server.on("upgrade", async (request, socket, head) => {
     const url = new URL(request.url || "/", `http://${request.headers.host}`);
     const terminalMatch = url.pathname.match(terminalPathPattern);
     const podLogsMatch = url.pathname.match(podLogsStreamPathPattern);
@@ -637,6 +696,21 @@ server.on("upgrade", (request, socket, head) => {
                 );
                 socket.destroy();
             },
+        );
+        return;
+    }
+
+    try {
+        await verifyUpgradeToken(url);
+    } catch (error) {
+        console.warn(
+            `[upgrade] rejected unauthenticated websocket path=${
+                url.pathname
+            } error=${error?.message || error}`,
+        );
+        rejectUpgradeUnauthorized(
+            socket,
+            error?.message || "Authentication required.",
         );
         return;
     }

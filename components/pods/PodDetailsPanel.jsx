@@ -40,6 +40,7 @@ import {
     getApiErrorMessage,
     API_BASE,
 } from "../../lib/client/dashboard-api";
+import { getStoredToken } from "../../lib/client/auth-token";
 import { calculateAge } from "../utils";
 
 const panelBorder = "#dfe3e8";
@@ -233,13 +234,23 @@ const lineLevelColor = (line) => {
 
 const terminalSessions = new Map();
 
+const appendAuthToken = (params) => {
+    const token = getStoredToken();
+    if (token) {
+        params.set("token", token);
+    }
+    return params;
+};
+
 const podLogsStreamUrl = ({ container, name, namespace, tailLines }) => {
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const params = new URLSearchParams({
-        container,
-        follow: "true",
-        tailLines: String(tailLines || 200),
-    });
+    const params = appendAuthToken(
+        new URLSearchParams({
+            container,
+            follow: "true",
+            tailLines: String(tailLines || 200),
+        }),
+    );
     return `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
         namespace,
     )}/${encodeURIComponent(name)}/logs/stream?${params.toString()}`;
@@ -247,9 +258,10 @@ const podLogsStreamUrl = ({ container, name, namespace, tailLines }) => {
 
 const podEventsStreamUrl = ({ name, namespace }) => {
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const params = appendAuthToken(new URLSearchParams());
     return `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
         namespace,
-    )}/${encodeURIComponent(name)}/events/stream`;
+    )}/${encodeURIComponent(name)}/events/stream?${params.toString()}`;
 };
 
 const getTerminalSession = (key, url) => {
@@ -1252,11 +1264,14 @@ const PodTerminalView = ({ pod }) => {
 
                 const protocol =
                     window.location.protocol === "https:" ? "wss" : "ws";
+                const params = appendAuthToken(
+                    new URLSearchParams({
+                        container: selectedContainer,
+                    }),
+                );
                 const url = `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
                     namespace,
-                )}/${encodeURIComponent(name)}/terminal?container=${encodeURIComponent(
-                    selectedContainer,
-                )}`;
+                )}/${encodeURIComponent(name)}/terminal?${params.toString()}`;
                 session = getTerminalSession(sessionKey, url);
                 socketRef.current = session.socket;
                 setConnected(session.connected);

@@ -10,6 +10,7 @@ describe("volcano API routing", () => {
         expect(existsSync(versionedApiDir)).toBe(true);
 
         [
+            "auth",
             "cluster-info",
             "jobs",
             "namespaces",

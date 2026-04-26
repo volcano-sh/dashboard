@@ -1,5 +1,10 @@
 import DashboardShell from "../../components/DashboardShell";
+import AuthGuard from "../../components/auth/AuthGuard";
 
 export default function DashboardLayout({ children }) {
-    return <DashboardShell>{children}</DashboardShell>;
+    return (
+        <AuthGuard>
+            <DashboardShell>{children}</DashboardShell>
+        </AuthGuard>
+    );
 }
