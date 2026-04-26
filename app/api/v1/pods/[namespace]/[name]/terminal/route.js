@@ -14,8 +14,7 @@ export async function GET(request, context) {
             query: {
                 container: url.searchParams.get("container") || "<required>",
             },
-            shell:
-                "The server starts an interactive terminal automatically and falls back across common shells.",
+            shell: "The server starts an interactive terminal automatically and falls back across common shells.",
             upgrade: "websocket",
         },
         426,

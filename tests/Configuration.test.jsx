@@ -118,7 +118,11 @@ const schedulerConfig = {
                             enabled: true,
                             arguments: { strict: true },
                             description: "Ensure gang scheduling constraints.",
-                            hooks: ["JobEnqueueable", "JobEnqueued", "JobReady"],
+                            hooks: [
+                                "JobEnqueueable",
+                                "JobEnqueued",
+                                "JobReady",
+                            ],
                             actions: ["enqueue", "allocate"],
                             hookMappingAvailable: true,
                         },
@@ -135,7 +139,11 @@ const schedulerConfig = {
                             enabled: true,
                             arguments: { strict: true },
                             description: "Ensure gang scheduling constraints.",
-                            hooks: ["JobEnqueueable", "JobEnqueued", "JobReady"],
+                            hooks: [
+                                "JobEnqueueable",
+                                "JobEnqueued",
+                                "JobReady",
+                            ],
                             actions: ["enqueue", "allocate"],
                             hookMappingAvailable: true,
                         },
@@ -216,9 +224,7 @@ describe("Configuration", () => {
         ).toBeInTheDocument();
         expect(screen.getByText(/^default actions$/i)).toBeInTheDocument();
         expect(screen.getByText("enqueue")).toBeInTheDocument();
-        expect(
-            screen.queryAllByText(/^Raw Scheduler YAML$/i).length,
-        ).toBe(1);
+        expect(screen.queryAllByText(/^Raw Scheduler YAML$/i).length).toBe(1);
     });
 
     it("should render scheduling flow content when selecting the Scheduling Flow tab", async () => {
@@ -252,9 +258,13 @@ describe("Configuration", () => {
             screen.getByRole("tab", { name: /raw scheduler yaml/i }),
         );
 
-        expect(screen.getAllByText(/^Raw Scheduler YAML$/i).length).toBeGreaterThan(1);
         expect(
-            await screen.findByText(/no raw yaml available\.|actions: enqueue, allocate, backfill/i),
+            screen.getAllByText(/^Raw Scheduler YAML$/i).length,
+        ).toBeGreaterThan(1);
+        expect(
+            await screen.findByText(
+                /no raw yaml available\.|actions: enqueue, allocate, backfill/i,
+            ),
         ).toBeInTheDocument();
     });
 

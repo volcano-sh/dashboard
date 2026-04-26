@@ -31,7 +31,8 @@ describe("pod events API", () => {
         expect(response.status).toBe(200);
         expect(listNamespacedEvent).toHaveBeenCalledWith({
             namespace: "volcano-demo",
-            fieldSelector: "involvedObject.kind=Pod,involvedObject.name=demo-pod",
+            fieldSelector:
+                "involvedObject.kind=Pod,involvedObject.name=demo-pod",
         });
         expect(body).toMatchObject({
             items: [

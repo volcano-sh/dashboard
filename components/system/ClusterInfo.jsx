@@ -78,11 +78,18 @@ export default function ClusterInfo() {
         >
             <Card sx={{ border: "1px solid #dfe3e8", boxShadow: "none" }}>
                 <CardContent sx={{ p: 3 }}>
-                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 700 }}>
+                    <Typography
+                        component="h1"
+                        sx={{ fontSize: 22, fontWeight: 700 }}
+                    >
                         Cluster Information
                     </Typography>
-                    <Typography color="text.secondary" sx={{ fontSize: 13, mt: 0.5 }}>
-                        Read-only details about the current Kubernetes connection and scheduler config source.
+                    <Typography
+                        color="text.secondary"
+                        sx={{ fontSize: 13, mt: 0.5 }}
+                    >
+                        Read-only details about the current Kubernetes
+                        connection and scheduler config source.
                     </Typography>
                     <Divider sx={{ my: 2.5 }} />
                     {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -95,7 +102,10 @@ export default function ClusterInfo() {
                         sx={{
                             display: "grid",
                             gap: 2,
-                            gridTemplateColumns: { xs: "1fr", xl: "repeat(3, 1fr)" },
+                            gridTemplateColumns: {
+                                xs: "1fr",
+                                xl: "repeat(3, 1fr)",
+                            },
                         }}
                     >
                         {sections.map((section) => (
@@ -116,36 +126,51 @@ export default function ClusterInfo() {
                                     }}
                                 >
                                     {section.icon}
-                                    <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
+                                    <Typography
+                                        sx={{ fontSize: 16, fontWeight: 700 }}
+                                    >
                                         {section.title}
                                     </Typography>
                                 </Box>
-                                <TableContainer sx={{ border: "1px solid #e6e8eb", borderRadius: 1 }}>
+                                <TableContainer
+                                    sx={{
+                                        border: "1px solid #e6e8eb",
+                                        borderRadius: 1,
+                                    }}
+                                >
                                     <Table size="small" sx={tableSx}>
                                         <TableBody>
-                                            {section.rows.map(([label, key]) => (
-                                                <TableRow key={label}>
-                                                    <TableCell
-                                                        sx={{
-                                                            color: "text.secondary",
-                                                            width: "42%",
-                                                        }}
-                                                    >
-                                                        {label}
-                                                    </TableCell>
-                                                    <TableCell
-                                                        sx={{
-                                                            fontFamily:
-                                                                key === "server" ||
-                                                                key === "certificateAuthority"
-                                                                    ? "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace"
-                                                                    : "inherit",
-                                                        }}
-                                                    >
-                                                        {valueOrDash(data?.[section.key]?.[key])}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {section.rows.map(
+                                                ([label, key]) => (
+                                                    <TableRow key={label}>
+                                                        <TableCell
+                                                            sx={{
+                                                                color: "text.secondary",
+                                                                width: "42%",
+                                                            }}
+                                                        >
+                                                            {label}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                fontFamily:
+                                                                    key ===
+                                                                        "server" ||
+                                                                    key ===
+                                                                        "certificateAuthority"
+                                                                        ? "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace"
+                                                                        : "inherit",
+                                                            }}
+                                                        >
+                                                            {valueOrDash(
+                                                                data?.[
+                                                                    section.key
+                                                                ]?.[key],
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ),
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>

@@ -219,9 +219,8 @@ const SchedulingFlowPanel = ({ config }) => {
                         color="text.secondary"
                         sx={{ fontSize: 12, mt: 0.5 }}
                     >
-                        A configuration-driven view of how Volcano actions
-                        enter derived hooks and invoke enabled plugins when
-                        needed.
+                        A configuration-driven view of how Volcano actions enter
+                        derived hooks and invoke enabled plugins when needed.
                     </Typography>
                 </Box>
                 {flowActions.length ? (
@@ -250,7 +249,9 @@ const SchedulingFlowPanel = ({ config }) => {
                                     p: 1.75,
                                 }}
                             >
-                                <Box sx={{ textAlign: "center", width: "100%" }}>
+                                <Box
+                                    sx={{ textAlign: "center", width: "100%" }}
+                                >
                                     <Box
                                         sx={{
                                             alignItems: "center",
@@ -307,7 +308,10 @@ const SchedulingFlowPanel = ({ config }) => {
                                                 display: "flex",
                                                 flexShrink: 0,
                                                 justifyContent: "center",
-                                                minHeight: { xs: 32, xl: "auto" },
+                                                minHeight: {
+                                                    xs: 32,
+                                                    xl: "auto",
+                                                },
                                                 px: { xs: 0, xl: 0.15 },
                                             }}
                                         >
@@ -359,8 +363,7 @@ const SchedulingFlowPanel = ({ config }) => {
                                                             alignItems:
                                                                 "center",
                                                             bgcolor: "#2f353d",
-                                                            borderRadius:
-                                                                "50%",
+                                                            borderRadius: "50%",
                                                             color: "white",
                                                             display:
                                                                 "inline-flex",
@@ -440,8 +443,7 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                             flowStepBg,
                                                                         border: `1px solid ${flowMutedBorder}`,
                                                                         borderRadius: 1,
-                                                                        color:
-                                                                            flowTextPrimary,
+                                                                        color: flowTextPrimary,
                                                                         display:
                                                                             "inline-flex",
                                                                         flexShrink: 0,
@@ -461,8 +463,7 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                     sx={{
                                                                         alignItems:
                                                                             "center",
-                                                                        color:
-                                                                            flowTextSecondary,
+                                                                        color: flowTextSecondary,
                                                                         display:
                                                                             "flex",
                                                                         flexShrink: 0,
@@ -481,7 +482,8 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                         flex: 1,
                                                                     }}
                                                                 >
-                                                                    {step.plugins
+                                                                    {step
+                                                                        .plugins
                                                                         .length ? (
                                                                         step.plugins.map(
                                                                             (
@@ -490,7 +492,8 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                                 <Box
                                                                                     key={`${action.name}-${step.hook}-${plugin.name}`}
                                                                                     sx={{
-                                                                                        bgcolor: flowPanelBg,
+                                                                                        bgcolor:
+                                                                                            flowPanelBg,
                                                                                         border: `1px solid ${flowMutedBorder}`,
                                                                                         borderRadius: 1.5,
                                                                                         minHeight: 72,
@@ -520,19 +523,22 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                                                     0.5
                                                                                                 }
                                                                                                 sx={{
-                                                                                                    flexWrap: "wrap",
+                                                                                                    flexWrap:
+                                                                                                        "wrap",
                                                                                                     mb: 0.15,
                                                                                                 }}
                                                                                             >
-                                                                                            <Typography
-                                                                                                sx={{
-                                                                                                    color: flowTextPrimary,
-                                                                                                    fontSize: 12.5,
-                                                                                                    fontWeight: 700,
-                                                                                                    lineHeight: 1.3,
-                                                                                                }}
-                                                                                            >
-                                                                                                    {plugin.name}
+                                                                                                <Typography
+                                                                                                    sx={{
+                                                                                                        color: flowTextPrimary,
+                                                                                                        fontSize: 12.5,
+                                                                                                        fontWeight: 700,
+                                                                                                        lineHeight: 1.3,
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {
+                                                                                                        plugin.name
+                                                                                                    }
                                                                                                 </Typography>
                                                                                                 <Chip
                                                                                                     label={
@@ -540,8 +546,10 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                                                     }
                                                                                                     size="small"
                                                                                                     sx={{
-                                                                                                        bgcolor: "white",
-                                                                                                        borderColor: flowMutedBorder,
+                                                                                                        bgcolor:
+                                                                                                            "white",
+                                                                                                        borderColor:
+                                                                                                            flowMutedBorder,
                                                                                                         color: flowTextSecondary,
                                                                                                         fontSize: 10,
                                                                                                         height: 19,
@@ -552,11 +560,13 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                                             <Typography
                                                                                                 sx={{
                                                                                                     color: flowTextSecondary,
-                                                                                                    display: "-webkit-box",
+                                                                                                    display:
+                                                                                                        "-webkit-box",
                                                                                                     fontSize: 11.5,
                                                                                                     lineHeight: 1.45,
                                                                                                     minHeight: 32,
-                                                                                                    overflow: "hidden",
+                                                                                                    overflow:
+                                                                                                        "hidden",
                                                                                                     WebkitBoxOrient:
                                                                                                         "vertical",
                                                                                                     WebkitLineClamp: 2,
@@ -574,7 +584,8 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                                                 <Typography
                                                                                                     sx={{
                                                                                                         color: flowTextSecondary,
-                                                                                                        fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace",
+                                                                                                        fontFamily:
+                                                                                                            "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace",
                                                                                                         fontSize: 10,
                                                                                                         mt: 0.55,
                                                                                                     }}
@@ -599,8 +610,12 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                                 p: 1,
                                                                             }}
                                                                         >
-                                                                            No mapped plugin in
-                                                                            this step.
+                                                                            No
+                                                                            mapped
+                                                                            plugin
+                                                                            in
+                                                                            this
+                                                                            step.
                                                                         </Box>
                                                                     )}
                                                                 </Stack>
@@ -663,7 +678,9 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                 fontWeight: 600,
                                                             }}
                                                         >
-                                                            {action.resultSuccess}
+                                                            {
+                                                                action.resultSuccess
+                                                            }
                                                         </Typography>
                                                     </Stack>
                                                     <Typography
@@ -690,7 +707,9 @@ const SchedulingFlowPanel = ({ config }) => {
                                                                 fontWeight: 600,
                                                             }}
                                                         >
-                                                            {action.resultFailure}
+                                                            {
+                                                                action.resultFailure
+                                                            }
                                                         </Typography>
                                                     </Stack>
                                                 </Stack>
@@ -734,8 +753,8 @@ const SchedulingFlowPanel = ({ config }) => {
                                 color="text.secondary"
                                 sx={{ fontSize: 12 }}
                             >
-                                <strong>Step order:</strong> Plugins rendered
-                                in the same step participate in the same hook of
+                                <strong>Step order:</strong> Plugins rendered in
+                                the same step participate in the same hook of
                                 that action, following the configured scheduling
                                 order.
                             </Typography>

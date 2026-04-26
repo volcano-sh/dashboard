@@ -5,7 +5,6 @@ import {
     Card,
     CardContent,
     Chip,
-    Divider,
     IconButton,
     InputAdornment,
     LinearProgress,
@@ -20,7 +19,6 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import CloseIcon from "@mui/icons-material/Close";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
@@ -42,8 +40,6 @@ import {
     tableIdentifierSx,
     tableNumericSx,
 } from "../scheduling/tableDataStyles";
-
-const iconProps = { sx: { fontSize: 18 } };
 
 const formatResource = (value, fallback = "0") => {
     if (value === undefined || value === null || value === "") return fallback;
