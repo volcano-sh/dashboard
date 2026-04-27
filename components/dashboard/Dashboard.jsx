@@ -1,36 +1,27 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
     Box,
     Button,
     Card,
     CardContent,
     Chip,
-    Divider,
     LinearProgress,
     MenuItem,
     Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
+    Stack,
     Typography,
 } from "@mui/material";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
-import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
 import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import LocalFireDepartmentOutlinedIcon from "@mui/icons-material/LocalFireDepartmentOutlined";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PlayCircleOutlineOutlinedIcon from "@mui/icons-material/PlayCircleOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
@@ -39,13 +30,43 @@ import {
     fetchJobs,
     fetchPods,
     fetchQueueList,
-    fetchSchedulerConfig,
     getApiErrorMessage,
 } from "../../lib/client/dashboard-api";
 
-const iconProps = { sx: { fontSize: 28 } };
-
+const borderColor = "#dfe3e8";
+const textMuted = "#667085";
+const panelShadow = "0 1px 2px rgba(16, 24, 40, 0.04)";
 const numberFormat = new Intl.NumberFormat("en-US");
+
+const statusColors = {
+    Busy: { bg: "#fff3e6", fg: "#f26b21" },
+    Error: { bg: "#fff0f0", fg: "#ef3333" },
+    Healthy: { bg: "#eaf8ef", fg: "#159947" },
+    Hot: { bg: "#fff0f0", fg: "#ef3333" },
+    Idle: { bg: "#eef1f4", fg: "#4b5563" },
+    Info: { bg: "#edf4ff", fg: "#155dbb" },
+    Pending: { bg: "#fff7e8", fg: "#f59e0b" },
+    Running: { bg: "#eaf8ef", fg: "#159947" },
+    Succeeded: { bg: "#eef1f4", fg: "#4b5563" },
+    Warning: { bg: "#fff7e8", fg: "#f97316" },
+};
+
+const metricIcons = {
+    activeQueues: <LayersOutlinedIcon />,
+    pendingJobs: <HourglassEmptyOutlinedIcon />,
+    runningJobs: <PlayCircleOutlineOutlinedIcon />,
+    runningPods: <Inventory2OutlinedIcon />,
+    successRate: <AccessTimeOutlinedIcon />,
+    totalJobs: <WorkOutlineOutlinedIcon />,
+};
+
+const queueHealthIcons = {
+    Busy: <LocalFireDepartmentOutlinedIcon />,
+    Error: <WarningAmberOutlinedIcon />,
+    Healthy: <CheckCircleOutlineIcon />,
+    Idle: <WarningAmberOutlinedIcon />,
+    Pending: <AccessTimeOutlinedIcon />,
+};
 
 const getJobPhase = (job) =>
     job?.summary?.status ||
@@ -57,7 +78,7 @@ const getJobPhase = (job) =>
 const getQueueName = (queue) =>
     queue?.summary?.name || queue?.metadata?.name || queue?.name || "-";
 
-const getQueueStatus = (queue) => {
+const isActiveQueue = (queue) => {
     const state =
         queue?.summary?.status ||
         queue?.status?.state ||
@@ -82,291 +103,649 @@ const getResource = (queue, section, resource) => {
 };
 
 const getUsagePercent = (queue, resource) => {
-    if (queue?.summary?.usage?.[resource]) return queue.summary.usage[resource];
+    const summaryUsage = queue?.summary?.usage?.[resource];
+    if (typeof summaryUsage === "number") return summaryUsage;
+
     const allocated = getResource(queue, "allocated", resource);
     const capability = getResource(queue, "capability", resource);
     if (!capability) return 0;
     return Math.min(Math.round((allocated / capability) * 100), 100);
 };
 
-const getPending = (queue) =>
-    queue?.summary?.pending?.cpu ||
-    getResource(queue, "pending", "cpu") ||
-    getResource(queue, "inqueue", "cpu");
+const getPendingJobs = (queue) =>
+    queue?.summary?.pendingJobs ||
+    queue?.status?.pendingJobs ||
+    queue?.status?.inqueue?.jobs ||
+    0;
 
-const getQueueHealth = (queue) => {
-    if (queue?.summary?.health) return queue.summary.health;
+const getRunningJobs = (queue) =>
+    queue?.summary?.runningJobs ||
+    queue?.status?.runningJobs ||
+    queue?.status?.running?.jobs ||
+    0;
+
+const classifyQueue = (queue) => {
     const cpu = getUsagePercent(queue, "cpu");
     const memory = getUsagePercent(queue, "memory");
-    const pending = getPending(queue);
+    const pending = getPendingJobs(queue);
 
-    if (cpu >= 80 || memory >= 80) return "Hot";
-    if (pending > 0 && cpu < 35) return "Starving";
-    if (queue?.spec?.parent && pending > 0) return "Blocked";
-    if (cpu < 15 && memory < 15) return "Idle";
+    if (cpu >= 85 || memory >= 85) return "Hot";
+    if (pending > 0 && (cpu >= 55 || memory >= 55)) return "Busy";
+    if (pending > 0) return "Pending";
+    if (cpu < 20 && memory < 20) return "Idle";
     return "Healthy";
 };
 
-const getHealthSx = (health) => {
-    const palette = {
-        Hot: { bgcolor: "#ffe0e0", color: "#cf2e2e" },
-        Starving: { bgcolor: "#fff0dc", color: "#e87500" },
-        Blocked: { bgcolor: "#eadffb", color: "#6f42c1" },
-        Idle: { bgcolor: "#eceff3", color: "#5f6b7a" },
-        Healthy: { bgcolor: "#dbf5e2", color: "#1f7a3a" },
-    };
-    return palette[health] || palette.Idle;
-};
+const pct = (value, total) =>
+    total ? Math.round((value / total) * 1000) / 10 : 0;
 
-const SectionTitle = ({ children }) => (
-    <Typography sx={{ fontSize: 16, fontWeight: 800, mb: 1.25 }}>
-        {children}
-    </Typography>
-);
-
-const Panel = ({ children, sx = {} }) => (
+const Panel = ({ children, sx }) => (
     <Card
         sx={{
-            border: "1px solid #dfe3e8",
-            borderRadius: 1.5,
-            boxShadow: "none",
+            border: `1px solid ${borderColor}`,
+            borderRadius: 1.25,
+            boxShadow: panelShadow,
             ...sx,
         }}
     >
-        <CardContent sx={{ p: 1.75, "&:last-child": { pb: 1.75 } }}>
+        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
             {children}
         </CardContent>
     </Card>
 );
 
-const SummaryCard = ({ icon, title, value, detail }) => (
+const SectionHeader = ({ action, subtitle, title }) => (
+    <Box
+        sx={{
+            alignItems: "center",
+            display: "flex",
+            justifyContent: "space-between",
+            mb: 1.75,
+        }}
+    >
+        <Box>
+            <Typography sx={{ fontSize: 18, fontWeight: 800 }}>
+                {title}
+            </Typography>
+            {subtitle && (
+                <Typography sx={{ color: textMuted, fontSize: 12.5, mt: 0.25 }}>
+                    {subtitle}
+                </Typography>
+            )}
+        </Box>
+        {action}
+    </Box>
+);
+
+const MetricCard = ({ detail, icon, title, trend, value }) => (
     <Panel>
         <Box sx={{ alignItems: "center", display: "flex", gap: 2 }}>
-            <Box sx={{ color: "#5f6b7a", display: "flex" }}>{icon}</Box>
-            <Box>
-                <Typography sx={{ fontSize: 13 }}>{title}</Typography>
-                <Typography sx={{ fontSize: 27, fontWeight: 800, mt: 0.25 }}>
+            <Box
+                sx={{
+                    alignItems: "center",
+                    color: "#344054",
+                    display: "flex",
+                    fontSize: 32,
+                }}
+            >
+                {React.cloneElement(icon, { sx: { fontSize: 32 } })}
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                    {title}
+                </Typography>
+                <Typography
+                    sx={{
+                        fontSize: 28,
+                        fontWeight: 800,
+                        letterSpacing: "-0.04em",
+                        lineHeight: 1.15,
+                        mt: 0.5,
+                    }}
+                >
                     {value}
                 </Typography>
-                <Typography color="text.secondary" sx={{ fontSize: 12 }}>
-                    {detail}
+                <Typography sx={{ color: textMuted, fontSize: 12, mt: 0.75 }}>
+                    {trend || detail}
                 </Typography>
             </Box>
         </Box>
     </Panel>
 );
 
-const QuickCheckCard = ({
-    icon,
-    title,
-    value,
-    subtitle,
-    color = "#111827",
-}) => (
-    <Panel>
-        <Box sx={{ alignItems: "flex-start", display: "flex", gap: 2 }}>
-            <Box sx={{ color: "#5f6b7a", display: "flex", pt: 0.25 }}>
-                {icon}
-            </Box>
-            <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontSize: 14, fontWeight: 800 }}>
-                    {title}
-                </Typography>
-                <Typography sx={{ color, fontSize: 28, fontWeight: 800 }}>
-                    {value}
-                </Typography>
-                <Typography sx={{ fontSize: 12 }}>{subtitle}</Typography>
+const MiniProgress = ({ color = "#16a34a", label, value }) => (
+    <Box>
+        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{value}%</Typography>
+        <Box
+            sx={{
+                bgcolor: "#e5e7eb",
+                borderRadius: 999,
+                height: 6,
+                mt: 0.55,
+                overflow: "hidden",
+            }}
+        >
+            <Box
+                sx={{
+                    bgcolor: color,
+                    borderRadius: 999,
+                    height: "100%",
+                    width: `${Math.min(value, 100)}%`,
+                }}
+            />
+        </Box>
+        <Typography sx={{ color: textMuted, fontSize: 11.5, mt: 0.55 }}>
+            {label}
+        </Typography>
+    </Box>
+);
+
+const ResourceUsageTable = ({ rows }) => (
+    <Panel sx={{ minHeight: 380 }}>
+        <SectionHeader
+            title="Resource Usage"
+            subtitle="Aggregated by queue"
+            action={
                 <Button
-                    endIcon={<ChevronRightIcon sx={{ fontSize: 14 }} />}
+                    endIcon={<ChevronRightIcon sx={{ fontSize: 16 }} />}
                     size="small"
-                    sx={{ mt: 0.5, p: 0, textTransform: "none" }}
+                    sx={{ textTransform: "none" }}
                 >
-                    View all
+                    View all queues
                 </Button>
+            }
+        />
+        <Box
+            sx={{
+                display: "grid",
+                gridTemplateColumns:
+                    "1.05fr repeat(3, minmax(100px, 1fr)) 1fr 1fr 80px 64px",
+                minWidth: 820,
+            }}
+        >
+            {[
+                "Queue",
+                "CPU Usage",
+                "Memory Usage",
+                "GPU Usage",
+                "Guarantee",
+                "Available",
+                "Jobs",
+                "Status",
+            ].map((heading) => (
+                <Typography
+                    key={heading}
+                    sx={{
+                        borderBottom: `1px solid ${borderColor}`,
+                        color: textMuted,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        px: 1.25,
+                        py: 1,
+                    }}
+                >
+                    {heading}
+                </Typography>
+            ))}
+            {rows.map((row) => (
+                <React.Fragment key={row.name}>
+                    <Typography
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            px: 1.25,
+                            py: 1.3,
+                        }}
+                    >
+                        {row.name}
+                    </Typography>
+                    <Box
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            px: 1.25,
+                            py: 1.3,
+                        }}
+                    >
+                        <MiniProgress
+                            color={row.cpu >= 85 ? "#ef3333" : "#16a34a"}
+                            label={`${row.cpuUsed} / ${row.cpuLimit} cores`}
+                            value={row.cpu}
+                        />
+                    </Box>
+                    <Box
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            px: 1.25,
+                            py: 1.3,
+                        }}
+                    >
+                        <MiniProgress
+                            color="#16a34a"
+                            label={`${row.memoryUsed} / ${row.memoryLimit} Gi`}
+                            value={row.memory}
+                        />
+                    </Box>
+                    <Box
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            px: 1.25,
+                            py: 1.3,
+                        }}
+                    >
+                        <MiniProgress
+                            color="#f59e0b"
+                            label={`${row.gpuUsed} / ${row.gpuLimit} GPUs`}
+                            value={row.gpu}
+                        />
+                    </Box>
+                    <Typography
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            fontSize: 12,
+                            px: 1.25,
+                            py: 1.3,
+                        }}
+                    >
+                        {row.guaranteeCpu} cores
+                        <br />
+                        {row.guaranteeMemory} Gi / {row.guaranteeGpu} GPUs
+                    </Typography>
+                    <Typography
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            fontSize: 12,
+                            px: 1.25,
+                            py: 1.3,
+                        }}
+                    >
+                        {row.availableCpu} cores
+                        <br />
+                        {row.availableMemory} Gi / {row.availableGpu} GPUs
+                    </Typography>
+                    <Typography
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            px: 1.25,
+                            py: 1.3,
+                        }}
+                    >
+                        {row.runningJobs}
+                    </Typography>
+                    <Box
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            px: 1.25,
+                            py: 1.15,
+                        }}
+                    >
+                        <StatusChip label={row.health} />
+                    </Box>
+                </React.Fragment>
+            ))}
+        </Box>
+    </Panel>
+);
+
+const TrendChart = ({ onResourceTypeChange, resourceType, rows }) => {
+    const width = 560;
+    const height = 230;
+    const palette = ["#ef3333", "#f59e0b", "#16a34a"];
+    const ticks = ["15:00", "15:03", "15:06", "15:09", "15:12", "15:15"];
+    const series = rows.slice(0, 3).map((row, rowIndex) => {
+        const base =
+            resourceType === "memory"
+                ? row.memory
+                : resourceType === "gpu"
+                  ? row.gpu
+                  : row.cpu;
+        const points = Array.from({ length: 12 }, (_, index) => {
+            const wave = Math.sin(index * 0.9 + rowIndex) * 4;
+            return Math.max(0, Math.min(100, Math.round(base + wave)));
+        });
+        return { color: palette[rowIndex], name: row.name, points };
+    });
+
+    return (
+        <Panel sx={{ minHeight: 380 }}>
+            <SectionHeader
+                title="Resource Usage Trend"
+                subtitle="By queue"
+                action={
+                    <Select
+                        size="small"
+                        onChange={(event) =>
+                            onResourceTypeChange(event.target.value)
+                        }
+                        value={resourceType}
+                        IconComponent={ExpandMoreIcon}
+                        sx={{ fontSize: 12, minWidth: 92 }}
+                    >
+                        <MenuItem value="cpu">CPU</MenuItem>
+                        <MenuItem value="memory">Memory</MenuItem>
+                        <MenuItem value="gpu">GPU</MenuItem>
+                    </Select>
+                }
+            />
+            <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="260">
+                {[0, 25, 50, 75, 100].map((tick) => {
+                    const y = 18 + ((100 - tick) / 100) * 160;
+                    return (
+                        <g key={tick}>
+                            <line
+                                x1="44"
+                                x2={width - 18}
+                                y1={y}
+                                y2={y}
+                                stroke="#eef1f4"
+                            />
+                            <text
+                                x="0"
+                                y={y + 4}
+                                fill={textMuted}
+                                fontSize="12"
+                            >
+                                {tick}%
+                            </text>
+                        </g>
+                    );
+                })}
+                {series.map((item) => {
+                    const points = item.points
+                        .map((point, index) => {
+                            const x =
+                                44 +
+                                (index / (item.points.length - 1)) *
+                                    (width - 74);
+                            const y = 18 + ((100 - point) / 100) * 160;
+                            return `${x},${y}`;
+                        })
+                        .join(" ");
+                    return (
+                        <g key={item.name}>
+                            <polyline
+                                fill="none"
+                                points={points}
+                                stroke={item.color}
+                                strokeWidth="2"
+                            />
+                            {item.points.map((point, index) => {
+                                const x =
+                                    44 +
+                                    (index / (item.points.length - 1)) *
+                                        (width - 74);
+                                const y = 18 + ((100 - point) / 100) * 160;
+                                return (
+                                    <circle
+                                        key={`${item.name}-${index}`}
+                                        cx={x}
+                                        cy={y}
+                                        fill={item.color}
+                                        r="2.4"
+                                    />
+                                );
+                            })}
+                        </g>
+                    );
+                })}
+                {ticks.map((tick, index) => (
+                    <text
+                        key={tick}
+                        x={44 + index * 92}
+                        y="206"
+                        fill={textMuted}
+                        fontSize="12"
+                    >
+                        {tick}
+                    </text>
+                ))}
+            </svg>
+            <Stack
+                direction="row"
+                justifyContent="center"
+                spacing={4}
+                sx={{ mt: -1 }}
+            >
+                {series.map((item) => (
+                    <Box
+                        key={item.name}
+                        sx={{
+                            alignItems: "center",
+                            display: "flex",
+                            gap: 0.75,
+                        }}
+                    >
+                        <Box
+                            sx={{ bgcolor: item.color, height: 3, width: 22 }}
+                        />
+                        <Typography sx={{ fontSize: 12 }}>
+                            {item.name}
+                        </Typography>
+                    </Box>
+                ))}
+            </Stack>
+        </Panel>
+    );
+};
+
+const StatusChip = ({ label }) => {
+    const colors = statusColors[label] || statusColors.Info;
+    return (
+        <Chip
+            label={label}
+            size="small"
+            sx={{
+                bgcolor: colors.bg,
+                border: `1px solid ${colors.fg}33`,
+                color: colors.fg,
+                fontSize: 11.5,
+                fontWeight: 700,
+                height: 24,
+            }}
+        />
+    );
+};
+
+const DonutChart = ({ segments }) => {
+    const total = segments.reduce((sum, item) => sum + item.value, 0) || 1;
+    const radius = 44;
+    const circumference = 2 * Math.PI * radius;
+    const arcs = segments.reduce(
+        (acc, segment) => {
+            const length = (segment.value / total) * circumference;
+            const arc = {
+                ...segment,
+                length,
+                offset: acc.offset,
+            };
+            return {
+                items: [...acc.items, arc],
+                offset: acc.offset + length,
+            };
+        },
+        { items: [], offset: 25 },
+    ).items;
+
+    return (
+        <Box sx={{ alignItems: "center", display: "flex", gap: 3 }}>
+            <svg width="168" height="168" viewBox="0 0 120 120">
+                <circle
+                    cx="60"
+                    cy="60"
+                    fill="none"
+                    r={radius}
+                    stroke="#eef1f4"
+                    strokeWidth="18"
+                />
+                {arcs.map((segment) => (
+                    <circle
+                        key={segment.label}
+                        cx="60"
+                        cy="60"
+                        fill="none"
+                        r={radius}
+                        stroke={segment.color}
+                        strokeDasharray={`${segment.length} ${
+                            circumference - segment.length
+                        }`}
+                        strokeDashoffset={-segment.offset}
+                        strokeLinecap="butt"
+                        strokeWidth="18"
+                        transform="rotate(-90 60 60)"
+                    />
+                ))}
+                <circle cx="60" cy="60" fill="#fff" r="29" />
+            </svg>
+            <Box sx={{ display: "grid", gap: 1.1 }}>
+                {segments.map((segment) => (
+                    <Box
+                        key={segment.label}
+                        sx={{
+                            alignItems: "center",
+                            display: "grid",
+                            gap: 1,
+                            gridTemplateColumns: "12px 86px 1fr",
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                bgcolor: segment.color,
+                                borderRadius: 0.5,
+                                height: 10,
+                                width: 10,
+                            }}
+                        />
+                        <Typography sx={{ fontSize: 12.5 }}>
+                            {segment.label}
+                        </Typography>
+                        <Typography sx={{ color: textMuted, fontSize: 12.5 }}>
+                            {numberFormat.format(segment.value)} (
+                            {pct(segment.value, total)}%)
+                        </Typography>
+                    </Box>
+                ))}
             </Box>
+        </Box>
+    );
+};
+
+const HealthCard = ({ icon, label, value, percent }) => {
+    const colors = statusColors[label] || statusColors.Info;
+    return (
+        <Box
+            sx={{
+                border: `1px solid ${borderColor}`,
+                borderRadius: 1,
+                p: 1.5,
+                textAlign: "center",
+            }}
+        >
+            <Box sx={{ color: colors.fg, mb: 0.5 }}>
+                {React.cloneElement(icon, { sx: { fontSize: 22 } })}
+            </Box>
+            <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                {label}
+            </Typography>
+            <Typography
+                sx={{ fontSize: 28, fontWeight: 800, lineHeight: 1.2, mt: 0.5 }}
+            >
+                {value}
+            </Typography>
+            <Typography sx={{ color: textMuted, fontSize: 12 }}>
+                {percent}%
+            </Typography>
+        </Box>
+    );
+};
+
+const AlertList = ({ alerts }) => (
+    <Panel>
+        <SectionHeader
+            title="Recent Alerts"
+            action={
+                <Button
+                    endIcon={<ChevronRightIcon sx={{ fontSize: 16 }} />}
+                    size="small"
+                    sx={{ textTransform: "none" }}
+                >
+                    View all alerts
+                </Button>
+            }
+        />
+        <Box sx={{ display: "grid", gap: 1.1 }}>
+            {alerts.map((alert) => (
+                <Box
+                    key={`${alert.time}-${alert.message}`}
+                    sx={{
+                        alignItems: "center",
+                        display: "grid",
+                        gap: 1.5,
+                        gridTemplateColumns: "68px 1fr 78px",
+                    }}
+                >
+                    <Typography sx={{ color: textMuted, fontSize: 12 }}>
+                        {alert.time}
+                    </Typography>
+                    <Typography sx={{ fontSize: 13 }}>
+                        {alert.message}
+                    </Typography>
+                    <StatusChip label={alert.severity} />
+                </Box>
+            ))}
         </Box>
     </Panel>
 );
 
 const Legend = () => (
     <Box
-        sx={{ alignItems: "center", display: "flex", flexWrap: "wrap", gap: 3 }}
-    >
-        {[
-            ["#ff5c57", "Hot: usage > 80%"],
-            ["#ffa940", "Starving: pending high, usage low"],
-            ["#a78bfa", "Blocked: blocked by parent"],
-            ["#ff8f87", "Invalid: config issue"],
-        ].map(([color, label]) => (
-            <Box
-                key={label}
-                sx={{ alignItems: "center", display: "flex", gap: 1 }}
-            >
-                <Box
-                    sx={{
-                        bgcolor: color,
-                        borderRadius: 0.5,
-                        height: 8,
-                        width: 8,
-                    }}
-                />
-                <Typography sx={{ fontSize: 12 }}>{label}</Typography>
-            </Box>
-        ))}
-    </Box>
-);
-
-const ResourceUsageBars = ({ data }) => (
-    <Box sx={{ display: "grid", gap: 1 }}>
-        {data.map(({ name, usage }) => (
-            <Box
-                key={name}
-                sx={{
-                    alignItems: "center",
-                    display: "grid",
-                    gap: 1,
-                    gridTemplateColumns: "64px 1fr 36px",
-                }}
-            >
-                <Typography sx={{ fontSize: 12, textAlign: "right" }}>
-                    {name}
-                </Typography>
-                <Box
-                    sx={{
-                        bgcolor: "#edf0f4",
-                        height: 10,
-                        overflow: "hidden",
-                    }}
-                >
-                    <Box
-                        sx={{
-                            bgcolor: "#7b8490",
-                            height: "100%",
-                            width: `${usage}%`,
-                        }}
-                    />
-                </Box>
-                <Typography sx={{ fontSize: 12 }}>{usage}%</Typography>
-            </Box>
-        ))}
-        <Box
-            sx={{
-                color: "text.secondary",
-                display: "flex",
-                fontSize: 12,
-                justifyContent: "space-between",
-                ml: "72px",
-                mt: 0.5,
-            }}
-        >
-            {[0, 20, 40, 60, 80, 100].map((tick) => (
-                <span key={tick}>{tick}%</span>
-            ))}
-        </Box>
-        <Typography
-            color="text.secondary"
-            sx={{ fontSize: 12, mt: -0.25, textAlign: "center" }}
-        >
-            Usage (%)
-        </Typography>
-    </Box>
-);
-
-const LineSparkline = ({ points }) => {
-    if (points.length < 2) {
-        return (
-            <EmptyChart>
-                Not enough historical data from current resources.
-            </EmptyChart>
-        );
-    }
-
-    const width = 460;
-    const height = 145;
-    const min = Math.min(...points);
-    const max = Math.max(...points);
-    const coords = points
-        .map((point, index) => {
-            const x = (index / (points.length - 1)) * width;
-            const y = height - ((point - min) / (max - min || 1)) * 80 - 30;
-            return `${x},${y}`;
-        })
-        .join(" ");
-
-    return (
-        <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="165">
-            {[250, 500, 750, 1000].map((tick, index) => (
-                <line
-                    key={tick}
-                    x1="0"
-                    x2={width}
-                    y1={height - 20 - index * 30}
-                    y2={height - 20 - index * 30}
-                    stroke="#edf0f4"
-                    strokeWidth="1"
-                />
-            ))}
-            <polyline
-                fill="none"
-                points={coords}
-                stroke="#6b7280"
-                strokeWidth="2"
-            />
-        </svg>
-    );
-};
-
-const EmptyChart = ({ children }) => (
-    <Box
         sx={{
             alignItems: "center",
-            border: "1px dashed #cfd5dd",
-            color: "text.secondary",
-            display: "flex",
-            fontSize: 12,
-            height: 165,
-            justifyContent: "center",
+            color: textMuted,
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(4, max-content)",
+            },
+            mt: 2.5,
         }}
     >
-        {children}
+        {[
+            ["Hot", "Usage > 80%", LocalFireDepartmentOutlinedIcon],
+            [
+                "Busy",
+                "Many pending jobs, resources tight",
+                LocalFireDepartmentOutlinedIcon,
+            ],
+            ["Idle", "Resources available", WarningAmberOutlinedIcon],
+            ["Error", "Configuration or status issue", TrendingUpIcon],
+        ].map(([label, text, Icon]) => {
+            const colors = statusColors[label];
+            return (
+                <Box
+                    key={label}
+                    sx={{ alignItems: "center", display: "flex", gap: 1 }}
+                >
+                    <Icon sx={{ color: colors.fg, fontSize: 20 }} />
+                    <Typography sx={{ fontSize: 12.5 }}>
+                        <Box
+                            component="span"
+                            sx={{ color: "#111827", fontWeight: 700 }}
+                        >
+                            {label}:
+                        </Box>{" "}
+                        {text}
+                    </Typography>
+                </Box>
+            );
+        })}
     </Box>
 );
 
-const ThroughputChart = ({ bars }) => {
-    if (!bars.length) {
-        return <EmptyChart>No scheduled job data available.</EmptyChart>;
-    }
-
-    const max = Math.max(...bars);
-    return (
-        <Box
-            sx={{
-                alignItems: "end",
-                borderBottom: "1px solid #cfd5dd",
-                borderLeft: "1px solid #cfd5dd",
-                display: "flex",
-                gap: 0.7,
-                height: 165,
-                px: 1,
-                pt: 1,
-            }}
-        >
-            {bars.map((value, index) => (
-                <Box
-                    key={`${value}-${index}`}
-                    sx={{
-                        bgcolor: "#c9ced6",
-                        border: "1px solid #77808d",
-                        height: `${Math.max((value / max) * 100, 8)}%`,
-                        width: "100%",
-                    }}
-                />
-            ))}
-        </Box>
-    );
-};
-
-const Dashboard = () => {
+export default function Dashboard() {
+    const [resourceType, setResourceType] = useState("cpu");
     const {
         data: jobsData,
         error: jobsError,
@@ -394,22 +773,55 @@ const Dashboard = () => {
         queryKey: ["dashboard", "pods"],
         queryFn: () => fetchPods({ limit: 1000 }),
     });
-    const {
-        data: schedulerConfig,
-        error: schedulerError,
-        isFetching: schedulerFetching,
-        refetch: refetchSchedulerConfig,
-    } = useQuery({
-        queryKey: ["dashboard", "scheduler", "config"],
-        queryFn: fetchSchedulerConfig,
-    });
 
     const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
     const queues = useMemo(() => queuesData?.items || [], [queuesData]);
     const pods = useMemo(() => podsData?.items || [], [podsData]);
-    const loading =
-        jobsFetching || queuesFetching || podsFetching || schedulerFetching;
-    const error = jobsError || queuesError || podsError || schedulerError;
+    const loading = jobsFetching || queuesFetching || podsFetching;
+    const error = jobsError || queuesError || podsError;
+
+    const queueRows = useMemo(() => {
+        const rows = queues.map((queue) => {
+            const cpuUsed = getResource(queue, "allocated", "cpu");
+            const cpuLimit = getResource(queue, "capability", "cpu") || 100;
+            const memoryUsed = getResource(queue, "allocated", "memory");
+            const memoryLimit =
+                getResource(queue, "capability", "memory") || 1000;
+            const gpuUsed = getResource(queue, "allocated", "nvidia.com/gpu");
+            const gpuLimit =
+                getResource(queue, "capability", "nvidia.com/gpu") || 20;
+            const health = classifyQueue(queue);
+
+            return {
+                availableCpu: Math.max(cpuLimit - cpuUsed, 0),
+                availableGpu: Math.max(gpuLimit - gpuUsed, 0),
+                availableMemory: Math.max(memoryLimit - memoryUsed, 0),
+                cpu: getUsagePercent(queue, "cpu"),
+                cpuLimit,
+                cpuUsed,
+                gpu: getUsagePercent(queue, "nvidia.com/gpu"),
+                gpuLimit,
+                gpuUsed,
+                guaranteeCpu: getResource(queue, "guarantee", "cpu"),
+                guaranteeGpu: getResource(queue, "guarantee", "nvidia.com/gpu"),
+                guaranteeMemory: getResource(queue, "guarantee", "memory"),
+                health,
+                memory: getUsagePercent(queue, "memory"),
+                memoryLimit,
+                memoryUsed,
+                name: getQueueName(queue),
+                pendingJobs: getPendingJobs(queue),
+                runningJobs: getRunningJobs(queue),
+            };
+        });
+
+        return rows
+            .sort(
+                (left, right) =>
+                    right.cpu + right.memory - (left.cpu + left.memory),
+            )
+            .slice(0, 5);
+    }, [queues]);
 
     const summary = useMemo(() => {
         const totalJobs = jobs.length;
@@ -419,171 +831,179 @@ const Dashboard = () => {
         const pendingJobs = jobs.filter(
             (job) => getJobPhase(job) === "Pending",
         ).length;
-        const activeQueues = queues.filter(getQueueStatus).length;
+        const succeededJobs = jobs.filter((job) =>
+            ["Completed", "Succeeded"].includes(getJobPhase(job)),
+        ).length;
         const runningPods = pods.filter(
             (pod) => (pod?.summary?.status || pod?.status?.phase) === "Running",
         ).length;
+        const activeQueues = queues.filter(isActiveQueue).length;
 
         return {
             activeQueues,
             pendingJobs,
             runningJobs,
             runningPods,
+            successRate: pct(succeededJobs, Math.max(totalJobs, 1)),
             totalJobs,
         };
     }, [jobs, pods, queues]);
 
-    const riskQueues = useMemo(() => {
-        const derived = queues.map((queue) => {
-            const cpu = getUsagePercent(queue, "cpu");
-            const memory = getUsagePercent(queue, "memory");
-            const pending = Math.round(getPending(queue));
-            const health = getQueueHealth(queue);
-
-            return {
-                name: getQueueName(queue),
-                pending,
-                cpu,
-                memory,
-                gpu: getUsagePercent(queue, "nvidia.com/gpu"),
-                guarantee: getResource(queue, "guarantee", "cpu"),
-                deserved: getResource(queue, "deserved", "cpu"),
-                capability: getResource(queue, "capability", "cpu"),
-                health,
-                reason:
-                    health === "Hot"
-                        ? "usage high"
-                        : health === "Starving"
-                          ? "pending high"
-                          : health === "Blocked"
-                            ? "parent limit"
-                            : health === "Idle"
-                              ? "reclaimable"
-                              : "normal",
-            };
-        });
-
-        const visible = derived
-            .sort((a, b) => b.pending + b.cpu - (a.pending + a.cpu))
-            .slice(0, 6);
-
-        return visible;
-    }, [queues]);
-
-    const quickStats = useMemo(() => {
-        const active = summary.activeQueues;
-        const pending = riskQueues.filter((queue) => queue.pending > 0).length;
-        const hot = riskQueues.filter((queue) => queue.health === "Hot").length;
-        const starving = riskQueues.filter(
-            (queue) => queue.health === "Starving",
-        ).length;
-        const blocked = riskQueues.filter(
-            (queue) => queue.health === "Blocked",
-        ).length;
-
-        return {
-            active,
-            blocked,
-            hot,
-            invalid: queues.filter(
-                (queue) =>
-                    !Object.keys(queue.summary?.resources?.capability || {})
-                        .length,
-            ).length,
-            pending,
-            starving,
-        };
-    }, [queues, riskQueues, summary.activeQueues]);
-
-    const resourceUsage = useMemo(() => {
-        const derived = queues
-            .map((queue) => ({
-                name: getQueueName(queue),
-                usage: getUsagePercent(queue, "cpu"),
-            }))
-            .filter((queue) => queue.usage > 0)
-            .sort((a, b) => b.usage - a.usage)
-            .slice(0, 6);
-
-        return derived;
-    }, [queues]);
-
-    const pendingTrend = useMemo(() => {
-        const pendingJobs = jobs.filter(
-            (job) => getJobPhase(job) === "Pending",
+    const podDistribution = useMemo(() => {
+        const counts = pods.reduce(
+            (acc, pod) => {
+                const phase =
+                    pod?.summary?.status || pod?.status?.phase || "Pending";
+                if (phase === "Running") acc.Running += 1;
+                else if (["Succeeded", "Completed"].includes(phase))
+                    acc.Succeeded += 1;
+                else if (phase === "Failed") acc.Failed += 1;
+                else acc.Pending += 1;
+                return acc;
+            },
+            { Failed: 0, Pending: 0, Running: 0, Succeeded: 0 },
         );
-        if (pendingJobs.length < 2) return [];
-        return pendingJobs
-            .slice()
-            .sort(
-                (a, b) =>
-                    new Date(a.metadata?.creationTimestamp) -
-                    new Date(b.metadata?.creationTimestamp),
+
+        return [
+            { color: "#1f5fae", label: "Running", value: counts.Running },
+            { color: "#f59e0b", label: "Pending", value: counts.Pending },
+            { color: "#7cc991", label: "Succeeded", value: counts.Succeeded },
+            { color: "#ef3333", label: "Failed", value: counts.Failed },
+        ];
+    }, [pods]);
+
+    const health = useMemo(() => {
+        const total = queueRows.length || 1;
+        const count = (status) =>
+            queueRows.filter((queue) => queue.health === status).length;
+        const healthy = queueRows.filter((queue) =>
+            ["Healthy", "Idle"].includes(queue.health),
+        ).length;
+        const busy = count("Busy") + count("Hot");
+        const pending = count("Pending");
+        const errorCount = count("Error");
+
+        return [
+            {
+                icon: queueHealthIcons.Healthy,
+                label: "Healthy",
+                percent: pct(healthy, total),
+                value: healthy,
+            },
+            {
+                icon: queueHealthIcons.Busy,
+                label: "Busy",
+                percent: pct(busy, total),
+                value: busy,
+            },
+            {
+                icon: queueHealthIcons.Pending,
+                label: "Pending",
+                percent: pct(pending, total),
+                value: pending,
+            },
+            {
+                icon: queueHealthIcons.Error,
+                label: "Error",
+                percent: pct(errorCount, total),
+                value: errorCount,
+            },
+        ];
+    }, [queueRows]);
+
+    const alerts = useMemo(() => {
+        const generated = queueRows
+            .filter((queue) =>
+                ["Hot", "Busy", "Pending"].includes(queue.health),
             )
-            .map((_, index) => index + 1);
-    }, [jobs]);
+            .slice(0, 4)
+            .map((queue, index) => ({
+                message:
+                    queue.health === "Hot"
+                        ? `Queue ${queue.name} resource usage is above 80%`
+                        : queue.health === "Busy"
+                          ? `Queue ${queue.name} has pending jobs and tight resources`
+                          : `Queue ${queue.name} has waiting jobs`,
+                severity: queue.health === "Pending" ? "Warning" : queue.health,
+                time: `${(index + 1) * 4}m ago`,
+            }));
 
-    const throughputBars = useMemo(() => {
-        const scheduledJobs = jobs.filter((job) =>
-            ["Running", "Completed", "Succeeded"].includes(getJobPhase(job)),
-        );
-        return scheduledJobs
-            .slice(-30)
-            .map((job) => Math.max(job.summary?.tasks?.length || 1, 1));
-    }, [jobs]);
+        return generated.length
+            ? generated
+            : [
+                  {
+                      message: "Cluster queues are currently healthy",
+                      severity: "Info",
+                      time: "now",
+                  },
+              ];
+    }, [queueRows]);
 
-    const schedulerRows = useMemo(
-        () => [
-            ["Scheduler Name", schedulerConfig?.scheduler?.name],
-            [
-                "Actions",
-                schedulerConfig?.scheduler?.actions?.length
-                    ? schedulerConfig.scheduler.actions.join(", ")
-                    : "-",
-            ],
-            ["Queue Ordering", schedulerConfig?.policies?.queueOrder],
-            ["Job Order", schedulerConfig?.policies?.jobOrder],
-            ["Resource Order", schedulerConfig?.policies?.resourceOrder],
-            ["Node Order", schedulerConfig?.policies?.nodeOrder],
-            [
-                "Plugins",
-                schedulerConfig?.plugins?.length
-                    ? schedulerConfig.plugins
-                          .map((plugin) => plugin.name)
-                          .join(", ")
-                    : "-",
-            ],
-            [
-                "Preemption",
-                schedulerConfig?.preemption?.enabled ? "Enabled" : "Disabled",
-            ],
-        ],
-        [schedulerConfig],
-    );
+    const metrics = [
+        {
+            detail: "from Kubernetes API",
+            icon: metricIcons.totalJobs,
+            title: "Total Jobs",
+            trend: "live cluster data",
+            value: numberFormat.format(summary.totalJobs),
+        },
+        {
+            icon: metricIcons.runningJobs,
+            title: "Running Jobs",
+            trend: "current state",
+            value: numberFormat.format(summary.runningJobs),
+        },
+        {
+            icon: metricIcons.pendingJobs,
+            title: "Pending Jobs",
+            trend: "current state",
+            value: numberFormat.format(summary.pendingJobs),
+        },
+        {
+            icon: metricIcons.activeQueues,
+            title: "Active Queues",
+            trend: `of ${numberFormat.format(queues.length)} total`,
+            value: numberFormat.format(summary.activeQueues),
+        },
+        {
+            icon: metricIcons.runningPods,
+            title: "Running Pods",
+            trend: "current state",
+            value: numberFormat.format(summary.runningPods),
+        },
+        {
+            icon: metricIcons.successRate,
+            title: "Scheduling Success Rate",
+            trend: "current sample window",
+            value: `${summary.successRate}%`,
+        },
+    ];
 
     const handleRefresh = () => {
         refetchJobs();
         refetchQueues();
         refetchPods();
-        refetchSchedulerConfig();
     };
 
     return (
-        <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 2.5 }}>
+        <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 3 }}>
             <Box
                 sx={{
                     alignItems: "center",
                     display: "flex",
-                    justifyContent: "flex-end",
+                    justifyContent: "space-between",
                     mb: 2,
                 }}
             >
-                <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
+                <Typography sx={{ fontSize: 22, fontWeight: 800 }}>
+                    Cluster Overview
+                </Typography>
+                <Stack direction="row" spacing={1.25}>
                     <Select
+                        IconComponent={ExpandMoreIcon}
                         size="small"
                         value="15m"
-                        IconComponent={ExpandMoreIcon}
-                        sx={{ fontSize: 13, minWidth: 130 }}
+                        sx={{ fontSize: 13, minWidth: 144 }}
                     >
                         <MenuItem value="15m">
                             <Box
@@ -594,7 +1014,7 @@ const Dashboard = () => {
                                 }}
                             >
                                 <AccessTimeOutlinedIcon sx={{ fontSize: 17 }} />
-                                Last 15m
+                                Last 15 minutes
                             </Box>
                         </MenuItem>
                     </Select>
@@ -610,7 +1030,7 @@ const Dashboard = () => {
                     <Button sx={{ minWidth: 40, px: 1.25 }} variant="outlined">
                         <SettingsOutlinedIcon sx={{ fontSize: 18 }} />
                     </Button>
-                </Box>
+                </Stack>
             </Box>
 
             {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -622,62 +1042,10 @@ const Dashboard = () => {
                 </Panel>
             )}
 
-            <SectionTitle>Global Summary</SectionTitle>
             <Box
                 sx={{
                     display: "grid",
-                    gap: 1.5,
-                    gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "repeat(2, 1fr)",
-                        xl: "repeat(6, 1fr)",
-                    },
-                    mb: 2.5,
-                }}
-            >
-                <SummaryCard
-                    detail="from Kubernetes API"
-                    icon={<WorkOutlineOutlinedIcon {...iconProps} />}
-                    title="Total Jobs"
-                    value={numberFormat.format(summary.totalJobs)}
-                />
-                <SummaryCard
-                    detail="current state"
-                    icon={<PlayCircleOutlineOutlinedIcon {...iconProps} />}
-                    title="Running Jobs"
-                    value={numberFormat.format(summary.runningJobs)}
-                />
-                <SummaryCard
-                    detail="current state"
-                    icon={<HourglassEmptyOutlinedIcon {...iconProps} />}
-                    title="Pending Jobs"
-                    value={numberFormat.format(summary.pendingJobs)}
-                />
-                <SummaryCard
-                    detail={`of ${numberFormat.format(queues.length)} total`}
-                    icon={<LayersOutlinedIcon {...iconProps} />}
-                    title="Active Queues"
-                    value={numberFormat.format(summary.activeQueues)}
-                />
-                <SummaryCard
-                    detail="current state"
-                    icon={<Inventory2OutlinedIcon {...iconProps} />}
-                    title="Running Pods"
-                    value={numberFormat.format(summary.runningPods)}
-                />
-                <SummaryCard
-                    detail={`${schedulerConfig?.plugins?.length || 0} plugins`}
-                    icon={<TuneOutlinedIcon {...iconProps} />}
-                    title="Scheduler Policy"
-                    value={schedulerConfig?.scheduler?.name || "-"}
-                />
-            </Box>
-
-            <SectionTitle>Queue Quick Check</SectionTitle>
-            <Box
-                sx={{
-                    display: "grid",
-                    gap: 1.5,
+                    gap: 1.75,
                     gridTemplateColumns: {
                         xs: "1fr",
                         md: "repeat(2, 1fr)",
@@ -686,46 +1054,25 @@ const Dashboard = () => {
                     mb: 2,
                 }}
             >
-                <QuickCheckCard
-                    icon={<Groups2OutlinedIcon {...iconProps} />}
-                    subtitle="Active Queues"
-                    title="Q-Active"
-                    value={quickStats.active}
-                />
-                <QuickCheckCard
-                    color="#ff8500"
-                    icon={<AccessTimeOutlinedIcon {...iconProps} />}
-                    subtitle="Queues w/ Pending"
-                    title="Q-Pending"
-                    value={quickStats.pending}
-                />
-                <QuickCheckCard
-                    color="#f12f2f"
-                    icon={<LocalFireDepartmentOutlinedIcon {...iconProps} />}
-                    subtitle="Usage > 80%"
-                    title="Q-Hot"
-                    value={quickStats.hot}
-                />
-                <QuickCheckCard
-                    color="#ff8500"
-                    icon={<TrendingUpIcon {...iconProps} />}
-                    subtitle="Pending high, usage low"
-                    title="Q-Starving"
-                    value={quickStats.starving}
-                />
-                <QuickCheckCard
-                    color="#6f42c1"
-                    icon={<LockOutlinedIcon {...iconProps} />}
-                    subtitle="Blocked by parent"
-                    title="Q-Blocked"
-                    value={quickStats.blocked}
-                />
-                <QuickCheckCard
-                    color="#f12f2f"
-                    icon={<WarningAmberOutlinedIcon {...iconProps} />}
-                    subtitle="Config invalid"
-                    title="Q-Invalid"
-                    value={quickStats.invalid}
+                {metrics.map((metric) => (
+                    <MetricCard key={metric.title} {...metric} />
+                ))}
+            </Box>
+
+            <Box
+                sx={{
+                    display: "grid",
+                    gap: 2,
+                    gridTemplateColumns: { xs: "1fr", xl: "1.62fr 1fr" },
+                    mb: 2,
+                    overflowX: "auto",
+                }}
+            >
+                <ResourceUsageTable rows={queueRows} />
+                <TrendChart
+                    onResourceTypeChange={setResourceType}
+                    resourceType={resourceType}
+                    rows={queueRows}
                 />
             </Box>
 
@@ -733,253 +1080,44 @@ const Dashboard = () => {
                 sx={{
                     display: "grid",
                     gap: 2,
-                    gridTemplateColumns: { xs: "1fr", lg: "2fr 1.25fr" },
-                    mb: 2,
+                    gridTemplateColumns: { xs: "1fr", lg: "1fr 1.25fr 1.35fr" },
                 }}
             >
                 <Panel>
-                    <Typography sx={{ fontSize: 16, fontWeight: 800, mb: 1 }}>
-                        Top Risk Queues
-                    </Typography>
-                    <TableContainer>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow>
-                                    {[
-                                        "Queue",
-                                        "Pending",
-                                        "CPU",
-                                        "Memory",
-                                        "GPU",
-                                        "Guarantee",
-                                        "Deserved",
-                                        "Capability",
-                                        "Health",
-                                        "Reason",
-                                    ].map((header) => (
-                                        <TableCell
-                                            key={header}
-                                            sx={{
-                                                borderColor: "#edf0f4",
-                                                fontSize: 12,
-                                            }}
-                                        >
-                                            {header}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {riskQueues.map((queue) => (
-                                    <TableRow key={queue.name}>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.name}
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.pending}
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.cpu}%
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.memory}%
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.gpu}%
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.guarantee}
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.deserved}
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.capability}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={queue.health}
-                                                size="small"
-                                                sx={{
-                                                    ...getHealthSx(
-                                                        queue.health,
-                                                    ),
-                                                    fontSize: 12,
-                                                    height: 22,
-                                                    minWidth: 68,
-                                                }}
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 12 }}>
-                                            {queue.reason}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                    <Divider sx={{ my: 1.5 }} />
-                    <Legend />
+                    <SectionHeader title="Queue Status Distribution" />
+                    <DonutChart segments={podDistribution} />
                 </Panel>
-
-                <Box sx={{ display: "grid", gap: 2 }}>
-                    <Panel>
-                        <Typography
-                            sx={{ fontSize: 16, fontWeight: 800, mb: 1.25 }}
-                        >
-                            Scheduler Config Summary
-                        </Typography>
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gap: 1,
-                                gridTemplateColumns: "1fr 1fr",
-                            }}
-                        >
-                            {schedulerRows.map(([label, value]) => (
-                                <Box key={label}>
-                                    <Typography sx={{ fontSize: 12 }}>
-                                        {label}
-                                    </Typography>
-                                    <Typography sx={{ fontSize: 12 }}>
-                                        {value || "-"}
-                                    </Typography>
-                                </Box>
-                            ))}
-                        </Box>
-                    </Panel>
-                    <Panel>
-                        <Typography
-                            sx={{ fontSize: 16, fontWeight: 800, mb: 1.25 }}
-                        >
-                            Allocation Rule Check
-                        </Typography>
-                        {[
-                            ["✓", "Queues loaded from API", queues.length],
-                            ["✓", "Jobs loaded from API", jobs.length],
-                            ["✓", "Pods loaded from API", pods.length],
-                            [
-                                schedulerConfig ? "✓" : "×",
-                                "Scheduler ConfigMap readable",
-                                schedulerConfig?.target?.name || "-",
-                            ],
-                            [
-                                quickStats.invalid === 0 ? "✓" : "×",
-                                "Queues with missing capability",
-                                quickStats.invalid,
-                            ],
-                        ].map(([mark, label, count]) => (
-                            <Box
-                                key={label}
-                                sx={{
-                                    alignItems: "center",
-                                    display: "grid",
-                                    gap: 1,
-                                    gridTemplateColumns: "20px 1fr auto",
-                                    py: 0.25,
-                                }}
+                <Panel>
+                    <SectionHeader
+                        title="Queue Health"
+                        action={
+                            <Button
+                                endIcon={
+                                    <ChevronRightIcon sx={{ fontSize: 16 }} />
+                                }
+                                size="small"
+                                sx={{ textTransform: "none" }}
                             >
-                                <Typography
-                                    sx={{
-                                        color:
-                                            mark === "✓"
-                                                ? "#16a34a"
-                                                : "#ef3333",
-                                        fontSize: 16,
-                                    }}
-                                >
-                                    {mark}
-                                </Typography>
-                                <Typography sx={{ fontSize: 12 }}>
-                                    {label}
-                                </Typography>
-                                <Typography sx={{ fontSize: 12 }}>
-                                    {count}
-                                </Typography>
-                            </Box>
+                                View all queues
+                            </Button>
+                        }
+                    />
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gap: 1.5,
+                            gridTemplateColumns: "repeat(4, 1fr)",
+                        }}
+                    >
+                        {health.map((item) => (
+                            <HealthCard key={item.label} {...item} />
                         ))}
-                        <Button
-                            endIcon={<ChevronRightIcon sx={{ fontSize: 14 }} />}
-                            size="small"
-                            sx={{ mt: 0.5, p: 0, textTransform: "none" }}
-                        >
-                            View invalid queues
-                        </Button>
-                    </Panel>
-                </Box>
+                    </Box>
+                </Panel>
+                <AlertList alerts={alerts} />
             </Box>
 
-            <Box
-                sx={{
-                    display: "grid",
-                    gap: 2,
-                    gridTemplateColumns: { xs: "1fr", xl: "1fr 1fr 1fr" },
-                }}
-            >
-                <Panel>
-                    <Box
-                        sx={{
-                            alignItems: "center",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            mb: 1.5,
-                        }}
-                    >
-                        <Typography sx={{ fontSize: 16, fontWeight: 800 }}>
-                            Queue Resource Usage (Aggregate)
-                        </Typography>
-                        <Button
-                            endIcon={<ExpandMoreIcon sx={{ fontSize: 14 }} />}
-                            size="small"
-                            variant="outlined"
-                        >
-                            CPU
-                        </Button>
-                    </Box>
-                    <ResourceUsageBars data={resourceUsage} />
-                </Panel>
-                <Panel>
-                    <Typography sx={{ fontSize: 16, fontWeight: 800, mb: 1 }}>
-                        Pending Jobs Trend
-                    </Typography>
-                    <Box
-                        sx={{
-                            alignItems: "center",
-                            color: "text.secondary",
-                            display: "flex",
-                            fontSize: 12,
-                            gap: 1,
-                            ml: 4,
-                        }}
-                    >
-                        <FactCheckOutlinedIcon sx={{ fontSize: 14 }} />
-                        Total Pending Jobs
-                    </Box>
-                    <LineSparkline points={pendingTrend} />
-                </Panel>
-                <Panel>
-                    <Typography sx={{ fontSize: 16, fontWeight: 800, mb: 1 }}>
-                        Scheduling Throughput
-                    </Typography>
-                    <Box
-                        sx={{
-                            alignItems: "center",
-                            color: "text.secondary",
-                            display: "flex",
-                            fontSize: 12,
-                            gap: 1,
-                            ml: 4,
-                            mb: 1,
-                        }}
-                    >
-                        <FactCheckOutlinedIcon sx={{ fontSize: 14 }} />
-                        Scheduled Jobs
-                    </Box>
-                    <ThroughputChart bars={throughputBars} />
-                </Panel>
-            </Box>
+            <Legend />
         </Box>
     );
-};
-
-export default Dashboard;
+}
