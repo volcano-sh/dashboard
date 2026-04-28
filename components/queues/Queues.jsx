@@ -202,9 +202,12 @@ const getHealth = (queue) => {
         getResourceStats(queue, resource),
     );
     const overLimit = stats.some(
-        (resource) => resource.capability && resource.used > resource.capability,
+        (resource) =>
+            resource.capability && resource.used > resource.capability,
     );
-    const maxUsage = Math.max(...stats.map((resource) => resource.usagePercent));
+    const maxUsage = Math.max(
+        ...stats.map((resource) => resource.usagePercent),
+    );
 
     if (overLimit || maxUsage >= 80) {
         return {
@@ -314,14 +317,8 @@ const DetailRow = ({ label, value }) => (
 const ResourceUsageBar = ({ queue, resource }) => {
     const stats = getResourceStats(queue, resource);
     const usagePercent = Math.round(stats.usagePercent);
-    const guaranteeWidth = Math.min(
-        stats.guaranteePercent,
-        stats.usagePercent,
-    );
-    const borrowingLeft = Math.min(
-        stats.guaranteePercent,
-        stats.usagePercent,
-    );
+    const guaranteeWidth = Math.min(stats.guaranteePercent, stats.usagePercent);
+    const borrowingLeft = Math.min(stats.guaranteePercent, stats.usagePercent);
     const borrowingWidth = Math.max(stats.usagePercent - borrowingLeft, 0);
     const overLimit = stats.capability && stats.used > stats.capability;
 
@@ -849,7 +846,10 @@ const QueueSummaryCards = ({ queues, totalQueues }) => {
                             {card.value}
                         </Typography>
                         {card.meta && (
-                            <Typography color="text.secondary" sx={{ fontSize: 13 }}>
+                            <Typography
+                                color="text.secondary"
+                                sx={{ fontSize: 13 }}
+                            >
                                 {card.meta}
                             </Typography>
                         )}
@@ -977,7 +977,10 @@ const QueueLegends = () => (
                                 width: 8,
                             }}
                         />
-                        <Typography color="text.secondary" sx={{ fontSize: 12 }}>
+                        <Typography
+                            color="text.secondary"
+                            sx={{ fontSize: 12 }}
+                        >
                             {label}
                         </Typography>
                     </Box>
@@ -1327,9 +1330,7 @@ const QueueHierarchyView = ({
                                                         </TableCell>,
                                                         <TableCell
                                                             key={`${queueName}-${resource.key}-values`}
-                                                            sx={
-                                                                tableNumericSx
-                                                            }
+                                                            sx={tableNumericSx}
                                                         >
                                                             {
                                                                 stats.guaranteeLabel
@@ -1354,8 +1355,7 @@ const QueueHierarchyView = ({
                                                     label={health.label}
                                                     size="small"
                                                     sx={{
-                                                        bgcolor:
-                                                            health.bgcolor,
+                                                        bgcolor: health.bgcolor,
                                                         border: `1px solid ${health.color}22`,
                                                         color: health.color,
                                                         fontSize: 11,
@@ -1450,11 +1450,28 @@ const Queues = () => {
         fetchQueues();
     }, [fetchQueues]);
 
-    const queueMap = useMemo(() => {
-        return new Map(queues.map((queue) => [getQueueName(queue), queue]));
-    }, [queues]);
+    const filteredQueues = useMemo(() => {
+        const query = searchText.trim().toLowerCase();
+        return queues.filter((queue) => {
+            const matchesQueue =
+                filters.queue === "All" ||
+                getQueueName(queue) === filters.queue;
+            const matchesSearch =
+                !query || getQueueSearchBlob(queue).includes(query);
+            return matchesQueue && matchesSearch;
+        });
+    }, [filters.queue, queues, searchText]);
 
-    const treeData = useMemo(() => buildQueueTree(queues), [queues]);
+    const queueMap = useMemo(() => {
+        return new Map(
+            filteredQueues.map((queue) => [getQueueName(queue), queue]),
+        );
+    }, [filteredQueues]);
+
+    const treeData = useMemo(
+        () => buildQueueTree(filteredQueues),
+        [filteredQueues],
+    );
 
     const selectedQueue = useMemo(() => {
         if (selectedQueueName && queueMap.has(selectedQueueName)) {
@@ -1579,6 +1596,8 @@ const Queues = () => {
                 </Card>
             )}
 
+            <QueueSummaryCards queues={queues} totalQueues={totalQueues} />
+
             <Box
                 sx={{
                     alignItems: { xs: "stretch", md: "flex-start" },
@@ -1639,7 +1658,7 @@ const Queues = () => {
                 selectedQueue={selectedQueue}
                 queueMap={queueMap}
                 pagination={pagination}
-                totalQueues={totalQueues}
+                totalQueues={filteredQueues.length || totalQueues}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 onSelectQueue={(queue) =>
