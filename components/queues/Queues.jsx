@@ -15,6 +15,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
@@ -23,6 +24,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
@@ -49,8 +51,9 @@ const formatResource = (value, fallback = "0") => {
 const getQueueName = (queue) => queue?.metadata?.name || "-";
 
 const getStatus = (queue) => {
-    const state = queue?.status?.state || "Unknown";
-    return state === "Open" ? "Active" : state;
+    const state = queue?.spec?.state || queue?.status?.state || "Open";
+    if (state === "Active") return "Open";
+    return state;
 };
 
 const getSpecResource = (queue, key, resourceKey) => {
@@ -163,82 +166,162 @@ const getPendingResource = (queue, resource) => {
 const getResourceStats = (queue, resource) => {
     const guaranteeRaw = getResourceFromSection(queue, "guarantee", resource);
     const usedRaw = getResourceFromSection(queue, "status", resource);
+    const deservedRaw = getResourceFromSection(queue, "deserved", resource);
     const capabilityRaw = getResourceFromSection(queue, "capability", resource);
     const guarantee = parseNumber(guaranteeRaw);
     const used = parseNumber(usedRaw);
+    const deserved = parseNumber(deservedRaw);
     const capability = parseNumber(capabilityRaw);
-    const limit = Math.max(capability, guarantee, used);
-    const usagePercent = limit ? Math.min((used / limit) * 100, 100) : 0;
-    const guaranteePercent = limit
-        ? Math.min((guarantee / limit) * 100, 100)
+    const scale = Math.max(capability, deserved, guarantee, used, 1);
+    const usagePercent = deserved ? (used / deserved) * 100 : 0;
+    const guaranteePercent = scale
+        ? Math.min((guarantee / scale) * 100, 100)
         : 0;
+    const deservedPercent = scale ? Math.min((deserved / scale) * 100, 100) : 0;
+    const usedPercent = scale ? Math.min((used / scale) * 100, 100) : 0;
+    const overCapability = Boolean(capability && used > capability);
+    const usageTone = overCapability
+        ? "hot"
+        : !used
+          ? "idle"
+          : usagePercent > 110
+            ? "hot"
+            : usagePercent < 50
+              ? "starving"
+              : usagePercent < 70
+                ? "underused"
+                : "healthy";
 
     return {
         capability,
         capabilityLabel: formatResource(capabilityRaw, "0"),
+        deserved,
+        deservedLabel: formatResource(deservedRaw, "0"),
+        deservedPercent,
         guarantee,
         guaranteeLabel: formatResource(guaranteeRaw, "0"),
         guaranteePercent,
-        limit,
+        overCapability,
         pendingLabel: formatResource(getPendingResource(queue, resource)),
+        scale,
+        usageLabel: deserved ? `${Math.round(usagePercent)}%` : "0%",
         usagePercent,
+        usageTone,
         used,
         usedLabel: formatResource(usedRaw, "0"),
+        usedPercent,
     };
+};
+
+const healthStyles = {
+    healthy: {
+        bgcolor: "#e7f6ec",
+        color: "#12833f",
+        label: "Healthy",
+        severity: "healthy",
+    },
+    hot: {
+        bgcolor: "#ffe7e7",
+        color: "#cf2727",
+        label: "Hot",
+        severity: "hot",
+    },
+    idle: {
+        bgcolor: "#f2f3f5",
+        color: "#69707a",
+        label: "Idle",
+        severity: "idle",
+    },
+    underused: {
+        bgcolor: "#fff8db",
+        color: "#a16207",
+        label: "Underused",
+        severity: "underused",
+    },
+    invalid: {
+        bgcolor: "#ffe5e5",
+        color: "#d92323",
+        label: "Invalid",
+        severity: "invalid",
+    },
+    starving: {
+        bgcolor: "#fff2df",
+        color: "#d86b00",
+        label: "Starving",
+        severity: "starving",
+    },
+};
+
+const getUsageToneColor = (tone) => {
+    if (tone === "hot") return "#cf2727";
+    if (tone === "starving") return "#d86b00";
+    if (tone === "underused") return "#a16207";
+    if (tone === "idle") return "#69707a";
+    return "#12833f";
+};
+
+const statusStyles = {
+    Open: {
+        bgcolor: "#e7f6ec",
+        color: "#12833f",
+        label: "Open",
+        tooltip: "Queue accepts jobs and participates in scheduling",
+    },
+    Closed: {
+        bgcolor: "#f2f3f5",
+        color: "#69707a",
+        label: "Closed",
+        tooltip: "Queue is disabled for new scheduling",
+    },
+};
+
+const getUsageColor = (percent) => {
+    if (percent > 110) return "#cf2727";
+    if (percent < 70) return "#d86b00";
+    return "#12833f";
+};
+
+const hasUnit = (value) => /[a-zA-Z]/.test(String(value || ""));
+
+const formatResourceMetric = (value, resource, includeUnit = true) => {
+    if (!includeUnit || hasUnit(value)) return value;
+    return `${value} ${resource.unit}`;
+};
+
+const formatResourceValueText = (stats, resource) => {
+    const values = [
+        stats.usedLabel,
+        stats.deservedLabel,
+        stats.capabilityLabel,
+    ];
+    const suffix = values.some(hasUnit) ? "" : ` ${resource.unit}`;
+    return `${values.join(" / ")}${suffix} (${stats.usageLabel})`;
 };
 
 const getHealth = (queue) => {
     const status = getStatus(queue).toLowerCase();
-    if (status.includes("invalid") || status.includes("closed")) {
-        return {
-            bgcolor: "#ffe5e5",
-            color: "#d92323",
-            label: "Invalid",
-            severity: "invalid",
-        };
+    if (status.includes("invalid")) {
+        return healthStyles.invalid;
     }
 
     const stats = RESOURCE_COLUMNS.map((resource) =>
         getResourceStats(queue, resource),
     );
-    const overLimit = stats.some(
-        (resource) =>
-            resource.capability && resource.used > resource.capability,
-    );
+    const pendingJobs = Number(getPendingJobs(queue)) || 0;
+    const runningJobsText = getRunningPodsJobs(queue);
+    const runningJobs =
+        Number(String(runningJobsText).split("/")[1]?.trim()) || 0;
     const maxUsage = Math.max(
         ...stats.map((resource) => resource.usagePercent),
     );
+    const overLimit = stats.some((resource) => resource.overCapability);
 
-    if (overLimit || maxUsage >= 80) {
-        return {
-            bgcolor: "#ffe7e7",
-            color: "#cf2727",
-            label: "Hot",
-            severity: "hot",
-        };
-    }
-    if (maxUsage >= 50) {
-        return {
-            bgcolor: "#fff2df",
-            color: "#d86b00",
-            label: "Busy",
-            severity: "busy",
-        };
-    }
-    if (maxUsage === 0) {
-        return {
-            bgcolor: "#f2f3f5",
-            color: "#69707a",
-            label: "Idle",
-            severity: "idle",
-        };
-    }
-    return {
-        bgcolor: "#e7f6ec",
-        color: "#12833f",
-        label: "Normal",
-        severity: "normal",
-    };
+    if (runningJobs === 0 && pendingJobs === 0) return healthStyles.idle;
+    if (pendingJobs > 0 && maxUsage < 50) return healthStyles.starving;
+    if (overLimit || maxUsage > 110) return healthStyles.hot;
+    if (pendingJobs > 0 && maxUsage < 70) return healthStyles.underused;
+    if (maxUsage >= 70 && maxUsage <= 110) return healthStyles.healthy;
+    return maxUsage === 0 ? healthStyles.idle : healthStyles.healthy;
 };
 
 const getPriority = (queue, level) =>
@@ -279,12 +362,6 @@ const getQueueSearchBlob = (queue) => {
         .toLowerCase();
 };
 
-const getUsageColor = (percent) => {
-    if (percent >= 80) return "#ff3b30";
-    if (percent >= 50) return "#ff8a00";
-    return "#18a957";
-};
-
 const buildPath = (queue, queueMap) => {
     const names = [getQueueName(queue)];
     let parentName = queue?.spec?.parent;
@@ -316,80 +393,205 @@ const DetailRow = ({ label, value }) => (
 
 const ResourceUsageBar = ({ queue, resource }) => {
     const stats = getResourceStats(queue, resource);
-    const usagePercent = Math.round(stats.usagePercent);
-    const guaranteeWidth = Math.min(stats.guaranteePercent, stats.usagePercent);
-    const borrowingLeft = Math.min(stats.guaranteePercent, stats.usagePercent);
-    const borrowingWidth = Math.max(stats.usagePercent - borrowingLeft, 0);
-    const overLimit = stats.capability && stats.used > stats.capability;
-
-    return (
-        <Box sx={{ minWidth: 140 }}>
-            <Box sx={{ alignItems: "center", display: "flex", gap: 1 }}>
-                <Typography sx={{ fontSize: 12, minWidth: 38 }}>
-                    {usagePercent}%
-                </Typography>
+    const blueLeft = Math.min(stats.guaranteePercent, stats.deservedPercent);
+    const blueWidth = Math.max(stats.deservedPercent - blueLeft, 0);
+    const valueText = formatResourceValueText(stats, resource);
+    const tooltip = [
+        `${resource.label}`,
+        `Used: ${formatResourceMetric(stats.usedLabel, resource)}`,
+        `Deserved: ${formatResourceMetric(stats.deservedLabel, resource)}`,
+        `Guarantee: ${formatResourceMetric(stats.guaranteeLabel, resource)}`,
+        `Capability: ${formatResourceMetric(stats.capabilityLabel, resource)}`,
+        `Usage: ${stats.usageLabel}`,
+        stats.overCapability ? "Used exceeds capability" : null,
+    ]
+        .filter(Boolean)
+        .join("\n");
+    const bar = (
+        <Box
+            sx={{
+                alignItems: "center",
+                display: "grid",
+                gap: 1.2,
+                gridTemplateColumns: "56px minmax(140px, 1fr) 238px",
+                minHeight: 20,
+            }}
+        >
+            <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                {resource.label}
+            </Typography>
+            <Box
+                sx={{
+                    bgcolor: "#d8dadd",
+                    borderRadius: 999,
+                    height: 6,
+                    overflow: "visible",
+                    position: "relative",
+                }}
+            >
                 <Box
                     sx={{
-                        bgcolor: "#e1e4e8",
-                        borderRadius: 999,
-                        height: 5,
-                        overflow: "hidden",
-                        position: "relative",
-                        width: 116,
+                        bgcolor: "#34a853",
+                        borderRadius: "999px 0 0 999px",
+                        height: "100%",
+                        left: 0,
+                        position: "absolute",
+                        top: 0,
+                        width: `${stats.guaranteePercent}%`,
                     }}
-                >
-                    <Box
-                        sx={{
-                            bgcolor: "#16a34a",
-                            height: "100%",
-                            left: 0,
-                            position: "absolute",
-                            top: 0,
-                            width: `${guaranteeWidth}%`,
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            bgcolor: overLimit
-                                ? "#ef4444"
-                                : getUsageColor(usagePercent),
-                            height: "100%",
-                            left: `${borrowingLeft}%`,
-                            position: "absolute",
-                            top: 0,
-                            width: `${borrowingWidth}%`,
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            bgcolor: "#111827",
-                            height: 8,
-                            left: `${Math.min(stats.guaranteePercent, 100)}%`,
-                            opacity: stats.guarantee ? 0.7 : 0,
-                            position: "absolute",
-                            top: -1.5,
-                            width: 1,
-                        }}
-                    />
-                </Box>
+                />
+                <Box
+                    sx={{
+                        bgcolor: "#3b82f6",
+                        height: "100%",
+                        left: `${blueLeft}%`,
+                        position: "absolute",
+                        top: 0,
+                        width: `${blueWidth}%`,
+                    }}
+                />
+                <Box
+                    sx={{
+                        borderLeft: "5px solid transparent",
+                        borderRight: "5px solid transparent",
+                        borderTop: "8px solid #7c3aed",
+                        left: `calc(${stats.usedPercent}% - 5px)`,
+                        position: "absolute",
+                        top: -9,
+                    }}
+                />
             </Box>
             <Typography
-                color="text.secondary"
                 sx={{
+                    color: getUsageToneColor(stats.usageTone),
                     fontFamily:
                         '"SFMono-Regular", "Roboto Mono", Consolas, monospace',
-                    fontSize: 11,
-                    mt: 0.35,
-                    pl: "46px",
+                    fontSize: 12,
                     whiteSpace: "nowrap",
                 }}
             >
-                {stats.guaranteeLabel} / {stats.usedLabel} /{" "}
-                {stats.capabilityLabel} {resource.unit}
+                {valueText}
             </Typography>
         </Box>
     );
+
+    return (
+        <Tooltip
+            title={<Box sx={{ whiteSpace: "pre-line" }}>{tooltip}</Box>}
+            placement="top"
+        >
+            {bar}
+        </Tooltip>
+    );
 };
+
+const ResourceBars = ({ queue }) => (
+    <Box sx={{ display: "grid", gap: 0.5, py: 0.25 }}>
+        {RESOURCE_COLUMNS.map((resource) => (
+            <ResourceUsageBar
+                key={resource.key}
+                queue={queue}
+                resource={resource}
+            />
+        ))}
+    </Box>
+);
+
+const HealthBadge = ({ health }) => (
+    <Chip
+        label={health.label}
+        size="small"
+        sx={{
+            bgcolor: health.bgcolor,
+            border: `1px solid ${health.color}22`,
+            color: health.color,
+            fontSize: 11,
+            fontWeight: 700,
+            minWidth: 78,
+        }}
+    />
+);
+
+const StatusBadge = ({ state }) => {
+    const status = statusStyles[state] || {
+        bgcolor: "#f2f3f5",
+        color: "#69707a",
+        label: state || "Unknown",
+        tooltip: "Queue state reported by Volcano",
+    };
+
+    return (
+        <Box sx={{ alignItems: "center", display: "flex", gap: 0.5 }}>
+            <Chip
+                label={status.label}
+                size="small"
+                sx={{
+                    bgcolor: status.bgcolor,
+                    border: `1px solid ${status.color}22`,
+                    color: status.color,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    height: 22,
+                    minWidth: 68,
+                }}
+            />
+            <Tooltip title={status.tooltip}>
+                <InfoOutlinedIcon
+                    sx={{ color: "text.disabled", fontSize: 14 }}
+                />
+            </Tooltip>
+        </Box>
+    );
+};
+
+const ResourceLegend = () => (
+    <Box
+        sx={{
+            alignItems: "center",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2.25,
+            justifyContent: "center",
+        }}
+    >
+        {[
+            ["#34a853", "Guarantee"],
+            ["#3b82f6", "Deserved"],
+            ["#d8dadd", "Capability"],
+        ].map(([color, label]) => (
+            <Box
+                key={label}
+                sx={{ alignItems: "center", display: "flex", gap: 0.6 }}
+            >
+                <Box
+                    sx={{
+                        bgcolor: color,
+                        borderRadius: 0.5,
+                        height: 10,
+                        width: 10,
+                    }}
+                />
+                <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                    {label}
+                </Typography>
+            </Box>
+        ))}
+        <Box sx={{ alignItems: "center", display: "flex", gap: 0.6 }}>
+            <Box
+                sx={{
+                    borderLeft: "5px solid transparent",
+                    borderRight: "5px solid transparent",
+                    borderTop: "8px solid #7c3aed",
+                    height: 0,
+                    width: 0,
+                }}
+            />
+            <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                Used (current)
+            </Typography>
+        </Box>
+    </Box>
+);
 
 const UsageMeter = ({ queue, resource }) => {
     const stats = getResourceStats(queue, resource);
@@ -437,44 +639,47 @@ const ResourcePair = ({ title, cpu, memory }) => (
     </Box>
 );
 
-const QueueTreeItem = ({
+const QueueTreeCell = ({
+    expanded,
+    hasChildren,
+    level,
     node,
-    level = 0,
-    expandedNodes,
-    selectedName,
+    onSelectQueue,
     onToggle,
-    onSelect,
 }) => {
-    const hasChildren = node.children?.length > 0;
-    const expanded = expandedNodes.has(getQueueName(node));
-    const selected = selectedName === getQueueName(node);
+    const queueName = getQueueName(node);
 
     return (
-        <Box>
+        <TableCell>
             <Box
-                onClick={() => onSelect(node)}
                 sx={{
                     alignItems: "center",
-                    bgcolor: selected ? "#e5e5e5" : "transparent",
-                    borderRadius: 1,
-                    cursor: "pointer",
                     display: "flex",
-                    gap: 1,
-                    minHeight: 38,
-                    ml: level * 2.25,
-                    px: 1,
-                    "&:hover": {
-                        bgcolor: selected ? "#e5e5e5" : "#f3f4f6",
-                    },
+                    gap: 0.75,
+                    pl: level * 2.2,
+                    position: "relative",
                 }}
             >
+                {level > 0 && (
+                    <Box
+                        sx={{
+                            borderBottom: "1px solid #cfd5dc",
+                            borderLeft: "1px solid #cfd5dc",
+                            height: 22,
+                            left: level * 17 - 7,
+                            position: "absolute",
+                            top: -2,
+                            width: 14,
+                        }}
+                    />
+                )}
                 <IconButton
-                    size="small"
                     onClick={(event) => {
                         event.stopPropagation();
-                        if (hasChildren) onToggle(getQueueName(node));
+                        if (hasChildren) onToggle(queueName);
                     }}
-                    sx={{ height: 24, width: 24 }}
+                    size="small"
+                    sx={{ height: 24, width: 24, zIndex: 1 }}
                 >
                     {hasChildren ? (
                         expanded ? (
@@ -487,35 +692,27 @@ const QueueTreeItem = ({
                     )}
                 </IconButton>
                 {expanded && hasChildren ? (
-                    <FolderOpenOutlinedIcon sx={{ fontSize: 17 }} />
+                    <FolderOpenOutlinedIcon sx={{ fontSize: 16, zIndex: 1 }} />
                 ) : (
-                    <FolderOutlinedIcon sx={{ fontSize: 17 }} />
+                    <FolderOutlinedIcon sx={{ fontSize: 16, zIndex: 1 }} />
                 )}
-                <Typography sx={{ flexGrow: 1, fontSize: 14 }}>
-                    {getQueueName(node)}
+                <Typography
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onSelectQueue(node);
+                    }}
+                    sx={{
+                        color: level ? "#1677ff" : "text.primary",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        zIndex: 1,
+                        ...tableIdentifierSx,
+                    }}
+                >
+                    {queueName}
                 </Typography>
-                {selected && (
-                    <IconButton size="small" sx={{ height: 26, width: 26 }}>
-                        <MoreVertIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                )}
             </Box>
-            {hasChildren && expanded && (
-                <Box>
-                    {node.children.map((child) => (
-                        <QueueTreeItem
-                            key={getQueueName(child)}
-                            node={child}
-                            level={level + 1}
-                            expandedNodes={expandedNodes}
-                            selectedName={selectedName}
-                            onToggle={onToggle}
-                            onSelect={onSelect}
-                        />
-                    ))}
-                </Box>
-            )}
-        </Box>
+        </TableCell>
     );
 };
 
@@ -681,16 +878,7 @@ const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
                 {
                     label: "Status",
                     valueNode: selectedQueue ? (
-                        <Chip
-                            label={getStatus(selectedQueue)}
-                            size="small"
-                            sx={{
-                                bgcolor: "#dbf5e4",
-                                color: "#15803d",
-                                fontSize: 11,
-                                height: 20,
-                            }}
-                        />
+                        <StatusBadge state={getStatus(selectedQueue)} />
                     ) : null,
                 },
             ]}
@@ -729,19 +917,23 @@ const QueueSummaryCards = ({ queues, totalQueues }) => {
                     (acc[getHealth(queue).severity] || 0) + 1;
                 return acc;
             },
-            { blocked: 0, busy: 0, hot: 0, idle: 0, invalid: 0, normal: 0 },
+            {
+                healthy: 0,
+                hot: 0,
+                idle: 0,
+                invalid: 0,
+                starving: 0,
+                underused: 0,
+            },
         );
-        const active = queues.filter((queue) => getStatus(queue) === "Active");
+        const active = queues.filter((queue) => getStatus(queue) === "Open");
 
         return {
             active: active.length,
-            activePercent: queues.length
-                ? Math.round((active.length / queues.length) * 100)
-                : 0,
-            blocked: healthCounts.blocked || 0,
             hot: healthCounts.hot || 0,
+            idle: healthCounts.idle || 0,
             invalid: healthCounts.invalid || 0,
-            starving: healthCounts.busy || 0,
+            starving: healthCounts.starving || 0,
             total: totalQueues || queues.length,
         };
     }, [queues, totalQueues]);
@@ -749,33 +941,37 @@ const QueueSummaryCards = ({ queues, totalQueues }) => {
     const cards = [
         {
             label: "Total Queues",
-            meta: `/ ${summary.total}`,
-            value: queues.length,
+            meta: "Total configured queues",
+            value: summary.total,
         },
         {
             dot: "#16a34a",
             label: "Active Queues",
-            meta: `${summary.activePercent}%`,
+            meta: "Open queues",
             value: summary.active,
         },
         {
             color: "#ef4444",
             label: "Hot Queues",
+            meta: "Usage > 110% of deserved",
             value: summary.hot,
         },
         {
             color: "#f97316",
             label: "Starving Queues",
+            meta: "Pending jobs but underused",
             value: summary.starving,
         },
         {
-            color: "#5b4cc4",
-            label: "Blocked Queues",
-            value: summary.blocked,
+            color: "#69707a",
+            label: "Idle Queues",
+            meta: "No running or pending jobs",
+            value: summary.idle,
         },
         {
-            color: "#ef4444",
+            color: "#64748b",
             label: "Invalid Queues",
+            meta: "Configuration issues",
             value: summary.invalid,
         },
     ];
@@ -830,16 +1026,15 @@ const QueueSummaryCards = ({ queues, totalQueues }) => {
                     </Box>
                     <Box
                         sx={{
-                            alignItems: "baseline",
-                            display: "flex",
-                            gap: 1,
+                            display: "grid",
+                            gap: 0.5,
                         }}
                     >
                         <Typography
                             sx={{
                                 color: card.color || "text.primary",
-                                fontSize: 28,
-                                fontWeight: 700,
+                                fontSize: 24,
+                                fontWeight: 600,
                                 letterSpacing: -0.5,
                             }}
                         >
@@ -848,7 +1043,7 @@ const QueueSummaryCards = ({ queues, totalQueues }) => {
                         {card.meta && (
                             <Typography
                                 color="text.secondary"
-                                sx={{ fontSize: 13 }}
+                                sx={{ fontSize: 12, lineHeight: 1.3 }}
                             >
                                 {card.meta}
                             </Typography>
@@ -883,11 +1078,11 @@ const QueueLegends = () => (
             <Box sx={{ px: 1 }}>
                 <Box
                     sx={{
-                        bgcolor: "#e1e4e8",
+                        bgcolor: "#d8dadd",
                         borderRadius: 999,
                         height: 6,
                         mb: 1,
-                        overflow: "hidden",
+                        overflow: "visible",
                         position: "relative",
                     }}
                 >
@@ -897,26 +1092,28 @@ const QueueLegends = () => (
                             height: "100%",
                             left: 0,
                             position: "absolute",
-                            width: "35%",
+                            width: "28%",
                         }}
                     />
                     <Box
                         sx={{
-                            bgcolor: "#ff8a00",
+                            bgcolor: "#3b82f6",
                             height: "100%",
-                            left: "35%",
+                            left: "28%",
                             position: "absolute",
-                            width: "25%",
+                            width: "32%",
                         }}
                     />
                     <Box
                         sx={{
-                            bgcolor: "#111827",
-                            height: 12,
-                            left: "75%",
+                            borderLeft: "5px solid transparent",
+                            borderRight: "5px solid transparent",
+                            borderTop: "8px solid #7c3aed",
+                            height: 0,
+                            left: "74%",
                             position: "absolute",
-                            top: -3,
-                            width: 1,
+                            top: -8,
+                            width: 0,
                         }}
                     />
                 </Box>
@@ -929,8 +1126,8 @@ const QueueLegends = () => (
                     }}
                 >
                     <span>Guarantee (G)</span>
-                    <span>Borrowing</span>
-                    <span>Limit (Capacity)</span>
+                    <span>Deserved</span>
+                    <span>Used / Capability</span>
                 </Box>
             </Box>
         </Paper>
@@ -954,11 +1151,11 @@ const QueueLegends = () => (
                 }}
             >
                 {[
-                    ["#ef4444", "Hot: Usage > 80% or over Limit"],
-                    ["#f97316", "Busy: 50% < Usage ≤ 80%"],
-                    ["#16a34a", "Normal: Usage ≤ 50%"],
-                    ["#9ca3af", "Idle: Usage = 0"],
-                    ["#5b4cc4", "Blocked: constrained by parent"],
+                    ["#cf2727", "Hot: used / deserved > 110%"],
+                    ["#d86b00", "Starving: pending jobs and usage < 50%"],
+                    ["#a16207", "Underused: pending jobs and usage < 70%"],
+                    ["#12833f", "Healthy: usage between 70% and 110%"],
+                    ["#69707a", "Idle: no running or pending jobs"],
                     ["#ef4444", "Invalid: invalid configuration"],
                 ].map(([color, label]) => (
                     <Box
@@ -1080,96 +1277,67 @@ const QueueHierarchyView = ({
                     </IconButton>
                 </Box>
                 <TableContainer sx={{ overflowX: "auto" }}>
-                    <Table size="small" sx={{ minWidth: 1380 }}>
+                    <Table size="small" sx={{ minWidth: 1040 }}>
                         <TableHead>
-                            <TableRow>
+                            <TableRow
+                                sx={{
+                                    "& th": {
+                                        color: "text.secondary",
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                    },
+                                }}
+                            >
                                 <TableCell
-                                    rowSpan={2}
                                     sx={{
                                         bgcolor: "#ffffff",
                                         borderBottom: "1px solid #dfe3e8",
-                                        fontWeight: 700,
                                         minWidth: 210,
                                     }}
                                 >
-                                    Queue
+                                    Queue Name
                                 </TableCell>
-                                <TableCell
-                                    rowSpan={2}
-                                    sx={{ fontWeight: 700, minWidth: 105 }}
-                                >
+                                <TableCell sx={{ minWidth: 104 }}>
                                     Status
                                 </TableCell>
-                                <TableCell
-                                    rowSpan={2}
-                                    sx={{ fontWeight: 700, minWidth: 70 }}
-                                >
+                                <TableCell sx={{ minWidth: 70 }}>
                                     Priority
                                 </TableCell>
-                                {RESOURCE_COLUMNS.map((resource) => (
-                                    <TableCell
-                                        align="center"
-                                        colSpan={2}
-                                        key={resource.key}
-                                        sx={{ fontWeight: 700 }}
-                                    >
-                                        {resource.label}
-                                    </TableCell>
-                                ))}
                                 <TableCell
-                                    rowSpan={2}
-                                    sx={{ fontWeight: 700, minWidth: 130 }}
+                                    align="center"
+                                    sx={{ minWidth: 520 }}
                                 >
+                                    <Box
+                                        sx={{
+                                            alignItems: "center",
+                                            display: "grid",
+                                            gap: 0.75,
+                                        }}
+                                    >
+                                        <span>
+                                            Resources (CPU / Memory / GPU)
+                                        </span>
+                                        <ResourceLegend />
+                                    </Box>
+                                </TableCell>
+                                <TableCell sx={{ minWidth: 140 }}>
                                     Running Pods / Jobs
                                 </TableCell>
-                                <TableCell
-                                    rowSpan={2}
-                                    sx={{ fontWeight: 700, minWidth: 105 }}
-                                >
+                                <TableCell sx={{ minWidth: 105 }}>
                                     Pending Jobs
                                 </TableCell>
-                                <TableCell
-                                    rowSpan={2}
-                                    sx={{ fontWeight: 700, minWidth: 120 }}
-                                >
+                                <TableCell sx={{ minWidth: 110 }}>
                                     Health
                                 </TableCell>
-                                <TableCell rowSpan={2} />
-                            </TableRow>
-                            <TableRow>
-                                {RESOURCE_COLUMNS.flatMap((resource) => [
-                                    <TableCell
-                                        key={`${resource.key}-usage`}
-                                        sx={{
-                                            bgcolor: "#ffffff",
-                                            color: "text.secondary",
-                                            fontSize: 12,
-                                            fontWeight: 700,
-                                            minWidth: 170,
-                                        }}
-                                    >
-                                        Usage
-                                    </TableCell>,
-                                    <TableCell
-                                        key={`${resource.key}-values`}
-                                        sx={{
-                                            bgcolor: "#ffffff",
-                                            color: "text.secondary",
-                                            fontSize: 12,
-                                            fontWeight: 700,
-                                            minWidth: 120,
-                                            whiteSpace: "nowrap",
-                                        }}
-                                    >
-                                        G / Used / Cap
-                                    </TableCell>,
-                                ])}
+                                <TableCell sx={{ width: 72 }}>
+                                    Actions
+                                </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {visibleRows.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={13}>
+                                    <TableCell colSpan={8}>
                                         No queues found.
                                     </TableCell>
                                 </TableRow>
@@ -1184,8 +1352,6 @@ const QueueHierarchyView = ({
                                         getQueueName(selectedQueue) ===
                                         queueName;
                                     const health = getHealth(node);
-                                    const statusActive =
-                                        getStatus(node) === "Active";
 
                                     return (
                                         <TableRow
@@ -1197,153 +1363,34 @@ const QueueHierarchyView = ({
                                                     ? "#fff7f3"
                                                     : "inherit",
                                                 cursor: "pointer",
+                                                height: 64,
+                                                "& td": {
+                                                    borderBottom:
+                                                        "1px solid #e6e9ed",
+                                                    color: "text.primary",
+                                                    fontSize: 13,
+                                                },
                                             }}
                                         >
+                                            <QueueTreeCell
+                                                expanded={expanded}
+                                                hasChildren={hasChildren}
+                                                level={level}
+                                                node={node}
+                                                onSelectQueue={onSelectQueue}
+                                                onToggle={handleToggle}
+                                            />
                                             <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        alignItems: "center",
-                                                        display: "flex",
-                                                        gap: 0.75,
-                                                        pl: level * 2,
-                                                    }}
-                                                >
-                                                    <IconButton
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            if (hasChildren)
-                                                                handleToggle(
-                                                                    queueName,
-                                                                );
-                                                        }}
-                                                        size="small"
-                                                        sx={{
-                                                            height: 24,
-                                                            width: 24,
-                                                        }}
-                                                    >
-                                                        {hasChildren ? (
-                                                            expanded ? (
-                                                                <ExpandMoreIcon
-                                                                    sx={{
-                                                                        fontSize: 15,
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <ChevronRightIcon
-                                                                    sx={{
-                                                                        fontSize: 15,
-                                                                    }}
-                                                                />
-                                                            )
-                                                        ) : (
-                                                            <Box
-                                                                sx={{
-                                                                    width: 15,
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </IconButton>
-                                                    <Box
-                                                        sx={{
-                                                            borderLeft:
-                                                                level > 0
-                                                                    ? "1px dotted #cfd5dc"
-                                                                    : "none",
-                                                            height: 28,
-                                                            ml:
-                                                                level > 0
-                                                                    ? -0.5
-                                                                    : 0,
-                                                        }}
-                                                    />
-                                                    {expanded && hasChildren ? (
-                                                        <FolderOpenOutlinedIcon
-                                                            sx={{
-                                                                fontSize: 16,
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <FolderOutlinedIcon
-                                                            sx={{
-                                                                fontSize: 16,
-                                                            }}
-                                                        />
-                                                    )}
-                                                    <Typography
-                                                        sx={{
-                                                            color: "#1677ff",
-                                                            fontWeight: 700,
-                                                            ...tableIdentifierSx,
-                                                        }}
-                                                    >
-                                                        {queueName}
-                                                    </Typography>
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        alignItems: "center",
-                                                        display: "flex",
-                                                        gap: 0.75,
-                                                    }}
-                                                >
-                                                    <Box
-                                                        sx={{
-                                                            bgcolor:
-                                                                statusActive
-                                                                    ? "#16a34a"
-                                                                    : "#ef4444",
-                                                            borderRadius: "50%",
-                                                            height: 8,
-                                                            width: 8,
-                                                        }}
-                                                    />
-                                                    <Typography
-                                                        sx={tableNumericSx}
-                                                    >
-                                                        {getStatus(node)}
-                                                    </Typography>
-                                                </Box>
+                                                <StatusBadge
+                                                    state={getStatus(node)}
+                                                />
                                             </TableCell>
                                             <TableCell sx={tableNumericSx}>
                                                 {getPriority(node, level)}
                                             </TableCell>
-                                            {RESOURCE_COLUMNS.flatMap(
-                                                (resource) => {
-                                                    const stats =
-                                                        getResourceStats(
-                                                            node,
-                                                            resource,
-                                                        );
-                                                    return [
-                                                        <TableCell
-                                                            key={`${queueName}-${resource.key}-usage`}
-                                                        >
-                                                            <ResourceUsageBar
-                                                                queue={node}
-                                                                resource={
-                                                                    resource
-                                                                }
-                                                            />
-                                                        </TableCell>,
-                                                        <TableCell
-                                                            key={`${queueName}-${resource.key}-values`}
-                                                            sx={tableNumericSx}
-                                                        >
-                                                            {
-                                                                stats.guaranteeLabel
-                                                            }{" "}
-                                                            / {stats.usedLabel}{" "}
-                                                            /{" "}
-                                                            {
-                                                                stats.capabilityLabel
-                                                            }
-                                                        </TableCell>,
-                                                    ];
-                                                },
-                                            )}
+                                            <TableCell>
+                                                <ResourceBars queue={node} />
+                                            </TableCell>
                                             <TableCell sx={tableNumericSx}>
                                                 {getRunningPodsJobs(node)}
                                             </TableCell>
@@ -1351,18 +1398,7 @@ const QueueHierarchyView = ({
                                                 {getPendingJobs(node)}
                                             </TableCell>
                                             <TableCell>
-                                                <Chip
-                                                    label={health.label}
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor: health.bgcolor,
-                                                        border: `1px solid ${health.color}22`,
-                                                        color: health.color,
-                                                        fontSize: 11,
-                                                        fontWeight: 700,
-                                                        minWidth: 72,
-                                                    }}
-                                                />
+                                                <HealthBadge health={health} />
                                             </TableCell>
                                             <TableCell>
                                                 <IconButton size="small">
@@ -1574,9 +1610,16 @@ const Queues = () => {
             <Box sx={{ mb: 3 }}>
                 <Typography
                     component="h1"
-                    sx={{ fontSize: 24, fontWeight: 700, letterSpacing: 0.2 }}
+                    sx={{ fontSize: 24, fontWeight: 600, letterSpacing: 0.2 }}
                 >
                     Queues
+                </Typography>
+                <Typography
+                    color="text.secondary"
+                    sx={{ fontSize: 13, mt: 0.5 }}
+                >
+                    Inspect scheduling state and resource pressure across CPU,
+                    memory, and GPU.
                 </Typography>
             </Box>
 
