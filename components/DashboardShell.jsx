@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     Box,
+    Breadcrumbs,
     Drawer,
     IconButton,
     List,
@@ -12,6 +13,7 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
+    Link as MuiLink,
     Tooltip,
     Typography,
     useMediaQuery,
@@ -116,6 +118,84 @@ const footerItems = [
         path: "/documentation",
     },
 ];
+
+const routeLabels = {
+    dashboard: "Overview",
+    documentation: "Documentation",
+    scheduling: "Scheduling",
+    queues: "Queues",
+    jobs: "Jobs",
+    podgroups: "Pod Groups",
+    workload: "Workloads",
+    pods: "Pods",
+    system: "System",
+    configuration: "Configuration",
+    "cluster-information": "Cluster Information",
+};
+
+const DashboardBreadcrumbs = ({ pathname }) => {
+    const segments = pathname.split("/").filter(Boolean);
+    const visibleSegments =
+        segments[0] === "dashboard" ? ["dashboard"] : segments;
+
+    const crumbs = [
+        {
+            href: "/dashboard",
+            label: "Home",
+        },
+        ...visibleSegments.map((segment, index) => ({
+            href: `/${visibleSegments.slice(0, index + 1).join("/")}`,
+            label: routeLabels[segment] || segment,
+        })),
+    ];
+
+    return (
+        <Breadcrumbs
+            aria-label="breadcrumb"
+            separator="/"
+            sx={{
+                color: "text.secondary",
+                fontSize: 12,
+                mb: 2.5,
+                "& .MuiBreadcrumbs-separator": {
+                    color: "text.secondary",
+                    mx: 1,
+                },
+            }}
+        >
+            {crumbs.map((crumb, index) => {
+                const isLast = index === crumbs.length - 1;
+                return isLast ? (
+                    <Typography
+                        key={`${crumb.href}-${crumb.label}`}
+                        color="text.primary"
+                        sx={{ fontSize: 12, fontWeight: 600 }}
+                    >
+                        {crumb.label}
+                    </Typography>
+                ) : (
+                    <MuiLink
+                        component={Link}
+                        href={crumb.href}
+                        key={`${crumb.href}-${crumb.label}`}
+                        sx={{
+                            color: "text.secondary",
+                            fontSize: 12,
+                            fontWeight: 500,
+                            textDecoration: "none",
+                            "&:hover": {
+                                color: "text.primary",
+                                textDecoration: "none",
+                            },
+                        }}
+                    >
+                        {crumb.label}
+                    </MuiLink>
+                );
+            })}
+        </Breadcrumbs>
+    );
+};
 
 export default function DashboardShell({ children }) {
     const theme = useTheme();
@@ -480,6 +560,7 @@ export default function DashboardShell({ children }) {
                     minWidth: 0,
                 }}
             >
+                <DashboardBreadcrumbs pathname={pathname} />
                 {children}
             </Box>
         </Box>
