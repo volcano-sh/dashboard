@@ -1,5 +1,4 @@
 import React from "react";
-import Editor from "@monaco-editor/react";
 import {
     Alert,
     Box,
@@ -31,6 +30,7 @@ import SyncIcon from "@mui/icons-material/Sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PodStatusChip from "./PodStatusChip";
+import YamlViewer from "../details/YamlViewer";
 import {
     deletePod,
     fetchPodEvents,
@@ -648,60 +648,13 @@ const PodYamlView = ({ namespace, name, enabled }) => {
         queryKey: ["podYaml", namespace, name],
     });
 
-    if (isLoading || isFetching) {
-        return (
-            <Box
-                sx={{
-                    alignItems: "center",
-                    display: "flex",
-                    justifyContent: "center",
-                    minHeight: 220,
-                }}
-            >
-                <CircularProgress size={22} />
-            </Box>
-        );
-    }
-
-    if (error) {
-        return (
-            <Alert severity="error" sx={{ boxShadow: "none" }}>
-                {getApiErrorMessage(error, "Failed to fetch pod YAML")}
-            </Alert>
-        );
-    }
-
     return (
-        <Box
-            sx={{
-                "& .monaco-editor, & .monaco-editor-background": {
-                    bgcolor: subtleBg,
-                },
-            }}
-        >
-            <Editor
-                height="620px"
-                language="yaml"
-                options={{
-                    domReadOnly: true,
-                    folding: true,
-                    fontFamily:
-                        '"Roboto Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
-                    fontSize: 12.5,
-                    lineNumbersMinChars: 3,
-                    minimap: { enabled: false },
-                    overviewRulerBorder: false,
-                    padding: { top: 12, bottom: 12 },
-                    readOnly: true,
-                    renderLineHighlight: "none",
-                    scrollBeyondLastLine: false,
-                    smoothScrolling: true,
-                    wordWrap: "on",
-                }}
-                theme="vs"
-                value={data || ""}
-            />
-        </Box>
+        <YamlViewer
+            data={data}
+            error={error}
+            fill
+            isLoading={isLoading || isFetching}
+        />
     );
 };
 
@@ -1782,19 +1735,7 @@ const PodDetailsPanel = ({
                 ) : selectedTab === "overview" ? (
                     <PodOverview pod={pod} />
                 ) : selectedTab === "yaml" ? (
-                    <Box
-                        sx={{
-                            border: `1px solid ${panelBorder}`,
-                            borderRadius: 1,
-                            overflow: "hidden",
-                        }}
-                    >
-                        <PodYamlView
-                            enabled
-                            name={name}
-                            namespace={namespace}
-                        />
-                    </Box>
+                    <PodYamlView enabled name={name} namespace={namespace} />
                 ) : selectedTab === "logs" ? (
                     <PodLogsView
                         container={selectedLogContainer}
