@@ -19,16 +19,16 @@ serviceAccount:
 rbac:
     create: true
 
-schedulerConfig:
-    namespace: volcano-system
-    name: volcano-scheduler-configmap
-    key: ""
-
-auth:
-    mode: local
+config:
     existingSecret: ""
-    configSecretKey: auth.yaml
-    config: ""
+    secretKey: dashboard.yaml
+    data:
+        schedulerConfig:
+            namespace: volcano-system
+            name: volcano-scheduler-configmap
+            key: ""
+        auth:
+            mode: local
 
 podAnnotations: {}
 podLabels: {}

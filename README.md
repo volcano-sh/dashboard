@@ -39,34 +39,81 @@ helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
 
 By default, the dashboard runs in local authentication mode with the built-in
 development account `admin` / `admin`. For production deployments, create a
-Secret with your own JWT secret and bcrypt password hashes, then pass it to the
-chart:
+single backend config Secret with scheduler and auth sections, then pass it to
+the chart:
+
+An editable example is available at
+[`config/dashboard.example.yaml`](config/dashboard.example.yaml). For local
+development, run:
+
+```bash
+DASHBOARD_CONFIG_FILE=config/dashboard.example.yaml npm run dev
+```
 
 ```yaml
-mode: local
-jwt:
-    issuer: volcano-dashboard
-    secret: change-this-secret
-    expiresIn: 8h
-    rememberExpiresIn: 30d
-localUsers:
-    - username: admin
-      displayName: Administrator
-      passwordHash: "$2b$12$..."
+schedulerConfig:
+    namespace: volcano-system
+    name: volcano-scheduler-configmap
+    key: ""
+auth:
+    mode: local
+    jwt:
+        issuer: volcano-dashboard
+        secret: change-this-secret
+        expiresIn: 8h
+        rememberExpiresIn: 30d
+    localUsers:
+        - username: admin
+          displayName: Administrator
+          passwordHash: "$2b$12$..."
 ```
 
 ```bash
-kubectl create secret generic volcano-dashboard-auth \
+kubectl create secret generic volcano-dashboard-config \
   --namespace volcano-system \
-  --from-file=auth.yaml=./auth.yaml
+  --from-file=dashboard.yaml=./dashboard.yaml
 
 helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
   --namespace volcano-system \
-  --set auth.existingSecret=volcano-dashboard-auth
+  --set config.existingSecret=volcano-dashboard-config
 ```
 
 Use `mode: local-sso` and add an `sso` block with OIDC issuer/client settings
-when you want both local login and SSO.
+when you want both local login and SSO. The dashboard uses OIDC discovery from
+the issuer URL and redirects back to `/api/v1/auth/sso/callback`.
+
+```yaml
+schedulerConfig:
+    namespace: volcano-system
+    name: volcano-scheduler-configmap
+    key: ""
+auth:
+    mode: local-sso
+    jwt:
+        issuer: volcano-dashboard
+        secret: change-this-secret
+        expiresIn: 8h
+        rememberExpiresIn: 30d
+    localUsers:
+        - username: admin
+          displayName: Administrator
+          passwordHash: "$2b$12$..."
+    sso:
+        providerName: Keycloak
+        issuer: https://keycloak.example.com/realms/volcano
+        clientId: volcano-dashboard
+        clientSecret: keycloak-client-secret
+        scopes:
+            - openid
+            - profile
+            - email
+```
+
+The unified backend config is loaded from `DASHBOARD_CONFIG_FILE`. The auth
+section also accepts snake_case aliases commonly used by service config files,
+such as `users`, `password_hash`, `issuer_url`, `client_id`, `client_secret`,
+`redirect_uri`, and `jwks_cache_ttl`. The file must still be YAML or JSON; TOML
+is not parsed by the dashboard today.
 
 3. Access the dashboard by port-forwarding the service:
 

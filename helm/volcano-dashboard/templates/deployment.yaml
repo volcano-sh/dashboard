@@ -38,23 +38,13 @@ spec:
               name: http
               protocol: TCP
           env:
-            - name: SCHEDULER_CONFIG_NAMESPACE
-              value: {{ .Values.schedulerConfig.namespace | quote }}
-            - name: SCHEDULER_CONFIG_NAME
-              value: {{ .Values.schedulerConfig.name | quote }}
-            - name: SCHEDULER_CONFIG_KEY
-              value: {{ .Values.schedulerConfig.key | quote }}
-            {{- if or .Values.auth.existingSecret .Values.auth.config }}
-            - name: AUTH_CONFIG_FILE
-              value: "/etc/volcano-dashboard/{{ .Values.auth.configSecretKey }}"
-            {{- end }}
-          {{- if or .Values.auth.existingSecret .Values.auth.config }}
+            - name: DASHBOARD_CONFIG_FILE
+              value: "/etc/volcano-dashboard/{{ .Values.config.secretKey }}"
           volumeMounts:
-            - name: auth-config
-              mountPath: "/etc/volcano-dashboard/{{ .Values.auth.configSecretKey }}"
-              subPath: {{ .Values.auth.configSecretKey | quote }}
+            - name: dashboard-config
+              mountPath: "/etc/volcano-dashboard/{{ .Values.config.secretKey }}"
+              subPath: {{ .Values.config.secretKey | quote }}
               readOnly: true
-          {{- end }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -77,12 +67,10 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if or .Values.auth.existingSecret .Values.auth.config }}
       volumes:
-        - name: auth-config
+        - name: dashboard-config
           secret:
-            secretName: {{ include "volcano-dashboard.authSecretName" . }}
+            secretName: {{ include "volcano-dashboard.configSecretName" . }}
             items:
-              - key: {{ .Values.auth.configSecretKey | quote }}
-                path: {{ .Values.auth.configSecretKey | quote }}
-      {{- end }}
+              - key: {{ .Values.config.secretKey | quote }}
+                path: {{ .Values.config.secretKey | quote }}
