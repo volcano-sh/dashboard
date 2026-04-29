@@ -4,6 +4,8 @@ node_modules
 out
 coverage
 dist
+dist-server
+*.tsbuildinfo
 .env
 .env.local
 

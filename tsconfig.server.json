@@ -1,0 +1,20 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "allowJs": false,
+        "declaration": false,
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "noEmit": true,
+        "rootDir": ".",
+        "target": "ES2022",
+        "types": ["node"]
+    },
+    "include": [
+        "server.ts",
+        "lib/server/auth.ts",
+        "lib/server/config.ts",
+        "lib/server/kubernetes.ts"
+    ],
+    "exclude": ["node_modules"]
+}
