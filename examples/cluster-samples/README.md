@@ -11,6 +11,8 @@ dashboard can read from the cluster through the real Kubernetes API.
 - `30-pods.yaml`: pods that tend to surface `Running`, `Pending`, `Failed`, and
   `Succeeded` states across the Pods page
 - `40-jobs.yaml`: long-running Volcano jobs across multiple demo queues
+- `50-cronjobs.yaml`: Volcano CronJobs that create scheduled Volcano jobs
+  across demo queues
 
 ## Prerequisites
 
@@ -37,6 +39,8 @@ kubectl delete -f examples/cluster-samples/
 
 - `/queues`: verify the demo queue hierarchy is visible
 - `/jobs`: verify long-running jobs are listed across different queues
+- `/scheduling/cronjobs`: verify Volcano CronJobs are listed across different
+  queues
 - `/podgroups`: verify demo PodGroups are listed
 - `/pods`: verify demo pods show multiple states and namespaces
 

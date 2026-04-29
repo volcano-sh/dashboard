@@ -6,6 +6,7 @@ const menuItems = [
     { text: "Overview", path: "/dashboard" },
     { text: "Queues", path: "/scheduling/queues" },
     { text: "Jobs", path: "/scheduling/jobs" },
+    { text: "CronJob", path: "/scheduling/cronjobs" },
     { text: "Pod Groups", path: "/scheduling/podgroups" },
     { text: "Pods", path: "/workload/pods" },
     { text: "Configuration", path: "/system/configuration" },
@@ -56,7 +57,7 @@ describe("Layout", () => {
 
         const navigationItems = screen.getAllByRole("link");
 
-        expect(navigationItems).toHaveLength(8);
+        expect(navigationItems).toHaveLength(9);
 
         navigationItems.forEach((item, index) => {
             const { text, path } = menuItems[index];

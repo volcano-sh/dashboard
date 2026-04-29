@@ -25,6 +25,7 @@ import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import DeviceHubOutlinedIcon from "@mui/icons-material/DeviceHubOutlined";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EventRepeatOutlinedIcon from "@mui/icons-material/EventRepeatOutlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
@@ -61,6 +62,11 @@ const menuSections = [
                 text: "Jobs",
                 icon: <WorkOutlineOutlinedIcon {...iconProps} />,
                 path: "/scheduling/jobs",
+            },
+            {
+                text: "CronJob",
+                icon: <EventRepeatOutlinedIcon {...iconProps} />,
+                path: "/scheduling/cronjobs",
             },
             {
                 text: "Pod Groups",
@@ -125,6 +131,7 @@ const routeLabels = {
     scheduling: "Scheduling",
     queues: "Queues",
     jobs: "Jobs",
+    cronjobs: "CronJob",
     podgroups: "Pod Groups",
     workload: "Workloads",
     pods: "Pods",

@@ -20,6 +20,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import DeviceHubOutlinedIcon from "@mui/icons-material/DeviceHubOutlined";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EventRepeatOutlinedIcon from "@mui/icons-material/EventRepeatOutlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
@@ -72,6 +73,11 @@ const Layout = () => {
                     text: "Jobs",
                     icon: <WorkOutlineOutlinedIcon {...iconProps} />,
                     path: "/scheduling/jobs",
+                },
+                {
+                    text: "CronJob",
+                    icon: <EventRepeatOutlinedIcon {...iconProps} />,
+                    path: "/scheduling/cronjobs",
                 },
                 {
                     text: "Pod Groups",
