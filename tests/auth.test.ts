@@ -146,6 +146,7 @@ auth:
     issuer: https://keycloak.example.com/realms/volcano
     clientId: volcano-dashboard
     clientSecret: dashboard-secret
+    redirectUri: http://dashboard.local/custom/sso/callback
     scopes:
       - openid
       - profile
@@ -192,7 +193,7 @@ auth:
         expect(location.searchParams.get("code_challenge_method")).toBe("S256");
         expect(location.searchParams.get("code_challenge")).toBeTruthy();
         expect(location.searchParams.get("redirect_uri")).toBe(
-            "http://dashboard.local/api/v1/auth/sso/callback",
+            "http://dashboard.local/custom/sso/callback",
         );
         expect(location.searchParams.get("scope")).toBe("openid profile email");
         expect(location.searchParams.get("state")).toBeTruthy();
@@ -279,6 +280,9 @@ auth:
         );
         expect(location.searchParams.get("scope")).toBe(
             "openid profile email offline_access",
+        );
+        expect(location.searchParams.get("redirect_uri")).toBe(
+            "http://localhost:3000/sso/callback",
         );
     });
 

@@ -15,7 +15,6 @@ schedulerConfig:
 
 auth:
     mode: local-sso
-    salt: secure-salt-value-123
     jwt:
         issuer: volcano-dashboard
         secret: secure-salt-value-123
@@ -31,23 +30,11 @@ auth:
           tenants: ["adak8s", "squidflow"]
           is_admin: true
 
-        - username: adak8s
-          display_name: adak8s
-          password_hash: "$2b$12$CIHL.iL.eegZdjxKBfx8WulNh2q6ySbdus5GhyH9Xg5hwZpGdWYLq"
-          tenants: ["*"]
-          is_admin: true
-
-        - username: ada
-          display_name: ada
-          password_hash: "$2b$12$OaJVyFPS5ISYOizmdh31bO7E6u9clSSyQilmm4oV63iLcazMxGiKe"
-          tenants: ["ada"]
-          is_admin: false
-
     sso:
         provider_name: Keycloak
         issuer_url: http://localhost:8080/realms/adak8s
         client_id: squidflow-backend
-        client_secret: replace-with-client-secret
+        client_secret: qiesogMQypSjhmxaYelevxlhJWkr0H3O
         redirect_uri: http://localhost:3000/sso/callback
         scopes: ["openid", "profile", "email", "offline_access"]
         jwks_cache_ttl: 10m

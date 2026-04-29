@@ -80,7 +80,7 @@ helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
 
 Use `mode: local-sso` and add an `sso` block with OIDC issuer/client settings
 when you want both local login and SSO. The dashboard uses OIDC discovery from
-the issuer URL and redirects back to `/api/v1/auth/sso/callback`.
+the issuer URL and redirects back to `/sso/callback`.
 
 ```yaml
 schedulerConfig:
@@ -103,6 +103,7 @@ auth:
         issuer: https://keycloak.example.com/realms/volcano
         clientId: volcano-dashboard
         clientSecret: keycloak-client-secret
+        redirectUri: http://localhost:3000/sso/callback
         scopes:
             - openid
             - profile

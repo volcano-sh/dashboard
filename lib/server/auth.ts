@@ -44,6 +44,8 @@ const safeUser = (user) => ({
     username: user.username,
 });
 
+const isBcryptHash = (hash) => String(hash || "").startsWith("$2");
+
 const normalizeAuthConfig = (parsed: any = {}) => {
     const source = parsed.auth || parsed;
     const sso = source.sso || {};
@@ -99,7 +101,7 @@ export const getAuthConfig = async () => {
                 "Each local user must provide username and passwordHash.",
             );
         }
-        if (!String(user.passwordHash).startsWith("$2")) {
+        if (!isBcryptHash(user.passwordHash)) {
             throw new Error("Local user passwordHash must be a bcrypt hash.");
         }
     }
@@ -254,9 +256,13 @@ const oidcDiscovery = async () => {
     return cachedDiscovery;
 };
 
-const callbackUrl = (request) => {
+const callbackUrl = (request, config) => {
+    if (config.sso?.redirectUri) {
+        return config.sso.redirectUri;
+    }
+
     const url = new URL(request.url);
-    return `${url.origin}/api/v1/auth/sso/callback`;
+    return `${url.origin}/sso/callback`;
 };
 
 export const handleSsoStart = async (request) => {
@@ -281,7 +287,7 @@ export const handleSsoStart = async (request) => {
         redirect.searchParams.set("client_id", config.sso.clientId);
         redirect.searchParams.set("code_challenge", challenge);
         redirect.searchParams.set("code_challenge_method", "S256");
-        redirect.searchParams.set("redirect_uri", callbackUrl(request));
+        redirect.searchParams.set("redirect_uri", callbackUrl(request, config));
         redirect.searchParams.set("response_type", "code");
         redirect.searchParams.set(
             "scope",
@@ -357,7 +363,7 @@ export const handleSsoCallback = async (request) => {
                 code,
                 code_verifier: stateEntry.verifier,
                 grant_type: "authorization_code",
-                redirect_uri: callbackUrl(request),
+                redirect_uri: callbackUrl(request, config),
             }),
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             method: "POST",
