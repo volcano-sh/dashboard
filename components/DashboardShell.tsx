@@ -35,6 +35,7 @@ import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNone
 import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
+import { useAuth } from "./auth/AuthProvider";
 
 const drawerWidth = 280;
 const collapsedDrawerWidth = 60;
@@ -208,6 +209,7 @@ export default function DashboardShell({ children }) {
     const theme = useTheme();
     const overlayDrawerMatch = useMediaQuery(theme.breakpoints.down("lg"));
     const pathname = usePathname();
+    const auth = useAuth();
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(true);
     const [adminOpen, setAdminOpen] = useState(false);
@@ -222,6 +224,11 @@ export default function DashboardShell({ children }) {
             isOverlayDrawer ? false : previous === false ? false : true,
         );
     }, [isOverlayDrawer]);
+
+    const handleLogout = () => {
+        setAdminOpen(false);
+        void auth?.logout?.();
+    };
 
     const renderMenuItem = (item) => {
         const active =
@@ -487,7 +494,11 @@ export default function DashboardShell({ children }) {
                                 </Typography>
                             </Box>
                         </Box>
-                        <ListItemButton sx={{ gap: 1, minHeight: 40, px: 1.5 }}>
+                        <ListItemButton
+                            aria-label="logout"
+                            onClick={handleLogout}
+                            sx={{ gap: 1, minHeight: 40, px: 1.5 }}
+                        >
                             <LogoutOutlinedIcon {...iconProps} />
                             <Typography sx={{ fontSize: 13 }}>
                                 Logout

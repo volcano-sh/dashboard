@@ -1,6 +1,7 @@
 import Layout from "../components/Layout";
 import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { vi } from "vitest";
 
 const menuItems = [
     { text: "Overview", path: "/dashboard" },
@@ -95,6 +96,23 @@ describe("Layout", () => {
         expect(screen.getByText(/admin@example.com/i)).toBeInTheDocument();
         expect(screen.getByText(/cluster administrator/i)).toBeInTheDocument();
         expect(screen.getByText(/logout/i)).toBeInTheDocument();
+    });
+
+    it("should call logout from the admin menu", () => {
+        const onLogout = vi.fn();
+
+        render(
+            <MemoryRouter>
+                <Layout onLogout={onLogout} />
+            </MemoryRouter>,
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /toggle admin menu/i }),
+        );
+        fireEvent.click(screen.getByRole("button", { name: /logout/i }));
+
+        expect(onLogout).toHaveBeenCalledTimes(1);
     });
 
     it("should render logo", () => {

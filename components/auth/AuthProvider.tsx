@@ -34,11 +34,17 @@ export default function AuthProvider({ children }) {
         (path) => pathname === path || pathname.startsWith(`${path}/`),
     );
 
-    const logout = useCallback(() => {
-        clearStoredToken();
-        setToken("");
-        setUser(null);
-        router.replace("/login");
+    const logout = useCallback(async () => {
+        try {
+            await axios.post(`${API_BASE}/auth/logout`);
+        } catch {
+            // Local token cleanup is the source of truth for this UI logout.
+        } finally {
+            clearStoredToken();
+            setToken("");
+            setUser(null);
+            router.replace("/login");
+        }
     }, [router]);
 
     useEffect(() => {

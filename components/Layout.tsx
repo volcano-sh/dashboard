@@ -31,7 +31,7 @@ import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 
-const Layout = () => {
+const Layout = ({ onLogout = () => {} }) => {
     // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
@@ -403,6 +403,8 @@ const Layout = () => {
                                 </Box>
                             </Box>
                             <ListItemButton
+                                aria-label="logout"
+                                onClick={onLogout}
                                 sx={{
                                     gap: 1,
                                     minHeight: 40,
