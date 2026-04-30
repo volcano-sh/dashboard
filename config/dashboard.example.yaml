@@ -12,6 +12,13 @@ schedulerConfig:
     namespace: volcano-system
     name: volcano-scheduler-configmap
     key: ""
+    # Optional. Use a full metrics endpoint URL for Volcano controller metrics.
+    # Local development example:
+    #   kubectl -n volcano-system port-forward svc/volcano-controllers-service 18081:8081
+    #   ControllersMetricEndpoint: http://127.0.0.1:18081/metrics
+    # Cluster deployment example:
+    #   ControllersMetricEndpoint: http://volcano-controllers-service.volcano-system.svc:8081/metrics
+    ControllersMetricEndpoint: "http://127.0.0.1:18081/metrics"
 
 access:
     # Supported values: read-write, read-only.

@@ -105,7 +105,14 @@ export const withPodGroupSummary = (podGroup) => ({
     },
 });
 
-export const withQueueSummary = (queue) => {
+const defaultPodGroupCounts = {
+    inqueue: 0,
+    pending: 0,
+    running: 0,
+    source: "unavailable",
+};
+
+export const withQueueSummary = (queue, podGroupCounts = defaultPodGroupCounts) => {
     const pendingCpu = parseResourceNumber(
         resourceValue(queue, "pending", "cpu") ||
             resourceValue(queue, "inqueue", "cpu"),
@@ -144,6 +151,10 @@ export const withQueueSummary = (queue) => {
             },
             pending: {
                 cpu: pendingCpu,
+            },
+            podGroups: {
+                ...defaultPodGroupCounts,
+                ...podGroupCounts,
             },
             health,
         },

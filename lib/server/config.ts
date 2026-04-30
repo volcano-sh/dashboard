@@ -26,6 +26,7 @@ export const defaultDashboardConfig = {
         namespace: "volcano-system",
         name: "volcano-scheduler-configmap",
         key: "",
+        ControllersMetricEndpoint: "",
     },
 };
 

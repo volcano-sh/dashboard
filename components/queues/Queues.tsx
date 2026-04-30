@@ -138,19 +138,20 @@ const getHealth = (queue) => {
     const stats = QUEUE_RESOURCE_COLUMNS.map((resource) =>
         getQueueResourceStats(queue, resource),
     );
-    const pendingJobs = Number(getPendingJobs(queue)) || 0;
-    const runningJobsText = getRunningPodsJobs(queue);
-    const runningJobs =
-        Number(String(runningJobsText).split("/")[1]?.trim()) || 0;
+    const pendingPodGroups = getPendingPodGroups(queue);
+    const inqueuePodGroups = getInqueuePodGroups(queue);
+    const waitingPodGroups = pendingPodGroups + inqueuePodGroups;
+    const runningPodGroups = getRunningPodGroups(queue);
     const maxUsage = Math.max(
         ...stats.map((resource) => resource.usagePercent),
     );
     const overLimit = stats.some((resource) => resource.overCapability);
 
-    if (runningJobs === 0 && pendingJobs === 0) return healthStyles.idle;
-    if (pendingJobs > 0 && maxUsage < 50) return healthStyles.starving;
+    if (runningPodGroups === 0 && waitingPodGroups === 0)
+        return healthStyles.idle;
+    if (waitingPodGroups > 0 && maxUsage < 50) return healthStyles.starving;
     if (overLimit || maxUsage > 110) return healthStyles.hot;
-    if (pendingJobs > 0 && maxUsage < 70) return healthStyles.underused;
+    if (waitingPodGroups > 0 && maxUsage < 70) return healthStyles.underused;
     if (maxUsage >= 70 && maxUsage <= 110) return healthStyles.healthy;
     return maxUsage === 0 ? healthStyles.idle : healthStyles.healthy;
 };
@@ -158,25 +159,17 @@ const getHealth = (queue) => {
 const getPriority = (queue, level) =>
     queue?.spec?.priority ?? queue?.spec?.weight ?? level;
 
-const getRunningPodsJobs = (queue) => {
-    const runningPods =
-        queue?.status?.runningPods ??
-        queue?.status?.runningPodCount ??
-        queue?.status?.running ??
-        0;
-    const runningJobs =
-        queue?.status?.runningJobs ??
-        queue?.status?.runningJobCount ??
-        queue?.status?.runningApplications ??
-        0;
-    return `${runningPods} / ${runningJobs}`;
-};
+const getPodGroupMetric = (queue, key) =>
+    Number(queue?.summary?.podGroups?.[key] ?? 0);
 
-const getPendingJobs = (queue) =>
-    queue?.status?.pendingJobs ??
-    queue?.status?.pendingJobCount ??
-    queue?.status?.pendingApplications ??
-    0;
+const getRunningPodGroups = (queue) => getPodGroupMetric(queue, "running");
+
+const getPendingPodGroups = (queue) => getPodGroupMetric(queue, "pending");
+
+const getInqueuePodGroups = (queue) => getPodGroupMetric(queue, "inqueue");
+
+const getPendingInqueuePodGroups = (queue) =>
+    `${getPendingPodGroups(queue)} / ${getInqueuePodGroups(queue)}`;
 
 const getQueueSearchBlob = (queue) => {
     const labels = Object.entries(queue?.metadata?.labels || {})
@@ -259,6 +252,15 @@ const StatusBadge = ({ state }) => {
         />
     );
 };
+
+const HeaderWithTooltip = ({ label, tooltip }) => (
+    <Box sx={{ alignItems: "center", display: "inline-flex", gap: 0.5 }}>
+        <span>{label}</span>
+        <Tooltip title={tooltip}>
+            <InfoOutlinedIcon sx={{ color: "text.disabled", fontSize: 14 }} />
+        </Tooltip>
+    </Box>
+);
 
 const QueueTreeCell = ({
     expanded,
@@ -451,9 +453,8 @@ const BasicInfoCard = ({ queueMap, selectedQueue }) => {
 const HealthCard = ({ selectedQueue }) => {
     const health = getHealth(selectedQueue);
     const { stats, usagePercent } = getQueueUsageSummary(selectedQueue);
-    const pendingJobs = getPendingJobs(selectedQueue);
-    const runningJobs =
-        String(getRunningPodsJobs(selectedQueue)).split("/")[1]?.trim() || 0;
+    const pendingInqueuePodGroups = getPendingInqueuePodGroups(selectedQueue);
+    const runningPodGroups = getRunningPodGroups(selectedQueue);
 
     return (
         <Paper sx={detailCardSx}>
@@ -535,8 +536,8 @@ const HealthCard = ({ selectedQueue }) => {
                     </Box>
                 ))}
                 {[
-                    ["Pending Jobs", pendingJobs],
-                    ["Running Jobs", runningJobs],
+                    ["Pending / Inqueue PodGroups", pendingInqueuePodGroups],
+                    ["Running PodGroups", runningPodGroups],
                 ].map(([label, value]) => (
                     <Box
                         key={label}
@@ -666,10 +667,10 @@ const getQueueEvents = (queue) => {
             time: createdAt,
             type: "Normal",
         },
-        getPendingJobs(queue)
+        getPendingPodGroups(queue) + getInqueuePodGroups(queue)
             ? {
                   description:
-                      "Insufficient resources, some workloads are waiting pending",
+                      "Some PodGroups are pending or inqueue",
                   time: createdAt,
                   type: "Warning",
               }
@@ -870,13 +871,13 @@ const QueueSummaryCards = ({ queues, totalQueues }) => {
         {
             color: "#f97316",
             label: "Starving Queues",
-            meta: "Pending jobs but underused",
+            meta: "Pending PodGroups but underused",
             value: summary.starving,
         },
         {
             color: "#69707a",
             label: "Idle Queues",
-            meta: "No running or pending jobs",
+            meta: "No running or pending PodGroups",
             value: summary.idle,
         },
         {
@@ -1063,10 +1064,10 @@ const QueueLegends = () => (
             >
                 {[
                     ["#cf2727", "Hot: used / deserved > 110%"],
-                    ["#d86b00", "Starving: pending jobs and usage < 50%"],
-                    ["#a16207", "Underused: pending jobs and usage < 70%"],
+                    ["#d86b00", "Starving: pending PodGroups and usage < 50%"],
+                    ["#a16207", "Underused: pending PodGroups and usage < 70%"],
                     ["#12833f", "Healthy: usage between 70% and 110%"],
-                    ["#69707a", "Idle: no running or pending jobs"],
+                    ["#69707a", "Idle: no running or pending PodGroups"],
                     ["#ef4444", "Invalid: invalid configuration"],
                 ].map(([color, label]) => (
                     <Box
@@ -1234,10 +1235,16 @@ const QueueHierarchyView = ({
                                     </Box>
                                 </TableCell>
                                 <TableCell sx={{ minWidth: 140 }}>
-                                    Running Pods / Jobs
+                                    <HeaderWithTooltip
+                                        label="Running"
+                                        tooltip="Running PodGroups from Volcano controller metrics."
+                                    />
                                 </TableCell>
                                 <TableCell sx={{ minWidth: 105 }}>
-                                    Pending Jobs
+                                    <HeaderWithTooltip
+                                        label="Pending / Inqueue"
+                                        tooltip="Pending/Inqueue PodGroups from Volcano controller metrics."
+                                    />
                                 </TableCell>
                                 <TableCell sx={{ minWidth: 110 }}>
                                     Health
@@ -1309,10 +1316,12 @@ const QueueHierarchyView = ({
                                                 />
                                             </TableCell>
                                             <TableCell sx={tableNumericSx}>
-                                                {getRunningPodsJobs(node)}
+                                                {getRunningPodGroups(node)}
                                             </TableCell>
                                             <TableCell sx={tableNumericSx}>
-                                                {getPendingJobs(node)}
+                                                {getPendingInqueuePodGroups(
+                                                    node,
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 <HealthBadge health={health} />

@@ -21,6 +21,10 @@ import {
     withQueueSummary,
 } from "./summary-mappers";
 import { schedulerConfigJson, schedulerConfigYaml } from "./scheduler-config";
+import {
+    fetchQueuePodGroupMetrics,
+    getQueuePodGroupCounts,
+} from "./queue-metrics";
 
 const getApis = () => {
     const { k8sApi, k8sCoreApi } = getKubernetesClients();
@@ -700,7 +704,19 @@ export async function listQueues(request) {
                     queue.spec?.parent === queueFilter,
             );
         }
-        return listResponse(items.map(withQueueSummary), options);
+        const queueMetrics = await fetchQueuePodGroupMetrics();
+        return listResponse(
+            items.map((queue) =>
+                withQueueSummary(
+                    queue,
+                    getQueuePodGroupCounts(
+                        queueMetrics.counts,
+                        queue.metadata?.name,
+                    ),
+                ),
+            ),
+            options,
+        );
     } catch (error) {
         return apiError(error, "Failed to fetch queues");
     }

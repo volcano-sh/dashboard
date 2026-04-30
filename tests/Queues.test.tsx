@@ -31,7 +31,14 @@ const queueResponse = {
                 status: {
                     state: "Open",
                     allocated: { cpu: "120", memory: "256Gi" },
-                    pending: { cpu: "30", memory: "64Gi" },
+                },
+                summary: {
+                    podGroups: {
+                        inqueue: 1,
+                        pending: 0,
+                        running: 22,
+                        source: "controller-metrics",
+                    },
                 },
             },
             {
@@ -48,6 +55,14 @@ const queueResponse = {
                 status: {
                     state: "Open",
                     allocated: { cpu: "120", memory: "256Gi" },
+                },
+                summary: {
+                    podGroups: {
+                        inqueue: 1,
+                        pending: 0,
+                        running: 22,
+                        source: "controller-metrics",
+                    },
                 },
             },
         ],
@@ -102,6 +117,29 @@ describe("Queues", () => {
             expect(screen.getByText(/queue: prod/i)).toBeInTheDocument();
         });
         expect(screen.getByText("Create Queue")).toBeInTheDocument();
+    });
+
+    it("shows queue PodGroup status counts with source tooltips", async () => {
+        renderQueues();
+
+        await waitFor(() => {
+            expect(screen.getByText("prod")).toBeInTheDocument();
+        });
+
+        expect(screen.getByText("Running")).toBeInTheDocument();
+        expect(screen.getByText("Pending / Inqueue")).toBeInTheDocument();
+        expect(
+            screen.getByLabelText(
+                "Running PodGroups from Volcano controller metrics.",
+            ),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByLabelText(
+                "Pending/Inqueue PodGroups from Volcano controller metrics.",
+            ),
+        ).toBeInTheDocument();
+        expect(screen.getAllByText("22").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("0 / 1").length).toBeGreaterThan(0);
     });
 
     it("hides queue write actions for read-only users", async () => {

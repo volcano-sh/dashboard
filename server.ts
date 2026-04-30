@@ -117,6 +117,8 @@ const summarizeDashboardConfig = (config) => ({
               : 0,
     },
     schedulerConfig: {
+        ControllersMetricEndpoint:
+            config.schedulerConfig?.ControllersMetricEndpoint || "",
         key: config.schedulerConfig?.key || "",
         name: config.schedulerConfig?.name || "",
         namespace: config.schedulerConfig?.namespace || "",
