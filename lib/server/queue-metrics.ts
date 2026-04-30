@@ -21,6 +21,17 @@ const QUEUE_SCHEDULER_METRICS = {
     volcano_queue_weight: ["scheduling", "weight"],
 };
 
+const SCHEDULER_LATENCY_METRIC =
+    "volcano_e2e_scheduling_latency_milliseconds";
+const JOB_SCHEDULING_LATENCY_METRIC =
+    "volcano_e2e_job_scheduling_latency_milliseconds";
+const TASK_SCHEDULING_LATENCY_METRIC =
+    "volcano_task_scheduling_latency_milliseconds";
+const ACTION_SCHEDULING_LATENCY_METRIC =
+    "volcano_action_scheduling_latency_milliseconds";
+const PLUGIN_SCHEDULING_LATENCY_METRIC =
+    "volcano_plugin_scheduling_latency_milliseconds";
+
 const emptyPodGroupCounts = (source = "unavailable") => ({
     inqueue: 0,
     pending: 0,
@@ -51,8 +62,8 @@ const emptySchedulerMetrics = (source = "unavailable") => ({
     source,
 });
 
-const parseLabels = (rawLabels) => {
-    const labels = {};
+const parseLabels = (rawLabels): Record<string, string> => {
+    const labels: Record<string, string> = {};
     const labelPattern = /([a-zA-Z_][a-zA-Z0-9_]*)="((?:\\.|[^"\\])*)"/g;
     let match;
 
@@ -65,6 +76,9 @@ const parseLabels = (rawLabels) => {
 
 const metricLinePattern =
     /^([a-zA-Z_:][a-zA-Z0-9_:]*)\{([^}]*)\}\s+(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?:\s|$)/;
+
+const plainMetricLinePattern =
+    /^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:\{([^}]*)\})?\s+(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(?:\s|$)/;
 
 export const parseQueuePodGroupMetrics = (metricsText) => {
     const counts = new Map();
@@ -156,6 +170,262 @@ export const parseQueueSchedulerMetrics = (metricsText) => {
     return metrics;
 };
 
+export const emptySchedulerMetricsSummary = (source = "unavailable") => ({
+    scheduling: {
+        actionLatency: [],
+        avgLatencyMs: null,
+        latency: {
+            e2eAvgMs: null,
+            jobAvgMs: null,
+            taskAvgMs: null,
+        },
+        latencyBuckets: {
+            e2e: [],
+        },
+        pluginLatency: [],
+        preemption: {
+            attempts: 0,
+            victims: 0,
+        },
+        samples: 0,
+        source,
+        unschedulable: {
+            jobs: 0,
+            tasks: 0,
+            topTasks: [],
+        },
+    },
+});
+
+const average = ({ count, sum }) => (count ? sum / count : null);
+
+const parseBucketUpperBound = (le) => {
+    if (le === "+Inf") return null;
+    const parsed = Number(le);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const buildBucketRows = (buckets, totalCount) => {
+    const sorted = [...buckets.entries()].sort(([left], [right]) => {
+        const leftBound = parseBucketUpperBound(left);
+        const rightBound = parseBucketUpperBound(right);
+        if (leftBound === null && rightBound === null) return 0;
+        if (leftBound === null) return 1;
+        if (rightBound === null) return -1;
+        return leftBound - rightBound;
+    });
+    const total =
+        totalCount || sorted[sorted.length - 1]?.[1]?.cumulativeCount || 0;
+    let previous = 0;
+
+    return sorted.map(([le, item]) => {
+        const bucketCount = Math.max(item.cumulativeCount - previous, 0);
+        previous = item.cumulativeCount;
+
+        return {
+            bucketCount,
+            cumulativeCount: item.cumulativeCount,
+            le,
+            percent: total ? (bucketCount / total) * 100 : 0,
+            upperBoundMs: parseBucketUpperBound(le),
+        };
+    });
+};
+
+const sortedTop = (items, valueKey = "avgMs", limit = 5) =>
+    [...items]
+        .filter(
+            (item) =>
+                item[valueKey] !== null &&
+                item[valueKey] !== undefined &&
+                Number.isFinite(Number(item[valueKey])),
+        )
+        .sort((left, right) => Number(right[valueKey]) - Number(left[valueKey]))
+        .slice(0, limit);
+
+export const parseSchedulerMetricsSummary = (metricsText) => {
+    const e2e = { count: 0, sum: 0 };
+    const job = { count: 0, sum: 0 };
+    const task = { count: 0, sum: 0 };
+    const actionLatency = new Map();
+    const e2eBuckets = new Map();
+    const pluginLatency = new Map();
+    let unschedulableJobs = 0;
+    const unschedulableTasks = new Map();
+    let preemptionAttempts = 0;
+    let preemptionVictims = 0;
+
+    for (const line of String(metricsText || "").split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) continue;
+
+        const match = trimmed.match(plainMetricLinePattern);
+        if (!match) continue;
+
+        const [, metricName, rawLabels = "", rawValue] = match;
+        const value = Number(rawValue);
+        if (!Number.isFinite(value)) continue;
+        const labels = parseLabels(rawLabels);
+
+        const assignHistogram = (baseMetric, target) => {
+            if (metricName === `${baseMetric}_sum`) {
+                target.sum = value;
+                return true;
+            }
+            if (metricName === `${baseMetric}_count`) {
+                target.count = value;
+                return true;
+            }
+            return false;
+        };
+
+        if (assignHistogram(SCHEDULER_LATENCY_METRIC, e2e)) continue;
+        if (assignHistogram(JOB_SCHEDULING_LATENCY_METRIC, job)) continue;
+        if (assignHistogram(TASK_SCHEDULING_LATENCY_METRIC, task)) continue;
+
+        if (metricName === `${SCHEDULER_LATENCY_METRIC}_bucket`) {
+            const le = labels.le;
+            if (!le) continue;
+            e2eBuckets.set(le, {
+                cumulativeCount: value,
+                le,
+            });
+            continue;
+        }
+
+        if (
+            metricName === `${ACTION_SCHEDULING_LATENCY_METRIC}_sum` ||
+            metricName === `${ACTION_SCHEDULING_LATENCY_METRIC}_count`
+        ) {
+            const action = labels.action;
+            if (!action) continue;
+            const current = actionLatency.get(action) || {
+                action,
+                count: 0,
+                sum: 0,
+            };
+            if (metricName.endsWith("_sum")) current.sum = value;
+            else current.count = value;
+            actionLatency.set(action, current);
+            continue;
+        }
+
+        if (
+            metricName === `${PLUGIN_SCHEDULING_LATENCY_METRIC}_sum` ||
+            metricName === `${PLUGIN_SCHEDULING_LATENCY_METRIC}_count`
+        ) {
+            const plugin = labels.plugin;
+            const onSession = labels.OnSession;
+            if (!plugin || !onSession) continue;
+            const key = `${plugin}\0${onSession}`;
+            const current = pluginLatency.get(key) || {
+                count: 0,
+                onSession,
+                plugin,
+                sum: 0,
+            };
+            if (metricName.endsWith("_sum")) current.sum = value;
+            else current.count = value;
+            pluginLatency.set(key, current);
+            continue;
+        }
+
+        if (metricName === "volcano_unschedule_job_count") {
+            unschedulableJobs = value;
+            continue;
+        }
+
+        if (metricName === "volcano_unschedule_task_count") {
+            const jobId = labels.job_id;
+            if (!jobId) continue;
+            unschedulableTasks.set(jobId, value);
+            continue;
+        }
+
+        if (metricName === "volcano_pod_preemption_victims") {
+            preemptionVictims = value;
+            continue;
+        }
+
+        if (metricName === "volcano_total_preemption_attempts") {
+            preemptionAttempts = value;
+        }
+    }
+
+    const e2eAvgMs = average(e2e);
+    const jobAvgMs = average(job);
+    const taskAvgMs = average(task);
+    const latencyBuckets = {
+        e2e: buildBucketRows(e2eBuckets, e2e.count),
+    };
+    const actionRows = sortedTop(
+        [...actionLatency.values()].map((item) => ({
+            action: item.action,
+            avgMs: average(item),
+            count: item.count,
+        })),
+    );
+    const pluginRows = sortedTop(
+        [...pluginLatency.values()].map((item) => ({
+            avgMs: average(item),
+            count: item.count,
+            onSession: item.onSession,
+            plugin: item.plugin,
+        })),
+    );
+    const topTasks = sortedTop(
+        [...unschedulableTasks.entries()].map(([jobId, tasks]) => ({
+            jobId,
+            tasks,
+        })),
+        "tasks",
+    );
+    const tasks = [...unschedulableTasks.values()].reduce(
+        (sum, value) => sum + value,
+        0,
+    );
+
+    if (
+        e2eAvgMs === null &&
+        jobAvgMs === null &&
+        taskAvgMs === null &&
+        !latencyBuckets.e2e.length &&
+        !actionRows.length &&
+        !pluginRows.length &&
+        !unschedulableJobs &&
+        !tasks &&
+        !preemptionVictims &&
+        !preemptionAttempts
+    ) {
+        return emptySchedulerMetricsSummary();
+    }
+
+    return {
+        scheduling: {
+            actionLatency: actionRows,
+            avgLatencyMs: e2eAvgMs,
+            latency: {
+                e2eAvgMs,
+                jobAvgMs,
+                taskAvgMs,
+            },
+            latencyBuckets,
+            pluginLatency: pluginRows,
+            preemption: {
+                attempts: preemptionAttempts,
+                victims: preemptionVictims,
+            },
+            samples: e2e.count,
+            source: "scheduler-metrics",
+            unschedulable: {
+                jobs: unschedulableJobs,
+                tasks,
+                topTasks,
+            },
+        },
+    };
+};
+
 export const getQueuePodGroupCounts = (counts, queueName) => {
     const value = counts?.get?.(queueName);
     return value || emptyPodGroupCounts();
@@ -239,5 +509,28 @@ export const fetchQueueSchedulerMetrics = async () => {
             metrics: new Map(),
             source: "unavailable",
         };
+    }
+};
+
+export const fetchSchedulerMetricsSummary = async () => {
+    const config = await getDashboardConfig();
+    const endpoint = config.schedulerConfig?.SchedulerMetricEndpoint;
+
+    if (!endpoint) return emptySchedulerMetricsSummary();
+
+    try {
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+            throw new Error(`Metrics endpoint returned ${response.status}`);
+        }
+
+        return parseSchedulerMetricsSummary(await response.text());
+    } catch (error) {
+        console.warn(
+            `[scheduler-metrics] failed to fetch scheduler metrics: ${
+                error?.message || error
+            }`,
+        );
+        return emptySchedulerMetricsSummary();
     }
 };

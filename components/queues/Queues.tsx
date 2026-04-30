@@ -1490,14 +1490,6 @@ const Queues = () => {
         setPagination((previous) => ({ ...previous, page: 1 }));
     }, []);
 
-    const handleResetFilters = useCallback(() => {
-        setSearchText("");
-        setFilters({
-            queue: "All",
-        });
-        setPagination((previous) => ({ ...previous, page: 1 }));
-    }, []);
-
     const handleChangePage = (event, newPage) => {
         setPagination((previous) => ({ ...previous, page: newPage }));
     };
@@ -1603,13 +1595,6 @@ const Queues = () => {
                     <SchedulingTableFilters fields={filterFields} />
                 </Box>
                 <Box sx={{ alignItems: "center", display: "flex", gap: 1.5 }}>
-                    <Button
-                        onClick={handleResetFilters}
-                        sx={{ textTransform: "none" }}
-                        variant="outlined"
-                    >
-                        Reset
-                    </Button>
                     <Button
                         disabled={loading}
                         onClick={fetchQueues}

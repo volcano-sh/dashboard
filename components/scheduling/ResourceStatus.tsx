@@ -16,7 +16,7 @@ export const getUsageToneColor = (tone) => {
     return "#12833f";
 };
 
-const ResourceTrack = ({ stats }) => {
+const ResourceTrack = ({ stats, height = 6 }) => {
     const blueLeft = Math.min(stats.guaranteePercent, stats.deservedPercent);
     const blueWidth = Math.max(stats.deservedPercent - blueLeft, 0);
 
@@ -25,7 +25,7 @@ const ResourceTrack = ({ stats }) => {
             sx={{
                 bgcolor: RESOURCE_STATUS_COLORS.capability,
                 borderRadius: 999,
-                height: 6,
+                height,
                 overflow: "visible",
                 position: "relative",
             }}
@@ -53,17 +53,32 @@ const ResourceTrack = ({ stats }) => {
             />
             <Box
                 sx={{
-                    borderLeft: "5px solid transparent",
-                    borderRight: "5px solid transparent",
-                    borderTop: `8px solid ${RESOURCE_STATUS_COLORS.used}`,
-                    left: `calc(${stats.usedPercent}% - 5px)`,
+                    borderLeft: `${Math.max(height - 1, 4)}px solid transparent`,
+                    borderRight: `${Math.max(height - 1, 4)}px solid transparent`,
+                    borderTop: `${height + 2}px solid ${RESOURCE_STATUS_COLORS.used}`,
+                    left: `calc(${stats.usedPercent}% - ${Math.max(height - 1, 4)}px)`,
                     position: "absolute",
-                    top: -9,
+                    top: -(height + 3),
                 }}
             />
         </Box>
     );
 };
+
+const getResourceStatusTooltip = ({ resource, stats, valueText }) =>
+    [
+        `${resource.label}`,
+        `Requested: ${stats.requestedLabel || stats.guaranteeLabel}`,
+        `Allocated: ${stats.usedLabel}`,
+        `Deserved: ${stats.deservedLabel}`,
+        `Capability: ${stats.capabilityLabel}`,
+        `Allocated / deserved: ${stats.usageLabel}`,
+        `Values: ${valueText}`,
+        "Source: /api/v1/queues summary.schedulerMetrics",
+        stats.overCapability ? "Allocated exceeds capability" : null,
+    ]
+        .filter(Boolean)
+        .join("\n");
 
 export const ResourceStatusLegend = () => (
     <Box
@@ -115,18 +130,7 @@ export const ResourceStatusLegend = () => (
 );
 
 export const ResourceStatusBar = ({ resource, stats, valueText }) => {
-    const tooltip = [
-        `${resource.label}`,
-        `Requested: ${stats.requestedLabel || stats.guaranteeLabel}`,
-        `Allocated: ${stats.usedLabel}`,
-        `Deserved: ${stats.deservedLabel}`,
-        `Capability: ${stats.capabilityLabel}`,
-        `Allocated / deserved: ${stats.usageLabel}`,
-        `Values: ${valueText}`,
-        stats.overCapability ? "Allocated exceeds capability" : null,
-    ]
-        .filter(Boolean)
-        .join("\n");
+    const tooltip = getResourceStatusTooltip({ resource, stats, valueText });
 
     const bar = (
         <Box
@@ -173,6 +177,63 @@ export const ResourceStatusBars = ({ resources }) => (
     <Box sx={{ display: "grid", gap: 0.65, minWidth: 320, py: 0.25 }}>
         {resources.map((item) => (
             <ResourceStatusBar
+                key={item.resource.key}
+                resource={item.resource}
+                stats={item.stats}
+                valueText={item.valueText}
+            />
+        ))}
+    </Box>
+);
+
+export const ResourceStatusCompactBar = ({ resource, stats, valueText }) => {
+    const tooltip = getResourceStatusTooltip({ resource, stats, valueText });
+
+    const bar = (
+        <Box
+            sx={{
+                alignItems: "center",
+                display: "grid",
+                gap: 0.75,
+                gridTemplateColumns: "54px minmax(90px, 1fr) 54px",
+                minHeight: 18,
+                width: "100%",
+            }}
+        >
+            <Typography sx={{ color: "text.secondary", fontSize: 11.5 }}>
+                {resource.label}
+            </Typography>
+            <ResourceTrack stats={stats} height={5} />
+            <Typography
+                sx={{
+                    color: getUsageToneColor(stats.usageTone),
+                    fontFamily:
+                        '"SFMono-Regular", "Roboto Mono", Consolas, monospace',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                }}
+            >
+                {stats.usageLabel}
+            </Typography>
+        </Box>
+    );
+
+    return (
+        <Tooltip
+            title={<Box sx={{ whiteSpace: "pre-line" }}>{tooltip}</Box>}
+            placement="top"
+        >
+            {bar}
+        </Tooltip>
+    );
+};
+
+export const ResourceStatusCompactBars = ({ resources }) => (
+    <Box sx={{ display: "grid", gap: 0.7, minWidth: 250, py: 0.15 }}>
+        {resources.map((item) => (
+            <ResourceStatusCompactBar
                 key={item.resource.key}
                 resource={item.resource}
                 stats={item.stats}

@@ -245,6 +245,11 @@ export const fetchSchedulerConfigYaml = async () => {
     return response.data;
 };
 
+export const fetchSchedulerMetrics = async () => {
+    const response = await axios.get(`${API_BASE}/scheduler/metrics`);
+    return response.data;
+};
+
 export const fetchClusterInfo = async () => {
     const response = await axios.get(`${API_BASE}/cluster-info`);
     return response.data;
