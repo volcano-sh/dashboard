@@ -30,6 +30,37 @@ const getApis = () => {
     return { k8sApi, k8sCoreApi };
 };
 
+const validateManifestIdentity = (
+    manifest,
+    { name, namespace = null, requireNamespace = false },
+) => {
+    if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
+        return json({ error: "Invalid Kubernetes manifest" }, 400);
+    }
+
+    if (manifest?.metadata?.name !== name) {
+        return json(
+            {
+                error: "Manifest name mismatch",
+                message: `metadata.name must match path name "${name}"`,
+            },
+            400,
+        );
+    }
+
+    if (requireNamespace && manifest?.metadata?.namespace !== namespace) {
+        return json(
+            {
+                error: "Manifest namespace mismatch",
+                message: `metadata.namespace must match path namespace "${namespace}"`,
+            },
+            400,
+        );
+    }
+
+    return null;
+};
+
 const normalizeKubernetesEvents = (items) =>
     items
         .map((event) => ({
@@ -256,6 +287,35 @@ export async function deleteJob(namespace, name) {
     }
 }
 
+export async function updateJob(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const manifest = await request.json();
+        const validationError = validateManifestIdentity(manifest, {
+            name,
+            namespace,
+            requireNamespace: true,
+        });
+        if (validationError) return validationError;
+
+        const response = await k8sApi.replaceNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+            body: manifest,
+        });
+
+        return json({
+            message: "Job replaced successfully",
+            data: response?.body || response,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to replace job");
+    }
+}
+
 export async function listCronJobs(request) {
     try {
         const { k8sApi } = getApis();
@@ -393,6 +453,35 @@ export async function deleteCronJob(namespace, name) {
     }
 }
 
+export async function updateCronJob(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const manifest = await request.json();
+        const validationError = validateManifestIdentity(manifest, {
+            name,
+            namespace,
+            requireNamespace: true,
+        });
+        if (validationError) return validationError;
+
+        const response = await k8sApi.replaceNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "cronjobs",
+            name,
+            body: manifest,
+        });
+
+        return json({
+            message: "CronJob replaced successfully",
+            data: response?.body || response,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to replace cronjob");
+    }
+}
+
 export async function listPodGroups(request) {
     try {
         const { k8sApi } = getApis();
@@ -525,6 +614,13 @@ export async function updatePodGroup(request, namespace, name) {
     try {
         const { k8sApi } = getApis();
         const body = await request.json();
+        const validationError = validateManifestIdentity(body, {
+            name,
+            namespace,
+            requireNamespace: true,
+        });
+        if (validationError) return validationError;
+
         const response = await k8sApi.replaceNamespacedCustomObject({
             group: "scheduling.volcano.sh",
             version: "v1beta1",
@@ -638,6 +734,33 @@ export async function getQueueYaml(name) {
 }
 
 export async function updateQueue(request, name) {
+    try {
+        const { k8sApi } = getApis();
+        const updatedBody = await request.json();
+        const validationError = validateManifestIdentity(updatedBody, {
+            name,
+            requireNamespace: false,
+        });
+        if (validationError) return validationError;
+
+        const response = await k8sApi.replaceClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+            body: updatedBody,
+        });
+
+        return json({
+            message: `Successfully replaced queue ${name}`,
+            data: response?.body || response,
+        });
+    } catch (error) {
+        return apiError(error, `Failed to replace queue ${name}`);
+    }
+}
+
+export async function patchQueue(request, name) {
     try {
         const { k8sApi } = getApis();
         const updatedBody = await request.json();
@@ -954,6 +1077,7 @@ export async function handleApiRequest(request, pathSegments) {
         const [namespace, name] = rest;
         if (method === "GET") return getJob(namespace, name);
         if (method === "PATCH") return patchJob(request, namespace, name);
+        if (method === "PUT") return updateJob(request, namespace, name);
         if (method === "DELETE") return deleteJob(namespace, name);
     }
     if (resource === "jobs" && rest.length === 3 && rest[2] === "yaml") {
@@ -985,7 +1109,7 @@ export async function handleApiRequest(request, pathSegments) {
     if (resource === "queues" && rest.length === 1) {
         if (method === "GET") return getQueue(rest[0]);
         if (method === "PUT") return updateQueue(request, rest[0]);
-        if (method === "PATCH") return updateQueue(request, rest[0]);
+        if (method === "PATCH") return patchQueue(request, rest[0]);
         if (method === "DELETE") return deleteQueue(rest[0]);
     }
     if (resource === "queues" && rest.length === 2 && rest[1] === "yaml") {
@@ -996,6 +1120,23 @@ export async function handleApiRequest(request, pathSegments) {
     }
     if (resource === "namespaces" && method === "GET") {
         return listNamespaces(request);
+    }
+
+    if (resource === "cronjobs" && rest.length === 0) {
+        if (method === "GET") return listCronJobs(request);
+    }
+    if (resource === "cronjobs" && rest.length === 2) {
+        if (method === "GET") return getCronJob(rest[0], rest[1]);
+        if (method === "PUT") return updateCronJob(request, rest[0], rest[1]);
+        if (method === "DELETE") return deleteCronJob(rest[0], rest[1]);
+    }
+    if (
+        resource === "cronjobs" &&
+        rest.length === 3 &&
+        rest[2] === "yaml" &&
+        method === "GET"
+    ) {
+        return getCronJobYaml(rest[0], rest[1]);
     }
 
     if (resource === "pods" && rest.length === 0) {

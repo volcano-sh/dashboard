@@ -29,6 +29,17 @@ export const fetchJob = async (namespace, name) => {
     return response.data;
 };
 
+export const updateJobYaml = async (namespace, name, manifest) => {
+    const response = await axios.put(
+        `${API_BASE}/jobs/${namespace}/${name}`,
+        manifest,
+        {
+            headers: { "Content-Type": "application/json" },
+        },
+    );
+    return response.data;
+};
+
 export const fetchJobEvents = async (namespace, name) => {
     const response = await axios.get(
         `${API_BASE}/jobs/${namespace}/${name}/events`,
@@ -53,6 +64,17 @@ export const fetchCronJobYaml = async (namespace, name) => {
         `${API_BASE}/cronjobs/${namespace}/${name}/yaml`,
         {
             responseType: "text",
+        },
+    );
+    return response.data;
+};
+
+export const updateCronJobYaml = async (namespace, name, manifest) => {
+    const response = await axios.put(
+        `${API_BASE}/cronjobs/${namespace}/${name}`,
+        manifest,
+        {
+            headers: { "Content-Type": "application/json" },
         },
     );
     return response.data;
@@ -105,6 +127,17 @@ export const updatePodGroup = async (namespace, name, patch) => {
     const response = await axios.patch(
         `${API_BASE}/podgroups/${namespace}/${name}`,
         patch,
+        {
+            headers: { "Content-Type": "application/json" },
+        },
+    );
+    return response.data;
+};
+
+export const updatePodGroupYaml = async (namespace, name, manifest) => {
+    const response = await axios.put(
+        `${API_BASE}/podgroups/${namespace}/${name}`,
+        manifest,
         {
             headers: { "Content-Type": "application/json" },
         },
@@ -177,6 +210,13 @@ export const fetchQueueList = async (params) => {
 export const fetchQueueYaml = async (name) => {
     const response = await axios.get(`${API_BASE}/queues/${name}/yaml`, {
         responseType: "text",
+    });
+    return response.data;
+};
+
+export const updateQueueYaml = async (name, manifest) => {
+    const response = await axios.put(`${API_BASE}/queues/${name}`, manifest, {
+        headers: { "Content-Type": "application/json" },
     });
     return response.data;
 };

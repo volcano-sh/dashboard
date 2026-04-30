@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Alert,
     Box,
@@ -42,6 +42,7 @@ import {
     fetchNamespaces,
     fetchQueues,
     getApiErrorMessage,
+    updateCronJobYaml,
 } from "../../lib/client/dashboard-api";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
@@ -168,6 +169,7 @@ const CronJobDetailsDrawer = ({
     selectedTab,
     setSelectedTab,
 }) => {
+    const queryClient = useQueryClient();
     const namespace = getNamespace(cronJob);
     const name = getName(cronJob);
     const enabled = Boolean(namespace && name);
@@ -238,7 +240,35 @@ const CronJobDetailsDrawer = ({
                             </Alert>
                         );
                     }
-                    return <YamlViewer data={yamlQuery.data || ""} fill />;
+                    return (
+                        <YamlViewer
+                            data={yamlQuery.data || ""}
+                            editable
+                            fill
+                            onSubmit={async (manifest) => {
+                                await updateCronJobYaml(
+                                    namespace,
+                                    name,
+                                    manifest,
+                                );
+                                await Promise.all([
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["cronjobs"],
+                                    }),
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["cronjob", namespace, name],
+                                    }),
+                                    queryClient.invalidateQueries({
+                                        queryKey: [
+                                            "cronjob-yaml",
+                                            namespace,
+                                            name,
+                                        ],
+                                    }),
+                                ]);
+                            }}
+                        />
+                    );
                 }
                 if (tab === "events") {
                     if (eventsQuery.isLoading) return <LinearProgress />;

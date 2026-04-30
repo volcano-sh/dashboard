@@ -2,6 +2,7 @@ import {
     deleteJob,
     getJob,
     patchJob,
+    updateJob,
 } from "../../../../../../lib/server/volcano-api";
 
 export const runtime = "nodejs";
@@ -16,6 +17,11 @@ export async function GET(request, context) {
 export async function PATCH(request, context) {
     const { namespace, name } = await getParams(context);
     return patchJob(request, namespace, name);
+}
+
+export async function PUT(request, context) {
+    const { namespace, name } = await getParams(context);
+    return updateJob(request, namespace, name);
 }
 
 export async function DELETE(request, context) {

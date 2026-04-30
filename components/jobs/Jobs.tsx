@@ -26,6 +26,7 @@ import {
     fetchNamespaces,
     fetchQueues,
     getApiErrorMessage,
+    updateJobYaml,
 } from "../../lib/client/dashboard-api";
 import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
@@ -132,6 +133,7 @@ const JobOverview = ({ job }) => (
 );
 
 const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
+    const queryClient = useQueryClient();
     const namespace = job?.metadata?.namespace;
     const name = job?.metadata?.name;
     const {
@@ -210,11 +212,26 @@ const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
                     return (
                         <YamlViewer
                             data={yamlQuery.data}
+                            editable
                             error={yamlQuery.error}
                             fill
                             isLoading={
                                 yamlQuery.isLoading || yamlQuery.isFetching
                             }
+                            onSubmit={async (manifest) => {
+                                await updateJobYaml(namespace, name, manifest);
+                                await Promise.all([
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["jobs"],
+                                    }),
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["job", namespace, name],
+                                    }),
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["jobYaml", namespace, name],
+                                    }),
+                                ]);
+                            }}
                         />
                     );
                 }

@@ -16,7 +16,7 @@ import AddIcon from "@mui/icons-material/Add";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     fetchQueues,
     fetchNamespaces,
@@ -24,6 +24,7 @@ import {
     fetchPodGroupYaml,
     fetchPodGroups,
     getApiErrorMessage,
+    updatePodGroupYaml,
 } from "../../lib/client/dashboard-api";
 import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
@@ -120,6 +121,7 @@ const PodGroupDetailsDrawer = ({
     selectedTab,
     setSelectedTab,
 }) => {
+    const queryClient = useQueryClient();
     const namespace = podGroup?.metadata?.namespace;
     const name = podGroup?.metadata?.name;
     const {
@@ -195,11 +197,34 @@ const PodGroupDetailsDrawer = ({
                     return (
                         <YamlViewer
                             data={yamlQuery.data}
+                            editable
                             error={yamlQuery.error}
                             fill
                             isLoading={
                                 yamlQuery.isLoading || yamlQuery.isFetching
                             }
+                            onSubmit={async (manifest) => {
+                                await updatePodGroupYaml(
+                                    namespace,
+                                    name,
+                                    manifest,
+                                );
+                                await Promise.all([
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["podgroups"],
+                                    }),
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["podgroup", namespace, name],
+                                    }),
+                                    queryClient.invalidateQueries({
+                                        queryKey: [
+                                            "podGroupYaml",
+                                            namespace,
+                                            name,
+                                        ],
+                                    }),
+                                ]);
+                            }}
                         />
                     );
                 }

@@ -1,6 +1,7 @@
 import {
     deleteQueue,
     getQueue,
+    patchQueue,
     updateQueue,
 } from "../../../../../lib/server/volcano-api";
 
@@ -18,7 +19,7 @@ export async function PUT(request, context) {
 
 export async function PATCH(request, context) {
     const { name } = await context.params;
-    return updateQueue(request, name);
+    return patchQueue(request, name);
 }
 
 export async function DELETE(request, context) {

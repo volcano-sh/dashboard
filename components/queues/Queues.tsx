@@ -20,7 +20,6 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
@@ -31,7 +30,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-import { API_BASE, fetchQueueYaml } from "../../lib/client/dashboard-api";
+import {
+    API_BASE,
+    fetchQueueYaml,
+    updateQueueYaml,
+} from "../../lib/client/dashboard-api";
 import CreateDialog from "../CreateDialog";
 import QueuePagination from "./QueuePagination";
 import { buildQueueTree } from "./utils/queueTreeBuilder";
@@ -1154,7 +1157,12 @@ const QueueOverviewPanel = ({ queueMap, selectedQueue }) => (
     </Box>
 );
 
-const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
+const QueueDetailsPanel = ({
+    onClose,
+    onYamlSaved,
+    queueMap,
+    selectedQueue,
+}) => {
     const [selectedTab, setSelectedTab] = useState("overview");
     const queueName = getQueueName(selectedQueue);
     const yamlQuery = useQuery({
@@ -1198,9 +1206,15 @@ const QueueDetailsPanel = ({ selectedQueue, queueMap, onClose }) => {
                 tab === "configuration" ? (
                     <YamlViewer
                         data={yamlQuery.data}
+                        editable
                         error={yamlQuery.error}
                         fill
                         isLoading={yamlQuery.isLoading || yamlQuery.isFetching}
+                        onSubmit={async (manifest) => {
+                            await updateQueueYaml(queueName, manifest);
+                            await yamlQuery.refetch();
+                            await onYamlSaved?.();
+                        }}
                     />
                 ) : tab === "events" ? (
                     <QueueEventsCard selectedQueue={selectedQueue} />
@@ -1503,6 +1517,7 @@ const QueueHierarchyView = ({
     onPageChange,
     onRowsPerPageChange,
     onCloseQueueDetails,
+    onYamlSaved,
 }) => {
     const [expandedNodes, setExpandedNodes] = useState(new Set());
 
@@ -1744,6 +1759,7 @@ const QueueHierarchyView = ({
             <QueueLegends />
             <QueueDetailsPanel
                 onClose={onCloseQueueDetails}
+                onYamlSaved={onYamlSaved}
                 selectedQueue={selectedQueue}
                 queueMap={queueMap}
             />
@@ -1978,14 +1994,6 @@ const Queues = () => {
                         Refresh
                     </Button>
                     <Button
-                        disabled
-                        startIcon={<EditOutlinedIcon fontSize="small" />}
-                        sx={{ textTransform: "none" }}
-                        variant="contained"
-                    >
-                        Edit Queue
-                    </Button>
-                    <Button
                         onClick={() => setCreateDialogOpen(true)}
                         startIcon={<AddIcon fontSize="small" />}
                         sx={{
@@ -2014,6 +2022,7 @@ const Queues = () => {
                     setSelectedQueueName(getQueueName(queue))
                 }
                 onCloseQueueDetails={() => setSelectedQueueName("")}
+                onYamlSaved={fetchQueues}
             />
 
             <CreateDialog

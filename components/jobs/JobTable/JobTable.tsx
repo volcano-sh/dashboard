@@ -24,7 +24,6 @@ const JobTable = ({
     handleFilterClose,
     sortDirection,
     toggleSortDirection,
-    onJobUpdate = () => {},
     reloadJobs, // (optional) for refetching after delete
 }) => {
     // State for delete dialog
@@ -161,7 +160,6 @@ const JobTable = ({
                                     handleOpenDeleteDialog={
                                         handleOpenDeleteDialog
                                     }
-                                    onJobUpdate={onJobUpdate}
                                 />
                             ))
                         )}

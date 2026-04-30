@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
     TableRow,
     TableCell,
@@ -9,8 +9,7 @@ import {
     useTheme,
     alpha,
 } from "@mui/material";
-import { ChevronRight, ExpandMore, Delete, Edit } from "@mui/icons-material";
-import EditQueueDialog from "../QueueTable/EditQueueDialog";
+import { ChevronRight, ExpandMore, Delete } from "@mui/icons-material";
 
 const QueueTreeNode = ({
     node,
@@ -18,12 +17,10 @@ const QueueTreeNode = ({
     allocatedFields,
     handleQueueClick,
     handleOpenDeleteDialog,
-    onQueueUpdate,
     expandedNodes,
     onToggleExpand,
 }) => {
     const theme = useTheme();
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = expandedNodes.has(node.metadata.name);
 
@@ -38,14 +35,6 @@ const QueueTreeNode = ({
             default:
                 return theme.palette.grey[500];
         }
-    };
-
-    const handleOpenEditDialog = () => {
-        setIsEditDialogOpen(true);
-    };
-
-    const handleCloseEditDialog = () => {
-        setIsEditDialogOpen(false);
     };
 
     // Calculate indentation (24px per level, max at level 5)
@@ -194,24 +183,6 @@ const QueueTreeNode = ({
                         <IconButton
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleOpenEditDialog();
-                            }}
-                            size="small"
-                            sx={{
-                                color: theme.palette.primary.main,
-                                "&:hover": {
-                                    backgroundColor: alpha(
-                                        theme.palette.primary.main,
-                                        0.1,
-                                    ),
-                                },
-                            }}
-                        >
-                            <Edit fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            onClick={(e) => {
-                                e.stopPropagation();
                                 handleOpenDeleteDialog(node.metadata.name);
                             }}
                             size="small"
@@ -230,14 +201,6 @@ const QueueTreeNode = ({
                     </Box>
                 </TableCell>
             </TableRow>
-
-            {/* Edit Dialog */}
-            <EditQueueDialog
-                open={isEditDialogOpen}
-                queue={node}
-                onClose={handleCloseEditDialog}
-                onSave={onQueueUpdate}
-            />
 
             {/* Recursively render children with collapse animation */}
             {hasChildren && (
@@ -259,7 +222,6 @@ const QueueTreeNode = ({
                                             handleOpenDeleteDialog={
                                                 handleOpenDeleteDialog
                                             }
-                                            onQueueUpdate={onQueueUpdate}
                                             expandedNodes={expandedNodes}
                                             onToggleExpand={onToggleExpand}
                                         />

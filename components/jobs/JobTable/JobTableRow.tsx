@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
     TableRow,
     TableCell,
@@ -7,9 +7,8 @@ import {
     useTheme,
     alpha,
 } from "@mui/material";
-import { Edit, Delete } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
-import JobEditDialog from "./JobEditDialog";
 import {
     tableIdentifierSx,
     tableTimestampSx,
@@ -19,24 +18,8 @@ const JobTableRow = ({
     job,
     handleJobClick,
     handleOpenDeleteDialog,
-    onJobUpdate, // Function to update job after edit
 }) => {
     const theme = useTheme();
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-    const handleOpenEditDialog = (e) => {
-        e.stopPropagation();
-        setIsEditDialogOpen(true);
-    };
-
-    const handleCloseEditDialog = () => {
-        setIsEditDialogOpen(false);
-    };
-
-    const handleSaveJob = (updatedJob) => {
-        onJobUpdate(updatedJob);
-        handleCloseEditDialog();
-    };
 
     return (
         <>
@@ -137,22 +120,6 @@ const JobTableRow = ({
                 <TableCell sx={{ padding: "16px 24px" }}>
                     <Box display="flex" alignItems="center" gap={2}>
                         <IconButton
-                            onClick={handleOpenEditDialog}
-                            size="small"
-                            sx={{
-                                color: theme.palette.primary.main,
-                                "&:hover": {
-                                    backgroundColor: alpha(
-                                        theme.palette.primary.main,
-                                        0.1,
-                                    ),
-                                },
-                            }}
-                        >
-                            <Edit fontSize="small" />
-                        </IconButton>
-
-                        <IconButton
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenDeleteDialog(job);
@@ -173,14 +140,6 @@ const JobTableRow = ({
                     </Box>
                 </TableCell>
             </TableRow>
-
-            {/* Edit Dialog */}
-            <JobEditDialog
-                open={isEditDialogOpen}
-                job={job}
-                onClose={handleCloseEditDialog}
-                onSave={handleSaveJob}
-            />
         </>
     );
 };
