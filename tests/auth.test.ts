@@ -332,12 +332,21 @@ access:
         );
         expect(readResponse.status).toBe(200);
 
+        const readWithTokenResponse = await withRead(() =>
+            Response.json({ ok: true }),
+        )(
+            new Request("http://dashboard.local/api/v1/jobs", {
+                headers: { Authorization: "Bearer stale-token" },
+            }),
+        );
+        expect(readWithTokenResponse.status).toBe(200);
+
         const writeResponse = await withWrite(() =>
             Response.json({ ok: true }),
         )(new Request("http://dashboard.local/api/v1/queues"));
-        expect(writeResponse.status).toBe(403);
+        expect(writeResponse.status).toBe(404);
         await expect(writeResponse.json()).resolves.toMatchObject({
-            error: "Forbidden",
+            error: "Not Found",
         });
     });
 
@@ -361,6 +370,22 @@ auth:
         await expect(publicAuthConfig()).resolves.toMatchObject({
             accessMode: "read-only",
             authRequired: false,
+        });
+    });
+
+    it("loads auth config without validation in read-only mode", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: read-only
+auth:
+  mode: broken
+  localUsers: []
+`);
+        const { getAuthConfig } = await importAuth(configFile);
+
+        await expect(getAuthConfig()).resolves.toMatchObject({
+            mode: "broken",
+            localUsers: [],
         });
     });
 

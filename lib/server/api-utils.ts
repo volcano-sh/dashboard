@@ -20,7 +20,8 @@ export const toInt = (value, fallback) => {
 export const apiError = (error, fallback, status = undefined) => {
     const upstreamStatus = status || getErrorStatus(error);
     const k8s = error?.body || error?.response?.body;
-    const isKubernetesUnauthorized = !status && upstreamStatus === 401 && k8s;
+    const message = getErrorMessage(error, fallback);
+    const isKubernetesUnauthorized = !status && upstreamStatus === 401;
     const responseStatus = isKubernetesUnauthorized ? 502 : upstreamStatus;
 
     return json(
@@ -32,7 +33,7 @@ export const apiError = (error, fallback, status = undefined) => {
                   fallback,
             message: isKubernetesUnauthorized
                 ? `${fallback}: Kubernetes API returned 401. Check the dashboard pod service account, kubeconfig, or cluster credentials.`
-                : getErrorMessage(error, fallback),
+                : message,
             details: error?.body?.details || error?.response?.body?.details,
             code: upstreamStatus,
             k8s,

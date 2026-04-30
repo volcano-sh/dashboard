@@ -56,14 +56,30 @@ export const normalizeDashboardConfig = (parsed: any = {}) => ({
     ),
 });
 
+export const resolveDashboardConfigPath = () =>
+    process.env.DASHBOARD_CONFIG_FILE || "";
+
+export const getDashboardConfigSource = () => {
+    const path = resolveDashboardConfigPath();
+    return path
+        ? {
+              path,
+              source: "file",
+          }
+        : {
+              path: "",
+              source: "default",
+          };
+};
+
 export const getDashboardConfig = async () => {
-    const configPath = process.env.DASHBOARD_CONFIG_FILE;
+    const configPath = resolveDashboardConfigPath();
     if (!configPath) {
         cachedConfig = defaultDashboardConfig;
         return cachedConfig;
     }
 
-    const raw = await readFile(configPath, "utf8");
+    const raw = await readFile(/* turbopackIgnore: true */ configPath, "utf8");
     const parsed = configPath.endsWith(".json")
         ? JSON.parse(raw)
         : yaml.load(raw);

@@ -16,7 +16,7 @@ schedulerConfig:
 access:
     # Supported values: read-write, read-only.
     # read-only allows direct dashboard access without auth.
-    mode: read-write
+    mode: read-only
 
 auth:
     mode: local-sso

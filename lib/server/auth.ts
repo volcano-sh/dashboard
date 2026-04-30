@@ -115,14 +115,16 @@ const normalizeAuthConfig = (parsed: any = {}) => {
 };
 
 export const getAuthConfig = async () => {
-    if (await isReadOnlyMode()) {
-        throw new Error("Auth config is disabled in read-only access mode.");
+    const dashboardConfig = await getDashboardConfig();
+    const readOnlyMode =
+        dashboardConfig.access?.mode === AccessModes.READ_ONLY;
+    if (!readOnlyMode && cachedConfig) return cachedConfig;
+
+    const config = normalizeAuthConfig(dashboardConfig);
+    if (readOnlyMode) {
+        return config;
     }
 
-    if (cachedConfig) return cachedConfig;
-
-    const dashboardConfig = await getDashboardConfig();
-    const config = normalizeAuthConfig(dashboardConfig);
     if (!["local", "local-sso"].includes(config.mode)) {
         throw new Error('Auth mode must be "local" or "local-sso".');
     }
@@ -259,16 +261,24 @@ export const requireAuth = async (request) => {
 
 const unauthorized = (message) => new AuthorizationError(message, 401);
 const forbidden = (message) => new AuthorizationError(message, 403);
+const notFound = (message) => new AuthorizationError(message, 404);
 
 export const authorizationResponse = (error) =>
     json(
         {
-            error: error.status === 403 ? "Forbidden" : "Unauthorized",
+            error:
+                error.status === 404
+                    ? "Not Found"
+                    : error.status === 403
+                      ? "Forbidden"
+                      : "Unauthorized",
             message:
                 error.message ||
-                (error.status === 403
-                    ? "Permission denied."
-                    : "Authentication required."),
+                (error.status === 404
+                    ? "Endpoint is not available."
+                    : error.status === 403
+                      ? "Permission denied."
+                      : "Authentication required."),
         },
         error.status || 401,
     );
@@ -327,6 +337,13 @@ export const requireWrite = (request) =>
 export const withAccessMode =
     (requiredAccessMode, handler) => async (request, context) => {
         try {
+            const accessMode = await getAccessMode();
+            if (accessMode === AccessModes.READ_ONLY) {
+                if (requiredAccessMode === AccessModes.READ_ONLY) {
+                    return handler(request, context);
+                }
+                throw notFound("Endpoint is not available in read-only mode.");
+            }
             await requireAccessMode(request, requiredAccessMode);
             return handler(request, context);
         } catch (error) {

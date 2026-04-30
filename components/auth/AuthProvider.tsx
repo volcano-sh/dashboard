@@ -6,7 +6,6 @@ import React, {
     useContext,
     useEffect,
     useMemo,
-    useRef,
     useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -38,15 +37,10 @@ export default function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [token, setToken] = useState("");
     const [user, setUser] = useState(null);
-    const authConfigRef = useRef(null);
 
     const isPublicPath = publicPaths.some(
         (path) => pathname === path || pathname.startsWith(`${path}/`),
     );
-
-    useEffect(() => {
-        authConfigRef.current = authConfig;
-    }, [authConfig]);
 
     const logout = useCallback(async () => {
         try {
@@ -64,11 +58,13 @@ export default function AuthProvider({ children }) {
     }, [router]);
 
     useEffect(() => {
+        if (authConfig?.accessMode !== "read-write") {
+            return undefined;
+        }
+
         const requestInterceptor = axios.interceptors.request.use((config) => {
             const nextToken = getStoredToken();
-            const readOnlyMode =
-                authConfigRef.current?.accessMode === "read-only";
-            if (nextToken && !readOnlyMode) {
+            if (nextToken) {
                 config.headers.Authorization = `Bearer ${nextToken}`;
             }
             return config;
@@ -79,8 +75,7 @@ export default function AuthProvider({ children }) {
                 const requestUrl = String(error?.config?.url || "");
                 if (
                     error?.response?.status === 401 &&
-                    !requestUrl.endsWith(`${API_BASE}/auth/me`) &&
-                    authConfigRef.current?.accessMode !== "read-only"
+                    !requestUrl.endsWith(`${API_BASE}/auth/me`)
                 ) {
                     clearStoredToken();
                     if (!window.location.pathname.startsWith("/login")) {
@@ -95,7 +90,7 @@ export default function AuthProvider({ children }) {
             axios.interceptors.request.eject(requestInterceptor);
             axios.interceptors.response.eject(responseInterceptor);
         };
-    }, []);
+    }, [authConfig?.accessMode]);
 
     useEffect(() => {
         let disposed = false;
@@ -109,7 +104,6 @@ export default function AuthProvider({ children }) {
                 );
                 if (disposed) return;
                 setAuthConfig(configResponse.data);
-                authConfigRef.current = configResponse.data;
                 const readOnlyMode =
                     configResponse.data?.accessMode === "read-only";
                 if (readOnlyMode) {

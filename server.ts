@@ -2,7 +2,11 @@ import { createServer, request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import next from "next";
 import WebSocket, { WebSocketServer } from "ws";
-import { verifyAuthToken } from "./lib/server/auth";
+import { AccessModes, getAccessMode, verifyAuthToken } from "./lib/server/auth";
+import {
+    getDashboardConfig,
+    getDashboardConfigSource,
+} from "./lib/server/config";
 import { getKubernetesClients } from "./lib/server/kubernetes";
 
 const dev = process.env.NODE_ENV !== "production";
@@ -96,6 +100,23 @@ const rejectUpgradeUnauthorized = (socket, message) => {
     socket.destroy();
 };
 
+const rejectUpgradeNotFound = (socket, message) => {
+    socket.write(
+        "HTTP/1.1 404 Not Found\r\n" +
+            "Connection: close\r\n" +
+            "Content-Type: application/json\r\n" +
+            "\r\n" +
+            JSON.stringify({
+                error: "Not Found",
+                message: message || "Endpoint is not available.",
+            }),
+    );
+    socket.destroy();
+};
+
+const isReadOnlyAccessMode = async () =>
+    (await getAccessMode()) === AccessModes.READ_ONLY;
+
 const verifyUpgradeToken = async (url) => {
     const token = url.searchParams.get("token") || "";
     if (!token) {
@@ -112,7 +133,41 @@ const closeQuietly = (target) => {
     }
 };
 
+const summarizeDashboardConfig = (config) => ({
+    access: {
+        mode: config.access?.mode || AccessModes.READ_WRITE,
+    },
+    auth: {
+        mode: config.auth?.mode || "local",
+        providerName:
+            config.auth?.sso?.providerName ||
+            config.auth?.sso?.provider_name ||
+            "SSO",
+        ssoEnabled: config.auth?.mode === "local-sso",
+        users: Array.isArray(config.auth?.users)
+            ? config.auth.users.length
+            : Array.isArray(config.auth?.localUsers)
+              ? config.auth.localUsers.length
+              : 0,
+    },
+    schedulerConfig: {
+        key: config.schedulerConfig?.key || "",
+        name: config.schedulerConfig?.name || "",
+        namespace: config.schedulerConfig?.namespace || "",
+    },
+});
+
+const logDashboardConfig = async () => {
+    const source = getDashboardConfigSource();
+    const config = await getDashboardConfig();
+    console.log("[config] dashboard source:");
+    console.log(JSON.stringify(source, null, 2));
+    console.log("[config] dashboard parsed:");
+    console.log(JSON.stringify(summarizeDashboardConfig(config), null, 2));
+};
+
 await app.prepare();
+await logDashboardConfig();
 
 // Route all websocket upgrades through one dispatcher. Next's custom-server
 // request handler normally auto-registers its own upgrade listener, but that
@@ -128,7 +183,10 @@ const server = createServer(async (request, response) => {
         logHttpRequest(request, response, startedAt);
     });
 
-    if (isProtectedApiRequest(request.url || "/")) {
+    if (
+        isProtectedApiRequest(request.url || "/") &&
+        !(await isReadOnlyAccessMode())
+    ) {
         try {
             await verifyAuthToken(getBearerToken(request));
         } catch (error) {
@@ -705,19 +763,33 @@ server.on("upgrade", async (request, socket, head) => {
         return;
     }
 
-    try {
-        await verifyUpgradeToken(url);
-    } catch (error) {
+    const readOnlyAccessMode = await isReadOnlyAccessMode();
+    if (readOnlyAccessMode && (terminalMatch || podLogsMatch)) {
         console.warn(
-            `[upgrade] rejected unauthenticated websocket path=${
-                url.pathname
-            } error=${error?.message || error}`,
+            `[upgrade] rejected disabled websocket path=${url.pathname} mode=${AccessModes.READ_ONLY}`,
         );
-        rejectUpgradeUnauthorized(
+        rejectUpgradeNotFound(
             socket,
-            error?.message || "Authentication required.",
+            "Endpoint is not available in read-only mode.",
         );
         return;
+    }
+
+    if (!readOnlyAccessMode) {
+        try {
+            await verifyUpgradeToken(url);
+        } catch (error) {
+            console.warn(
+                `[upgrade] rejected unauthenticated websocket path=${
+                    url.pathname
+                } error=${error?.message || error}`,
+            );
+            rejectUpgradeUnauthorized(
+                socket,
+                error?.message || "Authentication required.",
+            );
+            return;
+        }
     }
 
     const match = terminalMatch || podLogsMatch || podEventsMatch;
