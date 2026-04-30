@@ -2,6 +2,9 @@ import { readFile } from "node:fs/promises";
 import yaml from "js-yaml";
 
 export const defaultDashboardConfig = {
+    access: {
+        mode: "read-write",
+    },
     auth: {
         mode: "local",
         jwt: {
@@ -33,8 +36,19 @@ const mergeSection = (defaults, overrides) => ({
     ...(overrides || {}),
 });
 
+const normalizeAccessMode = (value) => {
+    const normalized = String(value || defaultDashboardConfig.access.mode)
+        .trim()
+        .toLowerCase();
+    return normalized;
+};
+
 export const normalizeDashboardConfig = (parsed: any = {}) => ({
     ...parsed,
+    access: {
+        ...mergeSection(defaultDashboardConfig.access, parsed.access),
+        mode: normalizeAccessMode(parsed.access?.mode),
+    },
     auth: mergeSection(defaultDashboardConfig.auth, parsed.auth),
     schedulerConfig: mergeSection(
         defaultDashboardConfig.schedulerConfig,
@@ -43,8 +57,6 @@ export const normalizeDashboardConfig = (parsed: any = {}) => ({
 });
 
 export const getDashboardConfig = async () => {
-    if (cachedConfig) return cachedConfig;
-
     const configPath = process.env.DASHBOARD_CONFIG_FILE;
     if (!configPath) {
         cachedConfig = defaultDashboardConfig;
@@ -56,6 +68,5 @@ export const getDashboardConfig = async () => {
         ? JSON.parse(raw)
         : yaml.load(raw);
 
-    cachedConfig = normalizeDashboardConfig(parsed || {});
-    return cachedConfig;
+    return normalizeDashboardConfig(parsed || {});
 };

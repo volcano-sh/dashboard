@@ -1,11 +1,12 @@
 import { createQueue, listQueues } from "../../../../lib/server/volcano-api";
+import { withRead, withWrite } from "../../../../lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request) {
+export const GET = withRead((request) => {
     return listQueues(request);
-}
+});
 
-export async function POST(request) {
+export const POST = withWrite((request) => {
     return createQueue(request);
-}
+});

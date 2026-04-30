@@ -56,7 +56,7 @@ describe("YamlViewer", () => {
         expect(onSubmit).not.toHaveBeenCalled();
     });
 
-    it("keeps view-only YAML read only", () => {
+    it("keeps read-only YAML read only", () => {
         render(<YamlViewer data="kind: Pod\n" />);
 
         expect(

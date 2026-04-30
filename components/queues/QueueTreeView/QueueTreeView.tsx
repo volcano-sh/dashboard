@@ -17,6 +17,7 @@ import QueueTableHeader from "../QueueTable/QueueTableHeader";
 import QueueTreeNode from "./QueueTreeNode";
 import QueueTableDeleteDialog from "../QueueTable/QueueTableDeleteDialog";
 import { API_BASE } from "../../../lib/client/dashboard-api";
+import { getStoredToken } from "../../../lib/client/auth-token";
 import {
     buildQueueTree,
     filterTreeWithAncestors,
@@ -137,6 +138,7 @@ const QueueTreeView = ({
     const handleDelete = async () => {
         try {
             setIsDeleting(true);
+            const token = getStoredToken();
 
             const response = await fetch(
                 `${API_BASE}/queues/${encodeURIComponent(queueToDelete)}`,
@@ -145,6 +147,7 @@ const QueueTreeView = ({
                     headers: {
                         "Content-Type": "application/json",
                         Accept: "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     },
                 },
             );

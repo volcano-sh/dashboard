@@ -27,6 +27,8 @@ config:
             namespace: volcano-system
             name: volcano-scheduler-configmap
             key: ""
+        access:
+            mode: read-write
         auth:
             mode: local
 

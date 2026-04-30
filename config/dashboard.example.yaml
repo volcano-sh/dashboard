@@ -13,6 +13,11 @@ schedulerConfig:
     name: volcano-scheduler-configmap
     key: ""
 
+access:
+    # Supported values: read-write, read-only.
+    # read-only allows direct dashboard access without auth.
+    mode: read-write
+
 auth:
     mode: local-sso
     jwt:
@@ -27,7 +32,7 @@ auth:
         - username: admin
           display_name: Administrator
           password_hash: "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO."
-          tenants: ["adak8s", "squidflow"]
+          tenants: [ "adak8s", "squidflow" ]
           is_admin: true
 
     sso:
@@ -36,11 +41,11 @@ auth:
         client_id: squidflow-backend
         client_secret: qiesogMQypSjhmxaYelevxlhJWkr0H3O
         redirect_uri: http://localhost:3000/sso/callback
-        scopes: ["openid", "profile", "email", "offline_access"]
+        scopes: [ "openid", "profile", "email", "offline_access" ]
         jwks_cache_ttl: 10m
 
         # Reserved for future RBAC / tenant mapping support.
         group_mappings:
             - match: adak8s
-              add_tenants: ["*"]
+              add_tenants: [ "*" ]
               is_admin: true

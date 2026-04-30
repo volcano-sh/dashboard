@@ -47,6 +47,10 @@ describe("auth server helpers", () => {
         const { handleLocalLogin, publicAuthConfig } = await importAuth();
 
         await expect(publicAuthConfig()).resolves.toEqual({
+            accessMode: "read-write",
+            authRequired: true,
+            canRead: false,
+            canWrite: false,
             localEnabled: true,
             mode: "local",
             providerName: "SSO",
@@ -66,6 +70,7 @@ describe("auth server helpers", () => {
         expect(body.user).toMatchObject({
             displayName: "Administrator",
             provider: "local",
+            accessMode: "read-write",
             username: "admin",
         });
     });
@@ -105,6 +110,7 @@ describe("auth server helpers", () => {
         expect(payload.user).toMatchObject({
             displayName: "Administrator",
             provider: "local",
+            accessMode: "read-write",
             username: "admin",
         });
         await expect(verifyAuthToken(`${signed.token}x`)).rejects.toThrow(
@@ -174,6 +180,10 @@ auth:
             await importAuth(configFile);
 
         await expect(publicAuthConfig()).resolves.toEqual({
+            accessMode: "read-write",
+            authRequired: true,
+            canRead: false,
+            canWrite: false,
             localEnabled: true,
             mode: "local-sso",
             providerName: "Keycloak",
@@ -284,6 +294,119 @@ auth:
         expect(location.searchParams.get("redirect_uri")).toBe(
             "http://localhost:3000/sso/callback",
         );
+    });
+
+    it("maps read-only access mode without auth config", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: read-only
+`);
+        const { handleAuthMe, publicAuthConfig, withRead, withWrite } =
+            await importAuth(configFile);
+
+        await expect(publicAuthConfig()).resolves.toEqual({
+            accessMode: "read-only",
+            authRequired: false,
+            canRead: true,
+            canWrite: false,
+            localEnabled: false,
+            mode: "disabled",
+            providerName: "SSO",
+            ssoEnabled: false,
+        });
+
+        const meResponse = await handleAuthMe(
+            new Request("http://dashboard.local/api/v1/auth/me"),
+        );
+        await expect(meResponse.json()).resolves.toMatchObject({
+            identity: {
+                accessMode: "read-only",
+                type: "read-only",
+                username: "read-only",
+            },
+            user: null,
+        });
+
+        const readResponse = await withRead(() => Response.json({ ok: true }))(
+            new Request("http://dashboard.local/api/v1/queues"),
+        );
+        expect(readResponse.status).toBe(200);
+
+        const writeResponse = await withWrite(() =>
+            Response.json({ ok: true }),
+        )(new Request("http://dashboard.local/api/v1/queues"));
+        expect(writeResponse.status).toBe(403);
+        await expect(writeResponse.json()).resolves.toMatchObject({
+            error: "Forbidden",
+        });
+    });
+
+    it("does not validate auth details when access mode is read-only", async () => {
+        const configFile = await writeAuthConfig(`
+schedulerConfig:
+  namespace: volcano-system
+  name: volcano-scheduler-configmap
+  key: ""
+access:
+  mode: read-only
+auth:
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  localUsers: []
+  sso: {}
+`);
+        const { publicAuthConfig } = await importAuth(configFile);
+
+        await expect(publicAuthConfig()).resolves.toMatchObject({
+            accessMode: "read-only",
+            authRequired: false,
+        });
+    });
+
+    it("rejects unsupported access mode aliases", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: view-only
+`);
+        const { publicAuthConfig } = await importAuth(configFile);
+
+        await expect(publicAuthConfig()).rejects.toThrow(
+            /read-only.*read-write/i,
+        );
+    });
+
+    it("maps authenticated requests to read-write", async () => {
+        const {
+            handleAuthMe,
+            resolveIdentity,
+            signAuthToken,
+            withWrite,
+        } = await importAuth();
+        const signed = await signAuthToken({ username: "admin" });
+        const request = new Request("http://dashboard.local/api/v1/auth/me", {
+            headers: { Authorization: `Bearer ${signed.token}` },
+        });
+
+        await expect(resolveIdentity(request)).resolves.toMatchObject({
+            accessMode: "read-write",
+            type: "authenticated",
+            username: "admin",
+        });
+
+        const meResponse = await handleAuthMe(request);
+        await expect(meResponse.json()).resolves.toMatchObject({
+            identity: {
+                accessMode: "read-write",
+                type: "authenticated",
+                username: "admin",
+            },
+        });
+
+        const writeResponse = await withWrite(() =>
+            Response.json({ ok: true }),
+        )(request);
+        expect(writeResponse.status).toBe(200);
     });
 
     it("rejects invalid auth configuration files", async () => {

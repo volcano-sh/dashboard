@@ -1,8 +1,9 @@
 import { json } from "../../../../../../../lib/server/api-utils";
+import { withWrite } from "../../../../../../../lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request, context) {
+export const GET = withWrite(async (request, context) => {
     const { namespace, name } = await context.params;
     const url = new URL(request.url);
 
@@ -19,4 +20,4 @@ export async function GET(request, context) {
         },
         426,
     );
-}
+});

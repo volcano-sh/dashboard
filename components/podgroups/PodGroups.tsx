@@ -39,6 +39,7 @@ import {
 } from "../details/DetailComponents";
 import ResourceEventsPanel from "../details/ResourceEventsPanel";
 import JobStatusChip from "../jobs/JobStatusChip";
+import { useAuth } from "../auth/AuthProvider";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -118,6 +119,7 @@ const PodGroupOverview = ({ podGroup }) => (
 );
 
 const PodGroupDetailsDrawer = ({
+    canWrite = true,
     onClose,
     podGroup,
     selectedTab,
@@ -200,7 +202,7 @@ const PodGroupDetailsDrawer = ({
                     return (
                         <YamlViewer
                             data={yamlQuery.data}
-                            editable
+                            editable={canWrite}
                             error={yamlQuery.error}
                             fill
                             isLoading={
@@ -248,6 +250,8 @@ const PodGroupDetailsDrawer = ({
 };
 
 const PodGroups = () => {
+    const auth = useAuth();
+    const canWrite = auth?.canWrite !== false;
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "All",
@@ -504,18 +508,20 @@ const PodGroups = () => {
                     >
                         Refresh
                     </Button>
-                    <Button
-                        onClick={handleCreate}
-                        startIcon={<AddIcon fontSize="small" />}
-                        sx={{
-                            bgcolor: "#ff4d2d",
-                            textTransform: "none",
-                            "&:hover": { bgcolor: "#e84325" },
-                        }}
-                        variant="contained"
-                    >
-                        Create PodGroup
-                    </Button>
+                    {canWrite && (
+                        <Button
+                            onClick={handleCreate}
+                            startIcon={<AddIcon fontSize="small" />}
+                            sx={{
+                                bgcolor: "#ff4d2d",
+                                textTransform: "none",
+                                "&:hover": { bgcolor: "#e84325" },
+                            }}
+                            variant="contained"
+                        >
+                            Create PodGroup
+                        </Button>
+                    )}
                 </Box>
             </Box>
             {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -539,6 +545,7 @@ const PodGroups = () => {
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />
             <PodGroupDetailsDrawer
+                canWrite={canWrite}
                 onClose={() => setSelectedPodGroup(null)}
                 podGroup={selectedPodGroup}
                 selectedTab={selectedTab}

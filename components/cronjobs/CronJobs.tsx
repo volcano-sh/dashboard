@@ -33,6 +33,7 @@ import {
     MetadataChips,
 } from "../details/DetailComponents";
 import ResourceEventsPanel from "../details/ResourceEventsPanel";
+import { useAuth } from "../auth/AuthProvider";
 import {
     tableIdentifierSx,
     tableNameSx,
@@ -148,6 +149,7 @@ const CronJobOverview = ({ cronJob }) => (
 );
 
 const CronJobDetailsDrawer = ({
+    canWrite = true,
     cronJob,
     onClose,
     selectedTab,
@@ -221,7 +223,7 @@ const CronJobDetailsDrawer = ({
                     return (
                         <YamlViewer
                             data={yamlQuery.data || ""}
-                            editable
+                            editable={canWrite}
                             fill
                             onSubmit={async (manifest) => {
                                 await updateCronJobYaml(
@@ -265,6 +267,8 @@ const CronJobDetailsDrawer = ({
 };
 
 const CronJobs = () => {
+    const auth = useAuth();
+    const canWrite = auth?.canWrite !== false;
     const [filters, setFilters] = useState({ namespace: "All", queue: "All" });
     const [searchText, setSearchText] = useState("");
     const [selectedCronJob, setSelectedCronJob] = useState(null);
@@ -387,18 +391,20 @@ const CronJobs = () => {
                     >
                         Refresh
                     </Button>
-                    <Button
-                        disabled
-                        startIcon={<AddIcon fontSize="small" />}
-                        sx={{
-                            bgcolor: "#ff4d2d",
-                            textTransform: "none",
-                            "&:hover": { bgcolor: "#e84325" },
-                        }}
-                        variant="contained"
-                    >
-                        Create CronJob
-                    </Button>
+                    {canWrite && (
+                        <Button
+                            disabled
+                            startIcon={<AddIcon fontSize="small" />}
+                            sx={{
+                                bgcolor: "#ff4d2d",
+                                textTransform: "none",
+                                "&:hover": { bgcolor: "#e84325" },
+                            }}
+                            variant="contained"
+                        >
+                            Create CronJob
+                        </Button>
+                    )}
                 </Box>
             </Box>
 
@@ -436,7 +442,7 @@ const CronJobs = () => {
                                     "Concurrency",
                                     "Last Schedule",
                                     "Status",
-                                    "Actions",
+                                    ...(canWrite ? ["Actions"] : []),
                                 ].map((label) => (
                                     <TableCell
                                         key={label}
@@ -499,20 +505,22 @@ const CronJobs = () => {
                                             status={getStatus(cronJob)}
                                         />
                                     </TableCell>
-                                    <TableCell>
-                                        <IconButton size="small">
-                                            <MoreVertIcon
-                                                sx={{ fontSize: 16 }}
-                                            />
-                                        </IconButton>
-                                    </TableCell>
+                                    {canWrite && (
+                                        <TableCell>
+                                            <IconButton size="small">
+                                                <MoreVertIcon
+                                                    sx={{ fontSize: 16 }}
+                                                />
+                                            </IconButton>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
                             {cronJobs.length === 0 && (
                                 <TableRow>
                                     <TableCell
                                         align="center"
-                                        colSpan={8}
+                                        colSpan={canWrite ? 8 : 7}
                                         sx={{ color: "text.secondary", py: 5 }}
                                     >
                                         No CronJobs found.
@@ -525,6 +533,7 @@ const CronJobs = () => {
             </Paper>
 
             <CronJobDetailsDrawer
+                canWrite={canWrite}
                 cronJob={selectedCronJob}
                 onClose={() => setSelectedCronJob(null)}
                 selectedTab={selectedTab}

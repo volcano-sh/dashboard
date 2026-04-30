@@ -11,6 +11,7 @@ import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
 import { API_BASE } from "../../../lib/client/dashboard-api";
+import { getStoredToken } from "../../../lib/client/auth-token";
 
 const JobTable = ({
     jobs,
@@ -22,6 +23,7 @@ const JobTable = ({
     anchorEl,
     handleFilterClick,
     handleFilterClose,
+    canWrite = true,
     sortDirection,
     toggleSortDirection,
     reloadJobs, // (optional) for refetching after delete
@@ -52,6 +54,7 @@ const JobTable = ({
         setIsDeleting(true);
         try {
             const { namespace, name } = jobToDelete.metadata;
+            const token = getStoredToken();
             const response = await fetch(
                 `${API_BASE}/jobs/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`,
                 {
@@ -59,6 +62,7 @@ const JobTable = ({
                     headers: {
                         "Content-Type": "application/json",
                         Accept: "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     },
                 },
             );
@@ -141,19 +145,24 @@ const JobTable = ({
                         anchorEl={anchorEl}
                         handleFilterClick={handleFilterClick}
                         handleFilterClose={handleFilterClose}
+                        canWrite={canWrite}
                         sortDirection={sortDirection}
                         toggleSortDirection={toggleSortDirection}
                     />
                     <TableBody>
                         {jobs.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} align="center">
+                                <TableCell
+                                    colSpan={canWrite ? 6 : 5}
+                                    align="center"
+                                >
                                     No jobs found.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             jobs.map((job) => (
                                 <JobTableRow
+                                    canWrite={canWrite}
                                     key={`${job.metadata.namespace}-${job.metadata.name}`}
                                     job={job}
                                     handleJobClick={handleJobClick}
@@ -167,18 +176,20 @@ const JobTable = ({
                 </Table>
             </TableContainer>
 
-            <JobTableDeleteDialog
-                open={openDeleteDialog}
-                onClose={handleCloseDeleteDialog}
-                onConfirm={handleDelete}
-                jobToDelete={
-                    jobToDelete
-                        ? `${jobToDelete.metadata.namespace}/${jobToDelete.metadata.name}`
-                        : ""
-                }
-                error={deleteError}
-                isDeleting={isDeleting}
-            />
+            {canWrite && (
+                <JobTableDeleteDialog
+                    open={openDeleteDialog}
+                    onClose={handleCloseDeleteDialog}
+                    onConfirm={handleDelete}
+                    jobToDelete={
+                        jobToDelete
+                            ? `${jobToDelete.metadata.namespace}/${jobToDelete.metadata.name}`
+                            : ""
+                    }
+                    error={deleteError}
+                    isDeleting={isDeleting}
+                />
+            )}
         </React.Fragment>
     );
 };

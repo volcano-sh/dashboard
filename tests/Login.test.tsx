@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import LoginPage from "../app/login/page";
+import LoginPage from "../components/auth/LoginPageContent";
 
 const mocks = vi.hoisted(() => ({
     auth: {
@@ -23,6 +23,7 @@ vi.mock("axios", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
+    useRouter: () => ({ replace: vi.fn() }),
     useSearchParams: () => mocks.searchParams,
 }));
 

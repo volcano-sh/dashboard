@@ -2,13 +2,14 @@ import {
     createPodGroup,
     listPodGroups,
 } from "../../../../lib/server/volcano-api";
+import { withRead, withWrite } from "../../../../lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request) {
+export const GET = withRead((request) => {
     return listPodGroups(request);
-}
+});
 
-export async function POST(request) {
+export const POST = withWrite((request) => {
     return createPodGroup(request);
-}
+});

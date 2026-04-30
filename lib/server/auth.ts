@@ -6,6 +6,26 @@ const oidcStates = new Map();
 let cachedConfig;
 let cachedDiscovery;
 
+export const AccessModes = {
+    READ_ONLY: "read-only",
+    READ_WRITE: "read-write",
+};
+
+const accessModeRank = {
+    [AccessModes.READ_ONLY]: 1,
+    [AccessModes.READ_WRITE]: 2,
+};
+
+class AuthorizationError extends Error {
+    status: number;
+
+    constructor(message, status = 401) {
+        super(message);
+        this.name = "AuthorizationError";
+        this.status = status;
+    }
+}
+
 const json = (body, status = 200, headers = {}) =>
     new Response(JSON.stringify(body), {
         headers: { "Content-Type": "application/json", ...headers },
@@ -38,6 +58,7 @@ const parseDurationSeconds = (value, fallbackSeconds) => {
 };
 
 const safeUser = (user) => ({
+    accessMode: user.accessMode || AccessModes.READ_WRITE,
     displayName: user.displayName || user.username,
     email: user.email || "",
     provider: user.provider || "local",
@@ -45,6 +66,18 @@ const safeUser = (user) => ({
 });
 
 const isBcryptHash = (hash) => String(hash || "").startsWith("$2");
+
+export const getAccessMode = async () => {
+    const dashboardConfig = await getDashboardConfig();
+    const mode = dashboardConfig.access?.mode || AccessModes.READ_WRITE;
+    if (!Object.values(AccessModes).includes(mode)) {
+        throw new Error('Access mode must be "read-only" or "read-write".');
+    }
+    return mode;
+};
+
+export const isReadOnlyMode = async () =>
+    (await getAccessMode()) === AccessModes.READ_ONLY;
 
 const normalizeAuthConfig = (parsed: any = {}) => {
     const source = parsed.auth || parsed;
@@ -82,6 +115,10 @@ const normalizeAuthConfig = (parsed: any = {}) => {
 };
 
 export const getAuthConfig = async () => {
+    if (await isReadOnlyMode()) {
+        throw new Error("Auth config is disabled in read-only access mode.");
+    }
+
     if (cachedConfig) return cachedConfig;
 
     const dashboardConfig = await getDashboardConfig();
@@ -118,8 +155,26 @@ export const getAuthConfig = async () => {
 };
 
 export const publicAuthConfig = async () => {
+    const accessMode = await getAccessMode();
+    if (accessMode === AccessModes.READ_ONLY) {
+        return {
+            accessMode,
+            authRequired: false,
+            canRead: true,
+            canWrite: false,
+            localEnabled: false,
+            mode: "disabled",
+            providerName: "SSO",
+            ssoEnabled: false,
+        };
+    }
+
     const config = await getAuthConfig();
     return {
+        accessMode,
+        authRequired: true,
+        canRead: false,
+        canWrite: false,
         localEnabled: true,
         mode: config.mode,
         providerName: config.sso?.providerName || "SSO",
@@ -202,6 +257,88 @@ export const requireAuth = async (request) => {
     return verifyAuthToken(token);
 };
 
+const unauthorized = (message) => new AuthorizationError(message, 401);
+const forbidden = (message) => new AuthorizationError(message, 403);
+
+export const authorizationResponse = (error) =>
+    json(
+        {
+            error: error.status === 403 ? "Forbidden" : "Unauthorized",
+            message:
+                error.message ||
+                (error.status === 403
+                    ? "Permission denied."
+                    : "Authentication required."),
+        },
+        error.status || 401,
+    );
+
+export const resolveIdentity = async (request) => {
+    if ((await getAccessMode()) === AccessModes.READ_ONLY) {
+        return {
+            accessMode: AccessModes.READ_ONLY,
+            type: "read-only",
+            user: null,
+            username: "read-only",
+        };
+    }
+
+    const token = bearerTokenFromRequest(request);
+    if (token) {
+        const payload = await verifyAuthToken(token);
+        return {
+            accessMode: AccessModes.READ_WRITE,
+            type: "authenticated",
+            user: {
+                ...payload.user,
+                accessMode: AccessModes.READ_WRITE,
+            },
+            username: payload.user?.username || payload.sub,
+        };
+    }
+
+    throw unauthorized("Authentication required.");
+};
+
+export const requireAccessMode = async (
+    request,
+    requiredAccessMode = AccessModes.READ_ONLY,
+) => {
+    try {
+        const identity = await resolveIdentity(request);
+        if (
+            accessModeRank[identity.accessMode] <
+            accessModeRank[requiredAccessMode]
+        ) {
+            throw forbidden(`${requiredAccessMode} permission required.`);
+        }
+        return identity;
+    } catch (error) {
+        if (error instanceof AuthorizationError) {
+            throw error;
+        }
+        throw unauthorized(error.message || "Authentication required.");
+    }
+};
+
+export const requireWrite = (request) =>
+    requireAccessMode(request, AccessModes.READ_WRITE);
+
+export const withAccessMode =
+    (requiredAccessMode, handler) => async (request, context) => {
+        try {
+            await requireAccessMode(request, requiredAccessMode);
+            return handler(request, context);
+        } catch (error) {
+            return authorizationResponse(error);
+        }
+    };
+
+export const withRead = (handler) =>
+    withAccessMode(AccessModes.READ_ONLY, handler);
+export const withWrite = (handler) =>
+    withAccessMode(AccessModes.READ_WRITE, handler);
+
 export const withAuth = (handler) => async (request, context) => {
     try {
         await requireAuth(request);
@@ -219,6 +356,15 @@ export const withAuth = (handler) => async (request, context) => {
 
 export const handleLocalLogin = async (request) => {
     try {
+        if (await isReadOnlyMode()) {
+            return json(
+                {
+                    error: "Login disabled",
+                    message: "Login is disabled in read-only access mode.",
+                },
+                404,
+            );
+        }
         const config = await getAuthConfig();
         const { password, remember, username } = await request.json();
         const user = config.localUsers.find(
@@ -267,6 +413,9 @@ const callbackUrl = (request, config) => {
 
 export const handleSsoStart = async (request) => {
     try {
+        if (await isReadOnlyMode()) {
+            return json({ error: "SSO disabled" }, 404);
+        }
         const config = await getAuthConfig();
         if (config.mode !== "local-sso") {
             return json({ error: "SSO disabled" }, 404);
@@ -338,6 +487,9 @@ const verifyOidcToken = async (idToken) => {
 
 export const handleSsoCallback = async (request) => {
     try {
+        if (await isReadOnlyMode()) {
+            return json({ error: "SSO disabled" }, 404);
+        }
         const config = await getAuthConfig();
         if (config.mode !== "local-sso") {
             return json({ error: "SSO disabled" }, 404);
@@ -399,9 +551,16 @@ export const handleSsoCallback = async (request) => {
 
 export const handleAuthMe = async (request) => {
     try {
-        const payload = await requireAuth(request);
-        return json({ user: payload.user });
+        const identity = await resolveIdentity(request);
+        return json({
+            identity: {
+                accessMode: identity.accessMode,
+                type: identity.type,
+                username: identity.username,
+            },
+            user: identity.user,
+        });
     } catch (error) {
-        return json({ error: "Unauthorized", message: error.message }, 401);
+        return authorizationResponse(error);
     }
 };

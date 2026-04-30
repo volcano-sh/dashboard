@@ -6,6 +6,7 @@ import React, {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -19,6 +20,12 @@ import {
 
 const AuthContext = createContext(null);
 const publicPaths = ["/login", "/login/sso-complete"];
+const accessModeCanWrite = (accessMode) => accessMode === "read-write";
+const readOnlyIdentity = {
+    accessMode: "read-only",
+    type: "read-only",
+    username: "read-only",
+};
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -26,13 +33,20 @@ export default function AuthProvider({ children }) {
     const pathname = usePathname();
     const router = useRouter();
     const [authConfig, setAuthConfig] = useState(null);
+    const [identity, setIdentity] = useState(null);
+    const [authError, setAuthError] = useState("");
     const [loading, setLoading] = useState(true);
     const [token, setToken] = useState("");
     const [user, setUser] = useState(null);
+    const authConfigRef = useRef(null);
 
     const isPublicPath = publicPaths.some(
         (path) => pathname === path || pathname.startsWith(`${path}/`),
     );
+
+    useEffect(() => {
+        authConfigRef.current = authConfig;
+    }, [authConfig]);
 
     const logout = useCallback(async () => {
         try {
@@ -42,6 +56,8 @@ export default function AuthProvider({ children }) {
         } finally {
             clearStoredToken();
             setToken("");
+            setIdentity(null);
+            setAuthError("");
             setUser(null);
             router.replace("/login");
         }
@@ -50,7 +66,9 @@ export default function AuthProvider({ children }) {
     useEffect(() => {
         const requestInterceptor = axios.interceptors.request.use((config) => {
             const nextToken = getStoredToken();
-            if (nextToken) {
+            const readOnlyMode =
+                authConfigRef.current?.accessMode === "read-only";
+            if (nextToken && !readOnlyMode) {
                 config.headers.Authorization = `Bearer ${nextToken}`;
             }
             return config;
@@ -58,7 +76,12 @@ export default function AuthProvider({ children }) {
         const responseInterceptor = axios.interceptors.response.use(
             (response) => response,
             (error) => {
-                if (error?.response?.status === 401) {
+                const requestUrl = String(error?.config?.url || "");
+                if (
+                    error?.response?.status === 401 &&
+                    !requestUrl.endsWith(`${API_BASE}/auth/me`) &&
+                    authConfigRef.current?.accessMode !== "read-only"
+                ) {
                     clearStoredToken();
                     if (!window.location.pathname.startsWith("/login")) {
                         window.location.assign("/login");
@@ -79,27 +102,50 @@ export default function AuthProvider({ children }) {
 
         const bootstrap = async () => {
             setLoading(true);
+            setAuthError("");
             try {
                 const configResponse = await axios.get(
                     `${API_BASE}/auth/config`,
                 );
                 if (disposed) return;
                 setAuthConfig(configResponse.data);
+                authConfigRef.current = configResponse.data;
+                const readOnlyMode =
+                    configResponse.data?.accessMode === "read-only";
+                if (readOnlyMode) {
+                    clearStoredToken();
+                    setToken("");
+                    setIdentity(readOnlyIdentity);
+                    setUser(null);
+                    return;
+                }
+
                 const storedToken = getStoredToken();
                 setToken(storedToken);
                 if (storedToken) {
-                    const meResponse = await axios.get(`${API_BASE}/auth/me`, {
-                        headers: { Authorization: `Bearer ${storedToken}` },
-                    });
+                    let meResponse;
+                    try {
+                        meResponse = await axios.get(`${API_BASE}/auth/me`, {
+                            headers: { Authorization: `Bearer ${storedToken}` },
+                        });
+                    } catch (meError) {
+                        clearStoredToken();
+                        setToken("");
+                        throw meError;
+                    }
                     if (disposed) return;
+                    setIdentity(meResponse.data?.identity || null);
                     setUser(meResponse.data?.user || null);
                 } else if (!isPublicPath) {
                     router.replace("/login");
                 }
             } catch {
                 clearStoredToken();
+                setAuthError("Failed to load dashboard access configuration.");
                 if (!disposed && !isPublicPath) {
-                    router.replace("/login");
+                    setIdentity(null);
+                    setToken("");
+                    setUser(null);
                 }
             } finally {
                 if (!disposed) setLoading(false);
@@ -119,6 +165,7 @@ export default function AuthProvider({ children }) {
             const response = await axios.get(`${API_BASE}/auth/me`, {
                 headers: { Authorization: `Bearer ${nextToken}` },
             });
+            setIdentity(response.data?.identity || null);
             setUser(response.data?.user || null);
             router.replace("/dashboard");
         },
@@ -126,15 +173,38 @@ export default function AuthProvider({ children }) {
     );
 
     const value = useMemo(
-        () => ({
+        () => {
+            const accessMode =
+                identity?.accessMode ||
+                user?.accessMode ||
+                authConfig?.accessMode ||
+                "";
+            const canWrite = accessModeCanWrite(accessMode);
+            return {
+                accessMode,
+                authConfig,
+                authError,
+                canRead: Boolean(accessMode),
+                canWrite,
+                identity,
+                isReadOnly: accessMode === "read-only",
+                loading,
+                loginWithToken,
+                logout,
+                token,
+                user,
+            };
+        },
+        [
             authConfig,
+            authError,
+            identity,
             loading,
             loginWithToken,
             logout,
             token,
             user,
-        }),
-        [authConfig, loading, loginWithToken, logout, token, user],
+        ],
     );
 
     return (

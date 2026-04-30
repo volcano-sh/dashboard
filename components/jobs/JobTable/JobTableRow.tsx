@@ -15,7 +15,12 @@ import {
     tableTimestampSx,
 } from "../../scheduling/tableDataStyles";
 
-const JobTableRow = ({ job, handleJobClick, handleOpenDeleteDialog }) => {
+const JobTableRow = ({
+    canWrite = true,
+    job,
+    handleJobClick,
+    handleOpenDeleteDialog,
+}) => {
     const theme = useTheme();
 
     return (
@@ -91,24 +96,26 @@ const JobTableRow = ({ job, handleJobClick, handleOpenDeleteDialog }) => {
 
                 <TableCell sx={{ padding: "16px 24px" }}>
                     <Box display="flex" alignItems="center" gap={2}>
-                        <IconButton
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDeleteDialog(job);
-                            }}
-                            size="small"
-                            sx={{
-                                color: theme.palette.error.main,
-                                "&:hover": {
-                                    backgroundColor: alpha(
-                                        theme.palette.error.main,
-                                        0.1,
-                                    ),
-                                },
-                            }}
-                        >
-                            <Delete fontSize="small" />
-                        </IconButton>
+                        {canWrite && (
+                            <IconButton
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDeleteDialog(job);
+                                }}
+                                size="small"
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    "&:hover": {
+                                        backgroundColor: alpha(
+                                            theme.palette.error.main,
+                                            0.1,
+                                        ),
+                                    },
+                                }}
+                            >
+                                <Delete fontSize="small" />
+                            </IconButton>
+                        )}
                     </Box>
                 </TableCell>
             </TableRow>

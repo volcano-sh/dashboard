@@ -4,25 +4,26 @@ import {
     patchQueue,
     updateQueue,
 } from "../../../../../lib/server/volcano-api";
+import { withRead, withWrite } from "../../../../../lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request, context) {
+export const GET = withRead(async (request, context) => {
     const { name } = await context.params;
     return getQueue(name);
-}
+});
 
-export async function PUT(request, context) {
+export const PUT = withWrite(async (request, context) => {
     const { name } = await context.params;
     return updateQueue(request, name);
-}
+});
 
-export async function PATCH(request, context) {
+export const PATCH = withWrite(async (request, context) => {
     const { name } = await context.params;
     return patchQueue(request, name);
-}
+});
 
-export async function DELETE(request, context) {
+export const DELETE = withWrite(async (request, context) => {
     const { name } = await context.params;
     return deleteQueue(name);
-}
+});

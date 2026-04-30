@@ -45,6 +45,7 @@ import {
 } from "../../lib/client/dashboard-api";
 import { getStoredToken } from "../../lib/client/auth-token";
 import { calculateAge } from "../utils";
+import { useAuth } from "../auth/AuthProvider";
 
 const panelBorder = "#dfe3e8";
 const panelBg = "#ffffff";
@@ -1401,6 +1402,8 @@ const PodDetailsPanel = ({
     selectedTab,
     setSelectedTab,
 }) => {
+    const auth = useAuth();
+    const canWrite = auth?.canWrite !== false;
     const [selectedLogContainer, setSelectedLogContainer] = React.useState("");
     const [logTailLines, setLogTailLines] = React.useState(200);
     const [logFollow, setLogFollow] = React.useState(false);
@@ -1425,6 +1428,12 @@ const PodDetailsPanel = ({
         [pod],
     );
     const podData = pod || selectedPod;
+
+    React.useEffect(() => {
+        if (!canWrite && ["logs", "terminal"].includes(selectedTab)) {
+            setSelectedTab("overview");
+        }
+    }, [canWrite, selectedTab, setSelectedTab]);
 
     React.useEffect(() => {
         if (!containers.length) {
@@ -1669,25 +1678,31 @@ const PodDetailsPanel = ({
                         >
                             {actionPending === "sync" ? "Syncing" : "Sync"}
                         </Button>
-                        <Button
-                            disabled={Boolean(actionPending)}
-                            onClick={handleDelete}
-                            size="small"
-                            startIcon={<DeleteOutlineIcon fontSize="small" />}
-                            sx={{
-                                borderColor: "#dc2626",
-                                color: "#dc2626",
-                                minWidth: 84,
-                                textTransform: "none",
-                                "&:hover": {
-                                    bgcolor: "rgba(220, 38, 38, 0.08)",
-                                    borderColor: "#b91c1c",
-                                },
-                            }}
-                            variant="outlined"
-                        >
-                            {actionPending === "delete" ? "Deleting" : "Delete"}
-                        </Button>
+                        {canWrite && (
+                            <Button
+                                disabled={Boolean(actionPending)}
+                                onClick={handleDelete}
+                                size="small"
+                                startIcon={
+                                    <DeleteOutlineIcon fontSize="small" />
+                                }
+                                sx={{
+                                    borderColor: "#dc2626",
+                                    color: "#dc2626",
+                                    minWidth: 84,
+                                    textTransform: "none",
+                                    "&:hover": {
+                                        bgcolor: "rgba(220, 38, 38, 0.08)",
+                                        borderColor: "#b91c1c",
+                                    },
+                                }}
+                                variant="outlined"
+                            >
+                                {actionPending === "delete"
+                                    ? "Deleting"
+                                    : "Delete"}
+                            </Button>
+                        )}
                         <IconButton onClick={onClose} size="small">
                             <CloseIcon fontSize="small" />
                         </IconButton>
@@ -1721,8 +1736,8 @@ const PodDetailsPanel = ({
                 variant="scrollable"
             >
                 <Tab label="Overview" value="overview" />
-                <Tab label="Logs" value="logs" />
-                <Tab label="Terminal" value="terminal" />
+                {canWrite && <Tab label="Logs" value="logs" />}
+                {canWrite && <Tab label="Terminal" value="terminal" />}
                 <Tab label="YAML" value="yaml" />
                 <Tab label="Events" value="events" />
             </Tabs>
@@ -1750,7 +1765,7 @@ const PodDetailsPanel = ({
                     <PodOverview pod={pod} />
                 ) : selectedTab === "yaml" ? (
                     <PodYamlView enabled name={name} namespace={namespace} />
-                ) : selectedTab === "logs" ? (
+                ) : canWrite && selectedTab === "logs" ? (
                     <PodLogsView
                         container={selectedLogContainer}
                         containers={containers}
@@ -1762,7 +1777,7 @@ const PodDetailsPanel = ({
                         onTailLinesChange={setLogTailLines}
                         tailLines={logTailLines}
                     />
-                ) : selectedTab === "terminal" ? (
+                ) : canWrite && selectedTab === "terminal" ? (
                     <PodTerminalView pod={podData} />
                 ) : selectedTab === "events" ? (
                     <PodEventsView name={name} namespace={namespace} />

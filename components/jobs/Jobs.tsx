@@ -41,6 +41,7 @@ import {
 } from "../details/DetailComponents";
 import ResourceEventsPanel from "../details/ResourceEventsPanel";
 import JobStatusChip from "./JobStatusChip";
+import { useAuth } from "../auth/AuthProvider";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -132,7 +133,13 @@ const JobOverview = ({ job }) => (
     </Stack>
 );
 
-const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
+const JobDetailsDrawer = ({
+    canWrite = true,
+    job,
+    onClose,
+    selectedTab,
+    setSelectedTab,
+}) => {
     const queryClient = useQueryClient();
     const namespace = job?.metadata?.namespace;
     const name = job?.metadata?.name;
@@ -207,7 +214,7 @@ const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
                     return (
                         <YamlViewer
                             data={yamlQuery.data}
-                            editable
+                            editable={canWrite}
                             error={yamlQuery.error}
                             fill
                             isLoading={
@@ -247,6 +254,8 @@ const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
 };
 
 const Jobs = () => {
+    const auth = useAuth();
+    const canWrite = auth?.canWrite !== false;
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "All",
@@ -519,18 +528,20 @@ const Jobs = () => {
                     >
                         Refresh
                     </Button>
-                    <Button
-                        onClick={() => setCreateDialogOpen(true)}
-                        startIcon={<AddIcon fontSize="small" />}
-                        sx={{
-                            bgcolor: "#ff4d2d",
-                            textTransform: "none",
-                            "&:hover": { bgcolor: "#e84325" },
-                        }}
-                        variant="contained"
-                    >
-                        Create Job
-                    </Button>
+                    {canWrite && (
+                        <Button
+                            onClick={() => setCreateDialogOpen(true)}
+                            startIcon={<AddIcon fontSize="small" />}
+                            sx={{
+                                bgcolor: "#ff4d2d",
+                                textTransform: "none",
+                                "&:hover": { bgcolor: "#e84325" },
+                            }}
+                            variant="contained"
+                        >
+                            Create Job
+                        </Button>
+                    )}
                 </Box>
             </Box>
             {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -546,6 +557,7 @@ const Jobs = () => {
                 handleFilterClose={handleFilterClose}
                 sortDirection={sortDirection}
                 toggleSortDirection={toggleSortDirection}
+                canWrite={canWrite}
                 reloadJobs={() =>
                     queryClient.invalidateQueries({ queryKey: ["jobs"] })
                 }
@@ -557,19 +569,22 @@ const Jobs = () => {
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />
             <JobDetailsDrawer
+                canWrite={canWrite}
                 job={selectedJob}
                 onClose={() => setSelectedJob(null)}
                 selectedTab={selectedTab}
                 setSelectedTab={setSelectedTab}
             />
-            <CreateJobDialog
-                open={createDialogOpen}
-                onClose={() => setCreateDialogOpen(false)}
-                onCreate={handleCreateJob}
-                title="Create a Job"
-                resourceNameLabel="Job Name"
-                resourceType="Job"
-            />
+            {canWrite && (
+                <CreateJobDialog
+                    open={createDialogOpen}
+                    onClose={() => setCreateDialogOpen(false)}
+                    onCreate={handleCreateJob}
+                    title="Create a Job"
+                    resourceNameLabel="Job Name"
+                    resourceType="Job"
+                />
+            )}
         </Box>
     );
 };

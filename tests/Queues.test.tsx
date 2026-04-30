@@ -3,7 +3,16 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+const mocks = vi.hoisted(() => ({
+    auth: {
+        canWrite: true,
+    },
+}));
+
 vi.mock("axios");
+vi.mock("../components/auth/AuthProvider", () => ({
+    useAuth: () => mocks.auth,
+}));
 
 const queueResponse = {
     data: {
@@ -62,6 +71,7 @@ describe("Queues", () => {
     };
 
     beforeEach(() => {
+        mocks.auth.canWrite = true;
         const storage = {};
         vi.stubGlobal("localStorage", {
             getItem: (key) => storage[key] || null,
@@ -92,5 +102,18 @@ describe("Queues", () => {
             expect(screen.getByText(/queue: prod/i)).toBeInTheDocument();
         });
         expect(screen.getByText("Create Queue")).toBeInTheDocument();
+    });
+
+    it("hides queue write actions for read-only users", async () => {
+        mocks.auth.canWrite = false;
+
+        renderQueues();
+
+        await waitFor(() => {
+            expect(screen.getByText("prod")).toBeInTheDocument();
+        });
+
+        expect(screen.queryByText("Create Queue")).not.toBeInTheDocument();
+        expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     });
 });

@@ -214,6 +214,7 @@ export default function DashboardShell({ children }) {
     const [open, setOpen] = useState(true);
     const [adminOpen, setAdminOpen] = useState(false);
     const isOverlayDrawer = mounted && overlayDrawerMatch;
+    const showAdminMenu = auth?.authConfig?.authRequired !== false;
 
     useEffect(() => {
         setMounted(true);
@@ -423,44 +424,48 @@ export default function DashboardShell({ children }) {
                 <List dense disablePadding>
                     {footerItems.map(renderMenuItem)}
                 </List>
-                <ListItemButton
-                    aria-expanded={adminOpen}
-                    aria-label="Toggle admin menu"
-                    onClick={() => setAdminOpen((value) => !value)}
-                    sx={{
-                        alignItems: "center",
-                        borderRadius: "6px",
-                        display: "flex",
-                        gap: 1.25,
-                        justifyContent: open ? "space-between" : "center",
-                        minHeight: 34,
-                        mx: open ? 1.25 : 0.75,
-                        px: open ? 1.25 : 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.08)",
-                        },
-                    }}
-                >
-                    <Box
+                {showAdminMenu && (
+                    <ListItemButton
+                        aria-expanded={adminOpen}
+                        aria-label="Toggle admin menu"
+                        onClick={() => setAdminOpen((value) => !value)}
                         sx={{
                             alignItems: "center",
+                            borderRadius: "6px",
                             display: "flex",
-                            gap: 1,
+                            gap: 1.25,
+                            justifyContent: open ? "space-between" : "center",
+                            minHeight: 34,
+                            mx: open ? 1.25 : 0.75,
+                            px: open ? 1.25 : 1,
+                            "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.08)",
+                            },
                         }}
                     >
-                        <AccountCircleOutlinedIcon {...iconProps} />
-                        {open && (
-                            <Typography sx={{ fontSize: 13 }}>admin</Typography>
-                        )}
-                    </Box>
-                    {open &&
-                        (adminOpen ? (
-                            <ExpandLessIcon {...iconProps} />
-                        ) : (
-                            <ExpandMoreIcon {...iconProps} />
-                        ))}
-                </ListItemButton>
-                {open && adminOpen && (
+                        <Box
+                            sx={{
+                                alignItems: "center",
+                                display: "flex",
+                                gap: 1,
+                            }}
+                        >
+                            <AccountCircleOutlinedIcon {...iconProps} />
+                            {open && (
+                                <Typography sx={{ fontSize: 13 }}>
+                                    admin
+                                </Typography>
+                            )}
+                        </Box>
+                        {open &&
+                            (adminOpen ? (
+                                <ExpandLessIcon {...iconProps} />
+                            ) : (
+                                <ExpandMoreIcon {...iconProps} />
+                            ))}
+                    </ListItemButton>
+                )}
+                {showAdminMenu && open && adminOpen && (
                     <Box
                         sx={{
                             bgcolor: "#ffffff",

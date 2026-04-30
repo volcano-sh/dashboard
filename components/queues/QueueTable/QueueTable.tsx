@@ -13,6 +13,7 @@ import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
 import { API_BASE } from "../../../lib/client/dashboard-api";
+import { getStoredToken } from "../../../lib/client/auth-token";
 
 const QueueTable = ({
     sortedQueues,
@@ -54,6 +55,7 @@ const QueueTable = ({
     const handleDelete = async () => {
         try {
             setIsDeleting(true);
+            const token = getStoredToken();
 
             const response = await fetch(
                 `${API_BASE}/queues/${encodeURIComponent(queueToDelete)}`,
@@ -62,6 +64,7 @@ const QueueTable = ({
                     headers: {
                         "Content-Type": "application/json",
                         Accept: "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     },
                 },
             );

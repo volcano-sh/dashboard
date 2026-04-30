@@ -1,6 +1,8 @@
+import { withRead } from "../../../../../../../../lib/server/auth";
+
 export const runtime = "nodejs";
 
-export async function GET() {
+export const GET = withRead(() => {
     return new Response("Pod event streaming requires a WebSocket upgrade.", {
         status: 426,
         headers: {
@@ -8,4 +10,4 @@ export async function GET() {
             Upgrade: "websocket",
         },
     });
-}
+});

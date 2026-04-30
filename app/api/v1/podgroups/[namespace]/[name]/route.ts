@@ -4,25 +4,26 @@ import {
     patchPodGroup,
     updatePodGroup,
 } from "../../../../../../lib/server/volcano-api";
+import { withRead, withWrite } from "../../../../../../lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request, context) {
+export const GET = withRead(async (request, context) => {
     const { namespace, name } = await context.params;
     return getPodGroup(namespace, name);
-}
+});
 
-export async function PATCH(request, context) {
+export const PATCH = withWrite(async (request, context) => {
     const { namespace, name } = await context.params;
     return patchPodGroup(request, namespace, name);
-}
+});
 
-export async function PUT(request, context) {
+export const PUT = withWrite(async (request, context) => {
     const { namespace, name } = await context.params;
     return updatePodGroup(request, namespace, name);
-}
+});
 
-export async function DELETE(request, context) {
+export const DELETE = withWrite(async (request, context) => {
     const { namespace, name } = await context.params;
     return deletePodGroup(namespace, name);
-}
+});

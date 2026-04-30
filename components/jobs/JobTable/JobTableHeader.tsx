@@ -20,6 +20,7 @@ const JobTableHeader = ({
     anchorEl,
     handleFilterClick,
     handleFilterClose,
+    canWrite = true,
     sortDirection,
     toggleSortDirection,
 }) => {
@@ -179,28 +180,29 @@ const JobTableHeader = ({
                     />
                 </TableCell>
 
-                {/* New Actions Column */}
-                <TableCell
-                    sx={{
-                        backgroundColor: alpha(
-                            theme.palette.background.paper,
-                            0.8,
-                        ),
-                        backdropFilter: "blur(8px)",
-                        padding: "16px 24px",
-                        minWidth: 140,
-                        borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    }}
-                >
-                    <Typography
-                        variant="subtitle1"
-                        fontWeight="700"
-                        color="text.primary"
-                        sx={{ letterSpacing: "0.02em" }}
+                {canWrite && (
+                    <TableCell
+                        sx={{
+                            backgroundColor: alpha(
+                                theme.palette.background.paper,
+                                0.8,
+                            ),
+                            backdropFilter: "blur(8px)",
+                            padding: "16px 24px",
+                            minWidth: 140,
+                            borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                        }}
                     >
-                        Actions
-                    </Typography>
-                </TableCell>
+                        <Typography
+                            variant="subtitle1"
+                            fontWeight="700"
+                            color="text.primary"
+                            sx={{ letterSpacing: "0.02em" }}
+                        >
+                            Actions
+                        </Typography>
+                    </TableCell>
+                )}
             </TableRow>
         </TableHead>
     );

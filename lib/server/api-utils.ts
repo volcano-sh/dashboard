@@ -17,20 +17,29 @@ export const toInt = (value, fallback) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-export const apiError = (error, fallback, status = undefined) =>
-    json(
+export const apiError = (error, fallback, status = undefined) => {
+    const upstreamStatus = status || getErrorStatus(error);
+    const k8s = error?.body || error?.response?.body;
+    const isKubernetesUnauthorized = !status && upstreamStatus === 401 && k8s;
+    const responseStatus = isKubernetesUnauthorized ? 502 : upstreamStatus;
+
+    return json(
         {
-            error:
-                error?.body?.reason ||
-                error?.response?.body?.reason ||
-                fallback,
-            message: getErrorMessage(error, fallback),
+            error: isKubernetesUnauthorized
+                ? "Kubernetes API Unauthorized"
+                : error?.body?.reason ||
+                  error?.response?.body?.reason ||
+                  fallback,
+            message: isKubernetesUnauthorized
+                ? `${fallback}: Kubernetes API returned 401. Check the dashboard pod service account, kubeconfig, or cluster credentials.`
+                : getErrorMessage(error, fallback),
             details: error?.body?.details || error?.response?.body?.details,
-            code: status || getErrorStatus(error),
-            k8s: error?.body || error?.response?.body,
+            code: upstreamStatus,
+            k8s,
         },
-        status || getErrorStatus(error),
+        responseStatus,
     );
+};
 
 export function filterBySearch(items, searchTerm, getFields) {
     if (!searchTerm) return items;

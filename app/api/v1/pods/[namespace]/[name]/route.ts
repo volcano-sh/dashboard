@@ -1,13 +1,14 @@
 import { deletePod, getPod } from "../../../../../../lib/server/volcano-api";
+import { withRead, withWrite } from "../../../../../../lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request, context) {
+export const GET = withRead(async (request, context) => {
     const { namespace, name } = await context.params;
     return getPod(namespace, name);
-}
+});
 
-export async function DELETE(request, context) {
+export const DELETE = withWrite(async (request, context) => {
     const { namespace, name } = await context.params;
     return deletePod(namespace, name);
-}
+});

@@ -58,6 +58,7 @@ import {
     getQueueUsageSummary,
     QUEUE_RESOURCE_COLUMNS,
 } from "./queueResourceUsage";
+import { useAuth } from "../auth/AuthProvider";
 
 const getQueueName = (queue) => queue?.metadata?.name || "-";
 
@@ -742,6 +743,7 @@ const QueueOverviewPanel = ({ queueMap, selectedQueue }) => (
 );
 
 const QueueDetailsPanel = ({
+    canWrite = true,
     onClose,
     onYamlSaved,
     queueMap,
@@ -790,7 +792,7 @@ const QueueDetailsPanel = ({
                 tab === "configuration" ? (
                     <YamlViewer
                         data={yamlQuery.data}
-                        editable
+                        editable={canWrite}
                         error={yamlQuery.error}
                         fill
                         isLoading={yamlQuery.isLoading || yamlQuery.isFetching}
@@ -1097,6 +1099,7 @@ const QueueLegends = () => (
 );
 
 const QueueHierarchyView = ({
+    canWrite = true,
     treeData,
     selectedQueue,
     queueMap,
@@ -1239,15 +1242,17 @@ const QueueHierarchyView = ({
                                 <TableCell sx={{ minWidth: 110 }}>
                                     Health
                                 </TableCell>
-                                <TableCell sx={{ width: 72 }}>
-                                    Actions
-                                </TableCell>
+                                {canWrite && (
+                                    <TableCell sx={{ width: 72 }}>
+                                        Actions
+                                    </TableCell>
+                                )}
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {visibleRows.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8}>
+                                    <TableCell colSpan={canWrite ? 8 : 7}>
                                         No queues found.
                                     </TableCell>
                                 </TableRow>
@@ -1312,13 +1317,15 @@ const QueueHierarchyView = ({
                                             <TableCell>
                                                 <HealthBadge health={health} />
                                             </TableCell>
-                                            <TableCell>
-                                                <IconButton size="small">
-                                                    <MoreVertIcon
-                                                        sx={{ fontSize: 16 }}
-                                                    />
-                                                </IconButton>
-                                            </TableCell>
+                                    {canWrite && (
+                                        <TableCell>
+                                            <IconButton size="small">
+                                                <MoreVertIcon
+                                                    sx={{ fontSize: 16 }}
+                                                />
+                                            </IconButton>
+                                        </TableCell>
+                                    )}
                                         </TableRow>
                                     );
                                 })
@@ -1351,6 +1358,7 @@ const QueueHierarchyView = ({
             <QueueDetailsPanel
                 onClose={onCloseQueueDetails}
                 onYamlSaved={onYamlSaved}
+                canWrite={canWrite}
                 selectedQueue={selectedQueue}
                 queueMap={queueMap}
             />
@@ -1359,6 +1367,8 @@ const QueueHierarchyView = ({
 };
 
 const Queues = () => {
+    const auth = useAuth();
+    const canWrite = auth?.canWrite !== false;
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -1584,18 +1594,20 @@ const Queues = () => {
                     >
                         Refresh
                     </Button>
-                    <Button
-                        onClick={() => setCreateDialogOpen(true)}
-                        startIcon={<AddIcon fontSize="small" />}
-                        sx={{
-                            bgcolor: "#ff4d2d",
-                            textTransform: "none",
-                            "&:hover": { bgcolor: "#e84325" },
-                        }}
-                        variant="contained"
-                    >
-                        Create Queue
-                    </Button>
+                    {canWrite && (
+                        <Button
+                            onClick={() => setCreateDialogOpen(true)}
+                            startIcon={<AddIcon fontSize="small" />}
+                            sx={{
+                                bgcolor: "#ff4d2d",
+                                textTransform: "none",
+                                "&:hover": { bgcolor: "#e84325" },
+                            }}
+                            variant="contained"
+                        >
+                            Create Queue
+                        </Button>
+                    )}
                 </Box>
             </Box>
 
@@ -1609,6 +1621,7 @@ const Queues = () => {
                 totalQueues={filteredQueues.length || totalQueues}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
+                canWrite={canWrite}
                 onSelectQueue={(queue) =>
                     setSelectedQueueName(getQueueName(queue))
                 }
@@ -1616,14 +1629,16 @@ const Queues = () => {
                 onYamlSaved={fetchQueues}
             />
 
-            <CreateDialog
-                open={createDialogOpen}
-                onClose={() => setCreateDialogOpen(false)}
-                onCreate={handleCreateQueue}
-                title="Create a Queue"
-                resourceNameLabel="Queue Name"
-                resourceType="Queue"
-            />
+            {canWrite && (
+                <CreateDialog
+                    open={createDialogOpen}
+                    onClose={() => setCreateDialogOpen(false)}
+                    onCreate={handleCreateQueue}
+                    title="Create a Queue"
+                    resourceNameLabel="Queue Name"
+                    resourceType="Queue"
+                />
+            )}
         </Box>
     );
 };

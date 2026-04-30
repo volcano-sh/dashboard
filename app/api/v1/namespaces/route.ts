@@ -1,7 +1,8 @@
 import { listNamespaces } from "../../../../lib/server/volcano-api";
+import { withRead } from "../../../../lib/server/auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request) {
+export const GET = withRead((request) => {
     return listNamespaces(request);
-}
+});

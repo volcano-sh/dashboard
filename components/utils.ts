@@ -1,8 +1,16 @@
 import { API_BASE } from "../lib/client/dashboard-api";
+import { getStoredToken } from "../lib/client/auth-token";
+
+const authorizationHeaders = () => {
+    const token = getStoredToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export const fetchAllNamespaces = async () => {
     try {
-        const response = await fetch(`${API_BASE}/namespaces`);
+        const response = await fetch(`${API_BASE}/namespaces`, {
+            headers: authorizationHeaders(),
+        });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -21,7 +29,9 @@ export const fetchAllNamespaces = async () => {
 
 export const fetchAllQueues = async () => {
     try {
-        const response = await fetch(`${API_BASE}/queues`);
+        const response = await fetch(`${API_BASE}/queues`, {
+            headers: authorizationHeaders(),
+        });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

@@ -17,6 +17,7 @@ import {
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 import { API_BASE } from "../../../lib/client/dashboard-api";
+import { getStoredToken } from "../../../lib/client/auth-token";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
@@ -216,12 +217,16 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             }
 
             setSaving(true);
+            const token = getStoredToken();
 
             const resp = await fetch(
                 `${API_BASE}/queues/${updated.metadata.name}`,
                 {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
                     body: JSON.stringify({ spec: updated.spec }),
                 },
             );
