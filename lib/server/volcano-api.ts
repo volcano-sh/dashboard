@@ -20,10 +20,7 @@ import {
     withPodSummary,
     withQueueSummary,
 } from "./summary-mappers";
-import {
-    schedulerConfigJson,
-    schedulerConfigYaml,
-} from "./scheduler-config";
+import { schedulerConfigJson, schedulerConfigYaml } from "./scheduler-config";
 
 const getApis = () => {
     const { k8sApi, k8sCoreApi } = getKubernetesClients();
@@ -86,6 +83,28 @@ const normalizeKubernetesEvents = (items) =>
                 new Date(b.lastTimestamp || 0).getTime() -
                 new Date(a.lastTimestamp || 0).getTime(),
         );
+
+const eventListItems = (response) =>
+    response?.items || response?.body?.items || response?.data?.items || [];
+
+const listResourceEvents = async ({ kind, name, namespace = null }) => {
+    const { k8sCoreApi } = getApis();
+    const fieldSelector = `involvedObject.kind=${kind},involvedObject.name=${name}`;
+    const response = namespace
+        ? await k8sCoreApi.listNamespacedEvent({
+              namespace,
+              fieldSelector,
+          })
+        : await k8sCoreApi.listEventForAllNamespaces({
+              fieldSelector,
+          });
+    const normalized = normalizeKubernetesEvents(eventListItems(response));
+
+    return json({
+        items: normalized,
+        totalCount: normalized.length,
+    });
+};
 
 const queryOptions = (request) => {
     const { searchParams } = new URL(request.url);
@@ -188,24 +207,10 @@ export async function getJobYaml(namespace, name) {
 
 export async function getJobEvents(namespace, name) {
     try {
-        const { k8sCoreApi } = getApis();
-        const response = await k8sCoreApi.listNamespacedEvent(
+        return await listResourceEvents({
+            kind: "Job",
+            name,
             namespace,
-            undefined,
-            undefined,
-            undefined,
-            `involvedObject.name=${name}`,
-        );
-        const items =
-            response?.items ||
-            response?.body?.items ||
-            response?.data?.items ||
-            [];
-        const normalized = normalizeKubernetesEvents(items);
-
-        return json({
-            items: normalized,
-            totalCount: normalized.length,
         });
     } catch (error) {
         return apiError(error, "Failed to fetch job events");
@@ -408,24 +413,10 @@ export async function getCronJobYaml(namespace, name) {
 
 export async function getCronJobEvents(namespace, name) {
     try {
-        const { k8sCoreApi } = getApis();
-        const response = await k8sCoreApi.listNamespacedEvent(
+        return await listResourceEvents({
+            kind: "CronJob",
+            name,
             namespace,
-            undefined,
-            undefined,
-            undefined,
-            `involvedObject.name=${name}`,
-        );
-        const items =
-            response?.items ||
-            response?.body?.items ||
-            response?.data?.items ||
-            [];
-        const normalized = normalizeKubernetesEvents(items);
-
-        return json({
-            items: normalized,
-            totalCount: normalized.length,
         });
     } catch (error) {
         return apiError(error, "Failed to fetch cronjob events");
@@ -553,6 +544,18 @@ export async function getPodGroupYaml(namespace, name) {
         return text(yamlResponse(response));
     } catch (error) {
         return apiError(error, "Failed to fetch podgroup YAML");
+    }
+}
+
+export async function getPodGroupEvents(namespace, name) {
+    try {
+        return await listResourceEvents({
+            kind: "PodGroup",
+            name,
+            namespace,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to fetch podgroup events");
     }
 }
 
@@ -730,6 +733,17 @@ export async function getQueueYaml(name) {
         return text(yamlResponse(response));
     } catch (error) {
         return apiError(error, "Failed to fetch queue YAML");
+    }
+}
+
+export async function getQueueEvents(name) {
+    try {
+        return await listResourceEvents({
+            kind: "Queue",
+            name,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to fetch queue events");
     }
 }
 
@@ -998,21 +1012,10 @@ export async function getPodLogs(request, namespace, name) {
 
 export async function getPodEvents(namespace, name) {
     try {
-        const { k8sCoreApi } = getApis();
-        const response = await k8sCoreApi.listNamespacedEvent({
+        return await listResourceEvents({
+            kind: "Pod",
+            name,
             namespace,
-            fieldSelector: `involvedObject.kind=Pod,involvedObject.name=${name}`,
-        });
-        const items =
-            response?.items ||
-            response?.body?.items ||
-            response?.data?.items ||
-            [];
-        const normalized = normalizeKubernetesEvents(items);
-
-        return json({
-            items: normalized,
-            totalCount: normalized.length,
         });
     } catch (error) {
         return apiError(error, "Failed to fetch pod events");
@@ -1083,6 +1086,9 @@ export async function handleApiRequest(request, pathSegments) {
     if (resource === "jobs" && rest.length === 3 && rest[2] === "yaml") {
         return getJobYaml(rest[0], rest[1]);
     }
+    if (resource === "jobs" && rest.length === 3 && rest[2] === "events") {
+        return getJobEvents(rest[0], rest[1]);
+    }
     if (resource === "podgroups" && rest.length === 0) {
         if (method === "GET") return listPodGroups(request);
         if (method === "POST") return createPodGroup(request);
@@ -1101,6 +1107,14 @@ export async function handleApiRequest(request, pathSegments) {
     ) {
         return getPodGroupYaml(rest[0], rest[1]);
     }
+    if (
+        resource === "podgroups" &&
+        rest.length === 3 &&
+        rest[2] === "events" &&
+        method === "GET"
+    ) {
+        return getPodGroupEvents(rest[0], rest[1]);
+    }
 
     if (resource === "queues" && rest.length === 0) {
         if (method === "GET") return listQueues(request);
@@ -1114,6 +1128,9 @@ export async function handleApiRequest(request, pathSegments) {
     }
     if (resource === "queues" && rest.length === 2 && rest[1] === "yaml") {
         return getQueueYaml(rest[0]);
+    }
+    if (resource === "queues" && rest.length === 2 && rest[1] === "events") {
+        return getQueueEvents(rest[0]);
     }
     if (resource === "queues" && rest.length === 2 && method === "PATCH") {
         return patchNamespacedQueue(request, rest[0], rest[1]);
@@ -1138,6 +1155,14 @@ export async function handleApiRequest(request, pathSegments) {
     ) {
         return getCronJobYaml(rest[0], rest[1]);
     }
+    if (
+        resource === "cronjobs" &&
+        rest.length === 3 &&
+        rest[2] === "events" &&
+        method === "GET"
+    ) {
+        return getCronJobEvents(rest[0], rest[1]);
+    }
 
     if (resource === "pods" && rest.length === 0) {
         if (method === "GET") return listPods(request);
@@ -1148,6 +1173,9 @@ export async function handleApiRequest(request, pathSegments) {
     }
     if (resource === "pods" && rest.length === 3 && rest[2] === "yaml") {
         return getPodYaml(rest[0], rest[1]);
+    }
+    if (resource === "pods" && rest.length === 3 && rest[2] === "events") {
+        return getPodEvents(rest[0], rest[1]);
     }
     if (resource === "scheduler" && rest[0] === "config") {
         const { k8sCoreApi } = getApis();

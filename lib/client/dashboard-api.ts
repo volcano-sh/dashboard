@@ -116,6 +116,13 @@ export const fetchPodGroup = async (namespace, name) => {
     return response.data;
 };
 
+export const fetchPodGroupEvents = async (namespace, name) => {
+    const response = await axios.get(
+        `${API_BASE}/podgroups/${namespace}/${name}/events`,
+    );
+    return response.data;
+};
+
 export const createPodGroup = async (podGroup) => {
     const response = await axios.post(`${API_BASE}/podgroups`, podGroup, {
         headers: { "Content-Type": "application/json" },
@@ -211,6 +218,11 @@ export const fetchQueueYaml = async (name) => {
     const response = await axios.get(`${API_BASE}/queues/${name}/yaml`, {
         responseType: "text",
     });
+    return response.data;
+};
+
+export const fetchQueueEvents = async (name) => {
+    const response = await axios.get(`${API_BASE}/queues/${name}/events`);
     return response.data;
 };
 
