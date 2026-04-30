@@ -122,6 +122,7 @@ export const ResourceStatusBar = ({ resource, stats, valueText }) => {
         `Guarantee: ${stats.guaranteeLabel}`,
         `Capability: ${stats.capabilityLabel}`,
         `Usage: ${stats.usageLabel}`,
+        `Values: ${valueText}`,
         stats.overCapability ? "Used exceeds capability" : null,
     ]
         .filter(Boolean)
@@ -132,9 +133,10 @@ export const ResourceStatusBar = ({ resource, stats, valueText }) => {
             sx={{
                 alignItems: "center",
                 display: "grid",
-                gap: 1.2,
-                gridTemplateColumns: "56px minmax(140px, 1fr) 238px",
+                gap: 0.9,
+                gridTemplateColumns: "58px minmax(120px, 1fr) 64px",
                 minHeight: 20,
+                width: "100%",
             }}
         >
             <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
@@ -147,10 +149,12 @@ export const ResourceStatusBar = ({ resource, stats, valueText }) => {
                     fontFamily:
                         '"SFMono-Regular", "Roboto Mono", Consolas, monospace',
                     fontSize: 12,
+                    fontWeight: 700,
+                    textAlign: "right",
                     whiteSpace: "nowrap",
                 }}
             >
-                {valueText}
+                {stats.usageLabel}
             </Typography>
         </Box>
     );
@@ -166,7 +170,7 @@ export const ResourceStatusBar = ({ resource, stats, valueText }) => {
 };
 
 export const ResourceStatusBars = ({ resources }) => (
-    <Box sx={{ display: "grid", gap: 0.5, py: 0.25 }}>
+    <Box sx={{ display: "grid", gap: 0.65, minWidth: 320, py: 0.25 }}>
         {resources.map((item) => (
             <ResourceStatusBar
                 key={item.resource.key}
@@ -207,8 +211,8 @@ export const ResourceStatusDetailBar = ({
                     mt: 0.75,
                 }}
             >
-                {scaleLabels.map((label) => (
-                    <span key={label}>{label}</span>
+                {scaleLabels.map((label, index) => (
+                    <span key={`${label}-${index}`}>{label}</span>
                 ))}
             </Box>
         </Box>

@@ -47,15 +47,17 @@ import { tableNameSx, tableNumericSx } from "../scheduling/tableDataStyles";
 import SchedulingStatusChip from "../scheduling/SchedulingStatusChip";
 import {
     getUsageToneColor,
-    ResourceStatusBars,
-    ResourceStatusDetailBar,
     ResourceStatusLegend,
 } from "../scheduling/ResourceStatus";
-
-const formatResource = (value, fallback = "0") => {
-    if (value === undefined || value === null || value === "") return fallback;
-    return String(value);
-};
+import {
+    QueueResourceUsageBars,
+    QueueResourceUsageDetailBar,
+} from "./QueueResourceUsageView";
+import {
+    getQueueResourceStats,
+    getQueueUsageSummary,
+    QUEUE_RESOURCE_COLUMNS,
+} from "./queueResourceUsage";
 
 const getQueueName = (queue) => queue?.metadata?.name || "-";
 
@@ -65,125 +67,9 @@ const getStatus = (queue) => {
     return state;
 };
 
-const getSpecResource = (queue, key, resourceKey) => {
-    const section = queue?.spec?.[key];
-    if (!section) return undefined;
-    return section?.resource?.[resourceKey] || section?.[resourceKey];
-};
-
-const getStatusResource = (queue, key, resourceKey) => {
-    return queue?.status?.[key]?.[resourceKey];
-};
-
 const formatDate = (date) => {
     if (!date) return "-";
     return new Date(date).toLocaleString();
-};
-
-const parseNumber = (value) => {
-    const parsed = Number.parseFloat(
-        String(value || "0").replace(/[^\d.]/g, ""),
-    );
-    return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const RESOURCE_COLUMNS = [
-    {
-        key: "cpu",
-        label: "CPU",
-        resourceKey: "cpu",
-        unit: "cores",
-    },
-    {
-        key: "memory",
-        label: "Memory",
-        resourceKey: "memory",
-        unit: "Gi",
-    },
-    {
-        key: "gpu",
-        label: "GPU",
-        resourceKey: "nvidia.com/gpu",
-        fallbackKeys: ["gpu"],
-        unit: "GPUs",
-    },
-];
-
-const getResourceFromSection = (queue, section, resource) => {
-    const keys = [resource.resourceKey, ...(resource.fallbackKeys || [])];
-    for (const key of keys) {
-        const value =
-            section === "status"
-                ? getStatusResource(queue, "allocated", key)
-                : getSpecResource(queue, section, key);
-        if (value !== undefined && value !== null && value !== "") {
-            return value;
-        }
-    }
-    return undefined;
-};
-
-const getPendingResource = (queue, resource) => {
-    const keys = [resource.resourceKey, ...(resource.fallbackKeys || [])];
-    for (const key of keys) {
-        const value =
-            getStatusResource(queue, "pending", key) ||
-            getStatusResource(queue, "inqueue", key);
-        if (value !== undefined && value !== null && value !== "") {
-            return value;
-        }
-    }
-    return undefined;
-};
-
-const getResourceStats = (queue, resource) => {
-    const guaranteeRaw = getResourceFromSection(queue, "guarantee", resource);
-    const usedRaw = getResourceFromSection(queue, "status", resource);
-    const deservedRaw = getResourceFromSection(queue, "deserved", resource);
-    const capabilityRaw = getResourceFromSection(queue, "capability", resource);
-    const guarantee = parseNumber(guaranteeRaw);
-    const used = parseNumber(usedRaw);
-    const deserved = parseNumber(deservedRaw);
-    const capability = parseNumber(capabilityRaw);
-    const scale = Math.max(capability, deserved, guarantee, used, 1);
-    const usagePercent = deserved ? (used / deserved) * 100 : 0;
-    const guaranteePercent = scale
-        ? Math.min((guarantee / scale) * 100, 100)
-        : 0;
-    const deservedPercent = scale ? Math.min((deserved / scale) * 100, 100) : 0;
-    const usedPercent = scale ? Math.min((used / scale) * 100, 100) : 0;
-    const overCapability = Boolean(capability && used > capability);
-    const usageTone = overCapability
-        ? "hot"
-        : !used
-          ? "idle"
-          : usagePercent > 110
-            ? "hot"
-            : usagePercent < 50
-              ? "starving"
-              : usagePercent < 70
-                ? "underused"
-                : "healthy";
-
-    return {
-        capability,
-        capabilityLabel: formatResource(capabilityRaw, "0"),
-        deserved,
-        deservedLabel: formatResource(deservedRaw, "0"),
-        deservedPercent,
-        guarantee,
-        guaranteeLabel: formatResource(guaranteeRaw, "0"),
-        guaranteePercent,
-        overCapability,
-        pendingLabel: formatResource(getPendingResource(queue, resource)),
-        scale,
-        usageLabel: deserved ? `${Math.round(usagePercent)}%` : "0%",
-        usagePercent,
-        usageTone,
-        used,
-        usedLabel: formatResource(usedRaw, "0"),
-        usedPercent,
-    };
 };
 
 const healthStyles = {
@@ -242,31 +128,14 @@ const statusStyles = {
     },
 };
 
-const hasUnit = (value) => /[a-zA-Z]/.test(String(value || ""));
-
-const formatResourceMetric = (value, resource, includeUnit = true) => {
-    if (!includeUnit || hasUnit(value)) return value;
-    return `${value} ${resource.unit}`;
-};
-
-const formatResourceValueText = (stats, resource) => {
-    const values = [
-        stats.usedLabel,
-        stats.deservedLabel,
-        stats.capabilityLabel,
-    ];
-    const suffix = values.some(hasUnit) ? "" : ` ${resource.unit}`;
-    return `${values.join(" / ")}${suffix} (${stats.usageLabel})`;
-};
-
 const getHealth = (queue) => {
     const status = getStatus(queue).toLowerCase();
     if (status.includes("invalid")) {
         return healthStyles.invalid;
     }
 
-    const stats = RESOURCE_COLUMNS.map((resource) =>
-        getResourceStats(queue, resource),
+    const stats = QUEUE_RESOURCE_COLUMNS.map((resource) =>
+        getQueueResourceStats(queue, resource),
     );
     const pendingJobs = Number(getPendingJobs(queue)) || 0;
     const runningJobsText = getRunningPodsJobs(queue);
@@ -356,35 +225,6 @@ const DetailRow = ({ label, value, valueNode }: DetailRowProps) => (
         <Typography sx={{ fontSize: 13 }}>{label}:</Typography>
         <Box sx={{ fontSize: 13 }}>{valueNode || value}</Box>
     </Box>
-);
-
-const getResourceStatusItems = (queue) =>
-    RESOURCE_COLUMNS.map((resource) => {
-        const stats = getResourceStats(queue, resource);
-        return {
-            resource,
-            stats: {
-                ...stats,
-                capabilityLabel: formatResourceMetric(
-                    stats.capabilityLabel,
-                    resource,
-                ),
-                deservedLabel: formatResourceMetric(
-                    stats.deservedLabel,
-                    resource,
-                ),
-                guaranteeLabel: formatResourceMetric(
-                    stats.guaranteeLabel,
-                    resource,
-                ),
-                usedLabel: formatResourceMetric(stats.usedLabel, resource),
-            },
-            valueText: formatResourceValueText(stats, resource),
-        };
-    });
-
-const ResourceBars = ({ queue }) => (
-    <ResourceStatusBars resources={getResourceStatusItems(queue)} />
 );
 
 const HealthBadge = ({ health }) => (
@@ -607,20 +447,6 @@ const BasicInfoCard = ({ queueMap, selectedQueue }) => {
     );
 };
 
-const getQueueUsageSummary = (queue) => {
-    const stats = RESOURCE_COLUMNS.map((resource) => ({
-        ...getResourceStats(queue, resource),
-        label: resource.label,
-    }));
-    const deservedTotal = stats.reduce((sum, item) => sum + item.deserved, 0);
-    const usedTotal = stats.reduce((sum, item) => sum + item.used, 0);
-    const usagePercent = deservedTotal
-        ? Math.round((usedTotal / deservedTotal) * 100)
-        : 0;
-
-    return { stats, usagePercent };
-};
-
 const HealthCard = ({ selectedQueue }) => {
     const health = getHealth(selectedQueue);
     const { stats, usagePercent } = getQueueUsageSummary(selectedQueue);
@@ -756,28 +582,6 @@ const HealthCard = ({ selectedQueue }) => {
     );
 };
 
-const DetailResourceBar = ({ mode, queue, resource }) => {
-    const stats = getResourceStats(queue, resource);
-    const valueText =
-        mode === "percentage"
-            ? `${stats.usageLabel} used / deserved`
-            : formatResourceValueText(stats, resource);
-
-    return (
-        <ResourceStatusDetailBar
-            resource={resource}
-            scaleLabels={[
-                "0",
-                formatResourceMetric(stats.guaranteeLabel, resource),
-                formatResourceMetric(stats.deservedLabel, resource),
-                formatResourceMetric(stats.capabilityLabel, resource),
-            ]}
-            stats={stats}
-            valueText={valueText}
-        />
-    );
-};
-
 const ResourceSummaryCard = ({ selectedQueue }) => {
     const [mode, setMode] = useState("absolute");
 
@@ -835,8 +639,8 @@ const ResourceSummaryCard = ({ selectedQueue }) => {
             </Box>
             <ResourceStatusLegend />
             <Box sx={{ mt: 1.5 }}>
-                {RESOURCE_COLUMNS.map((resource) => (
-                    <DetailResourceBar
+                {QUEUE_RESOURCE_COLUMNS.map((resource) => (
+                    <QueueResourceUsageDetailBar
                         key={resource.key}
                         mode={mode}
                         queue={selectedQueue}
@@ -1383,7 +1187,7 @@ const QueueHierarchyView = ({
                     </IconButton>
                 </Box>
                 <TableContainer sx={{ overflowX: "auto" }}>
-                    <Table size="small" sx={{ minWidth: 1040 }}>
+                    <Table size="small" sx={{ minWidth: 980 }}>
                         <TableHead>
                             <TableRow
                                 sx={{
@@ -1411,7 +1215,7 @@ const QueueHierarchyView = ({
                                 </TableCell>
                                 <TableCell
                                     align="center"
-                                    sx={{ minWidth: 520 }}
+                                    sx={{ minWidth: 420 }}
                                 >
                                     <Box
                                         sx={{
@@ -1494,8 +1298,10 @@ const QueueHierarchyView = ({
                                             <TableCell sx={tableNumericSx}>
                                                 {getPriority(node, level)}
                                             </TableCell>
-                                            <TableCell>
-                                                <ResourceBars queue={node} />
+                                            <TableCell sx={{ minWidth: 420 }}>
+                                                <QueueResourceUsageBars
+                                                    queue={node}
+                                                />
                                             </TableCell>
                                             <TableCell sx={tableNumericSx}>
                                                 {getRunningPodsJobs(node)}
