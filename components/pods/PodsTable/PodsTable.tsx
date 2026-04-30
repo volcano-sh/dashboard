@@ -1,22 +1,30 @@
 import React from "react";
-import {
-    TableContainer,
-    Table,
-    TableBody,
-    Paper,
-    TableCell,
-    TableRow,
-} from "@mui/material";
-import TableHeader from "./TableHeader";
+import { Table, TableBody, TableCell, TableRow } from "@mui/material";
+import SchedulingTableHeader from "../../scheduling/SchedulingTableHeader";
+import SchedulingTableSurface from "../../scheduling/SchedulingTableSurface";
 import PodRow from "./PodRow";
 
 const PodsTable = ({
     pods,
     selectedPod,
+    filters,
+    uniqueStatuses,
+    allNamespaces,
+    allQueues,
+    anchorEl,
+    onFilterOpen,
+    onFilterSelect,
     sortDirection,
     onSortDirectionToggle,
     onPodClick,
 }) => {
+    const filterColumn = (key, options) => ({
+        anchorEl: anchorEl[key],
+        onOpen: (event) => onFilterOpen(key, event),
+        onSelect: (value) => onFilterSelect(key, value),
+        options,
+        value: filters[key],
+    });
     const sortedPods = React.useMemo(
         () =>
             [...pods].sort((a, b) => {
@@ -31,35 +39,39 @@ const PodsTable = ({
     );
 
     return (
-        <TableContainer
-            component={Paper}
-            sx={{
-                maxHeight: "calc(100vh - 200px)",
-                overflow: "auto",
-                border: "1px solid #dfe3e8",
-                borderRadius: 1.5,
-                boxShadow: "none",
-                "&::-webkit-scrollbar": {
-                    width: "10px",
-                    height: "10px",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                    backgroundColor: "#d7dce1",
-                    borderRadius: "5px",
-                    "&:hover": {
-                        backgroundColor: "#c2c8cf",
-                    },
-                },
-                "&::-webkit-scrollbar-track": {
-                    backgroundColor: "#f3f4f6",
-                    borderRadius: "5px",
-                },
-            }}
-        >
+        <SchedulingTableSurface>
             <Table stickyHeader>
-                <TableHeader
-                    onSortDirectionToggle={onSortDirectionToggle}
-                    sortDirection={sortDirection}
+                <SchedulingTableHeader
+                    columns={[
+                        { key: "name", label: "Name", minWidth: 180 },
+                        {
+                            filter: filterColumn("namespace", allNamespaces),
+                            key: "namespace",
+                            label: "Namespace",
+                            minWidth: 150,
+                        },
+                        {
+                            filter: filterColumn("queue", allQueues),
+                            key: "queue",
+                            label: "Queue",
+                            minWidth: 150,
+                        },
+                        {
+                            key: "created",
+                            label: "Creation Time",
+                            minWidth: 180,
+                            onSort: onSortDirectionToggle,
+                            sortable: true,
+                            sortDirection,
+                        },
+                        {
+                            filter: filterColumn("status", uniqueStatuses),
+                            key: "status",
+                            label: "Status",
+                            minWidth: 140,
+                        },
+                        { key: "age", label: "Age", minWidth: 120 },
+                    ]}
                 />
                 <TableBody>
                     {sortedPods.length === 0 ? (
@@ -85,7 +97,7 @@ const PodsTable = ({
                     )}
                 </TableBody>
             </Table>
-        </TableContainer>
+        </SchedulingTableSurface>
     );
 };
 

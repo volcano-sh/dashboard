@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Alert,
@@ -9,12 +9,9 @@ import {
     IconButton,
     InputAdornment,
     LinearProgress,
-    Paper,
     Table,
     TableBody,
     TableCell,
-    TableContainer,
-    TableHead,
     TableRow,
     Typography,
 } from "@mui/material";
@@ -23,7 +20,9 @@ import EventRepeatOutlinedIcon from "@mui/icons-material/EventRepeatOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
+import SchedulingTableHeader from "../scheduling/SchedulingTableHeader";
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
+import SchedulingTableSurface from "../scheduling/SchedulingTableSurface";
 import SchedulingStatusChip from "../scheduling/SchedulingStatusChip";
 import ResourceDetailDrawer from "../details/ResourceDetailDrawer";
 import YamlViewer from "../details/YamlViewer";
@@ -269,8 +268,18 @@ const CronJobDetailsDrawer = ({
 const CronJobs = () => {
     const auth = useAuth();
     const canWrite = auth?.canWrite !== false;
-    const [filters, setFilters] = useState({ namespace: "All", queue: "All" });
+    const [filters, setFilters] = useState({
+        namespace: "All",
+        queue: "All",
+        status: "All",
+    });
     const [searchText, setSearchText] = useState("");
+    const [sortDirection, setSortDirection] = useState("desc");
+    const [anchorEl, setAnchorEl] = useState({
+        namespace: null,
+        queue: null,
+        status: null,
+    });
     const [selectedCronJob, setSelectedCronJob] = useState(null);
     const [selectedTab, setSelectedTab] = useState("overview");
 
@@ -280,10 +289,11 @@ const CronJobs = () => {
             namespace: filters.namespace,
             queue: filters.queue,
             search: searchText,
-            sortBy: "metadata.creationTimestamp",
-            sortOrder: "desc",
+            status: filters.status,
+            sortBy: "summary.lastScheduleTime",
+            sortOrder: sortDirection,
         }),
-        [filters.namespace, filters.queue, searchText],
+        [filters.namespace, filters.queue, filters.status, searchText, sortDirection],
     );
 
     const cronJobsQuery = useQuery({
@@ -299,16 +309,48 @@ const CronJobs = () => {
         queryFn: fetchQueues,
     });
 
-    const cronJobs = cronJobsQuery.data?.items || [];
+    const cronJobs = useMemo(
+        () => cronJobsQuery.data?.items || [],
+        [cronJobsQuery.data],
+    );
     const namespaces = namespacesQuery.data || ["All"];
     const queues = queuesQuery.data || ["All"];
+    const uniqueStatuses = useMemo(
+        () => ["All", ...new Set(cronJobs.map(getStatus).filter(Boolean))],
+        [cronJobs],
+    );
+    const handleFilterChange = useCallback((key, value) => {
+        setFilters((previous) => ({ ...previous, [key]: value }));
+    }, []);
+    const handleHeaderFilterOpen = useCallback((key, event) => {
+        setAnchorEl((previous) => ({ ...previous, [key]: event.currentTarget }));
+    }, []);
+    const handleHeaderFilterSelect = useCallback(
+        (key, value) => {
+            handleFilterChange(key, value);
+            setAnchorEl((previous) => ({ ...previous, [key]: null }));
+        },
+        [handleFilterChange],
+    );
+    const toggleSortDirection = useCallback(() => {
+        setSortDirection((previous) => (previous === "asc" ? "desc" : "asc"));
+    }, []);
+    const filterColumn = useCallback(
+        (key, options) => ({
+            anchorEl: anchorEl[key],
+            onOpen: (event) => handleHeaderFilterOpen(key, event),
+            onSelect: (value) => handleHeaderFilterSelect(key, value),
+            options,
+            value: filters[key],
+        }),
+        [anchorEl, filters, handleHeaderFilterOpen, handleHeaderFilterSelect],
+    );
 
     const filterFields = [
         {
             key: "namespace",
             label: "Namespace",
-            onChange: (value) =>
-                setFilters((previous) => ({ ...previous, namespace: value })),
+            onChange: (value) => handleFilterChange("namespace", value),
             options: namespaces,
             type: "select",
             value: filters.namespace,
@@ -316,8 +358,7 @@ const CronJobs = () => {
         {
             key: "queue",
             label: "Queue",
-            onChange: (value) =>
-                setFilters((previous) => ({ ...previous, queue: value })),
+            onChange: (value) => handleFilterChange("queue", value),
             options: queues,
             type: "select",
             value: filters.queue,
@@ -375,7 +416,16 @@ const CronJobs = () => {
                 <Box sx={{ display: "flex", gap: 1.5 }}>
                     <Button
                         onClick={() => {
-                            setFilters({ namespace: "All", queue: "All" });
+                            setFilters({
+                                namespace: "All",
+                                queue: "All",
+                                status: "All",
+                            });
+                            setAnchorEl({
+                                namespace: null,
+                                queue: null,
+                                status: null,
+                            });
                             setSearchText("");
                         }}
                         sx={{ textTransform: "none" }}
@@ -422,42 +472,58 @@ const CronJobs = () => {
                     )}
                 </Alert>
             )}
-            <Paper
-                sx={{
-                    border: "1px solid #dfe3e8",
-                    borderRadius: 1.5,
-                    boxShadow: "none",
-                    overflow: "hidden",
-                }}
-            >
-                <TableContainer>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                {[
-                                    "Name",
-                                    "Namespace",
-                                    "Queue",
-                                    "Schedule",
-                                    "Concurrency",
-                                    "Last Schedule",
-                                    "Status",
-                                    ...(canWrite ? ["Actions"] : []),
-                                ].map((label) => (
-                                    <TableCell
-                                        key={label}
-                                        sx={{
-                                            bgcolor: "#f7f8fa",
-                                            color: "text.secondary",
-                                            fontSize: 12,
-                                            fontWeight: 700,
-                                        }}
-                                    >
-                                        {label}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        </TableHead>
+            <SchedulingTableSurface>
+                    <Table size="small" stickyHeader>
+                        <SchedulingTableHeader
+                            columns={[
+                                { key: "name", label: "Name", minWidth: 180 },
+                                {
+                                    filter: filterColumn("namespace", namespaces),
+                                    key: "namespace",
+                                    label: "Namespace",
+                                    minWidth: 150,
+                                },
+                                {
+                                    filter: filterColumn("queue", queues),
+                                    key: "queue",
+                                    label: "Queue",
+                                    minWidth: 150,
+                                },
+                                {
+                                    key: "schedule",
+                                    label: "Schedule",
+                                    minWidth: 140,
+                                },
+                                {
+                                    key: "concurrency",
+                                    label: "Concurrency",
+                                    minWidth: 130,
+                                },
+                                {
+                                    key: "lastSchedule",
+                                    label: "Last Schedule",
+                                    minWidth: 180,
+                                    onSort: toggleSortDirection,
+                                    sortable: true,
+                                    sortDirection,
+                                },
+                                {
+                                    filter: filterColumn("status", uniqueStatuses),
+                                    key: "status",
+                                    label: "Status",
+                                    minWidth: 130,
+                                },
+                                ...(canWrite
+                                    ? [
+                                          {
+                                              key: "actions",
+                                              label: "Actions",
+                                              minWidth: 90,
+                                          },
+                                      ]
+                                    : []),
+                            ]}
+                        />
                         <TableBody>
                             {cronJobs.map((cronJob) => (
                                 <TableRow
@@ -529,8 +595,7 @@ const CronJobs = () => {
                             )}
                         </TableBody>
                     </Table>
-                </TableContainer>
-            </Paper>
+            </SchedulingTableSurface>
 
             <CronJobDetailsDrawer
                 canWrite={canWrite}

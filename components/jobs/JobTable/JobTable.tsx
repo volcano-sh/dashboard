@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-    TableContainer,
-    Table,
-    TableBody,
-    Paper,
-    TableRow,
-    TableCell,
-} from "@mui/material";
+import { Table, TableBody, TableRow, TableCell } from "@mui/material";
+import SchedulingTableSurface from "../../scheduling/SchedulingTableSurface";
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
@@ -111,31 +105,7 @@ const JobTable = ({
 
     return (
         <React.Fragment>
-            <TableContainer
-                component={Paper}
-                sx={{
-                    maxHeight: "calc(100vh - 200px)",
-                    overflow: "auto",
-                    border: "1px solid #dfe3e8",
-                    borderRadius: 1.5,
-                    boxShadow: "none",
-                    "&::-webkit-scrollbar": {
-                        width: "10px",
-                        height: "10px",
-                    },
-                    "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: "#d7dce1",
-                        borderRadius: "5px",
-                        "&:hover": {
-                            backgroundColor: "#c2c8cf",
-                        },
-                    },
-                    "&::-webkit-scrollbar-track": {
-                        backgroundColor: "#f3f4f6",
-                        borderRadius: "5px",
-                    },
-                }}
-            >
+            <SchedulingTableSurface>
                 <Table stickyHeader>
                     <JobTableHeader
                         filters={filters}
@@ -174,7 +144,7 @@ const JobTable = ({
                         )}
                     </TableBody>
                 </Table>
-            </TableContainer>
+            </SchedulingTableSurface>
 
             {canWrite && (
                 <JobTableDeleteDialog

@@ -38,6 +38,11 @@ const Pods = () => {
         rowsPerPage: 10,
     });
     const [sortDirection, setSortDirection] = useState("desc");
+    const [anchorEl, setAnchorEl] = useState({
+        namespace: null,
+        queue: null,
+        status: null,
+    });
     const [actionError, setActionError] = useState(null);
     const queryClient = useQueryClient();
 
@@ -100,6 +105,11 @@ const Pods = () => {
             namespace: "All",
             queue: "All",
         });
+        setAnchorEl({
+            namespace: null,
+            queue: null,
+            status: null,
+        });
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
@@ -124,6 +134,30 @@ const Pods = () => {
         setFilters((prev) => ({ ...prev, [filterType]: value }));
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
+
+    const handleHeaderFilterOpen = useCallback((filterType, event) => {
+        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
+    }, []);
+
+    const handleHeaderFilterSelect = useCallback(
+        (filterType, value) => {
+            handleFilterChange(filterType, value);
+            setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+        },
+        [handleFilterChange],
+    );
+
+    const uniqueStatuses = useMemo(
+        () => [
+            "All",
+            ...new Set(
+                pods
+                    .map((pod) => pod?.summary?.status || pod?.status?.phase)
+                    .filter(Boolean),
+            ),
+        ],
+        [pods],
+    );
 
     const filterFields = useMemo(
         () => [
@@ -252,9 +286,16 @@ const Pods = () => {
             {loading && <LinearProgress sx={{ mb: 2 }} />}
             <Box>
                 <PodsTable
+                    allNamespaces={allNamespaces}
+                    allQueues={allQueues}
+                    anchorEl={anchorEl}
+                    filters={filters}
+                    onFilterOpen={handleHeaderFilterOpen}
+                    onFilterSelect={handleHeaderFilterSelect}
                     pods={pods}
                     selectedPod={selectedPod}
                     sortDirection={sortDirection}
+                    uniqueStatuses={uniqueStatuses}
                     onSortDirectionToggle={toggleSortDirection}
                     onPodClick={handlePodClick}
                 />
