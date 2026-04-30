@@ -20,7 +20,7 @@ import {
 } from "../../lib/client/dashboard-api";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
-import PodsDetailWorkspace from "./PodsDetailWorkspace";
+import PodDetailsPanel from "./PodDetailsPanel";
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
 
 const Pods = () => {
@@ -176,20 +176,6 @@ const Pods = () => {
         ],
     );
 
-    const selectedStateFilterFields = useMemo(
-        () => [
-            {
-                key: "namespace",
-                label: "Namespace",
-                onChange: (value) => handleFilterChange("namespace", value),
-                options: allNamespaces,
-                type: "select",
-                value: filters.namespace,
-            },
-        ],
-        [allNamespaces, filters.namespace, handleFilterChange],
-    );
-
     const handlePaginationChange = useCallback((newPage, newRowsPerPage) => {
         setPagination((prev) => ({
             ...prev,
@@ -231,77 +217,91 @@ const Pods = () => {
                     </CardContent>
                 </Card>
             )}
-            {!selectedPod && (
-                <Box
-                    sx={{
-                        alignItems: { xs: "stretch", md: "flex-start" },
-                        display: "flex",
-                        flexDirection: { xs: "column", md: "row" },
-                        gap: 1.5,
-                        justifyContent: "space-between",
-                        mb: 2,
-                    }}
-                >
-                    <Box sx={{ flex: 1 }}>
-                        <SchedulingTableFilters fields={filterFields} />
-                    </Box>
-                    <Box
-                        sx={{
-                            alignItems: "center",
-                            display: "flex",
-                            gap: 1.5,
-                        }}
-                    >
-                        <Button
-                            onClick={handleResetFilters}
-                            sx={{ textTransform: "none" }}
-                            variant="outlined"
-                        >
-                            Reset
-                        </Button>
-                        <Button
-                            disabled={loading}
-                            onClick={handleRefresh}
-                            startIcon={<RefreshIcon fontSize="small" />}
-                            sx={{ textTransform: "none" }}
-                            variant="outlined"
-                        >
-                            Refresh
-                        </Button>
-                    </Box>
+            <Box
+                sx={{
+                    alignItems: { xs: "stretch", md: "flex-start" },
+                    display: "flex",
+                    flexDirection: { xs: "column", md: "row" },
+                    gap: 1.5,
+                    justifyContent: "space-between",
+                    mb: 2,
+                }}
+            >
+                <Box sx={{ flex: 1 }}>
+                    <SchedulingTableFilters fields={filterFields} />
                 </Box>
-            )}
+                <Box>
+                    <Button
+                        onClick={handleResetFilters}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Reset
+                    </Button>
+                    <Button
+                        disabled={loading}
+                        onClick={handleRefresh}
+                        startIcon={<RefreshIcon fontSize="small" />}
+                        sx={{ ml: 1.5, textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Refresh
+                    </Button>
+                </Box>
+            </Box>
             {loading && <LinearProgress sx={{ mb: 2 }} />}
-            {selectedPod ? (
-                <PodsDetailWorkspace
-                    namespaceFilterFields={selectedStateFilterFields}
-                    onCloseDetails={handleCloseDetails}
-                    onPaginationChange={handlePaginationChange}
-                    onPodClick={handlePodClick}
-                    onSortDirectionToggle={toggleSortDirection}
-                    pagination={pagination}
+            <Box>
+                <PodsTable
                     pods={pods}
                     selectedPod={selectedPod}
-                    selectedTab={selectedTab}
-                    setSelectedTab={setSelectedTab}
                     sortDirection={sortDirection}
-                    totalPods={totalPods}
+                    onSortDirectionToggle={toggleSortDirection}
+                    onPodClick={handlePodClick}
                 />
-            ) : (
-                <Box>
-                    <PodsTable
-                        pods={pods}
-                        selectedPod={selectedPod}
-                        sortDirection={sortDirection}
-                        onSortDirectionToggle={toggleSortDirection}
-                        onPodClick={handlePodClick}
+                <PodsPagination
+                    totalPods={totalPods}
+                    pagination={pagination}
+                    onPaginationChange={handlePaginationChange}
+                />
+            </Box>
+            {selectedPod && (
+                <>
+                    <Box
+                        aria-hidden="true"
+                        sx={{
+                            bgcolor: "rgba(17, 24, 39, 0.26)",
+                            bottom: 0,
+                            left: 0,
+                            pointerEvents: "none",
+                            position: "fixed",
+                            right: 0,
+                            top: 0,
+                            zIndex: 1290,
+                        }}
                     />
-                    <PodsPagination
-                        totalPods={totalPods}
-                        pagination={pagination}
-                        onPaginationChange={handlePaginationChange}
-                    />
-                </Box>
+                    <Box
+                        sx={{
+                            bottom: 0,
+                            position: "fixed",
+                            right: 0,
+                            top: 0,
+                            width: {
+                                xs: "calc(100vw - 56px)",
+                                sm: "calc(100vw - 220px)",
+                                lg: 1180,
+                            },
+                            zIndex: 1300,
+                        }}
+                    >
+                        <PodDetailsPanel
+                            elevated
+                            onClose={handleCloseDetails}
+                            selectedPod={selectedPod}
+                            selectedTab={selectedTab}
+                            setSelectedTab={setSelectedTab}
+                        />
+                    </Box>
+                </>
             )}
         </Box>
     );
