@@ -68,17 +68,15 @@ describe("Layout", () => {
         });
     });
 
-    it("should render disabled navigation placeholders", () => {
+    it("should hide observability navigation placeholders", () => {
         render(
             <MemoryRouter>
                 <Layout />
             </MemoryRouter>,
         );
 
-        ["Events", "Metrics"].forEach((text) => {
-            const item = screen.getByText(text);
-            expect(item).toBeInTheDocument();
-            expect(item.closest("a")).not.toBeInTheDocument();
+        ["Observability", "Events", "Metrics"].forEach((text) => {
+            expect(screen.queryByText(text)).not.toBeInTheDocument();
         });
     });
 

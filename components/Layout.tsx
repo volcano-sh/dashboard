@@ -26,8 +26,6 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import MenuIcon from "@mui/icons-material/Menu";
-import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
-import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 
@@ -93,21 +91,6 @@ const Layout = ({ onLogout = () => {} }) => {
                     text: "Pods",
                     icon: <Inventory2OutlinedIcon {...iconProps} />,
                     path: "/workload/pods",
-                },
-            ],
-        },
-        {
-            title: "Observability",
-            items: [
-                {
-                    text: "Events",
-                    icon: <NotificationsNoneOutlinedIcon {...iconProps} />,
-                    disabled: true,
-                },
-                {
-                    text: "Metrics",
-                    icon: <QueryStatsOutlinedIcon {...iconProps} />,
-                    disabled: true,
                 },
             ],
         },

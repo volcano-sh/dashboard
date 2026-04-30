@@ -19,6 +19,13 @@ schedulerConfig:
     # Cluster deployment example:
     #   ControllersMetricEndpoint: http://volcano-controllers-service.volcano-system.svc:8081/metrics
     ControllersMetricEndpoint: "http://127.0.0.1:18081/metrics"
+    # Optional. Use a full metrics endpoint URL for Volcano scheduler metrics.
+    # Local development example:
+    #   kubectl -n volcano-system port-forward svc/volcano-scheduler 18080:8080
+    #   SchedulerMetricEndpoint: http://127.0.0.1:18080/metrics
+    # Cluster deployment example:
+    #   SchedulerMetricEndpoint: http://volcano-scheduler.volcano-system.svc:8080/metrics
+    SchedulerMetricEndpoint: ""
 
 access:
     # Supported values: read-write, read-only.

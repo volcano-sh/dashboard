@@ -27,6 +27,7 @@ export const defaultDashboardConfig = {
         name: "volcano-scheduler-configmap",
         key: "",
         ControllersMetricEndpoint: "",
+        SchedulerMetricEndpoint: "",
     },
 };
 

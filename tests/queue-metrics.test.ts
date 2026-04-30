@@ -29,14 +29,19 @@ describe("queue controller metrics", () => {
             "../lib/server/config"
         );
 
-        expect(
-            normalizeDashboardConfig({
-                schedulerConfig: {
-                    ControllersMetricEndpoint:
-                        "http://127.0.0.1:18081/metrics",
-                },
-            }).schedulerConfig.ControllersMetricEndpoint,
-        ).toBe("http://127.0.0.1:18081/metrics");
+        const config = normalizeDashboardConfig({
+            schedulerConfig: {
+                ControllersMetricEndpoint: "http://127.0.0.1:18081/metrics",
+                SchedulerMetricEndpoint: "http://127.0.0.1:18080/metrics",
+            },
+        });
+
+        expect(config.schedulerConfig.ControllersMetricEndpoint).toBe(
+            "http://127.0.0.1:18081/metrics",
+        );
+        expect(config.schedulerConfig.SchedulerMetricEndpoint).toBe(
+            "http://127.0.0.1:18080/metrics",
+        );
     });
 
     it("parses queue PodGroup count metrics", async () => {
