@@ -21,6 +21,7 @@ import {
     fetchQueues,
     fetchNamespaces,
     fetchPodGroup,
+    fetchPodGroupEvents,
     fetchPodGroupYaml,
     fetchPodGroups,
     getApiErrorMessage,
@@ -36,6 +37,7 @@ import {
     DetailRow,
     MetadataChips,
 } from "../details/DetailComponents";
+import ResourceEventsPanel from "../details/ResourceEventsPanel";
 import JobStatusChip from "../jobs/JobStatusChip";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
@@ -167,6 +169,7 @@ const PodGroupDetailsDrawer = ({
             tabs={[
                 { label: "Overview", value: "overview" },
                 { label: "YAML", value: "yaml" },
+                { label: "Events", value: "events" },
             ]}
             title={`PodGroup: ${name || "-"}`}
             renderTab={(tab) => {
@@ -225,6 +228,16 @@ const PodGroupDetailsDrawer = ({
                                     }),
                                 ]);
                             }}
+                        />
+                    );
+                }
+                if (tab === "events") {
+                    return (
+                        <ResourceEventsPanel
+                            emptyText="No PodGroup events available."
+                            errorMessage="Failed to fetch PodGroup events"
+                            queryFn={() => fetchPodGroupEvents(namespace, name)}
+                            queryKey={["podGroupEvents", namespace, name]}
                         />
                     );
                 }

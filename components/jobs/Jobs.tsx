@@ -37,9 +37,9 @@ import YamlViewer from "../details/YamlViewer";
 import {
     DetailCard,
     DetailRow,
-    EventsTable,
     MetadataChips,
 } from "../details/DetailComponents";
+import ResourceEventsPanel from "../details/ResourceEventsPanel";
 import JobStatusChip from "./JobStatusChip";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
@@ -151,11 +151,6 @@ const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
         queryFn: () => fetchJobYaml(namespace, name),
         queryKey: ["jobYaml", namespace, name],
     });
-    const eventsQuery = useQuery({
-        enabled: Boolean(namespace && name && selectedTab === "events"),
-        queryFn: () => fetchJobEvents(namespace, name),
-        queryKey: ["jobEvents", namespace, name],
-    });
     const jobData = detail || job;
 
     return (
@@ -237,7 +232,12 @@ const JobDetailsDrawer = ({ job, onClose, selectedTab, setSelectedTab }) => {
                 }
                 if (tab === "events") {
                     return (
-                        <EventsTable events={eventsQuery.data?.items || []} />
+                        <ResourceEventsPanel
+                            emptyText="No job events available."
+                            errorMessage="Failed to fetch job events"
+                            queryFn={() => fetchJobEvents(namespace, name)}
+                            queryKey={["jobEvents", namespace, name]}
+                        />
                     );
                 }
                 return <JobOverview job={jobData} />;

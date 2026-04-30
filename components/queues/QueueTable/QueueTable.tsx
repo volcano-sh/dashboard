@@ -26,7 +26,6 @@ const QueueTable = ({
     uniqueStates,
     handleFilterClose,
     setAnchorEl,
-    onQueueUpdate,
 }) => {
     const theme = useTheme();
 
@@ -188,7 +187,6 @@ const QueueTable = ({
                                     handleOpenDeleteDialog={
                                         handleOpenDeleteDialog
                                     }
-                                    onQueueUpdate={onQueueUpdate}
                                 />
                             ))
                         )}

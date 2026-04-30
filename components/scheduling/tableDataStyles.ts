@@ -8,6 +8,11 @@ export const tableIdentifierSx = {
     letterSpacing: 0,
 };
 
+export const tableNameSx = {
+    ...tableIdentifierSx,
+    fontWeight: 600,
+};
+
 export const tableNumericSx = {
     fontFamily: tableDataFontFamily,
     fontSize: 12.5,

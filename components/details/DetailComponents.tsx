@@ -97,7 +97,7 @@ export const MetadataChips = ({ items }) => {
     );
 };
 
-export const EventsTable = ({ events }) => (
+export const EventsTable = ({ emptyText = "No events available.", events }) => (
     <Table size="small">
         <TableHead>
             <TableRow>
@@ -126,7 +126,7 @@ export const EventsTable = ({ events }) => (
                         colSpan={5}
                         sx={{ color: "text.secondary", py: 4 }}
                     >
-                        No events available.
+                        {emptyText}
                     </TableCell>
                 </TableRow>
             ) : (

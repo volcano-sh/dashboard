@@ -32,6 +32,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import {
     API_BASE,
+    fetchQueueEvents,
     fetchQueueYaml,
     updateQueueYaml,
 } from "../../lib/client/dashboard-api";
@@ -40,11 +41,16 @@ import QueuePagination from "./QueuePagination";
 import { buildQueueTree } from "./utils/queueTreeBuilder";
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
 import ResourceDetailDrawer from "../details/ResourceDetailDrawer";
+import ResourceEventsPanel from "../details/ResourceEventsPanel";
 import YamlViewer from "../details/YamlViewer";
+import { tableNameSx, tableNumericSx } from "../scheduling/tableDataStyles";
+import SchedulingStatusChip from "../scheduling/SchedulingStatusChip";
 import {
-    tableIdentifierSx,
-    tableNumericSx,
-} from "../scheduling/tableDataStyles";
+    getUsageToneColor,
+    ResourceStatusBars,
+    ResourceStatusDetailBar,
+    ResourceStatusLegend,
+} from "../scheduling/ResourceStatus";
 
 const formatResource = (value, fallback = "0") => {
     if (value === undefined || value === null || value === "") return fallback;
@@ -219,23 +225,17 @@ const healthStyles = {
     },
 };
 
-const getUsageToneColor = (tone) => {
-    if (tone === "hot") return "#cf2727";
-    if (tone === "starving") return "#d86b00";
-    if (tone === "underused") return "#a16207";
-    if (tone === "idle") return "#69707a";
-    return "#12833f";
-};
-
 const statusStyles = {
     Open: {
-        bgcolor: "#e7f6ec",
+        background: "#e7f6ec",
+        border: "#12833f22",
         color: "#12833f",
         label: "Open",
         tooltip: "Queue accepts jobs and participates in scheduling",
     },
     Closed: {
-        bgcolor: "#f2f3f5",
+        background: "#f2f3f5",
+        border: "#69707a22",
         color: "#69707a",
         label: "Closed",
         tooltip: "Queue is disabled for new scheduling",
@@ -358,207 +358,66 @@ const DetailRow = ({ label, value, valueNode }: DetailRowProps) => (
     </Box>
 );
 
-const ResourceUsageBar = ({ queue, resource }) => {
-    const stats = getResourceStats(queue, resource);
-    const blueLeft = Math.min(stats.guaranteePercent, stats.deservedPercent);
-    const blueWidth = Math.max(stats.deservedPercent - blueLeft, 0);
-    const valueText = formatResourceValueText(stats, resource);
-    const tooltip = [
-        `${resource.label}`,
-        `Used: ${formatResourceMetric(stats.usedLabel, resource)}`,
-        `Deserved: ${formatResourceMetric(stats.deservedLabel, resource)}`,
-        `Guarantee: ${formatResourceMetric(stats.guaranteeLabel, resource)}`,
-        `Capability: ${formatResourceMetric(stats.capabilityLabel, resource)}`,
-        `Usage: ${stats.usageLabel}`,
-        stats.overCapability ? "Used exceeds capability" : null,
-    ]
-        .filter(Boolean)
-        .join("\n");
-    const bar = (
-        <Box
-            sx={{
-                alignItems: "center",
-                display: "grid",
-                gap: 1.2,
-                gridTemplateColumns: "56px minmax(140px, 1fr) 238px",
-                minHeight: 20,
-            }}
-        >
-            <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
-                {resource.label}
-            </Typography>
-            <Box
-                sx={{
-                    bgcolor: "#d8dadd",
-                    borderRadius: 999,
-                    height: 6,
-                    overflow: "visible",
-                    position: "relative",
-                }}
-            >
-                <Box
-                    sx={{
-                        bgcolor: "#34a853",
-                        borderRadius: "999px 0 0 999px",
-                        height: "100%",
-                        left: 0,
-                        position: "absolute",
-                        top: 0,
-                        width: `${stats.guaranteePercent}%`,
-                    }}
-                />
-                <Box
-                    sx={{
-                        bgcolor: "#3b82f6",
-                        height: "100%",
-                        left: `${blueLeft}%`,
-                        position: "absolute",
-                        top: 0,
-                        width: `${blueWidth}%`,
-                    }}
-                />
-                <Box
-                    sx={{
-                        borderLeft: "5px solid transparent",
-                        borderRight: "5px solid transparent",
-                        borderTop: "8px solid #7c3aed",
-                        left: `calc(${stats.usedPercent}% - 5px)`,
-                        position: "absolute",
-                        top: -9,
-                    }}
-                />
-            </Box>
-            <Typography
-                sx={{
-                    color: getUsageToneColor(stats.usageTone),
-                    fontFamily:
-                        '"SFMono-Regular", "Roboto Mono", Consolas, monospace',
-                    fontSize: 12,
-                    whiteSpace: "nowrap",
-                }}
-            >
-                {valueText}
-            </Typography>
-        </Box>
-    );
-
-    return (
-        <Tooltip
-            title={<Box sx={{ whiteSpace: "pre-line" }}>{tooltip}</Box>}
-            placement="top"
-        >
-            {bar}
-        </Tooltip>
-    );
-};
+const getResourceStatusItems = (queue) =>
+    RESOURCE_COLUMNS.map((resource) => {
+        const stats = getResourceStats(queue, resource);
+        return {
+            resource,
+            stats: {
+                ...stats,
+                capabilityLabel: formatResourceMetric(
+                    stats.capabilityLabel,
+                    resource,
+                ),
+                deservedLabel: formatResourceMetric(
+                    stats.deservedLabel,
+                    resource,
+                ),
+                guaranteeLabel: formatResourceMetric(
+                    stats.guaranteeLabel,
+                    resource,
+                ),
+                usedLabel: formatResourceMetric(stats.usedLabel, resource),
+            },
+            valueText: formatResourceValueText(stats, resource),
+        };
+    });
 
 const ResourceBars = ({ queue }) => (
-    <Box sx={{ display: "grid", gap: 0.5, py: 0.25 }}>
-        {RESOURCE_COLUMNS.map((resource) => (
-            <ResourceUsageBar
-                key={resource.key}
-                queue={queue}
-                resource={resource}
-            />
-        ))}
-    </Box>
+    <ResourceStatusBars resources={getResourceStatusItems(queue)} />
 );
 
 const HealthBadge = ({ health }) => (
-    <Chip
-        label={health.label}
-        size="small"
-        sx={{
-            bgcolor: health.bgcolor,
-            border: `1px solid ${health.color}22`,
+    <SchedulingStatusChip
+        minWidth={78}
+        status={health.label}
+        tone={{
+            background: health.bgcolor,
+            border: `${health.color}22`,
             color: health.color,
-            fontSize: 11,
-            fontWeight: 700,
-            minWidth: 78,
+            label: health.label,
         }}
     />
 );
 
 const StatusBadge = ({ state }) => {
     const status = statusStyles[state] || {
-        bgcolor: "#f2f3f5",
+        background: "#f2f3f5",
+        border: "#69707a22",
         color: "#69707a",
         label: state || "Unknown",
         tooltip: "Queue state reported by Volcano",
     };
 
     return (
-        <Box sx={{ alignItems: "center", display: "flex", gap: 0.5 }}>
-            <Chip
-                label={status.label}
-                size="small"
-                sx={{
-                    bgcolor: status.bgcolor,
-                    border: `1px solid ${status.color}22`,
-                    color: status.color,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    height: 22,
-                    minWidth: 68,
-                }}
-            />
-            <Tooltip title={status.tooltip}>
-                <InfoOutlinedIcon
-                    sx={{ color: "text.disabled", fontSize: 14 }}
-                />
-            </Tooltip>
-        </Box>
+        <SchedulingStatusChip
+            minWidth={68}
+            showTooltipIcon
+            status={status.label}
+            tone={status}
+        />
     );
 };
-
-const ResourceLegend = () => (
-    <Box
-        sx={{
-            alignItems: "center",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 2.25,
-            justifyContent: "center",
-        }}
-    >
-        {[
-            ["#34a853", "Guarantee"],
-            ["#3b82f6", "Deserved"],
-            ["#d8dadd", "Capability"],
-        ].map(([color, label]) => (
-            <Box
-                key={label}
-                sx={{ alignItems: "center", display: "flex", gap: 0.6 }}
-            >
-                <Box
-                    sx={{
-                        bgcolor: color,
-                        borderRadius: 0.5,
-                        height: 10,
-                        width: 10,
-                    }}
-                />
-                <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
-                    {label}
-                </Typography>
-            </Box>
-        ))}
-        <Box sx={{ alignItems: "center", display: "flex", gap: 0.6 }}>
-            <Box
-                sx={{
-                    borderLeft: "5px solid transparent",
-                    borderRight: "5px solid transparent",
-                    borderTop: "8px solid #7c3aed",
-                    height: 0,
-                    width: 0,
-                }}
-            />
-            <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
-                Used (current)
-            </Typography>
-        </Box>
-    </Box>
-);
 
 const QueueTreeCell = ({
     expanded,
@@ -625,9 +484,8 @@ const QueueTreeCell = ({
                     sx={{
                         color: level ? "#1677ff" : "text.primary",
                         cursor: "pointer",
-                        fontWeight: 700,
                         zIndex: 1,
-                        ...tableIdentifierSx,
+                        ...tableNameSx,
                     }}
                 >
                     {queueName}
@@ -900,101 +758,23 @@ const HealthCard = ({ selectedQueue }) => {
 
 const DetailResourceBar = ({ mode, queue, resource }) => {
     const stats = getResourceStats(queue, resource);
-    const blueLeft = Math.min(stats.guaranteePercent, stats.deservedPercent);
-    const blueWidth = Math.max(stats.deservedPercent - blueLeft, 0);
     const valueText =
         mode === "percentage"
             ? `${stats.usageLabel} used / deserved`
             : formatResourceValueText(stats, resource);
 
     return (
-        <Box
-            sx={{
-                alignItems: "center",
-                display: "grid",
-                gap: 2,
-                gridTemplateColumns: "90px minmax(260px, 1fr) 270px",
-                py: 1.35,
-            }}
-        >
-            <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
-                {resource.label}
-            </Typography>
-            <Box sx={{ pb: 1.5, position: "relative" }}>
-                <Box
-                    sx={{
-                        bgcolor: "#d8dadd",
-                        borderRadius: 999,
-                        height: 6,
-                        position: "relative",
-                    }}
-                >
-                    <Box
-                        sx={{
-                            bgcolor: "#34a853",
-                            borderRadius: "999px 0 0 999px",
-                            height: "100%",
-                            left: 0,
-                            position: "absolute",
-                            top: 0,
-                            width: `${stats.guaranteePercent}%`,
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            bgcolor: "#3b82f6",
-                            height: "100%",
-                            left: `${blueLeft}%`,
-                            position: "absolute",
-                            top: 0,
-                            width: `${blueWidth}%`,
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            borderLeft: "5px solid transparent",
-                            borderRight: "5px solid transparent",
-                            borderTop: "8px solid #7c3aed",
-                            left: `calc(${stats.usedPercent}% - 5px)`,
-                            position: "absolute",
-                            top: -9,
-                        }}
-                    />
-                </Box>
-                <Box
-                    sx={{
-                        color: "text.secondary",
-                        display: "flex",
-                        fontSize: 11,
-                        justifyContent: "space-between",
-                        mt: 0.75,
-                    }}
-                >
-                    <span>0</span>
-                    <span>
-                        {formatResourceMetric(stats.guaranteeLabel, resource)}
-                    </span>
-                    <span>
-                        {formatResourceMetric(stats.deservedLabel, resource)}
-                    </span>
-                    <span>
-                        {formatResourceMetric(stats.capabilityLabel, resource)}
-                    </span>
-                </Box>
-            </Box>
-            <Typography
-                sx={{
-                    color: getUsageToneColor(stats.usageTone),
-                    fontFamily:
-                        '"SFMono-Regular", "Roboto Mono", Consolas, monospace',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                }}
-            >
-                {valueText}
-            </Typography>
-        </Box>
+        <ResourceStatusDetailBar
+            resource={resource}
+            scaleLabels={[
+                "0",
+                formatResourceMetric(stats.guaranteeLabel, resource),
+                formatResourceMetric(stats.deservedLabel, resource),
+                formatResourceMetric(stats.capabilityLabel, resource),
+            ]}
+            stats={stats}
+            valueText={valueText}
+        />
     );
 };
 
@@ -1053,7 +833,7 @@ const ResourceSummaryCard = ({ selectedQueue }) => {
                     ))}
                 </Box>
             </Box>
-            <ResourceLegend />
+            <ResourceStatusLegend />
             <Box sx={{ mt: 1.5 }}>
                 {RESOURCE_COLUMNS.map((resource) => (
                     <DetailResourceBar
@@ -1198,7 +978,7 @@ const QueueDetailsPanel = ({
             open={Boolean(selectedQueue)}
             tabs={[
                 { label: "Overview", value: "overview" },
-                { label: "Configuration (YAML)", value: "configuration" },
+                { label: "YAML", value: "configuration" },
                 { label: "Events", value: "events" },
             ]}
             title={`Queue: ${queueName}`}
@@ -1217,7 +997,12 @@ const QueueDetailsPanel = ({
                         }}
                     />
                 ) : tab === "events" ? (
-                    <QueueEventsCard selectedQueue={selectedQueue} />
+                    <ResourceEventsPanel
+                        emptyText="No queue events available."
+                        errorMessage="Failed to fetch queue events"
+                        queryFn={() => fetchQueueEvents(queueName)}
+                        queryKey={["queueEvents", queueName]}
+                    />
                 ) : (
                     <QueueOverviewPanel
                         queueMap={queueMap}
@@ -1638,7 +1423,7 @@ const QueueHierarchyView = ({
                                         <span>
                                             Resources (CPU / Memory / GPU)
                                         </span>
-                                        <ResourceLegend />
+                                        <ResourceStatusLegend />
                                     </Box>
                                 </TableCell>
                                 <TableCell sx={{ minWidth: 140 }}>

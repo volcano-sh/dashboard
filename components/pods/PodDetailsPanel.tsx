@@ -32,6 +32,7 @@ import SyncIcon from "@mui/icons-material/Sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PodStatusChip from "./PodStatusChip";
+import { ResourceEventsTable } from "../details/ResourceEventsPanel";
 import YamlViewer from "../details/YamlViewer";
 import {
     deletePod,
@@ -1081,9 +1082,7 @@ const PodEventsView = ({ name, namespace }) => {
 
                         return [incoming, ...withoutExisting].sort(
                             (a, b) =>
-                                new Date(
-                                    b.lastTimestamp || 0,
-                                ).getTime() -
+                                new Date(b.lastTimestamp || 0).getTime() -
                                 new Date(a.lastTimestamp || 0).getTime(),
                         );
                     });
@@ -1147,19 +1146,10 @@ const PodEventsView = ({ name, namespace }) => {
                     {watchError}
                 </Alert>
             )}
-            <PlainTable
-                columns={[
-                    { key: "type", label: "Type" },
-                    { key: "reason", label: "Reason" },
-                    { key: "message", label: "Message" },
-                    { key: "count", label: "Count" },
-                    { key: "lastTimestamp", label: "Last Seen" },
-                ]}
-                rows={events.map((event) => ({
-                    ...event,
-                    lastTimestamp: formatDateTime(event.lastTimestamp),
-                }))}
+            <ResourceEventsTable
                 emptyText="No pod events available."
+                events={events}
+                formatTimestamps
             />
         </Box>
     );

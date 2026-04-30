@@ -322,7 +322,6 @@ const QueueTreeView = ({
                                     handleOpenDeleteDialog={
                                         handleOpenDeleteDialog
                                     }
-                                    onQueueUpdate={onQueueUpdate}
                                     expandedNodes={expandedNodes}
                                     onToggleExpand={handleToggleExpand}
                                 />

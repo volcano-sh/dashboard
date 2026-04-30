@@ -11,14 +11,11 @@ import { Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
 import {
     tableIdentifierSx,
+    tableNameSx,
     tableTimestampSx,
 } from "../../scheduling/tableDataStyles";
 
-const JobTableRow = ({
-    job,
-    handleJobClick,
-    handleOpenDeleteDialog,
-}) => {
+const JobTableRow = ({ job, handleJobClick, handleOpenDeleteDialog }) => {
     const theme = useTheme();
 
     return (
@@ -49,10 +46,8 @@ const JobTableRow = ({
                 <TableCell
                     sx={{
                         padding: "16px 24px",
-                        fontWeight: 600,
                         color: theme.palette.text.primary,
-                        letterSpacing: "0.01em",
-                        ...tableIdentifierSx,
+                        ...tableNameSx,
                     }}
                 >
                     {job.metadata.name}
@@ -89,32 +84,9 @@ const JobTableRow = ({
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>
-                    <Box
-                        sx={{
-                            display: "inline-block",
-                            transition: "all 0.3s ease",
-                            "&:hover": {
-                                transform: "translateY(-2px)",
-                                filter: "brightness(1.05)",
-                            },
-                            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                            borderRadius: "15px",
-                        }}
-                    >
-                        <JobStatusChip
-                            status={
-                                job.status ? job.status.state.phase : "Unknown"
-                            }
-                            sx={{
-                                height: "30px",
-                                fontWeight: 600,
-                                fontSize: "0.8rem",
-                                padding: "0 12px",
-                                color: "common.white",
-                                borderRadius: "15px",
-                            }}
-                        />
-                    </Box>
+                    <JobStatusChip
+                        status={job.status ? job.status.state.phase : "Unknown"}
+                    />
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>

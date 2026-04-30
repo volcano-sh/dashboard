@@ -1,8 +1,9 @@
 import React from "react";
-import { TableRow, TableCell, Box, useTheme, alpha } from "@mui/material";
-import JobStatusChip from "../../jobs/JobStatusChip"; // Reuse chip
+import { TableRow, TableCell, useTheme, alpha } from "@mui/material";
+import SchedulingStatusChip from "../../scheduling/SchedulingStatusChip";
 import {
     tableIdentifierSx,
+    tableNameSx,
     tableNumericSx,
     tableTimestampSx,
 } from "../../scheduling/tableDataStyles";
@@ -37,10 +38,8 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
             <TableCell
                 sx={{
                     padding: "16px 24px",
-                    fontWeight: 600,
                     color: theme.palette.text.primary,
-                    letterSpacing: "0.01em",
-                    ...tableIdentifierSx,
+                    ...tableNameSx,
                 }}
             >
                 {podGroup.metadata.name}
@@ -87,32 +86,11 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
             </TableCell>
 
             <TableCell sx={{ padding: "16px 24px" }}>
-                <Box
-                    sx={{
-                        display: "inline-block",
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                            transform: "translateY(-2px)",
-                            filter: "brightness(1.05)",
-                        },
-                        boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                        borderRadius: "15px",
-                    }}
-                >
-                    <JobStatusChip
-                        status={
-                            podGroup.status ? podGroup.status.phase : "Unknown"
-                        }
-                        sx={{
-                            height: "30px",
-                            fontWeight: 600,
-                            fontSize: "0.8rem",
-                            padding: "0 12px",
-                            color: "common.white",
-                            borderRadius: "15px",
-                        }}
-                    />
-                </Box>
+                <SchedulingStatusChip
+                    minWidth={86}
+                    size="medium"
+                    status={podGroup.status ? podGroup.status.phase : "Unknown"}
+                />
             </TableCell>
         </TableRow>
     );

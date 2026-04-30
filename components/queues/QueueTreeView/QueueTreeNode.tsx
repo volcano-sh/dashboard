@@ -10,6 +10,12 @@ import {
     alpha,
 } from "@mui/material";
 import { ChevronRight, ExpandMore, Delete } from "@mui/icons-material";
+import SchedulingStatusChip from "../../scheduling/SchedulingStatusChip";
+import {
+    tableNameSx,
+    tableNumericSx,
+    tableTimestampSx,
+} from "../../scheduling/tableDataStyles";
 
 const QueueTreeNode = ({
     node,
@@ -23,19 +29,6 @@ const QueueTreeNode = ({
     const theme = useTheme();
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = expandedNodes.has(node.metadata.name);
-
-    const getStateColor = (status) => {
-        switch (status) {
-            case "Open":
-                return theme.palette.success.main;
-            case "Closing":
-                return theme.palette.warning.main;
-            case "Closed":
-                return theme.palette.info.main;
-            default:
-                return theme.palette.grey[500];
-        }
-    };
 
     // Calculate indentation (24px per level, max at level 5)
     const indentLevel = Math.min(level, 5);
@@ -78,10 +71,9 @@ const QueueTreeNode = ({
                 <TableCell
                     sx={{
                         padding: "16px 24px",
-                        fontWeight: 600,
                         color: theme.palette.text.primary,
-                        letterSpacing: "0.01em",
                         paddingLeft: `${24 + indentation}px`,
+                        ...tableNameSx,
                     }}
                 >
                     <Box display="flex" alignItems="center" gap={1}>
@@ -133,10 +125,7 @@ const QueueTreeNode = ({
                         key={field}
                         sx={{
                             padding: "16px 24px",
-                            fontFamily: theme.typography.fontFamily,
-                            fontVariantNumeric: "tabular-nums",
-                            fontSize: "0.95rem",
-                            fontWeight: 500,
+                            ...tableNumericSx,
                         }}
                     >
                         {node.status?.allocated?.[field] || "0"}
@@ -146,35 +135,18 @@ const QueueTreeNode = ({
                 <TableCell
                     sx={{
                         padding: "16px 24px",
-                        fontSize: "0.9rem",
                         color: alpha(theme.palette.text.primary, 0.85),
+                        ...tableTimestampSx,
                     }}
                 >
                     {new Date(node.metadata.creationTimestamp).toLocaleString()}
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>
-                    <Chip
-                        label={node.status ? node.status.state : "Unknown"}
-                        sx={{
-                            bgcolor: getStateColor(
-                                node.status ? node.status.state : "Unknown",
-                            ),
-                            color: "common.white",
-                            height: "30px",
-                            fontWeight: 600,
-                            fontSize: "0.8rem",
-                            letterSpacing: "0.02em",
-                            borderRadius: "15px",
-                            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                            padding: "0 12px",
-                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                            "&:hover": {
-                                transform: "translateY(-2px)",
-                                boxShadow: "0 5px 10px rgba(0, 0, 0, 0.2)",
-                                filter: "brightness(1.05)",
-                            },
-                        }}
+                    <SchedulingStatusChip
+                        minWidth={78}
+                        size="medium"
+                        status={node.status ? node.status.state : "Unknown"}
                     />
                 </TableCell>
 

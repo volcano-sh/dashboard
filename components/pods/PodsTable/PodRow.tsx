@@ -3,6 +3,7 @@ import { TableRow, TableCell, useTheme, alpha } from "@mui/material";
 import { calculateAge } from "../../utils";
 import {
     tableIdentifierSx,
+    tableNameSx,
     tableTimestampSx,
 } from "../../scheduling/tableDataStyles";
 import PodStatusChip from "../PodStatusChip";
@@ -35,9 +36,8 @@ const PodRow = ({ isSelected, pod, onPodClick }) => {
             <TableCell
                 sx={{
                     padding: "12px 18px",
-                    fontWeight: 600,
                     color: theme.palette.text.primary,
-                    ...tableIdentifierSx,
+                    ...tableNameSx,
                 }}
             >
                 {pod.metadata.name}

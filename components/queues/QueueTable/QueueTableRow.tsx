@@ -1,7 +1,13 @@
 import React from "react";
-import { TableRow, TableCell, Box, Chip, useTheme, alpha } from "@mui/material";
+import { TableRow, TableCell, Box, useTheme, alpha } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
+import SchedulingStatusChip from "../../scheduling/SchedulingStatusChip";
+import {
+    tableNameSx,
+    tableNumericSx,
+    tableTimestampSx,
+} from "../../scheduling/tableDataStyles";
 
 const QueueTableRow = ({
     queue,
@@ -10,19 +16,6 @@ const QueueTableRow = ({
     handleOpenDeleteDialog,
 }) => {
     const theme = useTheme();
-
-    const getStateColor = (status) => {
-        switch (status) {
-            case "Open":
-                return theme.palette.success.main;
-            case "Closing":
-                return theme.palette.warning.main;
-            case "Closed":
-                return theme.palette.info.main;
-            default:
-                return theme.palette.grey[500];
-        }
-    };
 
     return (
         <>
@@ -56,9 +49,8 @@ const QueueTableRow = ({
                 <TableCell
                     sx={{
                         padding: "16px 24px",
-                        fontWeight: 600,
                         color: theme.palette.text.primary,
-                        letterSpacing: "0.01em",
+                        ...tableNameSx,
                     }}
                 >
                     {queue.metadata.name}
@@ -69,10 +61,7 @@ const QueueTableRow = ({
                         key={field}
                         sx={{
                             padding: "16px 24px",
-                            fontFamily: theme.typography.fontFamily,
-                            fontVariantNumeric: "tabular-nums",
-                            fontSize: "0.95rem",
-                            fontWeight: 500,
+                            ...tableNumericSx,
                         }}
                     >
                         {queue.status?.allocated?.[field] || "0"}
@@ -82,8 +71,8 @@ const QueueTableRow = ({
                 <TableCell
                     sx={{
                         padding: "16px 24px",
-                        fontSize: "0.9rem",
                         color: alpha(theme.palette.text.primary, 0.85),
+                        ...tableTimestampSx,
                     }}
                 >
                     {new Date(
@@ -92,27 +81,10 @@ const QueueTableRow = ({
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>
-                    <Chip
-                        label={queue.status ? queue.status.state : "Unknown"}
-                        sx={{
-                            bgcolor: getStateColor(
-                                queue.status ? queue.status.state : "Unknown",
-                            ),
-                            color: "common.white",
-                            height: "30px",
-                            fontWeight: 600,
-                            fontSize: "0.8rem",
-                            letterSpacing: "0.02em",
-                            borderRadius: "15px",
-                            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                            padding: "0 12px",
-                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                            "&:hover": {
-                                transform: "translateY(-2px)",
-                                boxShadow: "0 5px 10px rgba(0, 0, 0, 0.2)",
-                                filter: "brightness(1.05)",
-                            },
-                        }}
+                    <SchedulingStatusChip
+                        minWidth={78}
+                        size="medium"
+                        status={queue.status ? queue.status.state : "Unknown"}
                     />
                 </TableCell>
 

@@ -6,7 +6,6 @@ import {
     Alert,
     Box,
     Button,
-    Chip,
     IconButton,
     InputAdornment,
     LinearProgress,
@@ -25,15 +24,20 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
+import SchedulingStatusChip from "../scheduling/SchedulingStatusChip";
 import ResourceDetailDrawer from "../details/ResourceDetailDrawer";
 import YamlViewer from "../details/YamlViewer";
 import {
     DetailCard,
     DetailRow,
-    EventsTable,
     MetadataChips,
 } from "../details/DetailComponents";
-import { tableIdentifierSx } from "../scheduling/tableDataStyles";
+import ResourceEventsPanel from "../details/ResourceEventsPanel";
+import {
+    tableIdentifierSx,
+    tableNameSx,
+    tableTimestampSx,
+} from "../scheduling/tableDataStyles";
 import {
     fetchCronJob,
     fetchCronJobEvents,
@@ -72,29 +76,9 @@ const getName = (cronJob) => cronJob?.summary?.name || cronJob?.metadata?.name;
 const getNamespace = (cronJob) =>
     cronJob?.summary?.namespace || cronJob?.metadata?.namespace;
 
-const statusStyles = {
-    Active: { bgcolor: "#e7f6ec", color: "#12833f" },
-    Scheduled: { bgcolor: "#eef4ff", color: "#1d4ed8" },
-    Suspended: { bgcolor: "#f2f3f5", color: "#69707a" },
-};
-
-const CronJobStatusChip = ({ status }) => {
-    const sx = statusStyles[status] || statusStyles.Scheduled;
-    return (
-        <Chip
-            label={status}
-            size="small"
-            sx={{
-                bgcolor: sx.bgcolor,
-                border: `1px solid ${sx.color}22`,
-                color: sx.color,
-                fontSize: 11,
-                fontWeight: 700,
-                minWidth: 86,
-            }}
-        />
-    );
-};
+const CronJobStatusChip = ({ status }) => (
+    <SchedulingStatusChip minWidth={86} size="medium" status={status} />
+);
 
 const CronJobOverview = ({ cronJob }) => (
     <Box
@@ -185,12 +169,6 @@ const CronJobDetailsDrawer = ({
         queryKey: ["cronjob-yaml", namespace, name],
         queryFn: () => fetchCronJobYaml(namespace, name),
     });
-    const eventsQuery = useQuery({
-        enabled: enabled && selectedTab === "events",
-        queryKey: ["cronjob-events", namespace, name],
-        queryFn: () => fetchCronJobEvents(namespace, name),
-    });
-
     const detail = detailQuery.data || cronJob;
 
     return (
@@ -271,19 +249,13 @@ const CronJobDetailsDrawer = ({
                     );
                 }
                 if (tab === "events") {
-                    if (eventsQuery.isLoading) return <LinearProgress />;
-                    if (eventsQuery.isError) {
-                        return (
-                            <Alert severity="error">
-                                {getApiErrorMessage(
-                                    eventsQuery.error,
-                                    "Failed to load CronJob events",
-                                )}
-                            </Alert>
-                        );
-                    }
                     return (
-                        <EventsTable events={eventsQuery.data?.items || []} />
+                        <ResourceEventsPanel
+                            emptyText="No CronJob events available."
+                            errorMessage="Failed to load CronJob events"
+                            queryFn={() => fetchCronJobEvents(namespace, name)}
+                            queryKey={["cronjob-events", namespace, name]}
+                        />
                     );
                 }
                 return <CronJobOverview cronJob={detail} />;
@@ -491,30 +463,30 @@ const CronJobs = () => {
                                     }}
                                     sx={{ cursor: "pointer", height: 58 }}
                                 >
-                                    <TableCell sx={tableIdentifierSx}>
+                                    <TableCell sx={tableNameSx}>
                                         {getName(cronJob)}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell sx={tableIdentifierSx}>
                                         {getNamespace(cronJob)}
                                     </TableCell>
-                                    <TableCell>{getQueue(cronJob)}</TableCell>
+                                    <TableCell sx={tableIdentifierSx}>
+                                        {getQueue(cronJob)}
+                                    </TableCell>
                                     <TableCell
                                         sx={{
-                                            fontFamily:
-                                                '"Roboto Mono", monospace',
-                                            fontSize: 12,
+                                            ...tableTimestampSx,
                                         }}
                                     >
                                         {cronJob?.summary?.schedule ||
                                             cronJob?.spec?.schedule ||
                                             "-"}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell sx={tableIdentifierSx}>
                                         {cronJob?.summary?.concurrencyPolicy ||
                                             cronJob?.spec?.concurrencyPolicy ||
                                             "Allow"}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell sx={tableTimestampSx}>
                                         {formatDate(
                                             cronJob?.summary
                                                 ?.lastScheduleTime ||

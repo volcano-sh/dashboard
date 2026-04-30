@@ -1,39 +1,26 @@
 import React from "react";
-import { Chip, type SxProps, type Theme, useTheme } from "@mui/material";
+import { type SxProps, type Theme } from "@mui/material";
+import SchedulingStatusChip from "../scheduling/SchedulingStatusChip";
 
 type JobStatusChipProps = {
+    minWidth?: number;
+    size?: "small" | "medium";
     status?: string;
     sx?: SxProps<Theme>;
 };
 
-const JobStatusChip = ({ status, sx }: JobStatusChipProps) => {
-    const theme = useTheme();
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "Failed":
-                return theme.palette.error.main;
-            case "Pending":
-                return theme.palette.warning.main;
-            case "Running":
-                return theme.palette.success.main;
-            case "Completed":
-                return theme.palette.info.main;
-            default:
-                return theme.palette.grey[500];
-        }
-    };
-
-    return (
-        <Chip
-            label={status || "Unknown"}
-            sx={{
-                bgcolor: getStatusColor(status),
-                color: "common.white",
-                ...sx,
-            }}
-        />
-    );
-};
+const JobStatusChip = ({
+    minWidth = 86,
+    size = "medium",
+    status,
+    sx,
+}: JobStatusChipProps) => (
+    <SchedulingStatusChip
+        minWidth={minWidth}
+        size={size}
+        status={status}
+        sx={sx}
+    />
+);
 
 export default JobStatusChip;
