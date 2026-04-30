@@ -280,14 +280,6 @@ const podLogsStreamUrl = ({ container, name, namespace, tailLines }) => {
     )}/${encodeURIComponent(name)}/logs/stream?${params.toString()}`;
 };
 
-const podEventsStreamUrl = ({ name, namespace }) => {
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const params = appendAuthToken(new URLSearchParams());
-    return `${protocol}://${window.location.host}${API_BASE}/pods/${encodeURIComponent(
-        namespace,
-    )}/${encodeURIComponent(name)}/events/stream?${params.toString()}`;
-};
-
 const getTerminalSession = (key, url): TerminalSession => {
     const existing = terminalSessions.get(key);
     if (existing) {
@@ -1008,114 +1000,11 @@ const PodLogsView = ({
 };
 
 const PodEventsView = ({ name, namespace }) => {
-    const [events, setEvents] = React.useState([]);
-    const [watchError, setWatchError] = React.useState("");
     const { data, error, isFetching, isLoading } = useQuery({
         enabled: Boolean(namespace && name),
         queryFn: () => fetchPodEvents(namespace, name),
         queryKey: ["podEvents", namespace, name],
     });
-
-    React.useEffect(() => {
-        setEvents(data?.items || []);
-    }, [data]);
-
-    React.useEffect(() => {
-        if (!namespace || !name) {
-            setWatchError("");
-            return undefined;
-        }
-
-        let disposed = false;
-        let retryTimer;
-        let socket;
-        let retryCount = 0;
-
-        const connect = () => {
-            if (disposed) {
-                return;
-            }
-
-            socket = new WebSocket(podEventsStreamUrl({ name, namespace }));
-
-            socket.addEventListener("open", () => {
-                if (!disposed) {
-                    retryCount = 0;
-                    setWatchError("");
-                }
-            });
-
-            socket.addEventListener("message", (message) => {
-                if (disposed) {
-                    return;
-                }
-
-                try {
-                    const payload = JSON.parse(message.data);
-                    if (payload?.type === "ERROR") {
-                        setWatchError(
-                            payload.error || "Pod event stream failed.",
-                        );
-                        return;
-                    }
-
-                    const incoming = payload?.event;
-                    if (!incoming) {
-                        return;
-                    }
-
-                    setEvents((current) => {
-                        const key =
-                            incoming.uid ||
-                            incoming.name ||
-                            `${incoming.reason}:${incoming.message}`;
-                        const withoutExisting = current.filter((item) => {
-                            const itemKey =
-                                item.uid ||
-                                item.name ||
-                                `${item.reason}:${item.message}`;
-                            return itemKey !== key;
-                        });
-
-                        if (payload.type === "DELETED") {
-                            return withoutExisting;
-                        }
-
-                        return [incoming, ...withoutExisting].sort(
-                            (a, b) =>
-                                new Date(b.lastTimestamp || 0).getTime() -
-                                new Date(a.lastTimestamp || 0).getTime(),
-                        );
-                    });
-                } catch {
-                    setWatchError(
-                        "Received an invalid pod event stream message.",
-                    );
-                }
-            });
-
-            socket.addEventListener("close", () => {
-                if (disposed) {
-                    return;
-                }
-
-                retryCount += 1;
-                retryTimer = window.setTimeout(
-                    connect,
-                    Math.min(5000, 700 * retryCount),
-                );
-            });
-        };
-
-        setWatchError("");
-        connect();
-
-        return () => {
-            disposed = true;
-            window.clearTimeout(retryTimer);
-            socket?.close(1000, "events panel detached");
-        };
-    }, [name, namespace]);
 
     if (isLoading || isFetching) {
         return (
@@ -1141,18 +1030,11 @@ const PodEventsView = ({ name, namespace }) => {
     }
 
     return (
-        <Box>
-            {watchError && (
-                <Alert severity="warning" sx={{ boxShadow: "none", mb: 1.5 }}>
-                    {watchError}
-                </Alert>
-            )}
-            <ResourceEventsTable
-                emptyText="No pod events available."
-                events={events}
-                formatTimestamps
-            />
-        </Box>
+        <ResourceEventsTable
+            emptyText="No pod events available."
+            events={data?.items || []}
+            formatTimestamps
+        />
     );
 };
 

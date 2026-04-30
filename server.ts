@@ -2,7 +2,7 @@ import { createServer, request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import next from "next";
 import WebSocket, { WebSocketServer } from "ws";
-import { AccessModes, getAccessMode, verifyAuthToken } from "./lib/server/auth";
+import { AccessModes, verifyAuthToken } from "./lib/server/auth";
 import {
     getDashboardConfig,
     getDashboardConfigSource,
@@ -25,8 +25,6 @@ const handle = app.getRequestHandler();
 const terminalPathPattern = /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/terminal\/?$/;
 const podLogsStreamPathPattern =
     /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/logs\/stream\/?$/;
-const podEventsStreamPathPattern =
-    /^\/api\/v1\/pods\/([^/]+)\/([^/]+)\/events\/stream\/?$/;
 
 const terminalCommand = "/bin/sh";
 const kubernetesExecProtocols = [
@@ -45,7 +43,6 @@ const terminalStream = {
 };
 let terminalConnectionId = 0;
 let logConnectionId = 0;
-let eventConnectionId = 0;
 
 const logHttpRequest = (request, response, startedAt) => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
@@ -55,34 +52,6 @@ const logHttpRequest = (request, response, startedAt) => {
         `[request] ${routeType} ${request.method} ${url} -> ${
             response.statusCode
         } ${durationMs.toFixed(1)}ms`,
-    );
-};
-
-const protectedApiPathPattern = /^\/api\/v1(\/|$)/;
-const publicApiPathPattern = /^\/api\/v1\/auth(\/|$)/;
-
-const getBearerToken = (request) => {
-    const header = request.headers.authorization || "";
-    const match = header.match(/^Bearer\s+(.+)$/i);
-    return match?.[1] || "";
-};
-
-const isProtectedApiRequest = (requestUrl) => {
-    const url = new URL(requestUrl || "/", "http://localhost");
-    return (
-        protectedApiPathPattern.test(url.pathname) &&
-        !publicApiPathPattern.test(url.pathname)
-    );
-};
-
-const rejectHttpUnauthorized = (response, message) => {
-    response.statusCode = 401;
-    response.setHeader("Content-Type", "application/json");
-    response.end(
-        JSON.stringify({
-            error: "Unauthorized",
-            message: message || "Authentication required.",
-        }),
     );
 };
 
@@ -113,9 +82,6 @@ const rejectUpgradeNotFound = (socket, message) => {
     );
     socket.destroy();
 };
-
-const isReadOnlyAccessMode = async () =>
-    (await getAccessMode()) === AccessModes.READ_ONLY;
 
 const verifyUpgradeToken = async (url) => {
     const token = url.searchParams.get("token") || "";
@@ -166,6 +132,38 @@ const logDashboardConfig = async () => {
     console.log(JSON.stringify(summarizeDashboardConfig(config), null, 2));
 };
 
+const dashboardConfig = await getDashboardConfig();
+const accessMode = dashboardConfig.access?.mode || AccessModes.READ_WRITE;
+const readOnlyAccessMode = accessMode === AccessModes.READ_ONLY;
+
+const websocketRoutes = [
+    ...(readOnlyAccessMode
+        ? []
+        : [
+              {
+                  kind: "terminal",
+                  pattern: terminalPathPattern,
+              },
+              {
+                  kind: "pod-logs",
+                  pattern: podLogsStreamPathPattern,
+              },
+          ]),
+];
+
+const matchWebsocketRoute = (pathname) => {
+    for (const route of websocketRoutes) {
+        const match = pathname.match(route.pattern);
+        if (match) {
+            return {
+                ...route,
+                match,
+            };
+        }
+    }
+    return null;
+};
+
 await app.prepare();
 await logDashboardConfig();
 
@@ -182,21 +180,6 @@ const server = createServer(async (request, response) => {
     response.on("finish", () => {
         logHttpRequest(request, response, startedAt);
     });
-
-    if (
-        isProtectedApiRequest(request.url || "/") &&
-        !(await isReadOnlyAccessMode())
-    ) {
-        try {
-            await verifyAuthToken(getBearerToken(request));
-        } catch (error) {
-            rejectHttpUnauthorized(
-                response,
-                error?.message || "Authentication required.",
-            );
-            return;
-        }
-    }
 
     handle(request, response);
 });
@@ -223,33 +206,6 @@ const logPodLogs = (message, context, details = "") => {
         `[pod-logs] ${id}${message}: ${target}${details ? ` ${details}` : ""}`,
     );
 };
-
-const logPodEvents = (message, context, details = "") => {
-    const target = context ? `${context.namespace}/${context.name}` : "unknown";
-    const id = context?.connectionId ? `#${context.connectionId} ` : "";
-    console.log(
-        `[pod-events] ${id}${message}: ${target}${details ? ` ${details}` : ""}`,
-    );
-};
-
-const normalizePodEvent = (event) => ({
-    count: event?.count ?? 1,
-    firstTimestamp:
-        event?.firstTimestamp ||
-        event?.eventTime ||
-        event?.metadata?.creationTimestamp ||
-        "",
-    lastTimestamp:
-        event?.lastTimestamp ||
-        event?.eventTime ||
-        event?.metadata?.creationTimestamp ||
-        "",
-    message: event?.message || "-",
-    name: event?.metadata?.name || "",
-    reason: event?.reason || "-",
-    type: event?.type || "Normal",
-    uid: event?.metadata?.uid || event?.metadata?.name || "",
-});
 
 const createKubernetesExecSocket = async ({ container, name, namespace }) => {
     const { kc } = getKubernetesClients();
@@ -314,42 +270,6 @@ const createKubernetesPodLogRequest = async ({
         requestOptions: {
             ...options,
             headers: options.headers || {},
-            method: "GET",
-        },
-        url,
-    };
-};
-
-const createKubernetesPodEventsWatchRequest = async ({ name, namespace }) => {
-    const { kc } = getKubernetesClients();
-    const cluster = kc.getCurrentCluster();
-    if (!cluster?.server) {
-        throw new Error("No Kubernetes cluster is configured.");
-    }
-
-    const url = new URL(cluster.server);
-    url.pathname = `/api/v1/namespaces/${encodeURIComponent(namespace)}/events`;
-    url.search = "";
-    url.searchParams.set("watch", "true");
-    url.searchParams.set("allowWatchBookmarks", "true");
-    url.searchParams.set("timeoutSeconds", "300");
-    url.searchParams.set(
-        "fieldSelector",
-        `involvedObject.kind=Pod,involvedObject.name=${name}`,
-    );
-
-    const options: any = {};
-    await kc.applyToHTTPSOptions(options);
-
-    const requestImpl = url.protocol === "https:" ? httpsRequest : httpRequest;
-    return {
-        requestImpl,
-        requestOptions: {
-            ...options,
-            headers: {
-                ...(options.headers || {}),
-                Accept: "application/json",
-            },
             method: "GET",
         },
         url,
@@ -599,154 +519,26 @@ podLogsServer.on("connection", async (browserSocket, request, context) => {
     }
 });
 
-const podEventsServer = new WebSocketServer({ noServer: true });
+server.on("upgrade", async (request, socket, head) => {
+    const url = new URL(request.url || "/", `http://${request.headers.host}`);
+    const websocketRoute = matchWebsocketRoute(url.pathname);
 
-podEventsServer.on("connection", async (browserSocket, request, context) => {
-    const connectionContext = {
-        ...context,
-        connectionId: ++eventConnectionId,
-    };
-    let kubernetesRequest;
-    let pending = "";
-
-    const send = (payload) => {
-        if (browserSocket.readyState === WebSocket.OPEN) {
-            browserSocket.send(JSON.stringify(payload));
-        }
-    };
-
-    const handleWatchLine = (line) => {
-        const trimmed = line.trim();
-        if (!trimmed) {
+    if (!websocketRoute) {
+        const knownDisabledWebsocket =
+            readOnlyAccessMode &&
+            (terminalPathPattern.test(url.pathname) ||
+                podLogsStreamPathPattern.test(url.pathname));
+        if (knownDisabledWebsocket) {
+            console.warn(
+                `[upgrade] rejected disabled websocket path=${url.pathname} mode=${AccessModes.READ_ONLY}`,
+            );
+            rejectUpgradeNotFound(
+                socket,
+                "Endpoint is not available in read-only mode.",
+            );
             return;
         }
 
-        try {
-            const item = JSON.parse(trimmed);
-            if (item?.type === "BOOKMARK") {
-                return;
-            }
-            send({
-                event: normalizePodEvent(item?.object || item),
-                type: item?.type || "MODIFIED",
-            });
-        } catch (error) {
-            logPodEvents(
-                "failed to parse watch event",
-                connectionContext,
-                `error=${error?.message || error}`,
-            );
-        }
-    };
-
-    browserSocket.on("close", (code, reason) => {
-        logPodEvents(
-            "browser websocket closed",
-            connectionContext,
-            `code=${code} reason=${reason?.toString() || "-"}`,
-        );
-        kubernetesRequest?.destroy();
-    });
-
-    browserSocket.on("error", (error) => {
-        logPodEvents(
-            "browser websocket error",
-            connectionContext,
-            `error=${error?.message || error}`,
-        );
-        kubernetesRequest?.destroy();
-    });
-
-    try {
-        logPodEvents("opening kubernetes event watch", connectionContext);
-        const { requestImpl, requestOptions, url } =
-            await createKubernetesPodEventsWatchRequest(connectionContext);
-
-        kubernetesRequest = requestImpl(url, requestOptions, (response) => {
-            logPodEvents(
-                "kubernetes event watch response",
-                connectionContext,
-                `status=${response.statusCode}`,
-            );
-
-            if ((response.statusCode || 500) >= 400) {
-                let errorBody = "";
-                response.setEncoding("utf8");
-                response.on("data", (chunk) => {
-                    errorBody += chunk;
-                });
-                response.on("end", () => {
-                    send({
-                        error: `Failed to watch pod events: ${
-                            response.statusCode
-                        } ${response.statusMessage || ""}\n${errorBody}`,
-                        type: "ERROR",
-                    });
-                    if (browserSocket.readyState === WebSocket.OPEN) {
-                        browserSocket.close(1011, "pod event watch rejected");
-                    }
-                });
-                return;
-            }
-
-            response.setEncoding("utf8");
-            response.on("data", (chunk) => {
-                pending += chunk;
-                const lines = pending.split("\n");
-                pending = lines.pop() || "";
-                lines.forEach(handleWatchLine);
-            });
-            response.on("end", () => {
-                if (pending.trim()) {
-                    handleWatchLine(pending);
-                    pending = "";
-                }
-                logPodEvents("kubernetes event watch ended", connectionContext);
-                if (browserSocket.readyState === WebSocket.OPEN) {
-                    browserSocket.close(1000, "kubernetes event watch ended");
-                }
-            });
-        });
-
-        kubernetesRequest.on("error", (error) => {
-            logPodEvents(
-                "kubernetes event watch error",
-                connectionContext,
-                `error=${error?.message || error}`,
-            );
-            send({
-                error: `Pod event watch failed: ${error?.message || error}`,
-                type: "ERROR",
-            });
-            if (browserSocket.readyState === WebSocket.OPEN) {
-                browserSocket.close(1011, "kubernetes event watch failed");
-            }
-        });
-
-        kubernetesRequest.end();
-    } catch (error) {
-        logPodEvents(
-            "kubernetes event watch failed",
-            connectionContext,
-            `error=${error?.message || error}`,
-        );
-        send({
-            error: `Pod event watch failed: ${error?.message || error}`,
-            type: "ERROR",
-        });
-        if (browserSocket.readyState === WebSocket.OPEN) {
-            browserSocket.close(1011, "pod event watch failed");
-        }
-    }
-});
-
-server.on("upgrade", async (request, socket, head) => {
-    const url = new URL(request.url || "/", `http://${request.headers.host}`);
-    const terminalMatch = url.pathname.match(terminalPathPattern);
-    const podLogsMatch = url.pathname.match(podLogsStreamPathPattern);
-    const podEventsMatch = url.pathname.match(podEventsStreamPathPattern);
-
-    if (!terminalMatch && !podLogsMatch && !podEventsMatch) {
         if (url.pathname.startsWith("/_next/webpack-hmr")) {
             console.log(`[upgrade] next-hmr path=${url.pathname}`);
         }
@@ -759,18 +551,6 @@ server.on("upgrade", async (request, socket, head) => {
                 );
                 socket.destroy();
             },
-        );
-        return;
-    }
-
-    const readOnlyAccessMode = await isReadOnlyAccessMode();
-    if (readOnlyAccessMode && (terminalMatch || podLogsMatch)) {
-        console.warn(
-            `[upgrade] rejected disabled websocket path=${url.pathname} mode=${AccessModes.READ_ONLY}`,
-        );
-        rejectUpgradeNotFound(
-            socket,
-            "Endpoint is not available in read-only mode.",
         );
         return;
     }
@@ -792,25 +572,18 @@ server.on("upgrade", async (request, socket, head) => {
         }
     }
 
-    const match = terminalMatch || podLogsMatch || podEventsMatch;
-    const namespace = decodeURIComponent(match[1]);
-    const name = decodeURIComponent(match[2]);
+    const namespace = decodeURIComponent(websocketRoute.match[1]);
+    const name = decodeURIComponent(websocketRoute.match[2]);
     const container = url.searchParams.get("container");
-    if (!namespace || !name || (!podEventsMatch && !container)) {
+    if (!namespace || !name || !container) {
         console.warn(
-            `[upgrade] ${
-                terminalMatch
-                    ? "terminal"
-                    : podLogsMatch
-                      ? "pod-logs"
-                      : "pod-events"
-            } rejected missing parameter path=${url.pathname}`,
+            `[upgrade] ${websocketRoute.kind} rejected missing parameter path=${url.pathname}`,
         );
         socket.destroy();
         return;
     }
 
-    if (podLogsMatch) {
+    if (websocketRoute.kind === "pod-logs") {
         const follow = url.searchParams.get("follow") !== "false";
         const tailLines = Number.parseInt(
             url.searchParams.get("tailLines") || "200",
@@ -826,19 +599,6 @@ server.on("upgrade", async (request, socket, head) => {
                 name,
                 namespace,
                 tailLines: Number.isFinite(tailLines) ? tailLines : 200,
-            });
-        });
-        return;
-    }
-
-    if (podEventsMatch) {
-        console.log(
-            `[upgrade] pod-events ${namespace}/${name} path=${url.pathname}`,
-        );
-        podEventsServer.handleUpgrade(request, socket, head, (websocket) => {
-            podEventsServer.emit("connection", websocket, request, {
-                name,
-                namespace,
             });
         });
         return;
