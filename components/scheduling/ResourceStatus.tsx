@@ -76,7 +76,7 @@ export const ResourceStatusLegend = () => (
         }}
     >
         {[
-            [RESOURCE_STATUS_COLORS.guarantee, "Guarantee"],
+            [RESOURCE_STATUS_COLORS.guarantee, "Requested"],
             [RESOURCE_STATUS_COLORS.deserved, "Deserved"],
             [RESOURCE_STATUS_COLORS.capability, "Capability"],
         ].map(([color, label]) => (
@@ -108,7 +108,7 @@ export const ResourceStatusLegend = () => (
                 }}
             />
             <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
-                Used (current)
+                Allocated
             </Typography>
         </Box>
     </Box>
@@ -117,13 +117,13 @@ export const ResourceStatusLegend = () => (
 export const ResourceStatusBar = ({ resource, stats, valueText }) => {
     const tooltip = [
         `${resource.label}`,
-        `Used: ${stats.usedLabel}`,
+        `Requested: ${stats.requestedLabel || stats.guaranteeLabel}`,
+        `Allocated: ${stats.usedLabel}`,
         `Deserved: ${stats.deservedLabel}`,
-        `Guarantee: ${stats.guaranteeLabel}`,
         `Capability: ${stats.capabilityLabel}`,
-        `Usage: ${stats.usageLabel}`,
+        `Allocated / deserved: ${stats.usageLabel}`,
         `Values: ${valueText}`,
-        stats.overCapability ? "Used exceeds capability" : null,
+        stats.overCapability ? "Allocated exceeds capability" : null,
     ]
         .filter(Boolean)
         .join("\n");

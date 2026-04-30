@@ -54,6 +54,7 @@ import {
     QueueResourceUsageDetailBar,
 } from "./QueueResourceUsageView";
 import {
+    formatShare,
     getQueueResourceStats,
     getQueueUsageSummary,
     QUEUE_RESOURCE_COLUMNS,
@@ -131,45 +132,58 @@ const statusStyles = {
 
 const getHealth = (queue) => {
     const status = getStatus(queue).toLowerCase();
-    if (status.includes("invalid")) {
+    if (status.includes("invalid") || status.includes("unknown")) {
         return healthStyles.invalid;
     }
 
     const stats = QUEUE_RESOURCE_COLUMNS.map((resource) =>
         getQueueResourceStats(queue, resource),
     );
-    const pendingPodGroups = getPendingPodGroups(queue);
-    const inqueuePodGroups = getInqueuePodGroups(queue);
-    const waitingPodGroups = pendingPodGroups + inqueuePodGroups;
-    const runningPodGroups = getRunningPodGroups(queue);
+    const requested = stats.reduce((sum, resource) => sum + resource.requested, 0);
+    const allocated = stats.reduce((sum, resource) => sum + resource.used, 0);
+    const allocatedCpu = getQueueResourceStats(queue, QUEUE_RESOURCE_COLUMNS[0]).used;
+    const allocatedMemory = getQueueResourceStats(queue, QUEUE_RESOURCE_COLUMNS[1]).used;
     const maxUsage = Math.max(
         ...stats.map((resource) => resource.usagePercent),
     );
     const overLimit = stats.some((resource) => resource.overCapability);
+    const overused = queue?.summary?.schedulerMetrics?.scheduling?.overused;
 
-    if (runningPodGroups === 0 && waitingPodGroups === 0)
-        return healthStyles.idle;
-    if (waitingPodGroups > 0 && maxUsage < 50) return healthStyles.starving;
-    if (overLimit || maxUsage > 110) return healthStyles.hot;
-    if (waitingPodGroups > 0 && maxUsage < 70) return healthStyles.underused;
-    if (maxUsage >= 70 && maxUsage <= 110) return healthStyles.healthy;
-    return maxUsage === 0 ? healthStyles.idle : healthStyles.healthy;
+    if (overused || overLimit || maxUsage > 110) return healthStyles.hot;
+    if (!requested && !allocated) return healthStyles.idle;
+    if (requested > 0 && allocatedCpu === 0 && allocatedMemory === 0)
+        return healthStyles.starving;
+    if (requested > 0 && allocated / requested < 0.5)
+        return healthStyles.underused;
+    return allocated > 0 ? healthStyles.healthy : healthStyles.idle;
 };
 
-const getPriority = (queue, level) =>
-    queue?.spec?.priority ?? queue?.spec?.weight ?? level;
+const getPriorityWeight = (queue) => {
+    const priority = queue?.spec?.priority ?? "-";
+    const weight =
+        queue?.summary?.schedulerMetrics?.scheduling?.weight ??
+        queue?.spec?.weight ??
+        "-";
+    return `${priority} / ${weight}`;
+};
 
-const getPodGroupMetric = (queue, key) =>
-    Number(queue?.summary?.podGroups?.[key] ?? 0);
+const getRunningPodGroups = (queue) =>
+    Number(queue?.summary?.schedulerMetrics?.podGroups?.running ?? 0);
 
-const getRunningPodGroups = (queue) => getPodGroupMetric(queue, "running");
+const getPendingPodGroups = (queue) =>
+    Number(queue?.summary?.schedulerMetrics?.podGroups?.pending ?? 0);
 
-const getPendingPodGroups = (queue) => getPodGroupMetric(queue, "pending");
-
-const getInqueuePodGroups = (queue) => getPodGroupMetric(queue, "inqueue");
+const getInqueuePodGroups = (queue) =>
+    Number(queue?.summary?.schedulerMetrics?.podGroups?.inqueue ?? 0);
 
 const getPendingInqueuePodGroups = (queue) =>
     `${getPendingPodGroups(queue)} / ${getInqueuePodGroups(queue)}`;
+
+const getFairnessShare = (queue) =>
+    formatShare(queue?.summary?.schedulerMetrics?.scheduling?.share);
+
+const getOverusedLabel = (queue) =>
+    queue?.summary?.schedulerMetrics?.scheduling?.overused ? "Yes" : "No";
 
 const getQueueSearchBlob = (queue) => {
     const labels = Object.entries(queue?.metadata?.labels || {})
@@ -409,7 +423,10 @@ const BasicInfoCard = ({ queueMap, selectedQueue }) => {
                 label="State"
                 valueNode={<StatusBadge state={getStatus(selectedQueue)} />}
             />
-            <DetailRow label="Priority" value={getPriority(selectedQueue, 0)} />
+            <DetailRow
+                label="Priority / Weight"
+                value={getPriorityWeight(selectedQueue)}
+            />
             <DetailRow
                 label="Preemptable"
                 valueNode={
@@ -453,8 +470,8 @@ const BasicInfoCard = ({ queueMap, selectedQueue }) => {
 const HealthCard = ({ selectedQueue }) => {
     const health = getHealth(selectedQueue);
     const { stats, usagePercent } = getQueueUsageSummary(selectedQueue);
-    const pendingInqueuePodGroups = getPendingInqueuePodGroups(selectedQueue);
-    const runningPodGroups = getRunningPodGroups(selectedQueue);
+    const overused = getOverusedLabel(selectedQueue);
+    const share = getFairnessShare(selectedQueue);
 
     return (
         <Paper sx={detailCardSx}>
@@ -473,9 +490,9 @@ const HealthCard = ({ selectedQueue }) => {
             </Box>
             <Box sx={{ alignItems: "center", display: "flex", gap: 0.75 }}>
                 <Typography sx={{ fontSize: 13 }}>
-                    Using {usagePercent}% of deserved resources
+                    Allocated resources are {usagePercent}% of deserved resources
                 </Typography>
-                <Tooltip title="Calculated from aggregate used / deserved resources.">
+                <Tooltip title="Calculated from Volcano scheduler allocated / deserved metrics.">
                     <InfoOutlinedIcon
                         sx={{ color: "text.disabled", fontSize: 14 }}
                     />
@@ -519,7 +536,7 @@ const HealthCard = ({ selectedQueue }) => {
                                 }}
                             />
                             <Typography sx={{ fontSize: 13 }}>
-                                {item.label} Usage
+                                {item.label} Allocation
                             </Typography>
                         </Box>
                         <Typography
@@ -536,8 +553,8 @@ const HealthCard = ({ selectedQueue }) => {
                     </Box>
                 ))}
                 {[
-                    ["Pending / Inqueue PodGroups", pendingInqueuePodGroups],
-                    ["Running PodGroups", runningPodGroups],
+                    ["Fairness Share", share],
+                    ["Overused", overused],
                 ].map(([label, value]) => (
                     <Box
                         key={label}
@@ -601,7 +618,7 @@ const ResourceSummaryCard = ({ selectedQueue }) => {
                     <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
                         Resource Summary
                     </Typography>
-                    <Tooltip title="Guarantee, deserved, capability, and current usage for this queue.">
+                    <Tooltip title="Requested, allocated, deserved, and configured capability for this queue. Metrics come from the Volcano scheduler endpoint.">
                         <InfoOutlinedIcon
                             sx={{ color: "text.disabled", fontSize: 14 }}
                         />
@@ -667,10 +684,9 @@ const getQueueEvents = (queue) => {
             time: createdAt,
             type: "Normal",
         },
-        getPendingPodGroups(queue) + getInqueuePodGroups(queue)
+        queue?.summary?.schedulerMetrics?.scheduling?.overused
             ? {
-                  description:
-                      "Some PodGroups are pending or inqueue",
+                  description: "Queue is overused according to scheduler metrics",
                   time: createdAt,
                   type: "Warning",
               }
@@ -865,19 +881,19 @@ const QueueSummaryCards = ({ queues, totalQueues }) => {
         {
             color: "#ef4444",
             label: "Hot Queues",
-            meta: "Usage > 110% of deserved",
+            meta: "Allocated > 110% of deserved",
             value: summary.hot,
         },
         {
             color: "#f97316",
             label: "Starving Queues",
-            meta: "Pending PodGroups but underused",
+            meta: "Requested resources are not allocated",
             value: summary.starving,
         },
         {
             color: "#69707a",
             label: "Idle Queues",
-            meta: "No running or pending PodGroups",
+            meta: "No requested or allocated resources",
             value: summary.idle,
         },
         {
@@ -1039,7 +1055,7 @@ const QueueLegends = () => (
                 >
                     <span>Guarantee (G)</span>
                     <span>Deserved</span>
-                    <span>Used / Capability</span>
+                    <span>Allocated / Capability</span>
                 </Box>
             </Box>
         </Paper>
@@ -1063,11 +1079,11 @@ const QueueLegends = () => (
                 }}
             >
                 {[
-                    ["#cf2727", "Hot: used / deserved > 110%"],
-                    ["#d86b00", "Starving: pending PodGroups and usage < 50%"],
-                    ["#a16207", "Underused: pending PodGroups and usage < 70%"],
+                    ["#cf2727", "Overused: allocated / deserved > 110%"],
+                    ["#d86b00", "Starving: requested resources are not allocated"],
+                    ["#a16207", "Underused: allocated / requested < 50%"],
                     ["#12833f", "Healthy: usage between 70% and 110%"],
-                    ["#69707a", "Idle: no running or pending PodGroups"],
+                    ["#69707a", "Idle: no requested or allocated resources"],
                     ["#ef4444", "Invalid: invalid configuration"],
                 ].map(([color, label]) => (
                     <Box
@@ -1215,7 +1231,7 @@ const QueueHierarchyView = ({
                                     Status
                                 </TableCell>
                                 <TableCell sx={{ minWidth: 70 }}>
-                                    Priority
+                                    Priority / Weight
                                 </TableCell>
                                 <TableCell
                                     align="center"
@@ -1237,13 +1253,13 @@ const QueueHierarchyView = ({
                                 <TableCell sx={{ minWidth: 140 }}>
                                     <HeaderWithTooltip
                                         label="Running"
-                                        tooltip="Running PodGroups from Volcano controller metrics."
+                                        tooltip="Running PodGroups from Volcano scheduler metric volcano_queue_pod_group_running_count."
                                     />
                                 </TableCell>
                                 <TableCell sx={{ minWidth: 105 }}>
                                     <HeaderWithTooltip
                                         label="Pending / Inqueue"
-                                        tooltip="Pending/Inqueue PodGroups from Volcano controller metrics."
+                                        tooltip="Pending/Inqueue PodGroups from Volcano scheduler metrics."
                                     />
                                 </TableCell>
                                 <TableCell sx={{ minWidth: 110 }}>
@@ -1308,7 +1324,7 @@ const QueueHierarchyView = ({
                                                 />
                                             </TableCell>
                                             <TableCell sx={tableNumericSx}>
-                                                {getPriority(node, level)}
+                                                {getPriorityWeight(node)}
                                             </TableCell>
                                             <TableCell sx={{ minWidth: 420 }}>
                                                 <QueueResourceUsageBars

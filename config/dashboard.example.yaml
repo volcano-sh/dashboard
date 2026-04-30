@@ -25,7 +25,7 @@ schedulerConfig:
     #   SchedulerMetricEndpoint: http://127.0.0.1:18080/metrics
     # Cluster deployment example:
     #   SchedulerMetricEndpoint: http://volcano-scheduler.volcano-system.svc:8080/metrics
-    SchedulerMetricEndpoint: ""
+    SchedulerMetricEndpoint: "http://127.0.0.1:18080/metrics"
 
 access:
     # Supported values: read-write, read-only.

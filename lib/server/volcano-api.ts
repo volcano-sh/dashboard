@@ -23,7 +23,10 @@ import {
 import { schedulerConfigJson, schedulerConfigYaml } from "./scheduler-config";
 import {
     fetchQueuePodGroupMetrics,
+    fetchQueueSchedulerMetrics,
     getQueuePodGroupCounts,
+    getQueueSchedulerMetrics,
+    mergeQueueMetrics,
 } from "./queue-metrics";
 
 const getApis = () => {
@@ -704,14 +707,23 @@ export async function listQueues(request) {
                     queue.spec?.parent === queueFilter,
             );
         }
-        const queueMetrics = await fetchQueuePodGroupMetrics();
+        const [queueMetrics, podGroupMetrics] = await Promise.all([
+            fetchQueueSchedulerMetrics(),
+            fetchQueuePodGroupMetrics(),
+        ]);
         return listResponse(
             items.map((queue) =>
                 withQueueSummary(
                     queue,
-                    getQueuePodGroupCounts(
-                        queueMetrics.counts,
-                        queue.metadata?.name,
+                    mergeQueueMetrics(
+                        getQueueSchedulerMetrics(
+                            queueMetrics.metrics,
+                            queue.metadata?.name,
+                        ),
+                        getQueuePodGroupCounts(
+                            podGroupMetrics.counts,
+                            queue.metadata?.name,
+                        ),
                     ),
                 ),
             ),

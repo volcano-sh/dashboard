@@ -3,43 +3,66 @@ const formatResource = (value, fallback = "0") => {
     return String(value);
 };
 
-const MEMORY_UNITS_TO_GI = {
-    Ki: 1 / 1024 / 1024,
-    Mi: 1 / 1024,
-    Gi: 1,
-    Ti: 1024,
+const MEMORY_UNITS_TO_BYTES = {
+    Ki: 1024,
+    Mi: 1024 ** 2,
+    Gi: 1024 ** 3,
+    Ti: 1024 ** 4,
 };
 
 export const QUEUE_RESOURCE_COLUMNS = [
     {
         key: "cpu",
         label: "CPU",
-        resourceKey: "cpu",
         unit: "cores",
     },
     {
         key: "memory",
         label: "Memory",
-        resourceKey: "memory",
-        unit: "Gi",
+        unit: "bytes",
     },
     {
-        key: "gpu",
-        label: "GPU",
-        resourceKey: "nvidia.com/gpu",
-        fallbackKeys: ["gpu"],
-        unit: "GPUs",
+        key: "pods",
+        label: "Pods",
+        resourceKey: "pods",
+        unit: "pods",
     },
 ];
 
-export const hasUnit = (value) => /[a-zA-Z]/.test(String(value || ""));
-
-export const formatResourceMetric = (value, resource, includeUnit = true) => {
-    if (!includeUnit || hasUnit(value)) return value;
-    return `${value} ${resource.unit}`;
+export const formatCpuFromMilli = (milli) => {
+    const value = Number(milli || 0) / 1000;
+    if (!value) return "0 cores";
+    return `${Number(value.toFixed(3)).toString()} cores`;
 };
 
-export const parseResourceQuantity = (value, resource) => {
+export const formatMemoryBytes = (bytes) => {
+    const value = Number(bytes || 0);
+    if (!value) return "0 B";
+    if (value >= 1024 ** 3) {
+        return `${Number((value / 1024 ** 3).toFixed(2)).toString()} GiB`;
+    }
+    if (value >= 1024 ** 2) {
+        return `${Number((value / 1024 ** 2).toFixed(2)).toString()} MiB`;
+    }
+    if (value >= 1024) {
+        return `${Number((value / 1024).toFixed(2)).toString()} KiB`;
+    }
+    return `${value} B`;
+};
+
+export const formatShare = (value) => {
+    if (value === undefined || value === null || value === "") return "-";
+    return `${Number((Number(value) * 100).toFixed(2)).toString()}%`;
+};
+
+export const formatResourceValue = (resourceName, value) => {
+    if (resourceName === "cpu") return formatCpuFromMilli(value);
+    if (resourceName === "memory") return formatMemoryBytes(value);
+    if (value === undefined || value === null || value === "") return "0";
+    return Number(value).toString();
+};
+
+const parseSpecResourceNumber = (value, resource) => {
     const text = String(value || "0").trim();
     if (!text) return 0;
 
@@ -48,18 +71,20 @@ export const parseResourceQuantity = (value, resource) => {
         if (match) {
             const amount = Number.parseFloat(match[1]);
             const unit = match[2] || "Gi";
-            const multiplier = MEMORY_UNITS_TO_GI[unit] ?? 1;
-            return Number.isFinite(amount) ? amount * multiplier : 0;
+            return Number.isFinite(amount)
+                ? amount * (MEMORY_UNITS_TO_BYTES[unit] ?? 1)
+                : 0;
         }
     }
 
     if (resource.key === "cpu" && text.endsWith("m")) {
         const amount = Number.parseFloat(text.slice(0, -1));
-        return Number.isFinite(amount) ? amount / 1000 : 0;
+        return Number.isFinite(amount) ? amount : 0;
     }
 
     const parsed = Number.parseFloat(text.replace(/[^\d.]/g, ""));
-    return Number.isFinite(parsed) ? parsed : 0;
+    if (!Number.isFinite(parsed)) return 0;
+    return resource.key === "cpu" ? parsed * 1000 : parsed;
 };
 
 const getSpecResource = (queue, key, resourceKey) => {
@@ -68,55 +93,44 @@ const getSpecResource = (queue, key, resourceKey) => {
     return section?.resource?.[resourceKey] || section?.[resourceKey];
 };
 
-const getStatusResource = (queue, key, resourceKey) => {
-    return queue?.status?.[key]?.[resourceKey];
+const getCapabilityRaw = (queue, resource) =>
+    getSpecResource(queue, "capability", resource.resourceKey || resource.key);
+
+const getMetricValue = (queue, resource, field) => {
+    const metrics = queue?.summary?.schedulerMetrics;
+    if (resource.key === "cpu") return metrics?.cpu?.[`${field}Milli`] ?? 0;
+    if (resource.key === "memory")
+        return metrics?.memory?.[`${field}Bytes`] ?? 0;
+    return metrics?.scalar?.[resource.resourceKey || resource.key]?.[field] ?? 0;
 };
 
-const getResourceFromSection = (queue, section, resource) => {
-    const keys = [resource.resourceKey, ...(resource.fallbackKeys || [])];
-    for (const key of keys) {
-        const value =
-            section === "status"
-                ? getStatusResource(queue, "allocated", key)
-                : getSpecResource(queue, section, key);
-        if (value !== undefined && value !== null && value !== "") {
-            return value;
-        }
-    }
-    return undefined;
+const getCapability = (queue, resource) => {
+    const raw = getCapabilityRaw(queue, resource);
+    return parseSpecResourceNumber(raw, resource);
 };
 
-const getPendingResource = (queue, resource) => {
-    const keys = [resource.resourceKey, ...(resource.fallbackKeys || [])];
-    for (const key of keys) {
-        const value =
-            getStatusResource(queue, "pending", key) ||
-            getStatusResource(queue, "inqueue", key);
-        if (value !== undefined && value !== null && value !== "") {
-            return value;
-        }
-    }
-    return undefined;
+const formatCapability = (queue, resource) => {
+    const raw = getCapabilityRaw(queue, resource);
+    if (raw === undefined || raw === null || raw === "") return "-";
+    if (resource.key === "cpu") return formatCpuFromMilli(getCapability(queue, resource));
+    if (resource.key === "memory") return formatMemoryBytes(getCapability(queue, resource));
+    return formatResource(raw, "-");
 };
 
 export const getQueueResourceStats = (queue, resource) => {
-    const guaranteeRaw = getResourceFromSection(queue, "guarantee", resource);
-    const usedRaw = getResourceFromSection(queue, "status", resource);
-    const deservedRaw = getResourceFromSection(queue, "deserved", resource);
-    const capabilityRaw = getResourceFromSection(queue, "capability", resource);
-    const guarantee = parseResourceQuantity(guaranteeRaw, resource);
-    const used = parseResourceQuantity(usedRaw, resource);
-    const deserved = parseResourceQuantity(deservedRaw, resource);
-    const capability = parseResourceQuantity(capabilityRaw, resource);
-    const scale = Math.max(capability, deserved, guarantee, used, 1);
-    const usagePercent = deserved ? (used / deserved) * 100 : 0;
-    const guaranteePercent = Math.min((guarantee / scale) * 100, 100);
+    const requested = getMetricValue(queue, resource, "requested");
+    const allocated = getMetricValue(queue, resource, "allocated");
+    const deserved = getMetricValue(queue, resource, "deserved");
+    const capability = getCapability(queue, resource);
+    const scale = Math.max(capability, deserved, requested, allocated, 1);
+    const usagePercent = deserved ? (allocated / deserved) * 100 : 0;
+    const guaranteePercent = Math.min((requested / scale) * 100, 100);
     const deservedPercent = Math.min((deserved / scale) * 100, 100);
-    const usedPercent = Math.min((used / scale) * 100, 100);
-    const overCapability = Boolean(capability && used > capability);
+    const usedPercent = Math.min((allocated / scale) * 100, 100);
+    const overCapability = Boolean(capability && allocated > capability);
     const usageTone = overCapability
         ? "hot"
-        : !used
+        : !allocated && !requested
           ? "idle"
           : usagePercent > 110
             ? "hot"
@@ -128,57 +142,37 @@ export const getQueueResourceStats = (queue, resource) => {
 
     return {
         capability,
-        capabilityLabel: formatResource(capabilityRaw, "0"),
+        capabilityLabel: formatCapability(queue, resource),
         deserved,
-        deservedLabel: formatResource(deservedRaw, "0"),
+        deservedLabel: formatResourceValue(resource.key, deserved),
         deservedPercent,
-        guarantee,
-        guaranteeLabel: formatResource(guaranteeRaw, "0"),
+        guarantee: requested,
+        guaranteeLabel: formatResourceValue(resource.key, requested),
         guaranteePercent,
         overCapability,
-        pendingLabel: formatResource(getPendingResource(queue, resource)),
+        pendingLabel: "0",
+        requested,
+        requestedLabel: formatResourceValue(resource.key, requested),
         scale,
         usageLabel: deserved ? `${Math.round(usagePercent)}%` : "0%",
         usagePercent,
         usageTone,
-        used,
-        usedLabel: formatResource(usedRaw, "0"),
+        used: allocated,
+        usedLabel: formatResourceValue(resource.key, allocated),
         usedPercent,
     };
 };
 
-export const formatResourceValueText = (stats, resource) => {
-    const values = [
-        stats.usedLabel,
-        stats.deservedLabel,
-        stats.capabilityLabel,
-    ];
-    const suffix = values.some(hasUnit) ? "" : ` ${resource.unit}`;
-    return `${values.join(" / ")}${suffix} (${stats.usageLabel})`;
-};
+export const formatResourceValueText = (stats) =>
+    `${stats.usedLabel} / ${stats.deservedLabel} (${stats.usageLabel})`;
 
 export const getQueueResourceStatusItems = (queue) =>
     QUEUE_RESOURCE_COLUMNS.map((resource) => {
         const stats = getQueueResourceStats(queue, resource);
         return {
             resource,
-            stats: {
-                ...stats,
-                capabilityLabel: formatResourceMetric(
-                    stats.capabilityLabel,
-                    resource,
-                ),
-                deservedLabel: formatResourceMetric(
-                    stats.deservedLabel,
-                    resource,
-                ),
-                guaranteeLabel: formatResourceMetric(
-                    stats.guaranteeLabel,
-                    resource,
-                ),
-                usedLabel: formatResourceMetric(stats.usedLabel, resource),
-            },
-            valueText: formatResourceValueText(stats, resource),
+            stats,
+            valueText: formatResourceValueText(stats),
         };
     });
 
@@ -188,15 +182,15 @@ export const getQueueResourceDetail = (queue, resource, mode) => {
         resource,
         scaleLabels: [
             "0",
-            formatResourceMetric(stats.guaranteeLabel, resource),
-            formatResourceMetric(stats.deservedLabel, resource),
-            formatResourceMetric(stats.capabilityLabel, resource),
+            stats.requestedLabel,
+            stats.deservedLabel,
+            stats.capabilityLabel,
         ],
         stats,
         valueText:
             mode === "percentage"
-                ? `${stats.usageLabel} used / deserved`
-                : formatResourceValueText(stats, resource),
+                ? `${stats.usageLabel} allocated / deserved`
+                : formatResourceValueText(stats),
     };
 };
 
@@ -206,9 +200,9 @@ export const getQueueUsageSummary = (queue) => {
         label: resource.label,
     }));
     const deservedTotal = stats.reduce((sum, item) => sum + item.deserved, 0);
-    const usedTotal = stats.reduce((sum, item) => sum + item.used, 0);
+    const allocatedTotal = stats.reduce((sum, item) => sum + item.used, 0);
     const usagePercent = deservedTotal
-        ? Math.round((usedTotal / deservedTotal) * 100)
+        ? Math.round((allocatedTotal / deservedTotal) * 100)
         : 0;
 
     return { stats, usagePercent };

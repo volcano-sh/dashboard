@@ -30,14 +30,37 @@ const queueResponse = {
                 },
                 status: {
                     state: "Open",
-                    allocated: { cpu: "120", memory: "256Gi" },
                 },
                 summary: {
-                    podGroups: {
-                        inqueue: 1,
-                        pending: 0,
-                        running: 22,
-                        source: "controller-metrics",
+                    schedulerMetrics: {
+                        cpu: {
+                            allocatedMilli: 100,
+                            deservedMilli: 200,
+                            requestedMilli: 100,
+                        },
+                        memory: {
+                            allocatedBytes: 67108864,
+                            deservedBytes: 134217728,
+                            requestedBytes: 67108864,
+                        },
+                        podGroups: {
+                            inqueue: 3,
+                            pending: 1,
+                            running: 2,
+                        },
+                        scalar: {
+                            pods: {
+                                allocated: 1,
+                                deserved: 2,
+                                requested: 1,
+                            },
+                        },
+                        scheduling: {
+                            overused: false,
+                            share: 1,
+                            weight: 5,
+                        },
+                        source: "scheduler-metrics",
                     },
                 },
             },
@@ -54,14 +77,37 @@ const queueResponse = {
                 },
                 status: {
                     state: "Open",
-                    allocated: { cpu: "120", memory: "256Gi" },
                 },
                 summary: {
-                    podGroups: {
-                        inqueue: 1,
-                        pending: 0,
-                        running: 22,
-                        source: "controller-metrics",
+                    schedulerMetrics: {
+                        cpu: {
+                            allocatedMilli: 100,
+                            deservedMilli: 200,
+                            requestedMilli: 100,
+                        },
+                        memory: {
+                            allocatedBytes: 67108864,
+                            deservedBytes: 134217728,
+                            requestedBytes: 67108864,
+                        },
+                        podGroups: {
+                            inqueue: 3,
+                            pending: 1,
+                            running: 2,
+                        },
+                        scalar: {
+                            pods: {
+                                allocated: 1,
+                                deserved: 2,
+                                requested: 1,
+                            },
+                        },
+                        scheduling: {
+                            overused: false,
+                            share: 1,
+                            weight: 5,
+                        },
+                        source: "scheduler-metrics",
                     },
                 },
             },
@@ -119,27 +165,31 @@ describe("Queues", () => {
         expect(screen.getByText("Create Queue")).toBeInTheDocument();
     });
 
-    it("shows queue PodGroup status counts with source tooltips", async () => {
+    it("shows scheduler metric PodGroup counts and resource values", async () => {
         renderQueues();
 
         await waitFor(() => {
             expect(screen.getByText("prod")).toBeInTheDocument();
         });
 
+        expect(screen.getByText("Priority / Weight")).toBeInTheDocument();
         expect(screen.getByText("Running")).toBeInTheDocument();
         expect(screen.getByText("Pending / Inqueue")).toBeInTheDocument();
         expect(
             screen.getByLabelText(
-                "Running PodGroups from Volcano controller metrics.",
+                "Running PodGroups from Volcano scheduler metric volcano_queue_pod_group_running_count.",
             ),
         ).toBeInTheDocument();
         expect(
             screen.getByLabelText(
-                "Pending/Inqueue PodGroups from Volcano controller metrics.",
+                "Pending/Inqueue PodGroups from Volcano scheduler metrics.",
             ),
         ).toBeInTheDocument();
-        expect(screen.getAllByText("22").length).toBeGreaterThan(0);
-        expect(screen.getAllByText("0 / 1").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("1 / 3").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("- / 5").length).toBeGreaterThan(0);
+        expect(screen.queryByText("Running Pods / Jobs")).not.toBeInTheDocument();
+        expect(screen.queryByText("Pending Jobs")).not.toBeInTheDocument();
     });
 
     it("hides queue write actions for read-only users", async () => {

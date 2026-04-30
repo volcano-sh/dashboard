@@ -105,14 +105,33 @@ export const withPodGroupSummary = (podGroup) => ({
     },
 });
 
-const defaultPodGroupCounts = {
-    inqueue: 0,
-    pending: 0,
-    running: 0,
+const defaultSchedulerMetrics = {
+    cpu: {
+        allocatedMilli: 0,
+        deservedMilli: 0,
+        requestedMilli: 0,
+    },
+    memory: {
+        allocatedBytes: 0,
+        deservedBytes: 0,
+        requestedBytes: 0,
+    },
+    podGroups: {
+        completed: 0,
+        inqueue: 0,
+        pending: 0,
+        running: 0,
+        unknown: 0,
+    },
+    scalar: {},
+    scheduling: {},
     source: "unavailable",
 };
 
-export const withQueueSummary = (queue, podGroupCounts = defaultPodGroupCounts) => {
+export const withQueueSummary = (
+    queue,
+    schedulerMetrics = defaultSchedulerMetrics,
+) => {
     const pendingCpu = parseResourceNumber(
         resourceValue(queue, "pending", "cpu") ||
             resourceValue(queue, "inqueue", "cpu"),
@@ -152,9 +171,9 @@ export const withQueueSummary = (queue, podGroupCounts = defaultPodGroupCounts) 
             pending: {
                 cpu: pendingCpu,
             },
-            podGroups: {
-                ...defaultPodGroupCounts,
-                ...podGroupCounts,
+            schedulerMetrics: {
+                ...defaultSchedulerMetrics,
+                ...schedulerMetrics,
             },
             health,
         },
