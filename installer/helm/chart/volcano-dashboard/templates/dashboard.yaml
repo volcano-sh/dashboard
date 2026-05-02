@@ -20,7 +20,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}
   {{- if .Values.custom.common_labels }}
   labels:
     {{- toYaml .Values.custom.common_labels | nindent 4 }}
@@ -82,7 +82,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ .Release.Name }}-role
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-role
   {{- if .Values.custom.common_labels }}
   labels:
     {{- toYaml .Values.custom.common_labels | nindent 4 }}
@@ -90,7 +90,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ .Release.Name }}
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Release.Name }}
@@ -105,7 +105,7 @@ metadata:
   labels:
     app: volcano-dashboard
     {{- if or (.Values.custom.dashboard_labels) (.Values.custom.common_labels) }}
-    {{- mustMerge (.Values.custom.dashboard_labels | default (dict)) (.Values.custom.common_labels | default (dict)) | toYaml | nindent 4 }}
+    {{- mustMerge (dict) (.Values.custom.dashboard_labels | default (dict)) (.Values.custom.common_labels | default (dict)) | toYaml | nindent 4 }}
     {{- end }}
 spec:
   replicas: {{ .Values.custom.dashboard_replicas }}
@@ -117,7 +117,7 @@ spec:
       labels:
         app: volcano-dashboard
         {{- if or (.Values.custom.dashboard_pod_labels) (.Values.custom.common_labels) }}
-        {{- mustMerge (.Values.custom.dashboard_pod_labels | default (dict)) (.Values.custom.common_labels | default (dict)) | toYaml | nindent 8 }}
+        {{- mustMerge (dict) (.Values.custom.dashboard_pod_labels | default (dict)) (.Values.custom.common_labels | default (dict)) | toYaml | nindent 8 }}
         {{- end }}
     spec:
       {{- if $dashboard_tolerations }}
