@@ -1,0 +1,82 @@
+basic:
+  frontend_image_name: "volcanosh/vc-dashboard-frontend"
+  backend_image_name: "volcanosh/vc-dashboard-backend"
+  image_tag_version: "latest"
+  frontend_image_tag_version: ""
+  backend_image_tag_version: ""
+  image_registry: "docker.io"
+  image_pull_policy: "Always"
+  image_pull_secret: ""
+
+custom:
+  dashboard_replicas: 1
+  dashboard_enable: true
+
+  # Service type: ClusterIP, NodePort, LoadBalancer
+  service_type: "ClusterIP"
+
+  # NodePort values (only used when service_type is NodePort)
+  frontend_node_port: ~
+  backend_node_port: ~
+  default_sc:
+    seccompProfile:
+      type: RuntimeDefault
+    seLinuxOptions:
+      level: "s0:c123,c456"
+  default_csc:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    runAsNonRoot: true
+    runAsUser: 1000
+  frontend_csc: ~
+  backend_csc: ~
+
+  # Resource requests/limits for the frontend container
+  # Example:
+  #   frontend_resources:
+  #     requests:
+  #       cpu: 100m
+  #       memory: 128Mi
+  #     limits:
+  #       cpu: 200m
+  #       memory: 256Mi
+  frontend_resources: ~
+
+  # Resource requests/limits for the backend container
+  backend_resources: ~
+
+  # Node selector (applied to the dashboard pod)
+  # Example:
+  #   dashboard_ns:
+  #     nodetype: criticalservices
+  dashboard_ns: ~
+
+  # Affinity rules for the dashboard pod
+  # Example:
+  #   dashboard_affinity:
+  #     podAntiAffinity:
+  #       preferredDuringSchedulingIgnoredDuringExecution:
+  #         - weight: 49
+  #           podAffinityTerm:
+  #             topologyKey: kubernetes.io/hostname
+  #             labelSelector:
+  #               matchLabels:
+  #                 app: volcano-dashboard
+  dashboard_affinity: ~
+
+  # Tolerations for the dashboard pod
+  # Example:
+  #   dashboard_tolerations:
+  #     - key: "example-key"
+  #       operator: "Exists"
+  #       effect: "NoSchedule"
+  dashboard_tolerations: ~
+  common_labels: ~
+  dashboard_labels: ~
+  dashboard_pod_labels: ~
+
+service:
+  ipFamilyPolicy: ""
+  ipFamilies: []

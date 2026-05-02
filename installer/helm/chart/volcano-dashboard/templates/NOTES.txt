@@ -1,0 +1,13 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}, deployed into namespace {{ .Release.Namespace }}.
+
+To access the Volcano Dashboard, run the following command:
+
+  kubectl port-forward svc/{{ .Release.Name }} 8080:80 -n {{ .Release.Namespace }}
+
+Then open your browser and navigate to:
+  http://localhost:8080
+
+For more information on Volcano, visit:
+  https://volcano.sh/
