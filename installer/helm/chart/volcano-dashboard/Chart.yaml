@@ -1,0 +1,12 @@
+apiVersion: v2
+description: A Helm chart for Volcano Dashboard
+name: volcano-dashboard
+version: "0.1.0"
+appVersion: "v0.2.0"
+icon: https://raw.githubusercontent.com/volcano-sh/volcano/master/docs/images/volcano-logo.png
+home: https://volcano.sh
+sources:
+  - https://github.com/volcano-sh/dashboard
+# maintainers:
+  # - name: 
+    # email: 
