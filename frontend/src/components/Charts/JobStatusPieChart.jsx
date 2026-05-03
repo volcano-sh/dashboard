@@ -2,14 +2,18 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
+import ChartEmptyState from "./ChartEmptyState";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const JobStatusPieChart = ({ data }) => {
-    if (!data || !Array.isArray(data)) {
+    if (!data || !Array.isArray(data) || data.length === 0) {
         return (
-            <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
+            <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                <Typography variant="h6" align="center" sx={{ mb: 1 }}>
+                    Jobs Status
+                </Typography>
+                <ChartEmptyState message="No job data available" />
             </Box>
         );
     }
