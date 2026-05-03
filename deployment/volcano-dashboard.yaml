@@ -142,6 +142,21 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - volcano-scheduler-configmap
+    verbs:
+      - get
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/log
+    verbs:
+      - get
 ---
 
 # volcano dashboard service

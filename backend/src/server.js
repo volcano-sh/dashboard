@@ -984,6 +984,155 @@ app.delete("/api/queues/:name", async (req, res) => {
     }
 });
 
+// ─── Scheduler API ────────────────────────────────────────────────────────────
+
+const VOLCANO_NAMESPACE = "volcano-system";
+const SCHEDULER_CONFIGMAP = "volcano-scheduler-configmap";
+
+// Component → label selector used to locate the right pod
+const COMPONENT_LABELS = {
+    scheduler: "app=volcano-scheduler",
+    "controller-manager": "app=volcano-controller-manager",
+    "webhook-manager": "app=volcano-webhook-manager",
+    agent: "app=volcano-agent",
+};
+
+/**
+ * Resolve the running pod name for a Volcano component.
+ * Returns the first Running pod matching the component's label selector,
+ * or null when no matching pod is found.
+ */
+async function resolveComponentPod(component) {
+    const labelSelector =
+        COMPONENT_LABELS[component] ||
+        `app=volcano-${component}`;
+
+    const response = await k8sCoreApi.listNamespacedPod({
+        namespace: VOLCANO_NAMESPACE,
+        labelSelector,
+    });
+
+    const pods = (response.items || []).filter(
+        (p) => p.status?.phase === "Running",
+    );
+
+    return pods.length > 0 ? pods[0].metadata.name : null;
+}
+
+// GET /api/scheduler/config
+// Returns the volcano-scheduler-configmap data as JSON.
+app.get("/api/scheduler/config", async (req, res) => {
+    try {
+        const cm = await k8sCoreApi.readNamespacedConfigMap({
+            name: SCHEDULER_CONFIGMAP,
+            namespace: VOLCANO_NAMESPACE,
+        });
+        res.json({
+            name: cm.metadata.name,
+            namespace: cm.metadata.namespace,
+            resourceVersion: cm.metadata.resourceVersion,
+            data: cm.data || {},
+        });
+    } catch (err) {
+        console.error("Error fetching scheduler config:", err);
+        res.status(500).json({
+            error: "Failed to fetch scheduler config",
+            details: err.message,
+        });
+    }
+});
+
+// PATCH /api/scheduler/config
+// Applies a strategic-merge patch to the volcano-scheduler-configmap.
+// Body: { data: { "volcano-scheduler.conf": "<yaml string>" } }
+app.patch("/api/scheduler/config", async (req, res) => {
+    try {
+        const patchBody = req.body;
+
+        if (!patchBody || typeof patchBody !== "object") {
+            return res.status(400).json({ error: "Request body must be a JSON object" });
+        }
+
+        const response = await k8sCoreApi.patchNamespacedConfigMap({
+            name: SCHEDULER_CONFIGMAP,
+            namespace: VOLCANO_NAMESPACE,
+            body: patchBody,
+            options: {
+                headers: { "Content-Type": "application/merge-patch+json" },
+            },
+        });
+
+        res.json({
+            message: "Scheduler config updated successfully",
+            resourceVersion: response.metadata?.resourceVersion,
+        });
+    } catch (err) {
+        console.error("Error patching scheduler config:", err);
+        res.status(500).json({
+            error: "Failed to update scheduler config",
+            details: err?.body?.message || err.message,
+        });
+    }
+});
+
+// GET /api/scheduler/logs
+// Query params:
+//   component  — scheduler | controller-manager | webhook-manager | agent  (default: scheduler)
+//   tailLines  — number of lines to return from the end of the log (default: 100)
+//   container  — optional container name (defaults to first container)
+app.get("/api/scheduler/logs", async (req, res) => {
+    try {
+        const component = req.query.component || "scheduler";
+        const tailLines = Math.min(
+            parseInt(req.query.tailLines) || 100,
+            5000,
+        );
+
+        if (!COMPONENT_LABELS[component]) {
+            return res.status(400).json({
+                error: `Unknown component '${component}'. Valid values: ${Object.keys(COMPONENT_LABELS).join(", ")}`,
+            });
+        }
+
+        const podName = await resolveComponentPod(component);
+
+        if (!podName) {
+            return res.status(404).json({
+                error: `No running pod found for component '${component}' in namespace '${VOLCANO_NAMESPACE}'`,
+            });
+        }
+
+        const logParams = {
+            name: podName,
+            namespace: VOLCANO_NAMESPACE,
+            tailLines,
+            timestamps: true,
+        };
+
+        if (req.query.container) {
+            logParams.container = req.query.container;
+        }
+
+        const logs = await k8sCoreApi.readNamespacedPodLog(logParams);
+
+        res.json({
+            component,
+            pod: podName,
+            namespace: VOLCANO_NAMESPACE,
+            tailLines,
+            logs: typeof logs === "string" ? logs : String(logs),
+        });
+    } catch (err) {
+        console.error("Error fetching scheduler logs:", err);
+        res.status(500).json({
+            error: "Failed to fetch scheduler logs",
+            details: err?.body?.message || err.message,
+        });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const verifyVolcanoSetup = async () => {
     try {
         // Verify CRD access
