@@ -1271,6 +1271,114 @@ app.get("/api/scheduler/metrics", async (req, res) => {
     }
 });
 
+// ─── Scheduler Log Streaming (SSE) ────────────────────────────────────────────
+
+// GET /api/scheduler/logs/stream
+// Streams logs from a Volcano component as a Server-Sent Events (SSE) feed.
+//
+// Query params:
+//   component  — scheduler | controller-manager | webhook-manager | agent
+//   tailLines  — lines to replay from history before streaming (default: 50)
+//   container  — optional container name
+//   follow     — set to "false" to disable following (snapshot only)
+app.get("/api/scheduler/logs/stream", async (req, res) => {
+    const component = req.query.component || "scheduler";
+    const tailLines = Math.min(parseInt(req.query.tailLines) || 50, 2000);
+    const follow = req.query.follow !== "false";
+
+    if (!COMPONENT_LABELS[component]) {
+        res.status(400).json({
+            error: `Unknown component '${component}'. Valid values: ${Object.keys(COMPONENT_LABELS).join(", ")}`,
+        });
+        return;
+    }
+
+    let podName;
+    try {
+        podName = await resolveComponentPod(component);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to resolve component pod", details: err.message });
+        return;
+    }
+
+    if (!podName) {
+        res.status(404).json({
+            error: `No running pod found for component '${component}' in namespace '${VOLCANO_NAMESPACE}'`,
+        });
+        return;
+    }
+
+    // SSE headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    res.write(`event: meta\ndata: ${JSON.stringify({ pod: podName, namespace: VOLCANO_NAMESPACE, component })}\n\n`);
+
+    const logParams = {
+        name: podName,
+        namespace: VOLCANO_NAMESPACE,
+        tailLines,
+        timestamps: true,
+        follow,
+    };
+    if (req.query.container) logParams.container = req.query.container;
+
+    let logStream;
+    let closed = false;
+
+    const cleanup = () => {
+        closed = true;
+        if (logStream && typeof logStream.destroy === "function") {
+            logStream.destroy();
+        }
+    };
+
+    req.on("close", cleanup);
+    req.on("abort", cleanup);
+
+    try {
+        logStream = await k8sCoreApi.readNamespacedPodLog(logParams);
+
+        if (typeof logStream === "string") {
+            // Non-streaming fallback (follow=false)
+            for (const line of logStream.split("\n").filter(Boolean)) {
+                if (closed) break;
+                res.write(`data: ${JSON.stringify(line)}\n\n`);
+            }
+            res.write("event: done\ndata: {}\n\n");
+            res.end();
+            return;
+        }
+
+        logStream.on("data", (chunk) => {
+            if (closed) return;
+            for (const line of chunk.toString().split("\n")) {
+                if (line.trim()) res.write(`data: ${JSON.stringify(line)}\n\n`);
+            }
+        });
+
+        logStream.on("end", () => {
+            if (!closed) { res.write("event: done\ndata: {}\n\n"); res.end(); }
+        });
+
+        logStream.on("error", (err) => {
+            if (!closed) {
+                res.write(`event: error\ndata: ${JSON.stringify({ message: err.message })}\n\n`);
+                res.end();
+            }
+        });
+    } catch (err) {
+        if (!closed) {
+            res.write(`event: error\ndata: ${JSON.stringify({ message: err?.body?.message || err.message })}\n\n`);
+            res.end();
+        }
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ─── Scheduler Metrics ────────────────────────────────────────────────────────
 
 /**

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import {
     Alert,
@@ -6,14 +6,18 @@ import {
     Button,
     CircularProgress,
     FormControl,
+    FormControlLabel,
     InputLabel,
     MenuItem,
     Paper,
     Select,
+    Switch,
     TextField,
     Typography,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import StopIcon from "@mui/icons-material/Stop";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SearchIcon from "@mui/icons-material/Search";
 
 const COMPONENTS = [
@@ -29,31 +33,109 @@ const SchedulerLogs = () => {
     const [component, setComponent] = useState("scheduler");
     const [tailLines, setTailLines] = useState(100);
     const [keyword, setKeyword] = useState("");
-    const [logs, setLogs] = useState(null);
+    const [lines, setLines] = useState(null);
     const [meta, setMeta] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [streaming, setStreaming] = useState(false);
+    const [liveMode, setLiveMode] = useState(false);
     const [error, setError] = useState(null);
+
+    const esRef = useRef(null);
     const logBoxRef = useRef(null);
 
-    const fetchLogs = useCallback(async () => {
+    const stopStream = useCallback(() => {
+        if (esRef.current) {
+            esRef.current.close();
+            esRef.current = null;
+        }
+        setStreaming(false);
+    }, []);
+
+    // Snapshot fetch (no SSE)
+    const fetchSnapshot = useCallback(async () => {
+        stopStream();
         setLoading(true);
         setError(null);
+        setLines(null);
         try {
             const res = await axios.get("/api/scheduler/logs", {
                 params: { component, tailLines },
             });
-            setLogs(res.data.logs || "");
+            setLines((res.data.logs || "").split("\n").filter(Boolean));
             setMeta({ pod: res.data.pod, namespace: res.data.namespace });
         } catch (err) {
-            setError(
-                err.response?.data?.error ||
-                "Failed to fetch logs: " + err.message,
-            );
-            setLogs(null);
+            setError(err.response?.data?.error || "Failed to fetch logs: " + err.message);
         } finally {
             setLoading(false);
         }
-    }, [component, tailLines]);
+    }, [component, tailLines, stopStream]);
+
+    // SSE stream
+    const startStream = useCallback(() => {
+        stopStream();
+        setError(null);
+        setLines([]);
+        setMeta(null);
+
+        const params = new URLSearchParams({ component, tailLines, follow: "true" });
+        const es = new EventSource(`/api/scheduler/logs/stream?${params}`);
+        esRef.current = es;
+        setStreaming(true);
+
+        es.addEventListener("meta", (e) => {
+            try { setMeta(JSON.parse(e.data)); } catch { /* ignore */ }
+        });
+
+        es.addEventListener("error", (e) => {
+            try {
+                const d = JSON.parse(e.data);
+                setError(d.message || "Stream error");
+            } catch {
+                setError("Stream connection error");
+            }
+            stopStream();
+        });
+
+        es.addEventListener("done", () => {
+            stopStream();
+        });
+
+        es.onmessage = (e) => {
+            try {
+                const line = JSON.parse(e.data);
+                setLines((prev) => {
+                    const next = [...(prev || []), line];
+                    return next.length > 5000 ? next.slice(-5000) : next;
+                });
+            } catch { /* ignore */ }
+        };
+
+        es.onerror = () => {
+            setError("SSE connection lost");
+            stopStream();
+        };
+    }, [component, tailLines, stopStream]);
+
+    // Auto-scroll to bottom when new lines arrive in streaming mode
+    useEffect(() => {
+        if (streaming && logBoxRef.current) {
+            logBoxRef.current.scrollTop = logBoxRef.current.scrollHeight;
+        }
+    }, [lines, streaming]);
+
+    // Stop stream when component unmounts
+    useEffect(() => () => stopStream(), [stopStream]);
+
+    const handleToggleLive = (e) => {
+        const enabled = e.target.checked;
+        setLiveMode(enabled);
+        if (!enabled) stopStream();
+    };
+
+    const handleFetch = () => {
+        if (liveMode) startStream();
+        else fetchSnapshot();
+    };
 
     const highlightKeyword = (line) => {
         if (!keyword.trim()) return line;
@@ -64,37 +146,30 @@ const SchedulerLogs = () => {
                 <mark key={i} style={{ backgroundColor: "#fff176", padding: 0 }}>
                     {part}
                 </mark>
-            ) : (
-                part
-            ),
+            ) : part,
         );
     };
 
-    const filteredLines = logs
-        ? logs
-              .split("\n")
-              .filter(
-                  (line) =>
-                      !keyword.trim() ||
-                      line.toLowerCase().includes(keyword.toLowerCase()),
-              )
-        : [];
+    const filteredLines = (lines || []).filter(
+        (line) => !keyword.trim() || line.toLowerCase().includes(keyword.toLowerCase()),
+    );
+
+    const isActive = loading || streaming;
 
     return (
         <Box>
             {/* Controls */}
-            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", mb: 2 }}>
                 <FormControl size="small" sx={{ minWidth: 220 }}>
                     <InputLabel>Component</InputLabel>
                     <Select
                         value={component}
                         label="Component"
-                        onChange={(e) => setComponent(e.target.value)}
+                        onChange={(e) => { setComponent(e.target.value); stopStream(); }}
+                        disabled={streaming}
                     >
                         {COMPONENTS.map((c) => (
-                            <MenuItem key={c.value} value={c.value}>
-                                {c.label}
-                            </MenuItem>
+                            <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
@@ -105,48 +180,74 @@ const SchedulerLogs = () => {
                         value={tailLines}
                         label="Tail lines"
                         onChange={(e) => setTailLines(e.target.value)}
+                        disabled={streaming}
                     >
                         {TAIL_LINES_OPTIONS.map((n) => (
-                            <MenuItem key={n} value={n}>
-                                {n}
-                            </MenuItem>
+                            <MenuItem key={n} value={n}>{n}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
 
-                <Button
-                    variant="contained"
-                    startIcon={
-                        loading ? (
-                            <CircularProgress size={16} color="inherit" />
-                        ) : (
-                            <RefreshIcon />
-                        )
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={liveMode}
+                            onChange={handleToggleLive}
+                            size="small"
+                        />
                     }
-                    onClick={fetchLogs}
-                    disabled={loading}
-                >
-                    {logs ? "Refresh" : "Fetch Logs"}
-                </Button>
+                    label="Live stream"
+                    sx={{ ml: 0 }}
+                />
+
+                {streaming ? (
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<StopIcon />}
+                        onClick={stopStream}
+                        size="small"
+                    >
+                        Stop
+                    </Button>
+                ) : (
+                    <Button
+                        variant="contained"
+                        startIcon={
+                            loading ? (
+                                <CircularProgress size={16} color="inherit" />
+                            ) : liveMode ? (
+                                <PlayArrowIcon />
+                            ) : (
+                                <RefreshIcon />
+                            )
+                        }
+                        onClick={handleFetch}
+                        disabled={loading}
+                        size="small"
+                    >
+                        {lines ? (liveMode ? "Restart Stream" : "Refresh") : liveMode ? "Start Stream" : "Fetch Logs"}
+                    </Button>
+                )}
             </Box>
 
             {/* Keyword filter */}
-            {logs && (
+            {lines && (
                 <TextField
                     size="small"
                     placeholder="Filter / highlight keyword…"
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    InputProps={{ startAdornment: <SearchIcon fontSize="small" sx={{ mr: 0.5, color: "text.secondary" }} /> }}
+                    InputProps={{
+                        startAdornment: (
+                            <SearchIcon fontSize="small" sx={{ mr: 0.5, color: "text.secondary" }} />
+                        ),
+                    }}
                     sx={{ mb: 1.5, width: 320 }}
                 />
             )}
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             {meta && (
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
@@ -154,10 +255,38 @@ const SchedulerLogs = () => {
                     <strong>{meta.namespace}</strong> &nbsp;·&nbsp;{" "}
                     {filteredLines.length} line{filteredLines.length !== 1 ? "s" : ""}
                     {keyword && " (filtered)"}
+                    {streaming && (
+                        <Box
+                            component="span"
+                            sx={{
+                                ml: 1,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                color: "success.main",
+                            }}
+                        >
+                            <Box
+                                component="span"
+                                sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    bgcolor: "success.main",
+                                    animation: "pulse 1.5s infinite",
+                                    "@keyframes pulse": {
+                                        "0%,100%": { opacity: 1 },
+                                        "50%": { opacity: 0.3 },
+                                    },
+                                }}
+                            />
+                            live
+                        </Box>
+                    )}
                 </Typography>
             )}
 
-            {logs !== null && (
+            {lines !== null && (
                 <Paper
                     ref={logBoxRef}
                     variant="outlined"
@@ -173,7 +302,7 @@ const SchedulerLogs = () => {
                 >
                     {filteredLines.length === 0 ? (
                         <Typography color="grey.500" variant="caption">
-                            No lines match the filter.
+                            {streaming ? "Waiting for log lines…" : "No lines match the filter."}
                         </Typography>
                     ) : (
                         filteredLines.map((line, i) => (
@@ -181,11 +310,12 @@ const SchedulerLogs = () => {
                                 key={i}
                                 component="div"
                                 sx={{
-                                    color: line.includes("ERROR") || line.includes("FATAL")
-                                        ? "#f44336"
-                                        : line.includes("WARN")
-                                        ? "#ff9800"
-                                        : "#d4d4d4",
+                                    color:
+                                        line.includes("ERROR") || line.includes("FATAL")
+                                            ? "#f44336"
+                                            : line.includes("WARN")
+                                            ? "#ff9800"
+                                            : "#d4d4d4",
                                     whiteSpace: "pre-wrap",
                                     wordBreak: "break-all",
                                 }}
@@ -197,9 +327,10 @@ const SchedulerLogs = () => {
                 </Paper>
             )}
 
-            {!logs && !loading && !error && (
+            {!lines && !isActive && !error && (
                 <Typography color="text.secondary" variant="body2">
-                    Select a component and click <strong>Fetch Logs</strong>.
+                    Select a component and click{" "}
+                    <strong>{liveMode ? "Start Stream" : "Fetch Logs"}</strong>.
                 </Typography>
             )}
         </Box>
