@@ -31,7 +31,13 @@ const PodsTable = ({
 
     const handleFilterClose = React.useCallback(
         (filterType, value) => {
-            onFilterChange(filterType, value);
+            // Only update the active filter when the user explicitly selects a
+            // value.  When the menu is dismissed (click-away / Escape), MUI
+            // calls onClose with no event argument so value arrives as null —
+            // propagating that would silently overwrite the current filter.
+            if (value !== null && value !== undefined) {
+                onFilterChange(filterType, value);
+            }
             setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
         },
         [onFilterChange],
