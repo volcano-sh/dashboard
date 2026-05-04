@@ -5,47 +5,42 @@ import "./chartConfig";
 
 const convertMemoryToGi = (memoryStr) => {
     if (!memoryStr) return 0;
-    const value = parseInt(memoryStr);
+    if (typeof memoryStr === "number") return memoryStr;
+    const value = parseFloat(memoryStr);
+    if (isNaN(value)) return 0;
+    if (memoryStr.includes("Ti")) return value * 1024;
     if (memoryStr.includes("Gi")) return value;
-    if (memoryStr.includes("Mi")) return value / 1024; // Mi to Gi
-    if (memoryStr.includes("Ki")) return value / 1024 / 1024; // Ki to Gi
-    return value; // default unit Gi
+    if (memoryStr.includes("Mi")) return value / 1024;
+    if (memoryStr.includes("Ki")) return value / (1024 * 1024);
+    return value;
 };
 
 const convertCPUToCores = (cpuStr) => {
     if (!cpuStr) return 0;
-    const value = parseInt(cpuStr);
-    if (typeof cpuStr === "number") {
-        return cpuStr;
-    }
-    return cpuStr.includes("m") ? value / 1000 : value; // m is converted to the number of cores
+    if (typeof cpuStr === "number") return cpuStr;
+    const value = parseFloat(cpuStr);
+    if (isNaN(value)) return 0;
+    return cpuStr.endsWith("m") ? value / 1000 : value;
 };
 
-// Process queue data and convert memory and CPU units
 const processData = (data) => {
+    if (!data || !Array.isArray(data)) return {};
     return data.reduce((acc, queue) => {
-        const name = queue.metadata.name;
+        const name = queue?.metadata?.name;
+        if (!name) return acc;
         const allocated = queue.status?.allocated || {};
         const capability = queue.spec?.capability || {};
-
-        // Handle memory unit conversion
-        const allocatedMemory = convertMemoryToGi(allocated.memory);
-        const capabilityMemory = convertMemoryToGi(capability.memory);
-
-        // Handle CPU unit conversion
-        const allocatedCPU = convertCPUToCores(allocated.cpu);
-        const capabilityCPU = convertCPUToCores(capability.cpu);
 
         acc[name] = {
             allocated: {
                 ...allocated,
-                memory: allocatedMemory,
-                cpu: allocatedCPU,
+                memory: convertMemoryToGi(allocated.memory),
+                cpu: convertCPUToCores(allocated.cpu),
             },
             capability: {
                 ...capability,
-                memory: capabilityMemory,
-                cpu: capabilityCPU,
+                memory: convertMemoryToGi(capability.memory),
+                cpu: convertCPUToCores(capability.cpu),
             },
         };
 
@@ -56,13 +51,10 @@ const processData = (data) => {
 const QueueResourcesBarChart = ({ data }) => {
     const [selectedResource, setSelectedResource] = useState("");
 
-    // Obtain resource type options dynamically
     const resourceOptions = useMemo(() => {
-        if (!data || data.length === 0) return [];
+        if (!data || !Array.isArray(data) || data.length === 0) return [];
 
         const resourceTypes = new Set();
-
-        // Traverse the queue data and obtain all resource types
         data.forEach((queue) => {
             const allocated = queue.status?.allocated || {};
             Object.keys(allocated).forEach((resource) =>
@@ -70,7 +62,6 @@ const QueueResourcesBarChart = ({ data }) => {
             );
         });
 
-        // Convert resource type from Set to Array
         return Array.from(resourceTypes).map((resource) => ({
             value: resource,
             label: `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`,
@@ -78,42 +69,17 @@ const QueueResourcesBarChart = ({ data }) => {
     }, [data]);
 
     useEffect(() => {
-        // If there is a resource option, the first resource is selected by default
         if (resourceOptions.length > 0 && !selectedResource) {
             setSelectedResource(resourceOptions[0].value);
         }
+        if (resourceOptions.length === 0) {
+            setSelectedResource("");
+        }
     }, [resourceOptions, selectedResource]);
 
-    // Process queue data
     const processedData = useMemo(() => processData(data), [data]);
 
-    // Build chart data
-    const chartData = {
-        labels: Object.keys(processedData),
-        datasets: [
-            {
-                label: `${selectedResource.toUpperCase()} Allocated`,
-                data: Object.values(processedData).map(
-                    (q) => q.allocated[selectedResource] || 0,
-                ),
-                backgroundColor: "#2196f3",
-                borderColor: "#1976d2",
-                borderWidth: 1,
-            },
-            {
-                label: `${selectedResource.toUpperCase()} Capacity`,
-                data: Object.values(processedData).map(
-                    (q) => q.capability[selectedResource] || 0,
-                ),
-                backgroundColor: "#4caf50",
-                borderColor: "#388e3c",
-                borderWidth: 1,
-            },
-        ],
-    };
-
-    // Get Y-axis label
-    const getYAxisLabel = () => {
+    const getYAxisLabel = useMemo(() => {
         switch (selectedResource) {
             case "memory":
                 return "Memory (Gi)";
@@ -124,11 +90,35 @@ const QueueResourcesBarChart = ({ data }) => {
             case "nvidia.com/gpu":
                 return "GPU Count";
             default:
-                return "Amount";
+                return selectedResource ? `${selectedResource} Amount` : "Amount";
         }
-    };
+    }, [selectedResource]);
 
-    const options = {
+    const chartData = useMemo(() => ({
+        labels: Object.keys(processedData),
+        datasets: [
+            {
+                label: `${selectedResource.toUpperCase()} Allocated`,
+                data: Object.values(processedData).map(
+                    (q) => q.allocated[selectedResource] ?? 0,
+                ),
+                backgroundColor: "#2196f3",
+                borderColor: "#1976d2",
+                borderWidth: 1,
+            },
+            {
+                label: `${selectedResource.toUpperCase()} Capacity`,
+                data: Object.values(processedData).map(
+                    (q) => q.capability[selectedResource] ?? 0,
+                ),
+                backgroundColor: "#4caf50",
+                borderColor: "#388e3c",
+                borderWidth: 1,
+            },
+        ],
+    }), [processedData, selectedResource]);
+
+    const options = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
         scales: {
@@ -145,7 +135,7 @@ const QueueResourcesBarChart = ({ data }) => {
                 beginAtZero: true,
                 title: {
                     display: true,
-                    text: getYAxisLabel(),
+                    text: getYAxisLabel,
                 },
             },
         },
@@ -163,7 +153,9 @@ const QueueResourcesBarChart = ({ data }) => {
         layout: {
             padding: { bottom: 20 },
         },
-    };
+    }), [getYAxisLabel]);
+
+    const isEmpty = !data || !Array.isArray(data) || data.length === 0;
 
     return (
         <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -176,35 +168,59 @@ const QueueResourcesBarChart = ({ data }) => {
                 }}
             >
                 <Typography variant="h6">Queue Resources</Typography>
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <Select
-                        value={selectedResource}
-                        onChange={(e) => setSelectedResource(e.target.value)}
-                    >
-                        {resourceOptions.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                                {option.label}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                {!isEmpty && (
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                            value={selectedResource}
+                            onChange={(e) => setSelectedResource(e.target.value)}
+                            displayEmpty
+                        >
+                            {resourceOptions.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                )}
             </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, height: "calc(100% - 100px)" }}>
-                {Object.keys(processedData).length > 0 ? (
+                {isEmpty ? (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                        }}
+                    >
+                        <Typography
+                            align="center"
+                            color="text.secondary"
+                        >
+                            No queue resource data available
+                        </Typography>
+                    </Box>
+                ) : Object.keys(processedData).length > 0 && selectedResource ? (
                     <Bar
                         data={chartData}
                         options={options}
                         style={{ maxHeight: "100%" }}
                     />
                 ) : (
-                    <Typography
-                        align="center"
-                        color="text.secondary"
-                        sx={{ mt: 4 }}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                        }}
                     >
-                        No data available for selected resource type
-                    </Typography>
+                        <Typography align="center" color="text.secondary">
+                            No data available for the selected resource type
+                        </Typography>
+                    </Box>
                 )}
             </Box>
         </Box>
