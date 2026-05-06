@@ -152,8 +152,9 @@ const SearchBar = ({
                 </Card.Body>
             </Card>
 
-            {/* For Queue Dialog */}
-            {dialogResourceType === "Queue" && (
+            {/* Shared dialog for Queue and Pod creation */}
+            {(dialogResourceType === "Queue" ||
+                dialogResourceType === "Pod") && (
                 <CreateDialog
                     open={dialogOpen}
                     onClose={handleCloseDialog}
