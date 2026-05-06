@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
     Box,
     Breadcrumbs,
+    Chip,
     Drawer,
     IconButton,
     List,
@@ -198,6 +199,29 @@ export default function DashboardShell({ children }) {
     const [adminOpen, setAdminOpen] = useState(false);
     const isOverlayDrawer = mounted && overlayDrawerMatch;
     const showAdminMenu = auth?.authConfig?.authRequired !== false;
+    const accessMode = auth?.accessMode || auth?.authConfig?.accessMode || "";
+    const accessLabel =
+        accessMode === "read-write"
+            ? "Read-write"
+            : accessMode === "read-only"
+              ? "Read-only"
+              : "";
+    const authLabel =
+        auth?.authConfig?.authRequired === false
+            ? "Anonymous"
+            : auth?.user?.displayName || auth?.user?.username || "Signed in";
+    const accessChipColor =
+        accessMode === "read-write"
+            ? {
+                  bgcolor: "rgba(22, 163, 74, 0.08)",
+                  borderColor: "rgba(22, 163, 74, 0.42)",
+                  color: "#166534",
+              }
+            : {
+                  bgcolor: "rgba(245, 158, 11, 0.08)",
+                  borderColor: "rgba(245, 158, 11, 0.46)",
+                  color: "#92400e",
+              };
 
     useEffect(() => {
         setMounted(true);
@@ -357,6 +381,45 @@ export default function DashboardShell({ children }) {
                     </Typography>
                 )}
             </Box>
+            {accessLabel && (
+                <Box
+                    sx={{
+                        borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
+                        display: "flex",
+                        justifyContent: open ? "flex-start" : "center",
+                        px: open ? 1.5 : 0,
+                        py: 1,
+                    }}
+                >
+                    <Tooltip title={`${accessLabel} · ${authLabel}`}>
+                        {open ? (
+                            <Chip
+                                label={accessLabel}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                    borderRadius: "6px",
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    height: 26,
+                                    ...accessChipColor,
+                                }}
+                            />
+                        ) : (
+                            <Box
+                                aria-label={accessLabel}
+                                sx={{
+                                    border: "1px solid",
+                                    borderRadius: "999px",
+                                    height: 10,
+                                    width: 10,
+                                    ...accessChipColor,
+                                }}
+                            />
+                        )}
+                    </Tooltip>
+                </Box>
+            )}
             <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
                 {menuSections.map((section, sectionIndex) => (
                     <Box

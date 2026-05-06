@@ -29,11 +29,15 @@ schedulerConfig:
 
 access:
     # Supported values: read-write, read-only.
-    # read-only allows direct dashboard access without auth.
-    # mode: read-write
-    mode: read-only
+    # This controls authorization only. It does not enable or disable login.
+    # Use read-only for dashboards that should not expose write actions.
+    mode: read-write
 
 auth:
+    # Set enabled: false only for anonymous read-only dashboards.
+    # Anonymous read-write is rejected by configuration validation.
+    enabled: true
+    # local, local-sso 2 option
     mode: local-sso
     jwt:
         issuer: volcano-dashboard

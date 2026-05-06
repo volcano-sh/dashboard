@@ -6,27 +6,6 @@ const authorizationHeaders = () => {
     return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-export const fetchAllNamespaces = async () => {
-    try {
-        const response = await fetch(`${API_BASE}/namespaces`, {
-            headers: authorizationHeaders(),
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        return [
-            "All",
-            ...new Set(data.items.map((item) => item.metadata.name)),
-        ];
-    } catch (error) {
-        console.error("Error fetching namespaces:", error);
-        return [];
-    }
-};
-
 export const fetchAllQueues = async () => {
     try {
         const response = await fetch(`${API_BASE}/queues`, {

@@ -58,6 +58,7 @@ schedulerConfig:
 access:
     mode: read-write
 auth:
+    enabled: true
     mode: local
     jwt:
         issuer: volcano-dashboard
@@ -70,13 +71,15 @@ auth:
           passwordHash: "$2b$12$..."
 ```
 
-To expose a read-only dashboard without login, set `access.mode` to
-`read-only`. In this mode the dashboard skips auth entirely and only exposes
-read-only actions.
+`access.mode` controls authorization and `auth.enabled` controls whether users
+must log in. To expose a read-only dashboard without login, combine
+`access.mode: read-only` with `auth.enabled: false`.
 
 ```yaml
 access:
     mode: read-only
+auth:
+    enabled: false
 ```
 
 ```bash
@@ -99,6 +102,7 @@ schedulerConfig:
     name: volcano-scheduler-configmap
     key: ""
 auth:
+    enabled: true
     mode: local-sso
     jwt:
         issuer: volcano-dashboard

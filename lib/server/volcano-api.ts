@@ -18,7 +18,6 @@ import {
     podQueueName,
     withCronJobSummary,
     withJobSummary,
-    withNamespaceSummary,
     withPodGroupSummary,
     withPodSummary,
     withQueueSummary,
@@ -139,6 +138,14 @@ const listResponse = (items, options) => {
     return json(paginate(sorted, options.page, options.limit));
 };
 
+const listResponseWithFacets = (items, options, facets) => {
+    const sorted = sortItems(items, options.sortBy, options.sortOrder);
+    return json({
+        ...paginate(sorted, options.page, options.limit),
+        facets,
+    });
+};
+
 const inaccessiblePodError = () =>
     json(
         {
@@ -168,6 +175,10 @@ const facetValues = (items, getValue) => [
     "All",
     ...new Set(items.map(getValue).filter(Boolean).sort()),
 ];
+
+const namespaceFacets = (items) => ({
+    namespaces: facetValues(items, (item) => item.metadata?.namespace),
+});
 
 const podsFacets = (items) => ({
     namespaces: facetValues(items, (pod) => pod.metadata?.namespace),
@@ -208,7 +219,8 @@ export async function listJobs(request) {
                       pretty: true,
                   });
 
-        let items = response.items || [];
+        const facetItems = response.items || [];
+        let items = facetItems;
         items = filterBySearch(items, searchTerm, (job) => [
             job.metadata?.name,
             job.metadata?.namespace,
@@ -222,7 +234,11 @@ export async function listJobs(request) {
         if (statusFilter && statusFilter !== "All") {
             items = items.filter((job) => jobPhase(job) === statusFilter);
         }
-        return listResponse(items.map(withJobSummary), options);
+        return listResponseWithFacets(
+            items.map(withJobSummary),
+            options,
+            namespaceFacets(facetItems),
+        );
     } catch (error) {
         return apiError(error, "Failed to fetch jobs");
     }
@@ -398,11 +414,12 @@ export async function listCronJobs(request) {
                       plural: "cronjobs",
                   });
 
-        let items =
+        const facetItems =
             response?.items ||
             response?.body?.items ||
             response?.data?.items ||
             [];
+        let items = facetItems;
 
         items = filterBySearch(items, searchTerm, (cronJob) => {
             const summary = withCronJobSummary(cronJob).summary;
@@ -428,7 +445,11 @@ export async function listCronJobs(request) {
             );
         }
 
-        return listResponse(items.map(withCronJobSummary), options);
+        return listResponseWithFacets(
+            items.map(withCronJobSummary),
+            options,
+            namespaceFacets(facetItems),
+        );
     } catch (error) {
         return apiError(error, "Failed to fetch cronjobs");
     }
@@ -475,6 +496,35 @@ export async function getCronJobEvents(namespace, name) {
         });
     } catch (error) {
         return apiError(error, "Failed to fetch cronjob events");
+    }
+}
+
+export async function createCronJob(request) {
+    try {
+        const { k8sApi } = getApis();
+        const cronJobManifest = await request.json();
+        if (!cronJobManifest?.metadata?.name || !cronJobManifest?.spec) {
+            return json({ error: "Invalid cronjob manifest" }, 400);
+        }
+
+        const namespace = cronJobManifest.metadata.namespace || "default";
+        const response = await k8sApi.createNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "cronjobs",
+            body: cronJobManifest,
+        });
+
+        return json(
+            {
+                message: "CronJob created successfully",
+                data: response?.body || response,
+            },
+            201,
+        );
+    } catch (error) {
+        return apiError(error, "Failed to create cronjob");
     }
 }
 
@@ -550,7 +600,8 @@ export async function listPodGroups(request) {
                       plural: "podgroups",
                   });
 
-        let items = response.items || [];
+        const facetItems = response.items || [];
+        let items = facetItems;
         items = filterBySearch(items, searchTerm, (podGroup) => [
             podGroup.metadata?.name,
             podGroup.metadata?.namespace,
@@ -564,7 +615,11 @@ export async function listPodGroups(request) {
         if (queueFilter && queueFilter !== "All") {
             items = items.filter((pg) => pg.spec?.queue === queueFilter);
         }
-        return listResponse(items.map(withPodGroupSummary), options);
+        return listResponseWithFacets(
+            items.map(withPodGroupSummary),
+            options,
+            namespaceFacets(facetItems),
+        );
     } catch (error) {
         return apiError(error, "Failed to fetch podgroups");
     }
@@ -971,23 +1026,6 @@ export async function deleteQueue(name) {
     }
 }
 
-export async function listNamespaces(request) {
-    try {
-        const { k8sCoreApi } = getApis();
-        const options = queryOptions(request);
-        const { searchTerm } = options;
-        const response = await k8sCoreApi.listNamespace();
-        const items = filterBySearch(
-            response.items || [],
-            searchTerm,
-            (namespace) => [namespace.metadata?.name, namespace.status?.phase],
-        );
-        return listResponse(items.map(withNamespaceSummary), options);
-    } catch (error) {
-        return apiError(error, "Failed to fetch namespaces");
-    }
-}
-
 export async function listPods(request) {
     try {
         const { k8sCoreApi } = getApis();
@@ -1245,12 +1283,9 @@ export async function handleApiRequest(request, pathSegments) {
     if (resource === "queues" && rest.length === 2 && method === "PATCH") {
         return patchNamespacedQueue(request, rest[0], rest[1]);
     }
-    if (resource === "namespaces" && method === "GET") {
-        return listNamespaces(request);
-    }
-
     if (resource === "cronjobs" && rest.length === 0) {
         if (method === "GET") return listCronJobs(request);
+        if (method === "POST") return createCronJob(request);
     }
     if (resource === "cronjobs" && rest.length === 2) {
         if (method === "GET") return getCronJob(rest[0], rest[1]);

@@ -209,12 +209,3 @@ export const withPodSummary = (pod) => ({
             ) || 0,
     },
 });
-
-export const withNamespaceSummary = (namespace) => ({
-    ...namespace,
-    summary: {
-        name: namespace?.metadata?.name || "",
-        status: namespace?.status?.phase || "Unknown",
-        createdAt: namespace?.metadata?.creationTimestamp || "",
-    },
-});

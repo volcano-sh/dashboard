@@ -26,6 +26,7 @@ const CreateJobDialog = ({
     open,
     onClose,
     onCreate,
+    resourceType = "Job",
     title = "Create Job (YAML)",
 }: CreateJobDialogProps) => {
     const [yamlText, setYamlText] = useState("");
@@ -85,7 +86,8 @@ const CreateJobDialog = ({
             <DialogContent>
                 <Box sx={{ mt: 2, mb: 1 }}>
                     <Typography sx={{ fontWeight: 500, color: "#333", mb: 1 }}>
-                        Paste or type your Job YAML specification below:
+                        Paste or type your {resourceType} YAML specification
+                        below:
                     </Typography>
                     <Editor
                         height="320px"

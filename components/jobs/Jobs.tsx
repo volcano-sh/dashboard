@@ -23,7 +23,6 @@ import {
     fetchJobEvents,
     fetchJobYaml,
     fetchJobs,
-    fetchNamespaces,
     fetchQueues,
     getApiErrorMessage,
     updateJobYaml,
@@ -310,17 +309,16 @@ const Jobs = () => {
         queryFn: () => fetchJobs(jobParams),
     });
 
-    const { data: allNamespaces = [] } = useQuery({
-        queryKey: ["namespaces"],
-        queryFn: fetchNamespaces,
-    });
-
     const { data: allQueues = [] } = useQuery({
         queryKey: ["queues", "all"],
         queryFn: fetchQueues,
     });
 
     const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
+    const allNamespaces = useMemo(
+        () => jobsData?.facets?.namespaces || ["All"],
+        [jobsData],
+    );
     const totalJobs = jobsData?.totalCount || 0;
     const loading = jobsLoading || jobsFetching;
     const error = jobsError

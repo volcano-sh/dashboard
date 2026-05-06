@@ -76,8 +76,10 @@ export const getAccessMode = async () => {
     return mode;
 };
 
-export const isReadOnlyMode = async () =>
-    (await getAccessMode()) === AccessModes.READ_ONLY;
+export const isAuthEnabled = async () => {
+    const dashboardConfig = await getDashboardConfig();
+    return dashboardConfig.auth?.enabled !== false;
+};
 
 const normalizeAuthConfig = (parsed: any = {}) => {
     const source = parsed.auth || parsed;
@@ -116,12 +118,10 @@ const normalizeAuthConfig = (parsed: any = {}) => {
 
 export const getAuthConfig = async () => {
     const dashboardConfig = await getDashboardConfig();
-    const readOnlyMode =
-        dashboardConfig.access?.mode === AccessModes.READ_ONLY;
-    if (!readOnlyMode && cachedConfig) return cachedConfig;
+    if (cachedConfig) return cachedConfig;
 
     const config = normalizeAuthConfig(dashboardConfig);
-    if (readOnlyMode) {
+    if (config.enabled === false) {
         return config;
     }
 
@@ -158,7 +158,8 @@ export const getAuthConfig = async () => {
 
 export const publicAuthConfig = async () => {
     const accessMode = await getAccessMode();
-    if (accessMode === AccessModes.READ_ONLY) {
+    const authEnabled = await isAuthEnabled();
+    if (!authEnabled) {
         return {
             accessMode,
             authRequired: false,
@@ -284,12 +285,13 @@ export const authorizationResponse = (error) =>
     );
 
 export const resolveIdentity = async (request) => {
-    if ((await getAccessMode()) === AccessModes.READ_ONLY) {
+    const accessMode = await getAccessMode();
+    if (!(await isAuthEnabled())) {
         return {
-            accessMode: AccessModes.READ_ONLY,
-            type: "read-only",
+            accessMode,
+            type: "anonymous",
             user: null,
-            username: "read-only",
+            username: "anonymous",
         };
     }
 
@@ -297,11 +299,11 @@ export const resolveIdentity = async (request) => {
     if (token) {
         const payload = await verifyAuthToken(token);
         return {
-            accessMode: AccessModes.READ_WRITE,
+            accessMode,
             type: "authenticated",
             user: {
                 ...payload.user,
-                accessMode: AccessModes.READ_WRITE,
+                accessMode,
             },
             username: payload.user?.username || payload.sub,
         };
@@ -338,10 +340,10 @@ export const withAccessMode =
     (requiredAccessMode, handler) => async (request, context) => {
         try {
             const accessMode = await getAccessMode();
-            if (accessMode === AccessModes.READ_ONLY) {
-                if (requiredAccessMode === AccessModes.READ_ONLY) {
-                    return handler(request, context);
-                }
+            if (
+                accessMode === AccessModes.READ_ONLY &&
+                requiredAccessMode === AccessModes.READ_WRITE
+            ) {
                 throw notFound("Endpoint is not available in read-only mode.");
             }
             await requireAccessMode(request, requiredAccessMode);
@@ -373,11 +375,12 @@ export const withAuth = (handler) => async (request, context) => {
 
 export const handleLocalLogin = async (request) => {
     try {
-        if (await isReadOnlyMode()) {
+        if (!(await isAuthEnabled())) {
             return json(
                 {
                     error: "Login disabled",
-                    message: "Login is disabled in read-only access mode.",
+                    message:
+                        "Login is disabled because authentication is disabled.",
                 },
                 404,
             );
@@ -399,8 +402,12 @@ export const handleLocalLogin = async (request) => {
                 401,
             );
         }
+        const accessMode = await getAccessMode();
         return json(
-            await signAuthToken({ ...user, provider: "local" }, remember),
+            await signAuthToken(
+                { ...user, accessMode, provider: "local" },
+                remember,
+            ),
         );
     } catch (error) {
         return json({ error: "Login failed", message: error.message }, 500);
@@ -430,7 +437,7 @@ const callbackUrl = (request, config) => {
 
 export const handleSsoStart = async (request) => {
     try {
-        if (await isReadOnlyMode()) {
+        if (!(await isAuthEnabled())) {
             return json({ error: "SSO disabled" }, 404);
         }
         const config = await getAuthConfig();
@@ -504,7 +511,7 @@ const verifyOidcToken = async (idToken) => {
 
 export const handleSsoCallback = async (request) => {
     try {
-        if (await isReadOnlyMode()) {
+        if (!(await isAuthEnabled())) {
             return json({ error: "SSO disabled" }, 404);
         }
         const config = await getAuthConfig();
@@ -543,6 +550,7 @@ export const handleSsoCallback = async (request) => {
         const tokenSet = await tokenResponse.json();
         const claims = await verifyOidcToken(tokenSet.id_token);
         const signed = await signAuthToken({
+            accessMode: await getAccessMode(),
             displayName:
                 claims.name || claims.preferred_username || claims.email,
             email: claims.email || "",

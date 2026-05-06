@@ -14,7 +14,6 @@ describe("volcano API routing", () => {
             "cluster-info",
             "cronjobs",
             "jobs",
-            "namespaces",
             "podgroups",
             "pods",
             "queues",

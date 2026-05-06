@@ -18,8 +18,8 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+    createPodGroup,
     fetchQueues,
-    fetchNamespaces,
     fetchPodGroup,
     fetchPodGroupEvents,
     fetchPodGroupYaml,
@@ -40,6 +40,7 @@ import {
 import ResourceEventsPanel from "../details/ResourceEventsPanel";
 import JobStatusChip from "../jobs/JobStatusChip";
 import { useAuth } from "../auth/AuthProvider";
+import CreateJobDialog from "../jobs/JobTable/CreateJobDialog";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -259,6 +260,7 @@ const PodGroups = () => {
     });
     const [selectedPodGroup, setSelectedPodGroup] = useState(null);
     const [selectedTab, setSelectedTab] = useState("overview");
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState({
         status: null,
         namespace: null,
@@ -272,6 +274,7 @@ const PodGroups = () => {
     });
     const [sortDirection, setSortDirection] = useState("desc");
     const [actionError, setActionError] = useState(null);
+    const queryClient = useQueryClient();
 
     const podGroupParams = {
         search: searchText,
@@ -304,11 +307,6 @@ const PodGroups = () => {
         queryFn: () => fetchPodGroups(podGroupParams),
     });
 
-    const { data: allNamespaces = [] } = useQuery({
-        queryKey: ["namespaces"],
-        queryFn: fetchNamespaces,
-    });
-
     const { data: allQueues = [] } = useQuery({
         queryKey: ["queues", "all"],
         queryFn: fetchQueues,
@@ -316,6 +314,10 @@ const PodGroups = () => {
 
     const podGroups = useMemo(
         () => podGroupsData?.items || [],
+        [podGroupsData],
+    );
+    const allNamespaces = useMemo(
+        () => podGroupsData?.facets?.namespaces || ["All"],
         [podGroupsData],
     );
     const totalItems = podGroupsData?.totalCount || 0;
@@ -445,10 +447,21 @@ const PodGroups = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
-    // For now, no creation dialog
-    const handleCreate = () => {
-        alert("Create PodGroup not implemented yet");
-    };
+    const handleCreatePodGroup = useCallback(
+        async (newPodGroup) => {
+            try {
+                await createPodGroup(newPodGroup);
+                alert("PodGroup created successfully!");
+                setCreateDialogOpen(false);
+                await queryClient.invalidateQueries({
+                    queryKey: ["podgroups"],
+                });
+            } catch (error) {
+                alert(getApiErrorMessage(error, "Error creating PodGroup"));
+            }
+        },
+        [queryClient],
+    );
 
     return (
         <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 3 }}>
@@ -510,7 +523,7 @@ const PodGroups = () => {
                     </Button>
                     {canWrite && (
                         <Button
-                            onClick={handleCreate}
+                            onClick={() => setCreateDialogOpen(true)}
                             startIcon={<AddIcon fontSize="small" />}
                             sx={{
                                 bgcolor: "#ff4d2d",
@@ -551,6 +564,16 @@ const PodGroups = () => {
                 selectedTab={selectedTab}
                 setSelectedTab={setSelectedTab}
             />
+            {canWrite && (
+                <CreateJobDialog
+                    open={createDialogOpen}
+                    onClose={() => setCreateDialogOpen(false)}
+                    onCreate={handleCreatePodGroup}
+                    resourceNameLabel="PodGroup Name"
+                    resourceType="PodGroup"
+                    title="Create a PodGroup"
+                />
+            )}
         </Box>
     );
 };

@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import Link from "next/link";
 import { ResourceStatusCompactBars } from "../scheduling/ResourceStatus";
 import { OverviewPanel, OverviewSectionHeader } from "./OverviewPanel";
 import OverviewStatusChip from "./OverviewStatusChip";
@@ -13,7 +14,9 @@ const SchedulerResourceAllocation = ({ rows }) => (
             subtitle="Allocated / deserved by queue"
             action={
                 <Button
+                    component={Link}
                     endIcon={<ChevronRightIcon sx={{ fontSize: 16 }} />}
+                    href="/scheduling/queues"
                     size="small"
                     sx={{ textTransform: "none" }}
                 >
@@ -28,27 +31,23 @@ const SchedulerResourceAllocation = ({ rows }) => (
                 minWidth: 820,
             }}
         >
-            {[
-                "Queue",
-                "Resources",
-                "Weight",
-                "Fairness Share",
-                "Status",
-            ].map((heading) => (
-                <Typography
-                    key={heading}
-                    sx={{
-                        borderBottom: `1px solid ${borderColor}`,
-                        color: textMuted,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        px: 1.25,
-                        py: 1,
-                    }}
-                >
-                    {heading}
-                </Typography>
-            ))}
+            {["Queue", "Resources", "Weight", "Fairness Share", "Status"].map(
+                (heading) => (
+                    <Typography
+                        key={heading}
+                        sx={{
+                            borderBottom: `1px solid ${borderColor}`,
+                            color: textMuted,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            px: 1.25,
+                            py: 1,
+                        }}
+                    >
+                        {heading}
+                    </Typography>
+                ),
+            )}
             {rows.map((row) => (
                 <React.Fragment key={row.name}>
                     <Typography

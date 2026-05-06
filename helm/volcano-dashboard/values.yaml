@@ -32,6 +32,7 @@ config:
         access:
             mode: read-only
         auth:
+            enabled: false
             mode: local
 
 externalSecret:

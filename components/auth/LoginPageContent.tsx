@@ -41,10 +41,10 @@ function LoginPageContentInner() {
     const providerName = auth?.authConfig?.providerName || "SSO";
 
     useEffect(() => {
-        if (!auth?.loading && auth?.authConfig?.accessMode === "read-only") {
+        if (!auth?.loading && auth?.authConfig?.authRequired === false) {
             router.replace("/dashboard");
         }
-    }, [auth?.authConfig?.accessMode, auth?.loading, router]);
+    }, [auth?.authConfig?.authRequired, auth?.loading, router]);
 
     useEffect(() => {
         const nextError = searchParams.get("error");
@@ -203,7 +203,11 @@ function LoginPageContentInner() {
                     position: "relative",
                 }}
             >
-                <Box component="form" onSubmit={handleSubmit} sx={{ width: 520 }}>
+                <Box
+                    component="form"
+                    onSubmit={handleSubmit}
+                    sx={{ width: 520 }}
+                >
                     <Typography
                         component="h2"
                         sx={{ fontSize: 30, fontWeight: 800, mb: 0.75 }}

@@ -52,6 +52,13 @@ export const fetchCronJobs = async (params) => {
     return response.data;
 };
 
+export const createCronJob = async (cronJob) => {
+    const response = await axios.post(`${API_BASE}/cronjobs`, cronJob, {
+        headers: { "Content-Type": "application/json" },
+    });
+    return response.data;
+};
+
 export const fetchCronJob = async (namespace, name) => {
     const response = await axios.get(
         `${API_BASE}/cronjobs/${namespace}/${name}`,
@@ -195,12 +202,6 @@ export const deletePod = async (namespace, name) => {
         `${API_BASE}/pods/${namespace}/${name}`,
     );
     return response.data;
-};
-
-export const fetchNamespaces = async () => {
-    const response = await axios.get(`${API_BASE}/namespaces`);
-    const items = response.data?.items || [];
-    return ["All", ...new Set(items.map((item) => item.metadata.name))];
 };
 
 export const fetchQueues = async () => {

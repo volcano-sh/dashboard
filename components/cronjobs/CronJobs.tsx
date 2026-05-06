@@ -39,15 +39,16 @@ import {
     tableTimestampSx,
 } from "../scheduling/tableDataStyles";
 import {
+    createCronJob,
     fetchCronJob,
     fetchCronJobEvents,
     fetchCronJobs,
     fetchCronJobYaml,
-    fetchNamespaces,
     fetchQueues,
     getApiErrorMessage,
     updateCronJobYaml,
 } from "../../lib/client/dashboard-api";
+import CreateJobDialog from "../jobs/JobTable/CreateJobDialog";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -282,6 +283,8 @@ const CronJobs = () => {
     });
     const [selectedCronJob, setSelectedCronJob] = useState(null);
     const [selectedTab, setSelectedTab] = useState("overview");
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const queryClient = useQueryClient();
 
     const queryParams = useMemo(
         () => ({
@@ -293,16 +296,18 @@ const CronJobs = () => {
             sortBy: "summary.lastScheduleTime",
             sortOrder: sortDirection,
         }),
-        [filters.namespace, filters.queue, filters.status, searchText, sortDirection],
+        [
+            filters.namespace,
+            filters.queue,
+            filters.status,
+            searchText,
+            sortDirection,
+        ],
     );
 
     const cronJobsQuery = useQuery({
         queryKey: ["cronjobs", queryParams],
         queryFn: () => fetchCronJobs(queryParams),
-    });
-    const namespacesQuery = useQuery({
-        queryKey: ["namespaces"],
-        queryFn: fetchNamespaces,
     });
     const queuesQuery = useQuery({
         queryKey: ["queues-for-cronjobs"],
@@ -313,7 +318,10 @@ const CronJobs = () => {
         () => cronJobsQuery.data?.items || [],
         [cronJobsQuery.data],
     );
-    const namespaces = namespacesQuery.data || ["All"];
+    const namespaces = useMemo(
+        () => cronJobsQuery.data?.facets?.namespaces || ["All"],
+        [cronJobsQuery.data],
+    );
     const queues = queuesQuery.data || ["All"];
     const uniqueStatuses = useMemo(
         () => ["All", ...new Set(cronJobs.map(getStatus).filter(Boolean))],
@@ -323,7 +331,10 @@ const CronJobs = () => {
         setFilters((previous) => ({ ...previous, [key]: value }));
     }, []);
     const handleHeaderFilterOpen = useCallback((key, event) => {
-        setAnchorEl((previous) => ({ ...previous, [key]: event.currentTarget }));
+        setAnchorEl((previous) => ({
+            ...previous,
+            [key]: event.currentTarget,
+        }));
     }, []);
     const handleHeaderFilterSelect = useCallback(
         (key, value) => {
@@ -335,6 +346,21 @@ const CronJobs = () => {
     const toggleSortDirection = useCallback(() => {
         setSortDirection((previous) => (previous === "asc" ? "desc" : "asc"));
     }, []);
+    const handleCreateCronJob = useCallback(
+        async (newCronJob) => {
+            try {
+                await createCronJob(newCronJob);
+                alert("CronJob created successfully!");
+                setCreateDialogOpen(false);
+                await queryClient.invalidateQueries({
+                    queryKey: ["cronjobs"],
+                });
+            } catch (error) {
+                alert(getApiErrorMessage(error, "Error creating CronJob"));
+            }
+        },
+        [queryClient],
+    );
     const filterColumn = useCallback(
         (key, options) => ({
             anchorEl: anchorEl[key],
@@ -443,7 +469,7 @@ const CronJobs = () => {
                     </Button>
                     {canWrite && (
                         <Button
-                            disabled
+                            onClick={() => setCreateDialogOpen(true)}
                             startIcon={<AddIcon fontSize="small" />}
                             sx={{
                                 bgcolor: "#ff4d2d",
@@ -473,128 +499,126 @@ const CronJobs = () => {
                 </Alert>
             )}
             <SchedulingTableSurface>
-                    <Table size="small" stickyHeader>
-                        <SchedulingTableHeader
-                            columns={[
-                                { key: "name", label: "Name", minWidth: 180 },
-                                {
-                                    filter: filterColumn("namespace", namespaces),
-                                    key: "namespace",
-                                    label: "Namespace",
-                                    minWidth: 150,
-                                },
-                                {
-                                    filter: filterColumn("queue", queues),
-                                    key: "queue",
-                                    label: "Queue",
-                                    minWidth: 150,
-                                },
-                                {
-                                    key: "schedule",
-                                    label: "Schedule",
-                                    minWidth: 140,
-                                },
-                                {
-                                    key: "concurrency",
-                                    label: "Concurrency",
-                                    minWidth: 130,
-                                },
-                                {
-                                    key: "lastSchedule",
-                                    label: "Last Schedule",
-                                    minWidth: 180,
-                                    onSort: toggleSortDirection,
-                                    sortable: true,
-                                    sortDirection,
-                                },
-                                {
-                                    filter: filterColumn("status", uniqueStatuses),
-                                    key: "status",
-                                    label: "Status",
-                                    minWidth: 130,
-                                },
-                                ...(canWrite
-                                    ? [
-                                          {
-                                              key: "actions",
-                                              label: "Actions",
-                                              minWidth: 90,
-                                          },
-                                      ]
-                                    : []),
-                            ]}
-                        />
-                        <TableBody>
-                            {cronJobs.map((cronJob) => (
-                                <TableRow
-                                    hover
-                                    key={`${getNamespace(cronJob)}/${getName(cronJob)}`}
-                                    onClick={() => {
-                                        setSelectedCronJob(cronJob);
-                                        setSelectedTab("overview");
+                <Table size="small" stickyHeader>
+                    <SchedulingTableHeader
+                        columns={[
+                            { key: "name", label: "Name", minWidth: 180 },
+                            {
+                                filter: filterColumn("namespace", namespaces),
+                                key: "namespace",
+                                label: "Namespace",
+                                minWidth: 150,
+                            },
+                            {
+                                filter: filterColumn("queue", queues),
+                                key: "queue",
+                                label: "Queue",
+                                minWidth: 150,
+                            },
+                            {
+                                key: "schedule",
+                                label: "Schedule",
+                                minWidth: 140,
+                            },
+                            {
+                                key: "concurrency",
+                                label: "Concurrency",
+                                minWidth: 130,
+                            },
+                            {
+                                key: "lastSchedule",
+                                label: "Last Schedule",
+                                minWidth: 180,
+                                onSort: toggleSortDirection,
+                                sortable: true,
+                                sortDirection,
+                            },
+                            {
+                                filter: filterColumn("status", uniqueStatuses),
+                                key: "status",
+                                label: "Status",
+                                minWidth: 130,
+                            },
+                            ...(canWrite
+                                ? [
+                                      {
+                                          key: "actions",
+                                          label: "Actions",
+                                          minWidth: 90,
+                                      },
+                                  ]
+                                : []),
+                        ]}
+                    />
+                    <TableBody>
+                        {cronJobs.map((cronJob) => (
+                            <TableRow
+                                hover
+                                key={`${getNamespace(cronJob)}/${getName(cronJob)}`}
+                                onClick={() => {
+                                    setSelectedCronJob(cronJob);
+                                    setSelectedTab("overview");
+                                }}
+                                sx={{ cursor: "pointer", height: 58 }}
+                            >
+                                <TableCell sx={tableNameSx}>
+                                    {getName(cronJob)}
+                                </TableCell>
+                                <TableCell sx={tableIdentifierSx}>
+                                    {getNamespace(cronJob)}
+                                </TableCell>
+                                <TableCell sx={tableIdentifierSx}>
+                                    {getQueue(cronJob)}
+                                </TableCell>
+                                <TableCell
+                                    sx={{
+                                        ...tableTimestampSx,
                                     }}
-                                    sx={{ cursor: "pointer", height: 58 }}
                                 >
-                                    <TableCell sx={tableNameSx}>
-                                        {getName(cronJob)}
-                                    </TableCell>
-                                    <TableCell sx={tableIdentifierSx}>
-                                        {getNamespace(cronJob)}
-                                    </TableCell>
-                                    <TableCell sx={tableIdentifierSx}>
-                                        {getQueue(cronJob)}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            ...tableTimestampSx,
-                                        }}
-                                    >
-                                        {cronJob?.summary?.schedule ||
-                                            cronJob?.spec?.schedule ||
-                                            "-"}
-                                    </TableCell>
-                                    <TableCell sx={tableIdentifierSx}>
-                                        {cronJob?.summary?.concurrencyPolicy ||
-                                            cronJob?.spec?.concurrencyPolicy ||
-                                            "Allow"}
-                                    </TableCell>
-                                    <TableCell sx={tableTimestampSx}>
-                                        {formatDate(
-                                            cronJob?.summary
-                                                ?.lastScheduleTime ||
-                                                cronJob?.status
-                                                    ?.lastScheduleTime,
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <CronJobStatusChip
-                                            status={getStatus(cronJob)}
-                                        />
-                                    </TableCell>
-                                    {canWrite && (
-                                        <TableCell>
-                                            <IconButton size="small">
-                                                <MoreVertIcon
-                                                    sx={{ fontSize: 16 }}
-                                                />
-                                            </IconButton>
-                                        </TableCell>
+                                    {cronJob?.summary?.schedule ||
+                                        cronJob?.spec?.schedule ||
+                                        "-"}
+                                </TableCell>
+                                <TableCell sx={tableIdentifierSx}>
+                                    {cronJob?.summary?.concurrencyPolicy ||
+                                        cronJob?.spec?.concurrencyPolicy ||
+                                        "Allow"}
+                                </TableCell>
+                                <TableCell sx={tableTimestampSx}>
+                                    {formatDate(
+                                        cronJob?.summary?.lastScheduleTime ||
+                                            cronJob?.status?.lastScheduleTime,
                                     )}
-                                </TableRow>
-                            ))}
-                            {cronJobs.length === 0 && (
-                                <TableRow>
-                                    <TableCell
-                                        align="center"
-                                        colSpan={canWrite ? 8 : 7}
-                                        sx={{ color: "text.secondary", py: 5 }}
-                                    >
-                                        No CronJobs found.
+                                </TableCell>
+                                <TableCell>
+                                    <CronJobStatusChip
+                                        status={getStatus(cronJob)}
+                                    />
+                                </TableCell>
+                                {canWrite && (
+                                    <TableCell>
+                                        <IconButton size="small">
+                                            <MoreVertIcon
+                                                sx={{ fontSize: 16 }}
+                                            />
+                                        </IconButton>
                                     </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                )}
+                            </TableRow>
+                        ))}
+                        {cronJobs.length === 0 && (
+                            <TableRow>
+                                <TableCell
+                                    align="center"
+                                    colSpan={canWrite ? 8 : 7}
+                                    sx={{ color: "text.secondary", py: 5 }}
+                                >
+                                    No CronJobs found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </SchedulingTableSurface>
 
             <CronJobDetailsDrawer
@@ -604,6 +628,16 @@ const CronJobs = () => {
                 selectedTab={selectedTab}
                 setSelectedTab={setSelectedTab}
             />
+            {canWrite && (
+                <CreateJobDialog
+                    open={createDialogOpen}
+                    onClose={() => setCreateDialogOpen(false)}
+                    onCreate={handleCreateCronJob}
+                    resourceNameLabel="CronJob Name"
+                    resourceType="CronJob"
+                    title="Create a CronJob"
+                />
+            )}
         </Box>
     );
 };

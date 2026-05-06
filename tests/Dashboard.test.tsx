@@ -156,7 +156,9 @@ describe("Dashboard", () => {
     it("uses scheduler metrics and removes stale overview labels", async () => {
         renderDashboard();
 
-        expect((await screen.findAllByText("250.5 ms")).length).toBeGreaterThan(0);
+        expect((await screen.findAllByText("250.5 ms")).length).toBeGreaterThan(
+            0,
+        );
         expect(screen.getByText("Total Jobs")).toBeInTheDocument();
         expect(screen.getByText("Running Jobs")).toBeInTheDocument();
         expect(screen.getByText("Running Pods")).toBeInTheDocument();
@@ -165,9 +167,18 @@ describe("Dashboard", () => {
         expect(
             screen.getByLabelText("Avg Scheduling Latency source"),
         ).toBeInTheDocument();
-        expect(screen.getByText("from SchedulerMetricEndpoint")).toBeInTheDocument();
-        expect(screen.getByText("Scheduler Resource Allocation")).toBeInTheDocument();
-        expect(screen.getByText("Allocated / deserved by queue")).toBeInTheDocument();
+        expect(
+            screen.getByText("from SchedulerMetricEndpoint"),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText("Scheduler Resource Allocation"),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText("Allocated / deserved by queue"),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("link", { name: /view all queues/i }),
+        ).toHaveAttribute("href", "/scheduling/queues");
         expect(screen.getByText("Resources")).toBeInTheDocument();
         expect(screen.getByText("Weight")).toBeInTheDocument();
         expect(screen.getByText("Fairness Share")).toBeInTheDocument();
@@ -182,19 +193,29 @@ describe("Dashboard", () => {
         expect(
             screen.getByLabelText("Scheduling Latency Distribution source"),
         ).toBeInTheDocument();
-        expect(screen.getByText("Queue Health Distribution")).toBeInTheDocument();
+        expect(
+            screen.getByText("Queue Health Distribution"),
+        ).toBeInTheDocument();
         expect(screen.getByText("Queue Status Summary")).toBeInTheDocument();
         expect(
             screen.getByLabelText("Queue Status Summary source"),
         ).toBeInTheDocument();
         expect(screen.getByText("Healthy Queues")).toBeInTheDocument();
-        expect(screen.getByLabelText("Healthy Queues source")).toBeInTheDocument();
+        expect(
+            screen.getByLabelText("Healthy Queues source"),
+        ).toBeInTheDocument();
         expect(screen.getByText("Degraded Queues")).toBeInTheDocument();
-        expect(screen.getByLabelText("Degraded Queues source")).toBeInTheDocument();
+        expect(
+            screen.getByLabelText("Degraded Queues source"),
+        ).toBeInTheDocument();
         expect(screen.getByText("Overused Queues")).toBeInTheDocument();
-        expect(screen.getByLabelText("Overused Queues source")).toBeInTheDocument();
+        expect(
+            screen.getByLabelText("Overused Queues source"),
+        ).toBeInTheDocument();
         expect(screen.getByText("Starving Queues")).toBeInTheDocument();
-        expect(screen.getByLabelText("Starving Queues source")).toBeInTheDocument();
+        expect(
+            screen.getByLabelText("Starving Queues source"),
+        ).toBeInTheDocument();
         expect(screen.getByText("Latency Breakdown")).toBeInTheDocument();
         expect(screen.getByText("Action Latency")).toBeInTheDocument();
         expect(screen.getByText("Plugin Latency (Top 5)")).toBeInTheDocument();
@@ -206,8 +227,12 @@ describe("Dashboard", () => {
         expect(screen.getByText("gang / OnSessionOpen")).toBeInTheDocument();
         expect(screen.getByText("Pod Status Distribution")).toBeInTheDocument();
         expect(screen.queryByText("Current Signals")).not.toBeInTheDocument();
-        expect(screen.queryByText("Scheduling Success Rate")).not.toBeInTheDocument();
-        expect(screen.queryByText("Resource Usage Trend")).not.toBeInTheDocument();
+        expect(
+            screen.queryByText("Scheduling Success Rate"),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByText("Resource Usage Trend"),
+        ).not.toBeInTheDocument();
         expect(screen.queryByText("Last 15 minutes")).not.toBeInTheDocument();
     });
 });

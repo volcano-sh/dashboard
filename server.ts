@@ -111,6 +111,7 @@ const summarizeDashboardConfig = (config) => ({
         mode: config.access?.mode || AccessModes.READ_WRITE,
     },
     auth: {
+        enabled: config.auth?.enabled !== false,
         mode: config.auth?.mode || "local",
         providerName:
             config.auth?.sso?.providerName ||

@@ -6,6 +6,7 @@ export const defaultDashboardConfig = {
         mode: "read-write",
     },
     auth: {
+        enabled: true,
         mode: "local",
         jwt: {
             issuer: "volcano-dashboard",
@@ -45,18 +46,35 @@ const normalizeAccessMode = (value) => {
     return normalized;
 };
 
-export const normalizeDashboardConfig = (parsed: any = {}) => ({
-    ...parsed,
-    access: {
+const normalizeAuthEnabled = (value) =>
+    value === undefined ? defaultDashboardConfig.auth.enabled : Boolean(value);
+
+export const normalizeDashboardConfig = (parsed: any = {}) => {
+    const access = {
         ...mergeSection(defaultDashboardConfig.access, parsed.access),
         mode: normalizeAccessMode(parsed.access?.mode),
-    },
-    auth: mergeSection(defaultDashboardConfig.auth, parsed.auth),
-    schedulerConfig: mergeSection(
-        defaultDashboardConfig.schedulerConfig,
-        parsed.schedulerConfig,
-    ),
-});
+    };
+    const auth = {
+        ...mergeSection(defaultDashboardConfig.auth, parsed.auth),
+        enabled: normalizeAuthEnabled(parsed.auth?.enabled),
+    };
+
+    if (!auth.enabled && access.mode === "read-write") {
+        throw new Error(
+            'auth.enabled: false is only supported with access.mode: "read-only".',
+        );
+    }
+
+    return {
+        ...parsed,
+        access,
+        auth,
+        schedulerConfig: mergeSection(
+            defaultDashboardConfig.schedulerConfig,
+            parsed.schedulerConfig,
+        ),
+    };
+};
 
 export const resolveDashboardConfigPath = () =>
     process.env.DASHBOARD_CONFIG_FILE || "";

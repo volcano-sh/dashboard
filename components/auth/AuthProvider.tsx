@@ -20,11 +20,6 @@ import {
 const AuthContext = createContext(null);
 const publicPaths = ["/login", "/login/sso-complete"];
 const accessModeCanWrite = (accessMode) => accessMode === "read-write";
-const readOnlyIdentity = {
-    accessMode: "read-only",
-    type: "read-only",
-    username: "read-only",
-};
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -58,7 +53,7 @@ export default function AuthProvider({ children }) {
     }, [router]);
 
     useEffect(() => {
-        if (authConfig?.accessMode !== "read-write") {
+        if (authConfig?.authRequired !== true) {
             return undefined;
         }
 
@@ -90,7 +85,7 @@ export default function AuthProvider({ children }) {
             axios.interceptors.request.eject(requestInterceptor);
             axios.interceptors.response.eject(responseInterceptor);
         };
-    }, [authConfig?.accessMode]);
+    }, [authConfig?.authRequired]);
 
     useEffect(() => {
         let disposed = false;
@@ -104,12 +99,16 @@ export default function AuthProvider({ children }) {
                 );
                 if (disposed) return;
                 setAuthConfig(configResponse.data);
-                const readOnlyMode =
-                    configResponse.data?.accessMode === "read-only";
-                if (readOnlyMode) {
+                const authRequired =
+                    configResponse.data?.authRequired !== false;
+                if (!authRequired) {
                     clearStoredToken();
                     setToken("");
-                    setIdentity(readOnlyIdentity);
+                    setIdentity({
+                        accessMode: configResponse.data?.accessMode,
+                        type: "anonymous",
+                        username: "anonymous",
+                    });
                     setUser(null);
                     return;
                 }
@@ -166,40 +165,39 @@ export default function AuthProvider({ children }) {
         [router],
     );
 
-    const value = useMemo(
-        () => {
-            const accessMode =
-                identity?.accessMode ||
-                user?.accessMode ||
-                authConfig?.accessMode ||
-                "";
-            const canWrite = accessModeCanWrite(accessMode);
-            return {
-                accessMode,
-                authConfig,
-                authError,
-                canRead: Boolean(accessMode),
-                canWrite,
-                identity,
-                isReadOnly: accessMode === "read-only",
-                loading,
-                loginWithToken,
-                logout,
-                token,
-                user,
-            };
-        },
-        [
+    const value = useMemo(() => {
+        const accessMode =
+            identity?.accessMode ||
+            user?.accessMode ||
+            authConfig?.accessMode ||
+            "";
+        const authRequired = authConfig?.authRequired !== false;
+        const canWrite = accessModeCanWrite(accessMode);
+        return {
+            accessMode,
             authConfig,
             authError,
+            canRead:
+                Boolean(accessMode) && (!authRequired || Boolean(identity)),
+            canWrite,
             identity,
+            isReadOnly: accessMode === "read-only",
             loading,
             loginWithToken,
             logout,
             token,
             user,
-        ],
-    );
+        };
+    }, [
+        authConfig,
+        authError,
+        identity,
+        loading,
+        loginWithToken,
+        logout,
+        token,
+        user,
+    ]);
 
     return (
         <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
