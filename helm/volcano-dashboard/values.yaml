@@ -27,17 +27,27 @@ config:
             namespace: volcano-system
             name: volcano-scheduler-configmap
             key: ""
+            ControllersMetricEndpoint: http://volcano-controllers-service.volcano-system.svc:8081/metrics
+            SchedulerMetricEndpoint: http://volcano-scheduler-service.volcano-system.svc:8080/metrics
         access:
-            mode: read-write
+            mode: read-only
         auth:
             mode: local
+
+externalSecret:
+    enabled: false
+    apiVersion: external-secrets.io/v1
+    name: ""
+    refreshInterval: 1h
+    secretStoreRef:
+        name: ""
+        kind: ClusterSecretStore
+    targetSecretName: ""
 
 podAnnotations: {}
 podLabels: {}
 
 podSecurityContext:
-    seLinuxOptions:
-        level: s0:c123,c456
     seccompProfile:
         type: RuntimeDefault
 
@@ -46,9 +56,6 @@ securityContext:
     capabilities:
         drop:
             - ALL
-    runAsNonRoot: true
-    runAsUser: 1001
-    runAsGroup: 1001
 
 service:
     type: ClusterIP
