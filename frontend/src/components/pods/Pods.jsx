@@ -106,9 +106,9 @@ const Pods = () => {
                 return;
             }
 
-            alert("Pod created successfully!");
             setPagination((prev) => ({ ...prev, page: 1 }));
             await fetchPods();
+            alert("Pod created successfully!");
         } catch (err) {
             alert("Network error: " + err.message);
         }
