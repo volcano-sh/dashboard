@@ -12,12 +12,7 @@ import {
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-    fetchNamespaces,
-    fetchQueues,
-    fetchPods,
-    getApiErrorMessage,
-} from "../../lib/client/dashboard-api";
+import { fetchPods, getApiErrorMessage } from "../../lib/client/dashboard-api";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsPanel from "./PodDetailsPanel";
@@ -27,6 +22,7 @@ const Pods = () => {
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "All",
+        podGroup: "All",
         queue: "All",
     });
     const [searchText, setSearchText] = useState("");
@@ -40,6 +36,7 @@ const Pods = () => {
     const [sortDirection, setSortDirection] = useState("desc");
     const [anchorEl, setAnchorEl] = useState({
         namespace: null,
+        podGroup: null,
         queue: null,
         status: null,
     });
@@ -49,6 +46,7 @@ const Pods = () => {
     const podParams = {
         search: searchText,
         namespace: filters.namespace,
+        podGroup: filters.podGroup,
         queue: filters.queue,
         status: filters.status,
         page: pagination.page,
@@ -67,6 +65,7 @@ const Pods = () => {
             "pods",
             searchText,
             filters.namespace,
+            filters.podGroup,
             filters.queue,
             filters.status,
             pagination.page,
@@ -76,17 +75,19 @@ const Pods = () => {
         queryFn: () => fetchPods(podParams),
     });
 
-    const { data: allNamespaces = [] } = useQuery({
-        queryKey: ["namespaces"],
-        queryFn: fetchNamespaces,
-    });
-
-    const { data: allQueues = [] } = useQuery({
-        queryKey: ["queues", "all"],
-        queryFn: fetchQueues,
-    });
-
     const pods = useMemo(() => podsData?.items || [], [podsData]);
+    const allNamespaces = useMemo(
+        () => podsData?.facets?.namespaces || ["All"],
+        [podsData],
+    );
+    const allQueues = useMemo(
+        () => podsData?.facets?.queues || ["All"],
+        [podsData],
+    );
+    const allPodGroups = useMemo(
+        () => podsData?.facets?.podGroups || ["All"],
+        [podsData],
+    );
     const totalPods = podsData?.totalCount || 0;
     const loading = podsLoading || podsFetching;
     const error = podsError
@@ -103,10 +104,12 @@ const Pods = () => {
         setFilters({
             status: "All",
             namespace: "All",
+            podGroup: "All",
             queue: "All",
         });
         setAnchorEl({
             namespace: null,
+            podGroup: null,
             queue: null,
             status: null,
         });
@@ -178,6 +181,14 @@ const Pods = () => {
                 value: filters.queue,
             },
             {
+                key: "podGroup",
+                label: "PodGroup",
+                onChange: (value) => handleFilterChange("podGroup", value),
+                options: allPodGroups,
+                type: "select",
+                value: filters.podGroup,
+            },
+            {
                 key: "search",
                 label: "Search",
                 onChange: (value) => handleSearch({ target: { value } }),
@@ -201,8 +212,10 @@ const Pods = () => {
         ],
         [
             allNamespaces,
+            allPodGroups,
             allQueues,
             filters.namespace,
+            filters.podGroup,
             filters.queue,
             handleFilterChange,
             handleSearch,
@@ -287,6 +300,7 @@ const Pods = () => {
             <Box>
                 <PodsTable
                     allNamespaces={allNamespaces}
+                    allPodGroups={allPodGroups}
                     allQueues={allQueues}
                     anchorEl={anchorEl}
                     filters={filters}

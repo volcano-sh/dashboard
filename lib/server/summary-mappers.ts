@@ -30,6 +30,17 @@ const queueUsage = (queue, resource) => {
     return Math.min(Math.round((allocated / capability) * 100), 100);
 };
 
+export const VOLCANO_QUEUE_ANNOTATION = "scheduling.volcano.sh/queue-name";
+export const VOLCANO_PODGROUP_ANNOTATION = "scheduling.volcano.sh/group-name";
+
+export const podQueueName = (pod) =>
+    pod?.metadata?.annotations?.[VOLCANO_QUEUE_ANNOTATION] || "";
+
+export const isQueueOwnedPod = (pod) => Boolean(podQueueName(pod));
+
+export const podGroupName = (pod) =>
+    pod?.metadata?.annotations?.[VOLCANO_PODGROUP_ANNOTATION] || "";
+
 export const jobPhase = (job) =>
     job?.status?.state?.phase ||
     job?.status?.phase ||
@@ -186,10 +197,8 @@ export const withPodSummary = (pod) => ({
         name: pod?.metadata?.name || "",
         namespace: pod?.metadata?.namespace || "default",
         status: pod?.status?.phase || "Unknown",
-        queue:
-            pod?.metadata?.annotations?.["scheduling.volcano.sh/queue-name"] ||
-            pod?.metadata?.labels?.queue ||
-            "",
+        queue: podQueueName(pod),
+        podGroup: podGroupName(pod),
         nodeName: pod?.spec?.nodeName || "",
         createdAt: pod?.metadata?.creationTimestamp || "",
         containers: pod?.spec?.containers?.length || 0,

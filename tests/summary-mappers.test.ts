@@ -66,7 +66,14 @@ describe("summary mappers", () => {
     it("adds stable pod and podgroup summary metadata", () => {
         expect(
             withPodSummary({
-                metadata: { name: "pod-a", namespace: "default" },
+                metadata: {
+                    annotations: {
+                        "scheduling.volcano.sh/group-name": "pg-a",
+                        "scheduling.volcano.sh/queue-name": "research",
+                    },
+                    name: "pod-a",
+                    namespace: "default",
+                },
                 spec: { nodeName: "node-1", containers: [{ name: "main" }] },
                 status: {
                     phase: "Running",
@@ -77,6 +84,8 @@ describe("summary mappers", () => {
             name: "pod-a",
             namespace: "default",
             status: "Running",
+            queue: "research",
+            podGroup: "pg-a",
             nodeName: "node-1",
             containers: 1,
             restarts: 2,
@@ -96,5 +105,40 @@ describe("summary mappers", () => {
             minMember: 2,
             running: 1,
         });
+    });
+
+    it("summarizes pod queue only from Volcano queue annotations", () => {
+        expect(
+            withPodSummary({
+                metadata: {
+                    labels: { "volcano.sh/queue": "batch" },
+                    name: "pod-b",
+                    namespace: "default",
+                },
+            }).summary.queue,
+        ).toBe("");
+
+        expect(
+            withPodSummary({
+                metadata: {
+                    annotations: {
+                        "scheduling.volcano.sh/group-name": "pg-c",
+                    },
+                    name: "pod-c",
+                    namespace: "default",
+                },
+            }).summary.queue,
+        ).toBe("");
+        expect(
+            withPodSummary({
+                metadata: {
+                    annotations: {
+                        "scheduling.volcano.sh/group-name": "pg-c",
+                    },
+                    name: "pod-c",
+                    namespace: "default",
+                },
+            }).summary.podGroup,
+        ).toBe("pg-c");
     });
 });

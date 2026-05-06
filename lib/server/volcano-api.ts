@@ -12,7 +12,10 @@ import {
 } from "./api-utils";
 import {
     cronJobStatus,
+    isQueueOwnedPod,
     jobPhase,
+    podGroupName,
+    podQueueName,
     withCronJobSummary,
     withJobSummary,
     withNamespaceSummary,
@@ -134,6 +137,51 @@ const queryOptions = (request) => {
 const listResponse = (items, options) => {
     const sorted = sortItems(items, options.sortBy, options.sortOrder);
     return json(paginate(sorted, options.page, options.limit));
+};
+
+const inaccessiblePodError = () =>
+    json(
+        {
+            error: "Pod not found",
+            message:
+                "Pod is not associated with a Volcano queue or is not available.",
+        },
+        404,
+    );
+
+const readVisiblePod = async (k8sCoreApi, namespace, name, fallback) => {
+    const pod = await k8sCoreApi.readNamespacedPod({
+        name,
+        namespace,
+    });
+
+    if (!isQueueOwnedPod(pod)) {
+        throw Object.assign(new Error(fallback), {
+            dashboardResponse: inaccessiblePodError(),
+        });
+    }
+
+    return pod;
+};
+
+const facetValues = (items, getValue) => [
+    "All",
+    ...new Set(items.map(getValue).filter(Boolean).sort()),
+];
+
+const podsFacets = (items) => ({
+    namespaces: facetValues(items, (pod) => pod.metadata?.namespace),
+    queues: facetValues(items, podQueueName),
+    podGroups: facetValues(items, podGroupName),
+});
+
+const podsListResponse = (items, options, facetItems = items) => {
+    const facets = podsFacets(facetItems);
+    const sorted = sortItems(items, options.sortBy, options.sortOrder);
+    return json({
+        ...paginate(sorted, options.page, options.limit),
+        facets,
+    });
 };
 
 export async function listJobs(request) {
@@ -947,38 +995,44 @@ export async function listPods(request) {
         const { searchParams, searchTerm } = options;
         const namespace = queryValue(searchParams, "namespace");
         const queueFilter = queryValue(searchParams, "queue");
+        const podGroupFilter = queryValue(searchParams, "podGroup");
         const statusFilter = queryValue(searchParams, "status");
         const response =
             namespace === "" || namespace === "All"
                 ? await k8sCoreApi.listPodForAllNamespaces()
                 : await k8sCoreApi.listNamespacedPod({ namespace });
 
-        let items = response.items || [];
+        const facetItems = (response.items || [])
+            .filter(isQueueOwnedPod)
+            .map(withPodSummary);
+        let items = facetItems;
         items = filterBySearch(items, searchTerm, (pod) => [
             pod.metadata?.name,
             pod.metadata?.namespace,
             pod.status?.phase,
             pod.spec?.nodeName,
-            pod.metadata?.annotations?.["scheduling.volcano.sh/queue-name"],
+            podQueueName(pod),
+            podGroupName(pod),
             ...labelEntries(pod.metadata?.labels),
         ]);
         if (statusFilter && statusFilter !== "All") {
             items = items.filter((pod) => pod.status?.phase === statusFilter);
         }
         if (queueFilter && queueFilter !== "All") {
-            items = items.filter(
-                (pod) =>
-                    pod.metadata?.annotations?.[
-                        "scheduling.volcano.sh/queue-name"
-                    ] === queueFilter ||
-                    pod.metadata?.labels?.queue === queueFilter,
-            );
+            items = items.filter((pod) => podQueueName(pod) === queueFilter);
         }
-        return listResponse(items.map(withPodSummary), {
-            ...options,
-            sortBy: options.sortBy || "metadata.creationTimestamp",
-            sortOrder: options.sortBy ? options.sortOrder : "desc",
-        });
+        if (podGroupFilter && podGroupFilter !== "All") {
+            items = items.filter((pod) => podGroupName(pod) === podGroupFilter);
+        }
+        return podsListResponse(
+            items,
+            {
+                ...options,
+                sortBy: options.sortBy || "metadata.creationTimestamp",
+                sortOrder: options.sortBy ? options.sortOrder : "desc",
+            },
+            facetItems,
+        );
     } catch (error) {
         return apiError(error, "Failed to fetch pods");
     }
@@ -987,12 +1041,15 @@ export async function listPods(request) {
 export async function getPod(namespace, name) {
     try {
         const { k8sCoreApi } = getApis();
-        const response = await k8sCoreApi.readNamespacedPod({
-            name,
+        const response = await readVisiblePod(
+            k8sCoreApi,
             namespace,
-        });
+            name,
+            "Failed to fetch pod",
+        );
         return json(withPodSummary(response));
     } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
         return apiError(error, "Failed to fetch pod");
     }
 }
@@ -1000,12 +1057,15 @@ export async function getPod(namespace, name) {
 export async function getPodYaml(namespace, name) {
     try {
         const { k8sCoreApi } = getApis();
-        const response = await k8sCoreApi.readNamespacedPod({
-            name,
+        const response = await readVisiblePod(
+            k8sCoreApi,
             namespace,
-        });
+            name,
+            "Failed to fetch pod YAML",
+        );
         return text(yamlResponse(response));
     } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
         return apiError(error, "Failed to fetch pod YAML");
     }
 }
@@ -1013,6 +1073,12 @@ export async function getPodYaml(namespace, name) {
 export async function getPodLogs(request, namespace, name) {
     try {
         const { k8sCoreApi } = getApis();
+        await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to fetch pod logs",
+        );
         const { searchParams } = new URL(request.url);
         const container = queryValue(searchParams, "container") || undefined;
         const previous = queryValue(searchParams, "previous") === "true";
@@ -1034,18 +1100,27 @@ export async function getPodLogs(request, namespace, name) {
             "text/plain",
         );
     } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
         return apiError(error, "Failed to fetch pod logs");
     }
 }
 
 export async function getPodEvents(namespace, name) {
     try {
+        const { k8sCoreApi } = getApis();
+        await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to fetch pod events",
+        );
         return await listResourceEvents({
             kind: "Pod",
             name,
             namespace,
         });
     } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
         return apiError(error, "Failed to fetch pod events");
     }
 }
@@ -1053,6 +1128,12 @@ export async function getPodEvents(namespace, name) {
 export async function deletePod(namespace, name) {
     try {
         const { k8sCoreApi } = getApis();
+        await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to delete pod",
+        );
         const response = await k8sCoreApi.deleteNamespacedPod({
             namespace,
             name,
@@ -1064,6 +1145,7 @@ export async function deletePod(namespace, name) {
             data: response.body,
         });
     } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
         return apiError(error, "Failed to delete pod");
     }
 }

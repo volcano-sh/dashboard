@@ -66,6 +66,16 @@ const PodRow = ({ isSelected, pod, onPodClick }) => {
                 sx={{
                     padding: "12px 18px",
                     color: alpha(theme.palette.text.primary, 0.85),
+                    ...tableIdentifierSx,
+                }}
+            >
+                {pod.summary?.podGroup || "N/A"}
+            </TableCell>
+
+            <TableCell
+                sx={{
+                    padding: "12px 18px",
+                    color: alpha(theme.palette.text.primary, 0.85),
                     ...tableTimestampSx,
                 }}
             >

@@ -8,6 +8,7 @@ import {
     getDashboardConfigSource,
 } from "./lib/server/config";
 import { getKubernetesClients } from "./lib/server/kubernetes";
+import { isQueueOwnedPod } from "./lib/server/summary-mappers";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "0.0.0.0";
@@ -81,6 +82,12 @@ const rejectUpgradeNotFound = (socket, message) => {
             }),
     );
     socket.destroy();
+};
+
+const verifyVisiblePodForUpgrade = async (namespace, name) => {
+    const { k8sCoreApi } = getKubernetesClients();
+    const pod = await k8sCoreApi.readNamespacedPod({ namespace, name });
+    return isQueueOwnedPod(pod);
 };
 
 const verifyUpgradeToken = async (url) => {
@@ -584,6 +591,31 @@ server.on("upgrade", async (request, socket, head) => {
             `[upgrade] ${websocketRoute.kind} rejected missing parameter path=${url.pathname}`,
         );
         socket.destroy();
+        return;
+    }
+
+    try {
+        const visiblePod = await verifyVisiblePodForUpgrade(namespace, name);
+        if (!visiblePod) {
+            console.warn(
+                `[upgrade] ${websocketRoute.kind} rejected pod without Volcano queue ${namespace}/${name}`,
+            );
+            rejectUpgradeNotFound(
+                socket,
+                "Pod is not associated with a Volcano queue or is not available.",
+            );
+            return;
+        }
+    } catch (error) {
+        console.warn(
+            `[upgrade] ${websocketRoute.kind} rejected inaccessible pod ${namespace}/${name} error=${
+                error?.message || error
+            }`,
+        );
+        rejectUpgradeNotFound(
+            socket,
+            "Pod is not associated with a Volcano queue or is not available.",
+        );
         return;
     }
 

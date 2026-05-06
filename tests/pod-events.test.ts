@@ -2,10 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listNamespacedEvent = vi.fn();
 const listEventForAllNamespaces = vi.fn();
+const readNamespacedPod = vi.fn();
 
 vi.mock("../lib/server/kubernetes", () => ({
     getKubernetesClients: () => ({
-        k8sCoreApi: { listEventForAllNamespaces, listNamespacedEvent },
+        k8sCoreApi: {
+            listEventForAllNamespaces,
+            listNamespacedEvent,
+            readNamespacedPod,
+        },
     }),
     yamlResponse: vi.fn(),
 }));
@@ -21,6 +26,17 @@ const {
 beforeEach(() => {
     listEventForAllNamespaces.mockReset();
     listNamespacedEvent.mockReset();
+    readNamespacedPod.mockReset();
+    readNamespacedPod.mockResolvedValue({
+        metadata: {
+            annotations: {
+                "scheduling.volcano.sh/queue-name": "research",
+            },
+            name: "demo-pod",
+            namespace: "volcano-demo",
+        },
+        spec: {},
+    });
 });
 
 describe("resource events API", () => {

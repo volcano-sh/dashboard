@@ -10,6 +10,7 @@ const PodsTable = ({
     filters,
     uniqueStatuses,
     allNamespaces,
+    allPodGroups,
     allQueues,
     anchorEl,
     onFilterOpen,
@@ -57,6 +58,12 @@ const PodsTable = ({
                             minWidth: 150,
                         },
                         {
+                            filter: filterColumn("podGroup", allPodGroups),
+                            key: "podGroup",
+                            label: "PodGroup",
+                            minWidth: 160,
+                        },
+                        {
                             key: "created",
                             label: "Creation Time",
                             minWidth: 180,
@@ -76,7 +83,7 @@ const PodsTable = ({
                 <TableBody>
                     {sortedPods.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={6} align="center">
+                            <TableCell colSpan={7} align="center">
                                 No pods found.
                             </TableCell>
                         </TableRow>
