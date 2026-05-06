@@ -69,6 +69,8 @@ Resolve the dashboard config Secret name.
 {{- define "volcano-dashboard.configSecretName" -}}
 {{- if .Values.config.existingSecret -}}
 {{- .Values.config.existingSecret -}}
+{{- else if and .Values.externalSecret.enabled .Values.externalSecret.target.name -}}
+{{- .Values.externalSecret.target.name -}}
 {{- else -}}
 {{- printf "%s-config" (include "volcano-dashboard.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

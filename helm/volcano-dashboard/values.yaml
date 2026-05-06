@@ -32,6 +32,24 @@ config:
         auth:
             mode: local
 
+externalSecret:
+    enabled: true
+    apiVersion: external-secrets.io/v1
+    name: ""
+    refreshInterval: 1h
+    secretStoreRef:
+        name: "cluster-secret-store"
+        kind: ClusterSecretStore
+    target:
+        name: ""
+        creationPolicy: Owner
+        deletionPolicy: Retain
+        template:
+            engineVersion: v2
+            type: Opaque
+    data: []
+    dataFrom: []
+
 podAnnotations: {}
 podLabels: {}
 
