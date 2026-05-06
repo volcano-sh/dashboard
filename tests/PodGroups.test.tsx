@@ -115,7 +115,7 @@ describe("PodGroups", () => {
         );
     });
 
-    it("hides PodGroup create actions for read-only users", async () => {
+    it("disables PodGroup create actions for read-only users", async () => {
         mocks.auth.canWrite = false;
 
         renderPodGroups();
@@ -125,7 +125,7 @@ describe("PodGroups", () => {
         });
 
         expect(
-            screen.queryByRole("button", { name: /create podgroup/i }),
-        ).not.toBeInTheDocument();
+            screen.getByRole("button", { name: /create podgroup/i }),
+        ).toBeDisabled();
     });
 });

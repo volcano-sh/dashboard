@@ -49,6 +49,7 @@ import {
     updateCronJobYaml,
 } from "../../lib/client/dashboard-api";
 import CreateJobDialog from "../jobs/JobTable/CreateJobDialog";
+import ReadOnlyActionTooltip from "../access/ReadOnlyActionTooltip";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -269,6 +270,7 @@ const CronJobDetailsDrawer = ({
 const CronJobs = () => {
     const auth = useAuth();
     const canWrite = auth?.canWrite !== false;
+    const isReadOnly = !canWrite;
     const [filters, setFilters] = useState({
         namespace: "All",
         queue: "All",
@@ -467,8 +469,9 @@ const CronJobs = () => {
                     >
                         Refresh
                     </Button>
-                    {canWrite && (
+                    <ReadOnlyActionTooltip readOnly={isReadOnly}>
                         <Button
+                            disabled={isReadOnly}
                             onClick={() => setCreateDialogOpen(true)}
                             startIcon={<AddIcon fontSize="small" />}
                             sx={{
@@ -480,7 +483,7 @@ const CronJobs = () => {
                         >
                             Create CronJob
                         </Button>
-                    )}
+                    </ReadOnlyActionTooltip>
                 </Box>
             </Box>
 
@@ -628,7 +631,7 @@ const CronJobs = () => {
                 selectedTab={selectedTab}
                 setSelectedTab={setSelectedTab}
             />
-            {canWrite && (
+            {!isReadOnly && (
                 <CreateJobDialog
                     open={createDialogOpen}
                     onClose={() => setCreateDialogOpen(false)}

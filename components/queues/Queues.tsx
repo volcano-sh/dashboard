@@ -60,6 +60,7 @@ import {
     QUEUE_RESOURCE_COLUMNS,
 } from "./queueResourceUsage";
 import { useAuth } from "../auth/AuthProvider";
+import ReadOnlyActionTooltip from "../access/ReadOnlyActionTooltip";
 
 const getQueueName = (queue) => queue?.metadata?.name || "-";
 
@@ -1394,6 +1395,7 @@ const QueueHierarchyView = ({
 const Queues = () => {
     const auth = useAuth();
     const canWrite = auth?.canWrite !== false;
+    const isReadOnly = !canWrite;
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -1604,8 +1606,9 @@ const Queues = () => {
                     >
                         Refresh
                     </Button>
-                    {canWrite && (
+                    <ReadOnlyActionTooltip readOnly={isReadOnly}>
                         <Button
+                            disabled={isReadOnly}
                             onClick={() => setCreateDialogOpen(true)}
                             startIcon={<AddIcon fontSize="small" />}
                             sx={{
@@ -1617,7 +1620,7 @@ const Queues = () => {
                         >
                             Create Queue
                         </Button>
-                    )}
+                    </ReadOnlyActionTooltip>
                 </Box>
             </Box>
 
@@ -1639,7 +1642,7 @@ const Queues = () => {
                 onYamlSaved={fetchQueues}
             />
 
-            {canWrite && (
+            {!isReadOnly && (
                 <CreateDialog
                     open={createDialogOpen}
                     onClose={() => setCreateDialogOpen(false)}

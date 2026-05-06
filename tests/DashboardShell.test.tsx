@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardShell from "../components/DashboardShell";
 
@@ -33,17 +33,42 @@ describe("DashboardShell", () => {
         };
     });
 
-    it("renders a read-only access indicator", () => {
+    it("renders a read-only banner", () => {
         render(
             <DashboardShell>
                 <div>content</div>
             </DashboardShell>,
         );
 
-        expect(screen.getByText("Read-only")).toBeInTheDocument();
+        expect(screen.getByText("Read-only mode")).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                /You can view resources, but create, update, and delete actions are disabled./i,
+            ),
+        ).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: /learn more/i })).toHaveAttribute(
+            "href",
+            "/documentation",
+        );
     });
 
-    it("renders a read-write access indicator", () => {
+    it("dismisses the read-only banner for the current shell session", () => {
+        render(
+            <DashboardShell>
+                <div>content</div>
+            </DashboardShell>,
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: /dismiss read-only mode banner/i,
+            }),
+        );
+
+        expect(screen.queryByText("Read-only mode")).not.toBeInTheDocument();
+    });
+
+    it("does not render a read-write access indicator or read-only banner", () => {
         mocks.auth = {
             accessMode: "read-write",
             authConfig: {
@@ -59,6 +84,7 @@ describe("DashboardShell", () => {
             </DashboardShell>,
         );
 
-        expect(screen.getByText("Read-write")).toBeInTheDocument();
+        expect(screen.queryByText("Read-write")).not.toBeInTheDocument();
+        expect(screen.queryByText("Read-only mode")).not.toBeInTheDocument();
     });
 });

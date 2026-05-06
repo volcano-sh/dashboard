@@ -192,7 +192,7 @@ describe("Queues", () => {
         expect(screen.queryByText("Pending Jobs")).not.toBeInTheDocument();
     });
 
-    it("hides queue write actions for read-only users", async () => {
+    it("disables queue write actions for read-only users", async () => {
         mocks.auth.canWrite = false;
 
         renderQueues();
@@ -201,7 +201,9 @@ describe("Queues", () => {
             expect(screen.getByText("prod")).toBeInTheDocument();
         });
 
-        expect(screen.queryByText("Create Queue")).not.toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: /create queue/i }),
+        ).toBeDisabled();
         expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     });
 });

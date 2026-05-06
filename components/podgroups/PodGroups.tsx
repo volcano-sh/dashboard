@@ -41,6 +41,7 @@ import ResourceEventsPanel from "../details/ResourceEventsPanel";
 import JobStatusChip from "../jobs/JobStatusChip";
 import { useAuth } from "../auth/AuthProvider";
 import CreateJobDialog from "../jobs/JobTable/CreateJobDialog";
+import ReadOnlyActionTooltip from "../access/ReadOnlyActionTooltip";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -253,6 +254,7 @@ const PodGroupDetailsDrawer = ({
 const PodGroups = () => {
     const auth = useAuth();
     const canWrite = auth?.canWrite !== false;
+    const isReadOnly = !canWrite;
     const [filters, setFilters] = useState({
         status: "All",
         namespace: "All",
@@ -521,8 +523,9 @@ const PodGroups = () => {
                     >
                         Refresh
                     </Button>
-                    {canWrite && (
+                    <ReadOnlyActionTooltip readOnly={isReadOnly}>
                         <Button
+                            disabled={isReadOnly}
                             onClick={() => setCreateDialogOpen(true)}
                             startIcon={<AddIcon fontSize="small" />}
                             sx={{
@@ -534,7 +537,7 @@ const PodGroups = () => {
                         >
                             Create PodGroup
                         </Button>
-                    )}
+                    </ReadOnlyActionTooltip>
                 </Box>
             </Box>
             {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -564,7 +567,7 @@ const PodGroups = () => {
                 selectedTab={selectedTab}
                 setSelectedTab={setSelectedTab}
             />
-            {canWrite && (
+            {!isReadOnly && (
                 <CreateJobDialog
                     open={createDialogOpen}
                     onClose={() => setCreateDialogOpen(false)}
