@@ -28,10 +28,9 @@ schedulerConfig:
     SchedulerMetricEndpoint: "http://127.0.0.1:18080/metrics"
 
 access:
-    # Supported values: read-write, read-only.
-    # This controls authorization only. It does not enable or disable login.
-    # Use read-only for dashboards that should not expose write actions.
-    mode: read-write
+    # Global access ceiling. Supported values: read-write, read-only.
+    # If this is read-only, no local user or SSO group can be elevated to read-write.
+    mode: read-only
 
 auth:
     # Set enabled: false only for anonymous read-only dashboards.
@@ -51,8 +50,11 @@ auth:
         - username: admin
           display_name: Administrator
           password_hash: "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO."
-          tenants: [ "adak8s", "squidflow" ]
-          is_admin: true
+          access_mode: read-write
+        # Users without access_mode default to read-only.
+        # - username: viewer
+        #   display_name: Viewer
+        #   password_hash: "$2b$12$..."
 
     sso:
         provider_name: Keycloak
@@ -63,8 +65,10 @@ auth:
         scopes: [ "openid", "profile", "email", "offline_access" ]
         jwks_cache_ttl: 10m
 
-        # Reserved for future RBAC / tenant mapping support.
+        # SSO users without a matching group mapping default to read-only.
+        # match is exact for this iteration.
         group_mappings:
-            - match: adak8s
-              add_tenants: [ "*" ]
-              is_admin: true
+            - match: adak8s-admins
+              access_mode: read-write
+            - match: adak8s-viewers
+              access_mode: read-only

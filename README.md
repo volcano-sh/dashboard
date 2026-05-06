@@ -69,11 +69,15 @@ auth:
         - username: admin
           displayName: Administrator
           passwordHash: "$2b$12$..."
+          accessMode: read-write
 ```
 
 `access.mode` controls authorization and `auth.enabled` controls whether users
 must log in. To expose a read-only dashboard without login, combine
 `access.mode: read-only` with `auth.enabled: false`.
+For authenticated dashboards, local users and SSO group mappings without an
+explicit access mode default to read-only. The global `access.mode` is always
+the ceiling, so `access.mode: read-only` prevents every user from writing.
 
 ```yaml
 access:
@@ -113,6 +117,7 @@ auth:
         - username: admin
           displayName: Administrator
           passwordHash: "$2b$12$..."
+          accessMode: read-write
     sso:
         providerName: Keycloak
         issuer: https://keycloak.example.com/realms/volcano
@@ -123,13 +128,21 @@ auth:
             - openid
             - profile
             - email
+            - groups
+        groupMappings:
+            - match: volcano-admins
+              accessMode: read-write
+            - match: volcano-viewers
+              accessMode: read-only
 ```
 
 The unified backend config is loaded from `DASHBOARD_CONFIG_FILE`. The auth
 section also accepts snake_case aliases commonly used by service config files,
 such as `users`, `password_hash`, `issuer_url`, `client_id`, `client_secret`,
-`redirect_uri`, and `jwks_cache_ttl`. The file must still be YAML or JSON; TOML
-is not parsed by the dashboard today.
+`redirect_uri`, `jwks_cache_ttl`, `access_mode`, and `group_mappings`. Tenant
+and admin mapping fields are not supported; use `accessMode` / `access_mode`
+with `read-only` or `read-write`. The file must still be YAML or JSON; TOML is
+not parsed by the dashboard today.
 
 3. Access the dashboard by port-forwarding the service:
 

@@ -16,6 +16,7 @@ export const defaultDashboardConfig = {
         },
         localUsers: [
             {
+                accessMode: "read-write",
                 displayName: "Administrator",
                 passwordHash:
                     "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO.",

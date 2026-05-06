@@ -16,6 +16,8 @@ const accessModeRank = {
     [AccessModes.READ_WRITE]: 2,
 };
 
+const AUTHENTICATED_DEFAULT_ACCESS_MODE = AccessModes.READ_ONLY;
+
 class AuthorizationError extends Error {
     status: number;
 
@@ -58,7 +60,7 @@ const parseDurationSeconds = (value, fallbackSeconds) => {
 };
 
 const safeUser = (user) => ({
-    accessMode: user.accessMode || AccessModes.READ_WRITE,
+    accessMode: user.accessMode || AUTHENTICATED_DEFAULT_ACCESS_MODE,
     displayName: user.displayName || user.username,
     email: user.email || "",
     provider: user.provider || "local",
@@ -67,13 +69,42 @@ const safeUser = (user) => ({
 
 const isBcryptHash = (hash) => String(hash || "").startsWith("$2");
 
-export const getAccessMode = async () => {
-    const dashboardConfig = await getDashboardConfig();
-    const mode = dashboardConfig.access?.mode || AccessModes.READ_WRITE;
+const normalizeAccessModeValue = (
+    value,
+    fallback = AUTHENTICATED_DEFAULT_ACCESS_MODE,
+) => {
+    const mode = String(value || fallback)
+        .trim()
+        .toLowerCase();
     if (!Object.values(AccessModes).includes(mode)) {
         throw new Error('Access mode must be "read-only" or "read-write".');
     }
     return mode;
+};
+
+const capAccessMode = (requestedMode, ceilingMode) =>
+    accessModeRank[requestedMode] > accessModeRank[ceilingMode]
+        ? ceilingMode
+        : requestedMode;
+
+const unsupportedAccessMappingFields = (object, fields) =>
+    fields.filter((field) => Object.prototype.hasOwnProperty.call(object, field));
+
+const rejectUnsupportedAccessMappingFields = (object, fields) => {
+    const unsupported = unsupportedAccessMappingFields(object || {}, fields);
+    if (unsupported.length > 0) {
+        throw new Error(
+            `${unsupported.join(", ")} are not supported; use access_mode to configure read-only or read-write access.`,
+        );
+    }
+};
+
+export const getAccessMode = async () => {
+    const dashboardConfig = await getDashboardConfig();
+    return normalizeAccessModeValue(
+        dashboardConfig.access?.mode,
+        AccessModes.READ_WRITE,
+    );
 };
 
 export const isAuthEnabled = async () => {
@@ -85,6 +116,7 @@ const normalizeAuthConfig = (parsed: any = {}) => {
     const source = parsed.auth || parsed;
     const sso = source.sso || {};
     const localUsers = source.users || source.localUsers;
+    const groupMappings = sso.groupMappings || sso.group_mappings;
     const jwt = {
         ...(source.jwt || {}),
         ...(source.salt ? { secret: source.salt } : {}),
@@ -94,15 +126,23 @@ const normalizeAuthConfig = (parsed: any = {}) => {
         ...source,
         jwt,
         localUsers: Array.isArray(localUsers)
-            ? localUsers.map((user) => ({
-                  displayName:
-                      user.displayName || user.display_name || user.username,
-                  email: user.email || "",
-                  isAdmin: user.isAdmin ?? user.is_admin,
-                  passwordHash: user.passwordHash || user.password_hash,
-                  tenants: user.tenants || [],
-                  username: user.username,
-              }))
+            ? localUsers.map((user) => {
+                  rejectUnsupportedAccessMappingFields(user, [
+                      "isAdmin",
+                      "is_admin",
+                      "tenants",
+                  ]);
+                  return {
+                      accessMode: user.accessMode || user.access_mode,
+                      displayName:
+                          user.displayName ||
+                          user.display_name ||
+                          user.username,
+                      email: user.email || "",
+                      passwordHash: user.passwordHash || user.password_hash,
+                      username: user.username,
+                  };
+              })
             : localUsers,
         sso: {
             ...sso,
@@ -112,8 +152,96 @@ const normalizeAuthConfig = (parsed: any = {}) => {
             jwksCacheTtl: sso.jwksCacheTtl || sso.jwks_cache_ttl,
             providerName: sso.providerName || sso.provider_name,
             redirectUri: sso.redirectUri || sso.redirect_uri,
+            groupMappings: Array.isArray(groupMappings)
+                ? groupMappings.map((mapping) => {
+                      rejectUnsupportedAccessMappingFields(mapping, [
+                          "addTenants",
+                          "add_tenants",
+                          "isAdmin",
+                          "is_admin",
+                          "tenants",
+                      ]);
+                      return {
+                          accessMode:
+                              mapping.accessMode || mapping.access_mode,
+                          match: mapping.match,
+                      };
+                  })
+                : groupMappings,
         },
     };
+};
+
+const validateAuthAccessMappings = (config) => {
+    for (const user of config.localUsers || []) {
+        rejectUnsupportedAccessMappingFields(user, [
+            "isAdmin",
+            "is_admin",
+            "tenants",
+        ]);
+        normalizeAccessModeValue(user.accessMode);
+    }
+
+    const groupMappings = config.sso?.groupMappings;
+    if (groupMappings === undefined) return;
+    if (!Array.isArray(groupMappings)) {
+        throw new Error("sso.group_mappings must be a list.");
+    }
+    for (const mapping of groupMappings) {
+        rejectUnsupportedAccessMappingFields(mapping, [
+            "addTenants",
+            "add_tenants",
+            "isAdmin",
+            "is_admin",
+            "tenants",
+        ]);
+        if (!mapping.match) {
+            throw new Error("Each SSO group mapping must provide match.");
+        }
+        if (!mapping.accessMode) {
+            throw new Error(
+                "Each SSO group mapping must provide access_mode.",
+            );
+        }
+        normalizeAccessModeValue(mapping.accessMode);
+    }
+};
+
+const effectiveAccessMode = async (requestedMode) => {
+    const ceilingMode = await getAccessMode();
+    const normalizedRequestedMode = normalizeAccessModeValue(requestedMode);
+    return capAccessMode(normalizedRequestedMode, ceilingMode);
+};
+
+const accessModeForLocalUser = async (user) =>
+    effectiveAccessMode(user?.accessMode || AUTHENTICATED_DEFAULT_ACCESS_MODE);
+
+export const oidcAccessGroups = (claims: any = {}) => {
+    const groups = new Set();
+    const add = (value) => {
+        if (Array.isArray(value)) value.forEach(add);
+        else if (value) groups.add(String(value));
+    };
+
+    add(claims.groups);
+    add(claims.roles);
+    add(claims.realm_access?.roles);
+    Object.values(claims.resource_access || {}).forEach((resource: any) => {
+        add(resource?.roles);
+    });
+
+    return [...groups];
+};
+
+export const resolveSsoAccessMode = async (claims: any = {}) => {
+    const config = await getAuthConfig();
+    const groups = oidcAccessGroups(claims);
+    const matchedMapping = (config.sso?.groupMappings || []).find((mapping) =>
+        groups.includes(mapping.match),
+    );
+    return effectiveAccessMode(
+        matchedMapping?.accessMode || AUTHENTICATED_DEFAULT_ACCESS_MODE,
+    );
 };
 
 export const getAuthConfig = async () => {
@@ -144,6 +272,7 @@ export const getAuthConfig = async () => {
             throw new Error("Local user passwordHash must be a bcrypt hash.");
         }
     }
+    validateAuthAccessMappings(config);
     if (config.mode === "local-sso") {
         if (!config.sso?.issuer || !config.sso?.clientId) {
             throw new Error(
@@ -298,12 +427,15 @@ export const resolveIdentity = async (request) => {
     const token = bearerTokenFromRequest(request);
     if (token) {
         const payload = await verifyAuthToken(token);
+        const effectiveTokenAccessMode = await effectiveAccessMode(
+            payload.user?.accessMode,
+        );
         return {
-            accessMode,
+            accessMode: effectiveTokenAccessMode,
             type: "authenticated",
             user: {
                 ...payload.user,
-                accessMode,
+                accessMode: effectiveTokenAccessMode,
             },
             username: payload.user?.username || payload.sub,
         };
@@ -402,7 +534,7 @@ export const handleLocalLogin = async (request) => {
                 401,
             );
         }
-        const accessMode = await getAccessMode();
+        const accessMode = await accessModeForLocalUser(user);
         return json(
             await signAuthToken(
                 { ...user, accessMode, provider: "local" },
@@ -549,8 +681,9 @@ export const handleSsoCallback = async (request) => {
         }
         const tokenSet = await tokenResponse.json();
         const claims = await verifyOidcToken(tokenSet.id_token);
+        const accessMode = await resolveSsoAccessMode(claims);
         const signed = await signAuthToken({
-            accessMode: await getAccessMode(),
+            accessMode,
             displayName:
                 claims.name || claims.preferred_username || claims.email,
             email: claims.email || "",

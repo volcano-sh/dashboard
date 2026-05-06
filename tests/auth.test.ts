@@ -110,7 +110,7 @@ describe("auth server helpers", () => {
         expect(payload.user).toMatchObject({
             displayName: "Administrator",
             provider: "local",
-            accessMode: "read-write",
+            accessMode: "read-only",
             username: "admin",
         });
         await expect(verifyAuthToken(`${signed.token}x`)).rejects.toThrow(
@@ -218,9 +218,7 @@ auth:
     - username: admin
       display_name: Administrator
       password_hash: "${adminHash}"
-      tenants:
-        - adak8s
-      is_admin: true
+      access_mode: read-write
   sso:
     provider_name: Keycloak
     issuer_url: http://localhost:8080/realms/adak8s
@@ -264,10 +262,9 @@ auth:
             jwt: { secret: "section-secret" },
             localUsers: [
                 {
+                    accessMode: "read-write",
                     displayName: "Administrator",
-                    isAdmin: true,
                     passwordHash: adminHash,
-                    tenants: ["adak8s"],
                     username: "admin",
                 },
             ],
@@ -294,6 +291,183 @@ auth:
         expect(location.searchParams.get("redirect_uri")).toBe(
             "http://localhost:3000/sso/callback",
         );
+    });
+
+    it("resolves local user access modes with the global access ceiling", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: read-write
+auth:
+  enabled: true
+  mode: local
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      display_name: Administrator
+      password_hash: "${adminHash}"
+      access_mode: read-write
+`);
+        const { handleLocalLogin, withWrite } = await importAuth(configFile);
+
+        const loginResponse = await handleLocalLogin(
+            jsonRequest({ password: "admin", username: "admin" }),
+        );
+        const loginBody = await loginResponse.json();
+        expect(loginBody.user).toMatchObject({ accessMode: "read-write" });
+
+        const writeResponse = await withWrite(() =>
+            Response.json({ ok: true }),
+        )(
+            new Request("http://dashboard.local/api/v1/queues", {
+                headers: { Authorization: `Bearer ${loginBody.token}` },
+            }),
+        );
+        expect(writeResponse.status).toBe(200);
+    });
+
+    it("caps local read-write users to read-only when the global ceiling is read-only", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: read-only
+auth:
+  enabled: true
+  mode: local
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      display_name: Administrator
+      password_hash: "${adminHash}"
+      access_mode: read-write
+`);
+        const { handleLocalLogin, withWrite } = await importAuth(configFile);
+
+        const loginResponse = await handleLocalLogin(
+            jsonRequest({ password: "admin", username: "admin" }),
+        );
+        const loginBody = await loginResponse.json();
+        expect(loginBody.user).toMatchObject({ accessMode: "read-only" });
+
+        const writeResponse = await withWrite(() =>
+            Response.json({ ok: true }),
+        )(
+            new Request("http://dashboard.local/api/v1/queues", {
+                headers: { Authorization: `Bearer ${loginBody.token}` },
+            }),
+        );
+        expect(writeResponse.status).toBe(404);
+    });
+
+    it("defaults local users without access_mode to read-only", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: read-write
+auth:
+  enabled: true
+  mode: local
+  jwt:
+    secret: test-secret
+  users:
+    - username: viewer
+      display_name: Viewer
+      password_hash: "${adminHash}"
+`);
+        const { handleLocalLogin, withWrite } = await importAuth(configFile);
+
+        const loginResponse = await handleLocalLogin(
+            jsonRequest({ password: "admin", username: "viewer" }),
+        );
+        const loginBody = await loginResponse.json();
+        expect(loginBody.user).toMatchObject({ accessMode: "read-only" });
+
+        const writeResponse = await withWrite(() =>
+            Response.json({ ok: true }),
+        )(
+            new Request("http://dashboard.local/api/v1/queues", {
+                headers: { Authorization: `Bearer ${loginBody.token}` },
+            }),
+        );
+        expect(writeResponse.status).toBe(403);
+    });
+
+    it("resolves SSO group mappings to access modes", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: read-write
+auth:
+  enabled: true
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      display_name: Administrator
+      password_hash: "${adminHash}"
+      access_mode: read-write
+  sso:
+    issuer_url: http://localhost:8080/realms/adak8s
+    client_id: squidflow-backend
+    group_mappings:
+      - match: adak8s-admins
+        access_mode: read-write
+      - match: adak8s-viewers
+        access_mode: read-only
+`);
+        const { oidcAccessGroups, resolveSsoAccessMode } =
+            await importAuth(configFile);
+
+        expect(
+            oidcAccessGroups({
+                groups: ["adak8s-users"],
+                realm_access: { roles: ["adak8s-admins"] },
+                resource_access: {
+                    volcano: { roles: ["dashboard-role"] },
+                },
+            }),
+        ).toEqual(["adak8s-users", "adak8s-admins", "dashboard-role"]);
+        await expect(
+            resolveSsoAccessMode({
+                groups: ["adak8s-admins"],
+            }),
+        ).resolves.toBe("read-write");
+        await expect(
+            resolveSsoAccessMode({
+                groups: ["adak8s-viewers"],
+            }),
+        ).resolves.toBe("read-only");
+        await expect(
+            resolveSsoAccessMode({
+                groups: ["unmapped"],
+            }),
+        ).resolves.toBe("read-only");
+    });
+
+    it("caps SSO group mappings with the global access ceiling", async () => {
+        const configFile = await writeAuthConfig(`
+access:
+  mode: read-only
+auth:
+  enabled: true
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+      accessMode: read-write
+  sso:
+    issuer: http://localhost:8080/realms/adak8s
+    clientId: squidflow-backend
+    groupMappings:
+      - match: adak8s-admins
+        accessMode: read-write
+`);
+        const { resolveSsoAccessMode } = await importAuth(configFile);
+
+        await expect(
+            resolveSsoAccessMode({ groups: ["adak8s-admins"] }),
+        ).resolves.toBe("read-only");
     });
 
     it("maps anonymous read-only mode when auth is disabled", async () => {
@@ -478,10 +652,88 @@ access:
         );
     });
 
+    it("rejects invalid local user and SSO mapping access modes", async () => {
+        const localConfigFile = await writeAuthConfig(`
+auth:
+  mode: local
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+      accessMode: admin
+`);
+        const { getAuthConfig } = await importAuth(localConfigFile);
+        await expect(getAuthConfig()).rejects.toThrow(
+            /read-only.*read-write/i,
+        );
+
+        const ssoConfigFile = await writeAuthConfig(`
+auth:
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+      accessMode: read-write
+  sso:
+    issuer: http://localhost:8080/realms/adak8s
+    clientId: squidflow-backend
+    groupMappings:
+      - match: adak8s-admins
+        accessMode: admin
+`);
+        const { getAuthConfig: getSsoAuthConfig } =
+            await importAuth(ssoConfigFile);
+        await expect(getSsoAuthConfig()).rejects.toThrow(
+            /read-only.*read-write/i,
+        );
+    });
+
+    it("rejects deprecated tenant and admin mapping fields", async () => {
+        const localConfigFile = await writeAuthConfig(`
+auth:
+  mode: local
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+      tenants: ["adak8s"]
+`);
+        const { getAuthConfig } = await importAuth(localConfigFile);
+        await expect(getAuthConfig()).rejects.toThrow(/access_mode/i);
+
+        const ssoConfigFile = await writeAuthConfig(`
+auth:
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+      accessMode: read-write
+  sso:
+    issuer: http://localhost:8080/realms/adak8s
+    clientId: squidflow-backend
+    groupMappings:
+      - match: adak8s-admins
+        add_tenants: ["*"]
+        is_admin: true
+`);
+        const { getAuthConfig: getSsoAuthConfig } =
+            await importAuth(ssoConfigFile);
+        await expect(getSsoAuthConfig()).rejects.toThrow(/access_mode/i);
+    });
+
     it("maps authenticated requests to read-write", async () => {
         const { handleAuthMe, resolveIdentity, signAuthToken, withWrite } =
             await importAuth();
-        const signed = await signAuthToken({ username: "admin" });
+        const signed = await signAuthToken({
+            accessMode: "read-write",
+            username: "admin",
+        });
         const request = new Request("http://dashboard.local/api/v1/auth/me", {
             headers: { Authorization: `Bearer ${signed.token}` },
         });
