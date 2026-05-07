@@ -3,8 +3,18 @@ name: Run Tests
 on:
   push:
     branches: ['*']
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/test.yml'
+      - 'package*.json'
   pull_request:
     branches: ['*']
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/test.yml'
+      - 'package*.json'
 
 jobs:
   frontend-tests:
