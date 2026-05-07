@@ -43,6 +43,50 @@ kubectl port-forward svc/volcano-dashboard 8080:80 -n volcano-system --address 0
    - For local access: `http://localhost:8080`
    - For remote access: `http://<NODE_IP>:8080` (replace `<NODE_IP>` with your Kubernetes node's IP address)
 
+## Local Development
+
+If you'd like to run the dashboard locally for development or contribution purposes, follow these steps:
+
+### Prerequisites
+
+- Node.js (v18+ recommended)
+- `npm` or `yarn`
+- A running Kubernetes cluster with `kubeconfig` configured locally.
+- Volcano installed on your cluster.
+
+### Setup
+
+1. **Clone the repository:**
+
+```bash
+git clone https://github.com/volcano-sh/dashboard.git
+cd dashboard
+```
+
+2. **Install Dependencies:**
+The project uses npm workspaces to manage both frontend and backend dependencies.
+
+```bash
+npm install
+```
+
+3. **Configure Environment Variables (Optional):**
+You can configure environment variables by creating `.env` files in the respective workspaces:
+
+```bash
+# Create a backend env file (e.g. to change the default PORT)
+cp backend/.env.example backend/.env
+```
+
+4. **Start the Development Servers:**
+This command will concurrently start both the backend API server and the frontend Vite development server.
+
+```bash
+npm run dev
+```
+
+The frontend will be accessible at `http://localhost:3000` and the backend at `http://localhost:3001`. The backend uses your local `~/.kube/config` by default to interact with the Kubernetes cluster.
+
 ## Contributing
 
 You can follow our [CONTRIBUTING.md](CONTRIBUTING.md).
