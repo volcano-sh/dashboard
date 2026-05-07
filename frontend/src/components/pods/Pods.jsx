@@ -23,6 +23,10 @@ const Pods = () => {
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
     const [selectedPodName, setSelectedPodName] = useState("");
+    const [selectedPodNamespace, setSelectedPodNamespace] = useState("");
+    const [selectedPodLogs, setSelectedPodLogs] = useState("");
+    const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+    const [logsLoaded, setLogsLoaded] = useState(false);
     const [pagination, setPagination] = useState({
         page: 1,
         rowsPerPage: 10,
@@ -35,7 +39,7 @@ const Pods = () => {
         setError(null);
 
         try {
-            const response = await axios.get(`/api/pods`, {
+            const response = await axios.get("/api/pods", {
                 params: {
                     search: searchText,
                     namespace: filters.namespace,
@@ -58,17 +62,7 @@ const Pods = () => {
         }
     }, [searchText, filters]);
 
-    useEffect(() => {
-        fetchPods();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPods]);
-
-    useEffect(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        setPods(cachedPods.slice(startIndex, endIndex));
-    }, [cachedPods, pagination]);
-
+    // Removed redundant fetchData helper
     const handleSearch = (event) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -91,7 +85,7 @@ const Pods = () => {
             const response = await fetch("/api/pods");
             if (response.ok) {
                 const data = await response.json();
-                setPods(data);
+            await fetchPods();
             }
         } catch (error) {
             console.error("Error fetching pods:", error);
@@ -119,7 +113,7 @@ const Pods = () => {
             }
 
             alert("Pod created successfully!");
-            await fetchData(); // Now fetchData is defined in the same scope
+            await fetchData();
         } catch (err) {
             alert("Network error: " + err.message);
         }
@@ -147,7 +141,10 @@ const Pods = () => {
                 .join("\n");
 
             setSelectedPodName(pod.metadata.name);
+            setSelectedPodNamespace(pod.metadata.namespace);
             setSelectedPodYaml(formattedYaml);
+            setSelectedPodLogs("");
+            setLogsLoaded(false);
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch pod YAML:", err);
@@ -157,8 +154,30 @@ const Pods = () => {
         }
     }, []);
 
+    const handleLoadLogs = useCallback(async () => {
+        if (logsLoaded || isLoadingLogs) return;
+
+        try {
+            setIsLoadingLogs(true);
+            const response = await axios.get(
+                `/api/pod/${selectedPodNamespace}/${selectedPodName}/logs`,
+                { responseType: "text" },
+            );
+            setSelectedPodLogs(response.data);
+            setLogsLoaded(true);
+        } catch (err) {
+            console.error("Failed to fetch pod logs:", err);
+            setError("Failed to fetch pod logs: " + err.message);
+            setSelectedPodLogs("Error loading logs: " + err.message);
+        } finally {
+            setIsLoadingLogs(false);
+        }
+    }, [isLoadingLogs, logsLoaded, selectedPodNamespace, selectedPodName]);
+
     const handleCloseDialog = useCallback(() => {
         setOpenDialog(false);
+        setSelectedPodLogs("");
+        setLogsLoaded(false);
     }, []);
 
     const handleFilterChange = useCallback((filterType, value) => {
@@ -193,7 +212,7 @@ const Pods = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
                     createlabel="Create Pod"
@@ -221,6 +240,9 @@ const Pods = () => {
                 open={openDialog}
                 podName={selectedPodName}
                 podYaml={selectedPodYaml}
+                podLogs={selectedPodLogs}
+                isLoadingLogs={isLoadingLogs}
+                onLoadLogs={handleLoadLogs}
                 onClose={handleCloseDialog}
             />
         </Box>

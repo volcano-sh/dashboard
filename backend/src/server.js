@@ -559,6 +559,32 @@ app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
     }
 });
 
+// Get pod logs
+app.get("/api/pod/:namespace/:name/logs", async (req, res) => {
+    try {
+        const { namespace, name } = req.params;
+        const tailLines = req.query.tailLines || 100;
+
+        // Do not enable streaming (`follow`) for this synchronous HTTP endpoint.
+        // If streaming is required, implement a dedicated streaming endpoint.
+        const response = await k8sCoreApi.readNamespacedPodLog({
+            name,
+            namespace,
+            tailLines: parseInt(tailLines, 10),
+            follow: false,
+        });
+
+        res.setHeader("Content-Type", "text/plain");
+        res.send(response);
+    } catch (error) {
+        console.error("Error fetching pod logs:", error);
+        res.status(500).json({
+            error: "Failed to fetch pod logs",
+            details: error?.body?.message || error.message,
+        });
+    }
+});
+
 // Get all Jobs (no pagination)
 app.get("/api/all-jobs", async (req, res) => {
     try {
