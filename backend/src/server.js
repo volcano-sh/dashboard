@@ -642,19 +642,18 @@ app.patch("/api/jobs/:namespace/:name", async (req, res) => {
         res.status(500).json({ error: "Failed to update job" });
     }
 });
-app.patch("/api/queues/:namespace/:name", async (req, res) => {
+app.patch("/api/queues/:name", async (req, res) => {
     try {
-        const { namespace, name } = req.params;
+        const { name } = req.params;
         const patchData = req.body;
 
         const options = {
             headers: { "Content-Type": "application/merge-patch+json" },
         };
 
-        const response = await k8sApi.patchNamespacedCustomObject({
+        const response = await k8sApi.patchClusterCustomObject({
             group: "scheduling.volcano.sh",
-            version: "v1alpha1",
-            namespace,
+            version: "v1beta1",
             plural: "queues",
             name,
             body: patchData,
