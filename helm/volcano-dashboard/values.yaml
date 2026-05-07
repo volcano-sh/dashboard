@@ -32,8 +32,18 @@ config:
         access:
             mode: read-only
         auth:
-            enabled: false
+            enabled: true
             mode: local
+            jwt:
+                issuer: volcano-dashboard
+                secret: volcano-dashboard-dev-secret
+                expiresIn: 8h
+                rememberExpiresIn: 30d
+            users:
+                - username: admin
+                  display_name: Administrator
+                  password_hash: "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO."
+                  access_mode: read-write
 
 externalSecret:
     enabled: false
