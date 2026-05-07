@@ -18,6 +18,8 @@ const PodsTable = ({
     onSortDirectionToggle,
     onFilterChange,
     onPodClick,
+    onOpenEditDialog,
+    onOpenDeleteDialog,
 }) => {
     const theme = useTheme();
     const [anchorEl, setAnchorEl] = React.useState({
@@ -126,6 +128,8 @@ const PodsTable = ({
                             pod={pod}
                             getStatusColor={getStatusColor}
                             onPodClick={onPodClick}
+                            onOpenEditDialog={onOpenEditDialog}
+                            onOpenDeleteDialog={onOpenDeleteDialog}
                         />
                     ))}
                 </TableBody>

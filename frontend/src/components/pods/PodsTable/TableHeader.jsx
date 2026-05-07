@@ -30,7 +30,7 @@ const TableHeader = ({
     return (
         <TableHead>
             <TableRow>
-                {["Name", "Namespace", "Creation Time", "Status", "Age"].map(
+                {["Name", "Namespace", "Creation Time", "Status", "Age", "Actions"].map(
                     (header) => (
                         <TableCell
                             key={header}
