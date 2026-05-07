@@ -62,17 +62,7 @@ const Pods = () => {
         }
     }, [searchText, filters]);
 
-    useEffect(() => {
-        fetchPods();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPods]);
-
-    useEffect(() => {
-        const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
-        const endIndex = startIndex + pagination.rowsPerPage;
-        setPods(cachedPods.slice(startIndex, endIndex));
-    }, [cachedPods, pagination]);
-
+    // Removed redundant fetchData helper
     const handleSearch = (event) => {
         setSearchText(event.target.value);
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -95,7 +85,7 @@ const Pods = () => {
             const response = await fetch("/api/pods");
             if (response.ok) {
                 const data = await response.json();
-                setPods(data);
+            await fetchPods();
             }
         } catch (error) {
             console.error("Error fetching pods:", error);
