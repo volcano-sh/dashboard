@@ -53,6 +53,48 @@ externalSecret:
     secretStoreRef:
         name: ""
         kind: ClusterSecretStore
+    # Optional remote references used by the ExternalSecret template.
+    # Example local-sso config where only auth.sso.client_secret comes from
+    # External Secrets:
+    # config:
+    #   data:
+    #     auth:
+    #       enabled: true
+    #       mode: local-sso
+    #       jwt:
+    #         issuer: volcano-dashboard
+    #         secret: volcano-dashboard-dev-secret
+    #         expiresIn: 8h
+    #         rememberExpiresIn: 30d
+    #       users:
+    #         - username: admin
+    #           display_name: Administrator
+    #           password_hash: "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO."
+    #           access_mode: read-write
+    #       sso:
+    #         provider_name: Keycloak
+    #         issuer_url: http://localhost:8080/realms/adak8s
+    #         client_id: squidflow-backend
+    #         client_secret: "{{ .ssoClientSecret }}"
+    #         redirect_uri: http://localhost:3000/sso/callback
+    #         scopes: [ "openid", "profile", "email", "groups" ]
+    #         jwks_cache_ttl: 10m
+    #         group_mappings:
+    #           - match: adak8s-admins
+    #             access_mode: read-write
+    #           - match: adak8s-viewers
+    #             access_mode: read-only
+    # externalSecret:
+    #   enabled: true
+    #   secretStoreRef:
+    #     name: volcano-dashboard-secrets
+    #     kind: ClusterSecretStore
+    #   data:
+    #     - secretKey: ssoClientSecret
+    #       remoteRef:
+    #         key: volcano-dashboard/keycloak
+    #         property: client_secret
+    data: []
     targetSecretName: ""
 
 podAnnotations: {}

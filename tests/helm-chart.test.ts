@@ -34,6 +34,18 @@ const dashboardConfig = (resources) => {
     return yaml.load(secret.stringData["dashboard.yaml"]) as any;
 };
 
+const externalSecretConfig = (resources) => {
+    const externalSecret = findResource(
+        resources,
+        "ExternalSecret",
+        "volcano-dashboard-config",
+    );
+    expect(externalSecret).toBeTruthy();
+    return yaml.load(
+        externalSecret.spec.target.template.data["dashboard.yaml"],
+    ) as any;
+};
+
 describe("volcano-dashboard Helm chart", () => {
     it("renders default local auth deployment config as read-only", () => {
         const resources = renderChart();
@@ -167,6 +179,85 @@ describe("volcano-dashboard Helm chart", () => {
         });
     });
 
+    it("renders ExternalSecret with only client_secret from a remote reference", () => {
+        const resources = renderChart([
+            "--set",
+            "externalSecret.enabled=true",
+            "--set",
+            "externalSecret.secretStoreRef.name=volcano-dashboard-secrets",
+            "--set",
+            "externalSecret.secretStoreRef.kind=ClusterSecretStore",
+            "--set",
+            "externalSecret.data[0].secretKey=ssoClientSecret",
+            "--set",
+            "externalSecret.data[0].remoteRef.key=volcano-dashboard/keycloak",
+            "--set",
+            "externalSecret.data[0].remoteRef.property=client_secret",
+            "--set",
+            "config.data.auth.enabled=true",
+            "--set",
+            "config.data.auth.mode=local-sso",
+            "--set",
+            "config.data.auth.jwt.secret=test-secret",
+            "--set",
+            "config.data.auth.users[0].username=admin",
+            "--set-string",
+            "config.data.auth.users[0].password_hash=$2b$12$example",
+            "--set",
+            "config.data.auth.users[0].access_mode=read-write",
+            "--set",
+            "config.data.auth.sso.provider_name=Keycloak",
+            "--set",
+            "config.data.auth.sso.issuer_url=http://localhost:8080/realms/adak8s",
+            "--set",
+            "config.data.auth.sso.client_id=squidflow-backend",
+            "--set-string",
+            "config.data.auth.sso.client_secret=\\{\\{ .ssoClientSecret \\}\\}",
+            "--set",
+            "config.data.auth.sso.redirect_uri=http://localhost:3000/sso/callback",
+            "--set",
+            "config.data.auth.sso.scopes[0]=openid",
+            "--set",
+            "config.data.auth.sso.scopes[1]=profile",
+            "--set",
+            "config.data.auth.sso.scopes[2]=email",
+            "--set",
+            "config.data.auth.sso.scopes[3]=groups",
+            "--set",
+            "config.data.auth.sso.group_mappings[0].match=adak8s-admins",
+            "--set",
+            "config.data.auth.sso.group_mappings[0].access_mode=read-write",
+        ]);
+        const externalSecret = findResource(
+            resources,
+            "ExternalSecret",
+            "volcano-dashboard-config",
+        );
+
+        expect(findResource(resources, "Secret", "volcano-dashboard-config"))
+            .toBeUndefined();
+        expect(externalSecret.spec.data).toEqual([
+            {
+                remoteRef: {
+                    key: "volcano-dashboard/keycloak",
+                    property: "client_secret",
+                },
+                secretKey: "ssoClientSecret",
+            },
+        ]);
+        expect(externalSecretConfig(resources)).toMatchObject({
+            auth: {
+                enabled: true,
+                mode: "local-sso",
+                sso: {
+                    client_id: "squidflow-backend",
+                    client_secret: "{{ .ssoClientSecret }}",
+                    issuer_url: "http://localhost:8080/realms/adak8s",
+                },
+            },
+        });
+    });
+
     it("does not render SELinux options in pod or container security contexts", () => {
         const resources = renderChart();
         const deployment = findResource(
@@ -184,5 +275,19 @@ describe("volcano-dashboard Helm chart", () => {
         expect(podSecurityContext).not.toHaveProperty("seLinux");
         expect(containerSecurityContext).not.toHaveProperty("seLinuxOptions");
         expect(containerSecurityContext).not.toHaveProperty("seLinux");
+    });
+
+    it("does not grant namespace resource permissions", () => {
+        const resources = renderChart();
+        const role = findResource(
+            resources,
+            "ClusterRole",
+            "volcano-dashboard",
+        );
+        const resourcesInRules = role.rules.flatMap(
+            (rule) => rule.resources || [],
+        );
+
+        expect(resourcesInRules).not.toContain("namespaces");
     });
 });
