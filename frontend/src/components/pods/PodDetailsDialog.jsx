@@ -1,4 +1,3 @@
-// File: components/PodDetailsDialog.jsx
 import React from "react";
 import {
     Box,
@@ -8,8 +7,11 @@ import {
     DialogContent,
     DialogTitle,
 } from "@mui/material";
+import { useTranslation } from "../../i18n/I18nProvider";
 
 const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
+    const { t } = useTranslation();
+
     return (
         <Dialog
             open={open}
@@ -26,7 +28,7 @@ const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
                 },
             }}
         >
-            <DialogTitle>Pod YAML - {podName}</DialogTitle>
+            <DialogTitle>{t("pods.yamlTitle", { name: podName })}</DialogTitle>
             <DialogContent>
                 <Box
                     sx={{
@@ -75,7 +77,7 @@ const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
                             },
                         }}
                     >
-                        Close
+                        {t("common.close")}
                     </Button>
                 </Box>
             </DialogActions>

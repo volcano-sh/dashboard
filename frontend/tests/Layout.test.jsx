@@ -1,6 +1,7 @@
 import Layout from "../src/components/Layout";
 import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { I18nProvider } from "../src/i18n/I18nProvider";
 
 const menuItems = [
     { text: "Dashboard", path: "/dashboard" },
@@ -11,23 +12,24 @@ const menuItems = [
 ];
 
 describe("Layout", () => {
-    it("should render the layout", () => {
+    const renderLayout = () =>
         render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
+            <I18nProvider>
+                <MemoryRouter>
+                    <Layout />
+                </MemoryRouter>
+            </I18nProvider>,
         );
+
+    it("should render the layout", () => {
+        renderLayout();
 
         const heading = screen.getByText(/volcano dashboard/i);
         expect(heading).toBeInTheDocument();
     });
 
     it("should toggle the drawer when clicking the menu button", () => {
-        render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
-        );
+        renderLayout();
 
         const menuButton = screen.getByRole("button", {
             name: /toggle drawer/i,
@@ -45,11 +47,7 @@ describe("Layout", () => {
     });
 
     it("should have 5 navigation items", () => {
-        render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
-        );
+        renderLayout();
 
         const navigationItems = screen.getAllByRole("link");
 
@@ -64,11 +62,7 @@ describe("Layout", () => {
     });
 
     it("should render logo", () => {
-        render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
-        );
+        renderLayout();
 
         const logo = screen.getByAltText(/volcano logo/i);
 
@@ -78,5 +72,15 @@ describe("Layout", () => {
             "src",
             "/src/assets/volcano-icon-color.svg",
         );
+    });
+
+    it("should switch navigation labels to Chinese", () => {
+        renderLayout();
+
+        fireEvent.click(screen.getByRole("button", { name: /中文/i }));
+
+        expect(screen.getByText("概览")).toBeInTheDocument();
+        expect(screen.getByText("作业")).toBeInTheDocument();
+        expect(screen.getByText("队列")).toBeInTheDocument();
     });
 });

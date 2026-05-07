@@ -12,6 +12,8 @@ import {
     Toolbar,
     Typography,
     Tooltip,
+    ToggleButton,
+    ToggleButtonGroup,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -22,11 +24,12 @@ import CategoryIcon from "@mui/icons-material/Category";
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
+import { useTranslation } from "../i18n/I18nProvider";
 
 const Layout = () => {
-    // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
+    const { language, setLanguage, t } = useTranslation();
 
     // constants can be kept outside the component
     const volcanoOrange = "#E34C26"; // orange red theme
@@ -38,11 +41,11 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        { key: "dashboard", icon: <HomeIcon />, path: "/dashboard" },
+        { key: "jobs", icon: <AssignmentIcon />, path: "/jobs" },
+        { key: "queues", icon: <CloudIcon />, path: "/queues" },
+        { key: "pods", icon: <WorkspacesIcon />, path: "/pods" },
+        { key: "podgroups", icon: <CategoryIcon />, path: "/podgroups" },
     ];
 
     return (
@@ -57,7 +60,7 @@ const Layout = () => {
                 <Toolbar>
                     <IconButton
                         color="inherit"
-                        aria-label="toggle drawer"
+                        aria-label={t("nav.toggleDrawer")}
                         onClick={handleDrawerToggle}
                         edge="start"
                         sx={{ mr: 2, color: "white" }}
@@ -73,8 +76,45 @@ const Layout = () => {
                             fontWeight: 500,
                         }}
                     >
-                        Volcano Dashboard
+                        {t("app.name")}
                     </Typography>
+                    <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
+                        <Typography
+                            variant="body2"
+                            sx={{ color: "#ffffff", alignSelf: "center" }}
+                        >
+                            {t("language.switcher")}
+                        </Typography>
+                        <ToggleButtonGroup
+                            size="small"
+                            value={language}
+                            exclusive
+                            onChange={(_, nextLanguage) => {
+                                if (nextLanguage) {
+                                    setLanguage(nextLanguage);
+                                }
+                            }}
+                            sx={{
+                                "& .MuiToggleButton-root": {
+                                    color: "#ffffff",
+                                    borderColor: "rgba(255,255,255,0.25)",
+                                    textTransform: "none",
+                                    px: 1.5,
+                                },
+                                "& .Mui-selected": {
+                                    bgcolor: "#E34C26 !important",
+                                    color: "#ffffff !important",
+                                },
+                            }}
+                        >
+                            <ToggleButton value="en">
+                                {t("language.english")}
+                            </ToggleButton>
+                            <ToggleButton value="zh">
+                                {t("language.chinese")}
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+                    </Box>
                 </Toolbar>
             </AppBar>
 
@@ -99,9 +139,10 @@ const Layout = () => {
                 <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
                     <List>
                         {menuItems.map((item) => {
+                            const label = t(`nav.${item.key}`);
                             const listItem = (
                                 <ListItem
-                                    key={item.text}
+                                    key={item.key}
                                     component={Link}
                                     to={item.path}
                                     className={
@@ -127,21 +168,19 @@ const Layout = () => {
                                     }}
                                 >
                                     <ListItemIcon>{item.icon}</ListItemIcon>
-                                    {open && (
-                                        <ListItemText primary={item.text} />
-                                    )}
+                                    {open && <ListItemText primary={label} />}
                                 </ListItem>
                             );
                             return !open ? (
                                 <Tooltip
-                                    key={item.text}
-                                    title={item.text}
+                                    key={item.key}
+                                    title={label}
                                     placement="right"
                                 >
                                     {listItem}
                                 </Tooltip>
                             ) : (
-                                <React.Fragment key={item.text}>
+                                <React.Fragment key={item.key}>
                                     {listItem}
                                 </React.Fragment>
                             );
@@ -163,7 +202,7 @@ const Layout = () => {
                 >
                     <img
                         src={volcanoLogo}
-                        alt="Volcano Logo"
+                        alt={`${t("app.name")} Logo`}
                         style={{
                             maxWidth: open ? "150px" : "60px",
                             height: "auto",

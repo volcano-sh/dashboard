@@ -12,6 +12,7 @@ import {
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const QueueTable = ({
     sortedQueues,
@@ -28,6 +29,7 @@ const QueueTable = ({
     onQueueUpdate,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
     const [queues, setQueues] = useState([]);
 
@@ -100,7 +102,10 @@ const QueueTable = ({
                     }
                 }
 
-                const fullMessage = `Cannot delete "${queueToDelete}". Error message: ${customMessage}`;
+                const fullMessage = t("queues.deleteError", {
+                    name: queueToDelete,
+                    message: customMessage,
+                });
                 const error = new Error(fullMessage);
                 error.type = errorType;
                 error.status = response.status;
@@ -114,7 +119,7 @@ const QueueTable = ({
             handleCloseDeleteDialog();
         } catch (error) {
             console.error("Error deleting queue:", error);
-            setDeleteError(error.message || "An unexpected error occurred.");
+            setDeleteError(error.message || t("common.error"));
         } finally {
             setIsDeleting(false);
         }
@@ -174,7 +179,7 @@ const QueueTable = ({
                                     colSpan={allocatedFields.length + 2}
                                     align="center"
                                 >
-                                    No queues found.
+                                    {t("queues.noQueuesFound")}
                                 </TableCell>
                             </TableRow>
                         ) : (

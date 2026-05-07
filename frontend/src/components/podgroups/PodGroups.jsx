@@ -5,11 +5,13 @@ import { escape } from "lodash";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
 import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
-import JobPagination from "../jobs/JobPagination"; // Reuse pagination
+import JobPagination from "../jobs/JobPagination";
 import SearchBar from "../Searchbar";
-import PodGroupDialog from "./PodGroupDialog"; // Need to create this
+import PodGroupDialog from "./PodGroupDialog";
+import { useTranslation } from "../../i18n/I18nProvider";
 
 const PodGroups = () => {
+    const { t } = useTranslation();
     const [podGroups, setPodGroups] = useState([]);
     const [cachedPodGroups, setCachedPodGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ const PodGroups = () => {
             setCachedPodGroups(data.items || []);
             setTotalItems(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch podgroups: " + err.message);
+            setError(t("podgroups.fetchError", { message: err.message }));
             setCachedPodGroups([]);
         } finally {
             setLoading(false);
@@ -111,7 +113,7 @@ const PodGroups = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch YAML:", err);
-            setError("Failed to fetch YAML: " + err.message);
+            setError(t("podgroups.fetchYamlError", { message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -165,9 +167,8 @@ const PodGroups = () => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     }, []);
 
-    // For now, no creation dialog
     const handleCreate = () => {
-        alert("Create PodGroup not implemented yet");
+        alert(t("podgroups.createNotImplemented"));
     };
 
     return (
@@ -177,7 +178,7 @@ const PodGroups = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano PodGroups" />
+            <TitleComponent text="podgroups.title" />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -186,11 +187,11 @@ const PodGroups = () => {
                     handleRefresh={fetchPodGroups}
                     fetchData={fetchPodGroups}
                     isRefreshing={loading}
-                    placeholder="Search PodGroups..."
-                    refreshLabel="Refresh Listings"
-                    createlabel="Create PodGroup"
-                    dialogTitle="Create PodGroup"
-                    dialogResourceNameLabel="Name"
+                    placeholder={t("podgroups.searchPlaceholder")}
+                    refreshLabel={t("podgroups.refreshLabel")}
+                    createlabel={t("podgroups.createLabel")}
+                    dialogTitle={t("podgroups.createTitle")}
+                    dialogResourceNameLabel={t("podgroups.resourceNameLabel")}
                     dialogResourceType="PodGroup"
                     onCreateClick={handleCreate}
                 />
@@ -209,7 +210,7 @@ const PodGroups = () => {
             />
             <JobPagination
                 pagination={pagination}
-                totalJobs={totalItems} // Prop name in JobPagination is totalJobs
+                totalJobs={totalItems}
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />

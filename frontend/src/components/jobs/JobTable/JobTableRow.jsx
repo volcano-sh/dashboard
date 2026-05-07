@@ -10,14 +10,16 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
 import JobEditDialog from "./JobEditDialog";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const JobTableRow = ({
     job,
     handleJobClick,
     handleOpenDeleteDialog,
-    onJobUpdate, // Function to update job after edit
+    onJobUpdate,
 }) => {
     const theme = useTheme();
+    const { locale, tStatus } = useTranslation();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const handleOpenEditDialog = (e) => {
@@ -87,7 +89,7 @@ const JobTableRow = ({
                         fontSize: "0.95rem",
                     }}
                 >
-                    {job.spec.queue || "N/A"}
+                    {job.spec.queue || tStatus("unknown")}
                 </TableCell>
 
                 <TableCell
@@ -97,7 +99,9 @@ const JobTableRow = ({
                         color: alpha(theme.palette.text.primary, 0.85),
                     }}
                 >
-                    {new Date(job.metadata.creationTimestamp).toLocaleString()}
+                    {new Date(job.metadata.creationTimestamp).toLocaleString(
+                        locale,
+                    )}
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>
@@ -169,7 +173,6 @@ const JobTableRow = ({
                 </TableCell>
             </TableRow>
 
-            {/* Edit Dialog */}
             <JobEditDialog
                 open={isEditDialogOpen}
                 job={job}

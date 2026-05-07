@@ -1,6 +1,9 @@
 import { Typography } from "@mui/material";
+import { useTranslation } from "../i18n/I18nProvider";
 
 const TitleComponent = ({ text }) => {
+    const { t, language } = useTranslation();
+
     return (
         <Typography
             variant="h4"
@@ -9,7 +12,7 @@ const TitleComponent = ({ text }) => {
             sx={{
                 color: "#dc3545",
                 letterSpacing: "1px",
-                textTransform: "uppercase",
+                textTransform: language === "zh" ? "none" : "uppercase",
                 maxWidth: "80%",
                 position: "relative",
                 "&::after": {
@@ -22,7 +25,7 @@ const TitleComponent = ({ text }) => {
                 },
             }}
         >
-            {text}
+            {t(text)}
         </Typography>
     );
 };

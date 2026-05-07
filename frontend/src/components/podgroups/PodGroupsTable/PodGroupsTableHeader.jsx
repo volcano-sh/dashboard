@@ -9,13 +9,9 @@ import {
     useTheme,
     alpha,
 } from "@mui/material";
-import {
-    ArrowDownward,
-    ArrowUpward,
-    UnfoldMore,
-    FilterList,
-} from "@mui/icons-material";
+import { ArrowDownward, ArrowUpward, UnfoldMore } from "@mui/icons-material";
 import JobFilters from "../../jobs/JobTable/JobFilters";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const PodGroupsTableHeader = ({
     filters,
@@ -28,24 +24,7 @@ const PodGroupsTableHeader = ({
     toggleSortDirection,
 }) => {
     const theme = useTheme();
-
-    const getFilterButtonStyle = (isActive) => ({
-        textTransform: "none",
-        padding: "4px 12px",
-        minWidth: "auto",
-        borderRadius: "20px",
-        fontSize: "0.8rem",
-        fontWeight: 500,
-        letterSpacing: "0.02em",
-        backgroundColor: isActive
-            ? alpha(theme.palette.primary.main, 0.2)
-            : alpha(theme.palette.primary.main, 0.1),
-        color: theme.palette.primary.main,
-        "&:hover": {
-            backgroundColor: alpha(theme.palette.primary.main, 0.15),
-            transform: "translateY(-2px)",
-        },
-    });
+    const { t } = useTranslation();
 
     return (
         <TableHead>
@@ -67,7 +46,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Name
+                        {t("common.name")}
                     </Typography>
                 </TableCell>
 
@@ -94,18 +73,8 @@ const PodGroupsTableHeader = ({
                             fontWeight="700"
                             color="text.primary"
                         >
-                            Namespace
+                            {t("common.namespace")}
                         </Typography>
-                        <Button
-                            size="small"
-                            startIcon={<FilterList fontSize="small" />}
-                            onClick={(e) => handleFilterClick("namespace", e)}
-                            sx={getFilterButtonStyle(
-                                filters.namespace !== "All",
-                            )}
-                        >
-                            {filters.namespace}
-                        </Button>
                         <JobFilters
                             filterType="namespace"
                             currentValue={filters.namespace}
@@ -133,7 +102,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Queue
+                        {t("common.queue")}
                     </Typography>
                 </TableCell>
 
@@ -153,7 +122,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Min Member
+                        {t("common.minMember")}
                     </Typography>
                 </TableCell>
 
@@ -174,7 +143,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Creation Time
+                        {t("common.creationTime")}
                     </Typography>
                     <Button
                         size="small"
@@ -211,7 +180,7 @@ const PodGroupsTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {t("common.sort")}
                     </Button>
                 </TableCell>
 
@@ -239,16 +208,8 @@ const PodGroupsTableHeader = ({
                             fontWeight="700"
                             color="text.primary"
                         >
-                            Status
+                            {t("common.status")}
                         </Typography>
-                        <Button
-                            size="small"
-                            startIcon={<FilterList fontSize="small" />}
-                            onClick={(e) => handleFilterClick("status", e)}
-                            sx={getFilterButtonStyle(filters.status !== "All")}
-                        >
-                            {filters.status}
-                        </Button>
                         <JobFilters
                             filterType="status"
                             currentValue={filters.status}

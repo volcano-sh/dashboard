@@ -7,8 +7,10 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { useTranslation } from "../../i18n/I18nProvider";
 
 const Jobs = () => {
+    const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -59,7 +61,7 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            setError(t("jobs.fetchError", { message: err.message }));
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -115,7 +117,7 @@ const Jobs = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            setError(t("jobs.fetchYamlError", { message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -150,20 +152,20 @@ const Jobs = () => {
             });
 
             if (!response.ok) {
-                let errorMsg = "Unknown error";
+                let errorMsg = t("common.unknownError");
                 try {
                     const errData = await response.json();
                     errorMsg = errData.error || response.statusText;
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                alert(t("jobs.createError", { message: errorMsg }));
                 return;
             }
 
-            alert("Job created successfully!");
+            alert(t("jobs.createSuccess"));
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(t("jobs.createError", { message: err.message }));
         }
     };
 
@@ -213,7 +215,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text="jobs.title" />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -221,12 +223,12 @@ const Jobs = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
+                    isRefreshing={false}
+                    placeholder={t("jobs.searchPlaceholder")}
+                    refreshLabel={t("jobs.refreshLabel")}
+                    createlabel={t("jobs.createLabel")}
+                    dialogTitle={t("jobs.createTitle")}
+                    dialogResourceNameLabel={t("jobs.resourceNameLabel")}
                     dialogResourceType="Job"
                     onCreateClick={handleCreateJob}
                 />
