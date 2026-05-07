@@ -142,6 +142,15 @@ const updateNestedValue = (obj, path, value) => {
     return newObj;
 };
 
+const isFutureDate = (value) => {
+    if (!value) return false;
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return false;
+
+    return parsed.getTime() > Date.now();
+};
+
 const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
@@ -159,8 +168,15 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             setEditorValue(dumpedYaml);
             setFormState(queue);
             setEditMode("yaml");
+            setSaving(false);
         }
     }, [open, queue]);
+
+    useEffect(() => {
+        if (!open) {
+            setSaving(false);
+        }
+    }, [open]);
 
     // Sync YAML editor -> formState (parse YAML)
     useEffect(() => {
@@ -214,6 +230,12 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                 throw new Error("Queue spec is empty or missing");
             }
 
+            if (isFutureDate(updated?.metadata?.creationTimestamp)) {
+                throw new Error(
+                    "Queue creation time cannot be set in the future.",
+                );
+            }
+
             setSaving(true);
 
             const resp = await fetch(`/api/queues/${updated.metadata.name}`, {
@@ -252,6 +274,8 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
         } catch (err) {
             console.error("Save failed:", err);
             alert(err.message || "Failed to save");
+        } finally {
+            setSaving(false);
         }
     };
 
