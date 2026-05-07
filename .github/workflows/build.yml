@@ -2,7 +2,21 @@ name: Build and Deploy
 
 on:
   push:
-    branches: '*'
+    branches: ['*']
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'deployment/**'
+      - '.github/workflows/build.yml'
+      - 'package*.json'
+  pull_request:
+    branches: ['*']
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'deployment/**'
+      - '.github/workflows/build.yml'
+      - 'package*.json'
 
 jobs:
   frontend-build:
