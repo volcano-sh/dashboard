@@ -559,6 +559,111 @@ app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
     }
 });
 
+app.delete("/api/pod/:namespace/:name", async (req, res) => {
+    const { namespace, name } = req.params;
+
+    try {
+        const response = await k8sCoreApi.deleteNamespacedPod({
+            name,
+            namespace,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return res.json({
+            message: "Pod deleted successfully",
+            data: response.body,
+        });
+    } catch (err) {
+        const statusCode = err?.statusCode || err?.response?.statusCode || 500;
+        let message = "An unexpected error occurred.";
+
+        try {
+            const rawBody = err?.body || err?.response?.body;
+            const parsedBody =
+                typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
+
+            if (parsedBody?.message) {
+                message = parsedBody.message;
+            }
+        } catch {
+            message = err?.message || message;
+        }
+
+        console.error("Error deleting pod:", err);
+
+        return res.status(statusCode).json({
+            error: "Failed to delete pod",
+            message,
+            code: statusCode,
+        });
+    }
+});
+
+app.patch("/api/pod/:namespace/:name", async (req, res) => {
+    const { namespace, name } = req.params;
+
+    try {
+        const patchData = req.body || {};
+        const sanitizedPatch = {
+            ...patchData,
+            metadata: {
+                ...(patchData.metadata || {}),
+                name,
+                namespace,
+            },
+        };
+
+        delete sanitizedPatch.status;
+
+        const response = await k8sCoreApi.patchNamespacedPod({
+            name,
+            namespace,
+            body: sanitizedPatch,
+            options: {
+                headers: { "Content-Type": "application/merge-patch+json" },
+            },
+        });
+
+        return res.json({
+            message: "Pod updated successfully",
+            data: response.body,
+        });
+    } catch (err) {
+        const statusCode = err?.statusCode || err?.response?.statusCode || 500;
+        let message = "An unexpected error occurred.";
+        let details = null;
+        let reason = null;
+
+        try {
+            const rawBody = err?.body || err?.response?.body;
+            const parsedBody =
+                typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
+
+            if (parsedBody?.message) {
+                message = parsedBody.message;
+            }
+            if (parsedBody?.details) {
+                details = parsedBody.details;
+            }
+            if (parsedBody?.reason) {
+                reason = parsedBody.reason;
+            }
+        } catch {
+            message = err?.message || message;
+        }
+
+        console.error("Error updating pod:", err);
+
+        return res.status(statusCode).json({
+            error: "Failed to update pod",
+            message,
+            details,
+            reason,
+            code: statusCode,
+        });
+    }
+});
+
 // Get all Jobs (no pagination)
 app.get("/api/all-jobs", async (req, res) => {
     try {

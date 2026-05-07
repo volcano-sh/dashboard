@@ -1,14 +1,33 @@
 import React from "react";
-import { TableRow, TableCell, Chip, useTheme, alpha } from "@mui/material";
+import {
+    Box,
+    Chip,
+    IconButton,
+    TableCell,
+    TableRow,
+    useTheme,
+    alpha,
+} from "@mui/material";
+import { Delete, Edit } from "@mui/icons-material";
 import { calculateAge } from "../../utils";
 
-const PodRow = ({ pod, getStatusColor, onPodClick }) => {
+const PodRow = ({
+    pod,
+    getStatusColor,
+    onPodClick,
+    onOpenEditDialog,
+    onOpenDeleteDialog,
+}) => {
     const theme = useTheme();
 
     return (
         <TableRow
             hover
-            onClick={() => onPodClick(pod)}
+            onClick={(event) => {
+                if (!event.target.closest("button")) {
+                    onPodClick(pod);
+                }
+            }}
             sx={{
                 height: "60px",
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -91,6 +110,47 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                 }}
             >
                 {calculateAge(pod.metadata.creationTimestamp)}
+            </TableCell>
+
+            <TableCell sx={{ padding: "16px 24px" }}>
+                <Box display="flex" alignItems="center" gap={2}>
+                    <IconButton
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onOpenEditDialog(pod);
+                        }}
+                        size="small"
+                        sx={{
+                            color: theme.palette.primary.main,
+                            "&:hover": {
+                                backgroundColor: alpha(
+                                    theme.palette.primary.main,
+                                    0.1,
+                                ),
+                            },
+                        }}
+                    >
+                        <Edit fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onOpenDeleteDialog(pod);
+                        }}
+                        size="small"
+                        sx={{
+                            color: theme.palette.error.main,
+                            "&:hover": {
+                                backgroundColor: alpha(
+                                    theme.palette.error.main,
+                                    0.1,
+                                ),
+                            },
+                        }}
+                    >
+                        <Delete fontSize="small" />
+                    </IconButton>
+                </Box>
             </TableCell>
         </TableRow>
     );

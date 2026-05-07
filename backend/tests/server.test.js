@@ -1,7 +1,7 @@
 import sinon from "sinon";
 import request from "supertest";
 import { app } from "../src/server.js";
-import { CustomObjectsApi } from "@kubernetes/client-node";
+import { CoreV1Api, CustomObjectsApi } from "@kubernetes/client-node";
 
 describe("backend", () => {
     let sandbox;
@@ -77,5 +77,34 @@ describe("backend", () => {
         expect(res.status).toBe(200);
         expect(res.body.items).toHaveLength(2);
         expect(res.body.items[0].metadata.name).toBe("pg1");
+    });
+
+    it("should delete a pod", async () => {
+        sandbox.stub(CoreV1Api.prototype, "deleteNamespacedPod").resolves({
+            body: { status: "Success" },
+        });
+
+        const res = await request(app).delete("/api/pod/default/pod-1");
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe("Pod deleted successfully");
+    });
+
+    it("should update a pod", async () => {
+        sandbox.stub(CoreV1Api.prototype, "patchNamespacedPod").resolves({
+            body: {
+                metadata: { name: "pod-1", namespace: "default" },
+            },
+        });
+
+        const res = await request(app)
+            .patch("/api/pod/default/pod-1")
+            .send({
+                metadata: { labels: { app: "updated" } },
+                spec: { containers: [] },
+            });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe("Pod updated successfully");
     });
 });
