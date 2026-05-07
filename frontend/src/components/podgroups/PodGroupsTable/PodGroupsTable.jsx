@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import PodGroupsTableHeader from "./PodGroupsTableHeader";
 import PodGroupsTableRow from "./PodGroupsTableRow";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const PodGroupsTable = ({
     podGroups,
@@ -25,6 +26,7 @@ const PodGroupsTable = ({
     toggleSortDirection,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
     return (
         <React.Fragment>
@@ -76,7 +78,7 @@ const PodGroupsTable = ({
                         {podGroups.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} align="center">
-                                    No podgroups found.
+                                    {t("podgroups.noPodGroupsFound")}
                                 </TableCell>
                             </TableRow>
                         ) : (

@@ -7,8 +7,10 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { useTranslation } from "../../i18n/I18nProvider";
 
 const Queues = () => {
+    const { t } = useTranslation();
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -25,7 +27,6 @@ const Queues = () => {
         direction: "asc",
     });
 
-    // 🟢 1. Fetch all queues
     const fetchQueues = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -47,7 +48,7 @@ const Queues = () => {
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            setError(t("queues.fetchError", { message: err.message }));
             setQueues([]);
         } finally {
             setLoading(false);
@@ -58,7 +59,6 @@ const Queues = () => {
         fetchQueues();
     }, [fetchQueues]);
 
-    // Create Queue handler for SearchBar
     const handleCreateQueue = async (newQueue) => {
         try {
             setLoading(true);
@@ -66,14 +66,16 @@ const Queues = () => {
 
             if (response.status !== 201) {
                 let errMsg = response.data?.error || response.statusText;
-                alert("Failed to create queue: " + errMsg);
+                alert(t("queues.createError", { message: errMsg }));
                 return;
             }
 
-            alert("Queue created successfully!");
+            alert(t("queues.createSuccess"));
         } catch (err) {
             alert(
-                "Network error: " + (err?.response?.data?.error || err.message),
+                t("queues.createError", {
+                    message: err?.response?.data?.error || err.message,
+                }),
             );
         } finally {
             setLoading(false);
@@ -122,7 +124,7 @@ const Queues = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            setError(t("queues.fetchYamlError", { message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -233,7 +235,7 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text="queues.title" />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,12 +244,12 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder={t("queues.searchPlaceholder")}
+                    refreshLabel={t("queues.refreshLabel")}
+                    createlabel={t("queues.createLabel")}
                     onCreateClick={handleCreateQueue}
-                    dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
+                    dialogTitle={t("queues.createTitle")}
+                    dialogResourceNameLabel={t("queues.resourceNameLabel")}
                     dialogResourceType="Queue"
                 />
             </Box>

@@ -1,8 +1,10 @@
 import React from "react";
 import { Chip, useTheme } from "@mui/material";
+import { useTranslation } from "../../i18n/I18nProvider";
 
 const JobStatusChip = ({ status }) => {
     const theme = useTheme();
+    const { tStatus } = useTranslation();
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -21,7 +23,7 @@ const JobStatusChip = ({ status }) => {
 
     return (
         <Chip
-            label={status || "Unknown"}
+            label={tStatus(status)}
             sx={{
                 bgcolor: getStatusColor(status),
                 color: "common.white",

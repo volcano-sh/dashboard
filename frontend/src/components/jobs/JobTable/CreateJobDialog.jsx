@@ -10,15 +10,12 @@ import {
 import { Button } from "react-bootstrap";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const primaryColor = "#E34C26";
 
-const CreateJobDialog = ({
-    open,
-    onClose,
-    onCreate,
-    title = "Create Job (YAML)",
-}) => {
+const CreateJobDialog = ({ open, onClose, onCreate, title }) => {
+    const { t } = useTranslation();
     const [yamlText, setYamlText] = useState("");
     const [error, setError] = useState("");
 
@@ -31,7 +28,7 @@ const CreateJobDialog = ({
         try {
             const parsed = yaml.load(yamlText);
             if (!parsed || typeof parsed !== "object") {
-                setError("YAML must describe an object.");
+                setError(t("jobs.yamlObjectError"));
                 return;
             }
             setError("");
@@ -39,7 +36,7 @@ const CreateJobDialog = ({
             setYamlText("");
             onClose();
         } catch (e) {
-            setError(e.message || "Invalid YAML format.");
+            setError(e.message || t("jobs.invalidYaml"));
         }
     };
 
@@ -71,12 +68,12 @@ const CreateJobDialog = ({
                     letterSpacing: "0.5px",
                 }}
             >
-                {title}
+                {title || `${t("jobs.createLabel")} (${t("common.yaml")})`}
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ mt: 2, mb: 1 }}>
                     <Typography sx={{ fontWeight: 500, color: "#333", mb: 1 }}>
-                        Paste or type your Job YAML specification below:
+                        {t("jobs.yamlInstructions")}
                     </Typography>
                     <Editor
                         height="320px"
@@ -120,7 +117,7 @@ const CreateJobDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Cancel
+                    {t("common.cancel")}
                 </Button>
                 <Button
                     onClick={handleSubmit}
@@ -136,7 +133,7 @@ const CreateJobDialog = ({
                     }}
                     disabled={!yamlText.trim()}
                 >
-                    Create
+                    {t("common.create")}
                 </Button>
             </DialogActions>
         </Dialog>

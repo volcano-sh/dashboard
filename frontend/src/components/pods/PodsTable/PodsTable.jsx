@@ -4,11 +4,14 @@ import {
     Table,
     TableBody,
     Paper,
+    TableCell,
+    TableRow,
     useTheme,
     alpha,
 } from "@mui/material";
 import TableHeader from "./TableHeader";
 import PodRow from "./PodRow";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const PodsTable = ({
     pods,
@@ -20,6 +23,7 @@ const PodsTable = ({
     onPodClick,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = React.useState({
         status: null,
         namespace: null,
@@ -120,14 +124,22 @@ const PodsTable = ({
                     sortDirection={sortDirection}
                 />
                 <TableBody>
-                    {sortedPods.map((pod) => (
-                        <PodRow
-                            key={`${pod.metadata.namespace}-${pod.metadata.name}`}
-                            pod={pod}
-                            getStatusColor={getStatusColor}
-                            onPodClick={onPodClick}
-                        />
-                    ))}
+                    {sortedPods.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={5} align="center">
+                                {t("common.noDataAvailable")}
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        sortedPods.map((pod) => (
+                            <PodRow
+                                key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                pod={pod}
+                                getStatusColor={getStatusColor}
+                                onPodClick={onPodClick}
+                            />
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>

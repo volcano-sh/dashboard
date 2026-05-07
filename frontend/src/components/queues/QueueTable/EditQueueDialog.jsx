@@ -16,8 +16,9 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
-const RenderFields = ({ data, onChange, path = [] }) =>
+const RenderFields = ({ data, onChange, path = [], t }) =>
     Object.entries(data || {}).map(([key, value]) => {
         if (key === "managedFields" || key.startsWith("f:")) return null;
 
@@ -29,7 +30,9 @@ const RenderFields = ({ data, onChange, path = [] }) =>
                     key={currentPath.join(".")}
                     sx={{ mb: 2, pl: 2, borderLeft: "2px solid #ccc" }}
                 >
-                    <Typography variant="subtitle2">{key} (Array)</Typography>
+                    <Typography variant="subtitle2">
+                        {key} ({t("common.array")})
+                    </Typography>
                     {value.map((item, index) => {
                         const itemPath = [...currentPath, index];
                         if (typeof item === "object" && item !== null) {
@@ -43,12 +46,13 @@ const RenderFields = ({ data, onChange, path = [] }) =>
                                     }}
                                 >
                                     <Typography variant="caption">
-                                        Item {index}
+                                        {t("common.item")} {index}
                                     </Typography>
                                     <RenderFields
                                         data={item}
                                         onChange={onChange}
                                         path={itemPath}
+                                        t={t}
                                     />
                                 </Box>
                             );
@@ -86,6 +90,7 @@ const RenderFields = ({ data, onChange, path = [] }) =>
                         data={value}
                         onChange={onChange}
                         path={currentPath}
+                        t={t}
                     />
                 </Box>
             );
@@ -143,6 +148,7 @@ const updateNestedValue = (obj, path, value) => {
 };
 
 const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
+    const { t } = useTranslation();
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
     const [formState, setFormState] = useState({});
@@ -207,11 +213,11 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                 editMode === "yaml" ? yaml.load(editorValue) : formState;
 
             if (!updated?.metadata?.name) {
-                throw new Error("Queue metadata.name is missing");
+                throw new Error(t("queues.saveMissingName"));
             }
 
             if (!updated.spec || Object.keys(updated.spec).length === 0) {
-                throw new Error("Queue spec is empty or missing");
+                throw new Error(t("queues.saveMissingSpec"));
             }
 
             setSaving(true);
@@ -225,7 +231,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             if (!resp.ok) {
                 const contentType = resp.headers.get("content-type");
                 const errText = contentType?.includes("application/json")
-                    ? (await resp.json()).details || "Unknown error"
+                    ? (await resp.json()).details || t("common.unknownError")
                     : await resp.text();
                 throw new Error(errText);
             }
@@ -251,7 +257,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Save failed:", err);
-            alert(err.message || "Failed to save");
+            alert(err.message || t("queues.saveFailed"));
         }
     };
 
@@ -264,14 +270,14 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     alignItems: "center",
                 }}
             >
-                Edit Queue
+                {t("queues.editTitle")}
                 <ToggleButtonGroup
                     value={editMode}
                     exclusive
                     onChange={handleModeChange}
                 >
-                    <ToggleButton value="yaml">YAML</ToggleButton>
-                    <ToggleButton value="form">Form</ToggleButton>
+                    <ToggleButton value="yaml">{t("common.yaml")}</ToggleButton>
+                    <ToggleButton value="form">{t("common.form")}</ToggleButton>
                 </ToggleButtonGroup>
             </DialogTitle>
 
@@ -292,6 +298,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                         <RenderFields
                             data={formState}
                             onChange={handleNestedChange}
+                            t={t}
                         />
                     </Box>
                 )}
@@ -304,7 +311,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     variant="contained"
                     disabled={saving}
                 >
-                    Cancel
+                    {t("common.cancel")}
                 </Button>
                 <Button
                     onClick={handleSave}
@@ -313,7 +320,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     disabled={saving}
                     startIcon={saving && <CircularProgress size={18} />}
                 >
-                    {saving ? "Updating…" : "Update"}
+                    {saving ? t("queues.updating") : t("common.update")}
                 </Button>
             </DialogActions>
         </Dialog>

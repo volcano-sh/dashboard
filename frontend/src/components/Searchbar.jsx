@@ -1,4 +1,3 @@
-// SearchBar.js
 import React, { useState } from "react";
 import {
     Container,
@@ -13,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faTimes, faRedo } from "@fortawesome/free-solid-svg-icons";
 import CreateDialog from "./CreateDialog";
 import CreateJobDialog from "./jobs/JobTable/CreateJobDialog";
+import { useTranslation } from "../i18n/I18nProvider";
 
 const SearchBar = ({
     searchText,
@@ -31,6 +31,7 @@ const SearchBar = ({
     createlabel,
 }) => {
     const [dialogOpen, setDialogOpen] = useState(false);
+    const { t } = useTranslation();
 
     const handleOpenDialog = () => setDialogOpen(true);
     const handleCloseDialog = () => setDialogOpen(false);
@@ -127,7 +128,7 @@ const SearchBar = ({
                                     />
                                     <span>
                                         {isRefreshing
-                                            ? "Refreshing..."
+                                            ? t("common.refreshing")
                                             : refreshLabel}
                                     </span>
                                 </Button>
@@ -152,7 +153,6 @@ const SearchBar = ({
                 </Card.Body>
             </Card>
 
-            {/* For Queue Dialog */}
             {dialogResourceType === "Queue" && (
                 <CreateDialog
                     open={dialogOpen}

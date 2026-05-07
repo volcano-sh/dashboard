@@ -1,9 +1,11 @@
 import React from "react";
 import { TableRow, TableCell, Chip, useTheme, alpha } from "@mui/material";
 import { calculateAge } from "../../utils";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const PodRow = ({ pod, getStatusColor, onPodClick }) => {
     const theme = useTheme();
+    const { locale, tStatus } = useTranslation();
 
     return (
         <TableRow
@@ -57,12 +59,14 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                     color: alpha(theme.palette.text.primary, 0.85),
                 }}
             >
-                {new Date(pod.metadata.creationTimestamp).toLocaleString()}
+                {new Date(pod.metadata.creationTimestamp).toLocaleString(
+                    locale,
+                )}
             </TableCell>
 
             <TableCell sx={{ padding: "16px 24px" }}>
                 <Chip
-                    label={pod.status?.phase || "Unknown"}
+                    label={tStatus(pod.status?.phase || "Unknown")}
                     sx={{
                         bgcolor: getStatusColor(pod.status?.phase || "Unknown"),
                         color: "common.white",

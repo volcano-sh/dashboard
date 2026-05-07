@@ -11,7 +11,8 @@ import {
 } from "@mui/material";
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
-import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
+import JobTableDeleteDialog from "./JobTableDeleteDialog";
+import { useTranslation } from "../../../i18n/I18nProvider";
 
 const JobTable = ({
     jobs,
@@ -26,24 +27,22 @@ const JobTable = ({
     sortDirection,
     toggleSortDirection,
     onJobUpdate,
-    reloadJobs, // (optional) for refetching after delete
+    reloadJobs,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
-    // State for delete dialog
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [jobToDelete, setJobToDelete] = useState(null);
     const [deleteError, setDeleteError] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Open dialog with the selected job object
     const handleOpenDeleteDialog = (job) => {
         setJobToDelete(job);
         setOpenDeleteDialog(true);
         setDeleteError(null);
     };
 
-    // Close dialog
     const handleCloseDeleteDialog = () => {
         setOpenDeleteDialog(false);
         setJobToDelete(null);
@@ -67,7 +66,6 @@ const JobTable = ({
                 },
             );
 
-            // Try to parse the JSON error or success body
             let data = {};
             const contentType = response.headers.get("content-type");
             const text = await response.text();
@@ -85,25 +83,22 @@ const JobTable = ({
                 data = { message: text };
             }
 
-            // If DELETE failed, show the message from K8s API (data.message or data.details)
             if (!response.ok) {
-                // Prefer Kubernetes' error message or fallback to the raw response
                 const k8sMessage =
                     data.message ||
                     data.details ||
                     text ||
-                    `Job "${namespace}/${name}" could not be deleted.`;
+                    t("jobs.deleteError", { name: `${namespace}/${name}` });
 
                 setDeleteError(k8sMessage);
                 return;
             }
 
-            // On success, optionally reload jobs
             if (reloadJobs) reloadJobs();
 
             handleCloseDeleteDialog();
         } catch (error) {
-            setDeleteError(error.message || "An unexpected error occurred.");
+            setDeleteError(error.message || t("common.error"));
         } finally {
             setIsDeleting(false);
         }
@@ -160,7 +155,7 @@ const JobTable = ({
                         {jobs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={8} align="center">
-                                    No jobs found.
+                                    {t("jobs.noJobsFound")}
                                 </TableCell>
                             </TableRow>
                         ) : (
