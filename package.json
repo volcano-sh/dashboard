@@ -12,6 +12,8 @@
         "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\"",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
+        "lint": "npm run lint -w frontend && npm run lint -w backend",
+        "lint:fix": "npm run lint:fix -w frontend && npm run lint:fix -w backend",
         "test:frontend": "npm run test -w frontend",
         "test:backend": "npm run test -w backend"
     },
