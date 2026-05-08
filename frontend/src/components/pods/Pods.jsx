@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
+import { escape } from "lodash";
 import SearchBar from "../Searchbar";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
@@ -140,9 +141,9 @@ const Pods = () => {
                     if (keyMatch) {
                         const [, indent, key] = keyMatch;
                         const value = line.slice(keyMatch[0].length);
-                        return `${indent}<span class="yaml-key">${key}</span>:${value}`;
+                        return `${indent}<span class="yaml-key">${escape(key)}</span>:${escape(value)}`;
                     }
-                    return line;
+                    return escape(line);
                 })
                 .join("\n");
 
