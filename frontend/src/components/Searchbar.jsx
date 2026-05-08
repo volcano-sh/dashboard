@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faTimes, faRedo } from "@fortawesome/free-solid-svg-icons";
 import CreateDialog from "./CreateDialog";
 import CreateJobDialog from "./jobs/JobTable/CreateJobDialog";
+import { volcanoOrange } from "../theme";
 
 const SearchBar = ({
     searchText,
@@ -66,7 +67,7 @@ const SearchBar = ({
                                         <FontAwesomeIcon
                                             icon={faSearch}
                                             className="me-1"
-                                            style={{ color: "#E34C26" }}
+                                            style={{ color: volcanoOrange }}
                                         />
                                         {isRefreshing && (
                                             <span
@@ -113,7 +114,7 @@ const SearchBar = ({
                                     onClick={handleRefresh}
                                     disabled={isRefreshing}
                                     style={{
-                                        backgroundColor: "#E34C26",
+                                        backgroundColor: volcanoOrange,
                                         color: "white",
                                         transition: "all 0.3s ease",
                                         height: "35px",
@@ -138,7 +139,7 @@ const SearchBar = ({
                                     className="rounded-pill px-4 py-2 d-flex align-items-center justify-content-center shadow-sm fw-medium border-2"
                                     onClick={handleOpenDialog}
                                     style={{
-                                        backgroundColor: "#E34C26",
+                                        backgroundColor: volcanoOrange,
                                         color: "white",
                                         transition: "all 0.3s ease",
                                         height: "35px",

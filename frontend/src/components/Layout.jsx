@@ -22,14 +22,13 @@ import CategoryIcon from "@mui/icons-material/Category";
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
+import { volcanoOrange } from "../theme";
 
 const Layout = () => {
     // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
 
-    // constants can be kept outside the component
-    const volcanoOrange = "#E34C26"; // orange red theme
     const headerGrey = "#424242"; // dark gray top stripe
     const drawerWidth = 240;
 

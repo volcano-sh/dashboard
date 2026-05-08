@@ -10,8 +10,7 @@ import {
 import { Button } from "react-bootstrap";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
-
-const primaryColor = "#E34C26";
+import { volcanoOrange as primaryColor } from "../../../theme";
 
 const CreateJobDialog = ({
     open,

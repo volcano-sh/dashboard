@@ -16,8 +16,7 @@ import {
 } from "@mui/material";
 import { Button } from "react-bootstrap";
 import { Plus, Minus, ChevronDown } from "lucide-react";
-
-const primaryColor = "#E34C26";
+import { volcanoOrange as primaryColor } from "../theme";
 
 const CreateDialog = ({
     open,
