@@ -7,8 +7,10 @@ import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import { useNotification } from "../../contexts/NotificationContext";
 
 const Pods = () => {
+    const { showNotification } = useNotification();
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
     const [, setLoading] = useState(true);
@@ -114,14 +116,14 @@ const Pods = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating pod: " + errorMsg);
+                showNotification("Error creating pod: " + errorMsg, "error");
                 return;
             }
 
-            alert("Pod created successfully!");
+            showNotification("Pod created successfully!", "success");
             await fetchData(); // Now fetchData is defined in the same scope
         } catch (err) {
-            alert("Network error: " + err.message);
+            showNotification("Network error: " + err.message, "error");
         }
     };
 

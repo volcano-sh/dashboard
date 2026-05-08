@@ -4,11 +4,13 @@ import axios from "axios";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
+import { useNotification } from "../../contexts/NotificationContext";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
 
 const Jobs = () => {
+    const { showNotification } = useNotification();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -157,13 +159,13 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                showNotification("Error creating job: " + errorMsg, "error");
                 return;
             }
 
-            alert("Job created successfully!");
+            showNotification("Job created successfully!", "success");
         } catch (err) {
-            alert("Network error: " + err.message);
+            showNotification("Network error: " + err.message, "error");
         }
     };
 

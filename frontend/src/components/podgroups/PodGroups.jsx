@@ -8,8 +8,10 @@ import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
 import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
+import { useNotification } from "../../contexts/NotificationContext";
 
 const PodGroups = () => {
+    const { showNotification } = useNotification();
     const [podGroups, setPodGroups] = useState([]);
     const [cachedPodGroups, setCachedPodGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -167,7 +169,7 @@ const PodGroups = () => {
 
     // For now, no creation dialog
     const handleCreate = () => {
-        alert("Create PodGroup not implemented yet");
+        showNotification("Create PodGroup not implemented yet", "info");
     };
 
     return (
