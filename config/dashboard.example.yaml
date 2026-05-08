@@ -62,6 +62,11 @@ auth:
         client_id: squidflow-backend
         client_secret: qiesogMQypSjhmxaYelevxlhJWkr0H3O
         redirect_uri: http://localhost:3000/sso/callback
+        # Optional. If set, SSO users are redirected here after dashboard logout.
+        # {{token}} / {{idToken}} is the OIDC ID token.
+        # {{logoutRedirectURL}} resolves to <dashboard origin>/login.
+        logout_url: >-
+            http://localhost:8080/realms/adak8s/protocol/openid-connect/logout?id_token_hint={{token}}&post_logout_redirect_uri={{logoutRedirectURL}}
         scopes: [ "openid", "profile", "email", "offline_access" ]
         jwks_cache_ttl: 10m
 

@@ -150,6 +150,7 @@ const normalizeAuthConfig = (parsed: any = {}) => {
             clientSecret: sso.clientSecret || sso.client_secret,
             issuer: sso.issuer || sso.issuer_url,
             jwksCacheTtl: sso.jwksCacheTtl || sso.jwks_cache_ttl,
+            logoutUrl: sso.logoutUrl || sso.logout_url,
             providerName: sso.providerName || sso.provider_name,
             redirectUri: sso.redirectUri || sso.redirect_uri,
             groupMappings: Array.isArray(groupMappings)
@@ -326,6 +327,9 @@ export const signAuthToken = async (user, remember = false) => {
         exp: now + expiresIn,
         iat: now,
         iss: config.jwt.issuer || "volcano-dashboard",
+        ...(user.provider === "sso" && user.idToken
+            ? { sso: { idToken: user.idToken } }
+            : {}),
         sub: user.username,
         user: safeUser(user),
     };
@@ -550,13 +554,43 @@ const oidcDiscovery = async () => {
     const config = await getAuthConfig();
     if (cachedDiscovery) return cachedDiscovery;
     const issuer = config.sso.issuer.replace(/\/$/, "");
-    const response = await fetch(`${issuer}/.well-known/openid-configuration`);
+    const discoveryUrl = `${issuer}/.well-known/openid-configuration`;
+    let response;
+    try {
+        response = await fetch(discoveryUrl);
+    } catch (error) {
+        throw oidcDiscoveryError(
+            `Failed to load OIDC discovery document from ${discoveryUrl}: ${error.message}`,
+            {
+                cause: error.cause?.message || error.message,
+                causeCode: error.cause?.code || error.code || "",
+                discoveryUrl,
+                issuer,
+            },
+        );
+    }
     if (!response.ok) {
-        throw new Error("Failed to load OIDC discovery document.");
+        throw oidcDiscoveryError(
+            `Failed to load OIDC discovery document from ${discoveryUrl}: HTTP ${response.status} ${response.statusText}`.trim(),
+            {
+                discoveryUrl,
+                issuer,
+                status: response.status,
+                statusText: response.statusText,
+            },
+        );
     }
     cachedDiscovery = await response.json();
     return cachedDiscovery;
 };
+
+const oidcDiscoveryError = (message, details = {}) =>
+    Object.assign(new Error(message), {
+        details: {
+            hint: "Verify auth.sso.issuer_url is reachable from the dashboard server and points to the OIDC realm issuer.",
+            ...details,
+        },
+    });
 
 const callbackUrl = (request, config) => {
     if (config.sso?.redirectUri) {
@@ -565,6 +599,24 @@ const callbackUrl = (request, config) => {
 
     const url = new URL(request.url);
     return `${url.origin}/sso/callback`;
+};
+
+const logoutRedirectUrl = (request) => {
+    const url = new URL(request.url);
+    return `${url.origin}/login`;
+};
+
+const ssoLogoutUrl = (request, config, idToken = "") => {
+    if (!config.sso?.logoutUrl) return "";
+    const replacements = {
+        idToken,
+        logoutRedirectURL: logoutRedirectUrl(request),
+        token: idToken,
+    };
+    return String(config.sso.logoutUrl).replace(
+        /\{\{\s*(idToken|logoutRedirectURL|token)\s*\}\}/g,
+        (_match, key) => encodeURIComponent(replacements[key] || ""),
+    );
 };
 
 export const handleSsoStart = async (request) => {
@@ -602,7 +654,14 @@ export const handleSsoStart = async (request) => {
 
         return Response.redirect(redirect, 302);
     } catch (error) {
-        return json({ error: "SSO start failed", message: error.message }, 500);
+        return json(
+            {
+                details: error.details,
+                error: "SSO start failed",
+                message: error.message,
+            },
+            500,
+        );
     }
 };
 
@@ -687,6 +746,7 @@ export const handleSsoCallback = async (request) => {
             displayName:
                 claims.name || claims.preferred_username || claims.email,
             email: claims.email || "",
+            idToken: tokenSet.id_token,
             provider: "sso",
             username: claims.preferred_username || claims.email || claims.sub,
         });
@@ -704,6 +764,28 @@ export const handleSsoCallback = async (request) => {
             error.message || "SSO login failed.",
         );
         return Response.redirect(redirect, 302);
+    }
+};
+
+export const handleLogout = async (request) => {
+    try {
+        const config = await getAuthConfig();
+        const token = bearerTokenFromRequest(request);
+        if (!token) {
+            return json({ message: "Logged out" });
+        }
+        const payload = await verifyAuthToken(token);
+        const redirectUrl =
+            payload.user?.provider === "sso"
+                ? ssoLogoutUrl(request, config, payload.sso?.idToken)
+                : "";
+
+        return json({
+            ...(redirectUrl ? { redirectUrl } : {}),
+            message: "Logged out",
+        });
+    } catch {
+        return json({ message: "Logged out" });
     }
 };
 

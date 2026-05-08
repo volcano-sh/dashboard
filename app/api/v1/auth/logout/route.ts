@@ -1,5 +1,7 @@
+import { handleLogout } from "../../../../../lib/server/auth";
+
 export const runtime = "nodejs";
 
-export async function POST() {
-    return Response.json({ message: "Logged out" });
+export async function POST(request) {
+    return handleLogout(request);
 }

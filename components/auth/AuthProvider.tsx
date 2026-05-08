@@ -38,8 +38,10 @@ export default function AuthProvider({ children }) {
     );
 
     const logout = useCallback(async () => {
+        let redirectUrl = "";
         try {
-            await axios.post(`${API_BASE}/auth/logout`);
+            const response = await axios.post(`${API_BASE}/auth/logout`);
+            redirectUrl = response.data?.redirectUrl || "";
         } catch {
             // Local token cleanup is the source of truth for this UI logout.
         } finally {
@@ -48,7 +50,11 @@ export default function AuthProvider({ children }) {
             setIdentity(null);
             setAuthError("");
             setUser(null);
-            router.replace("/login");
+            if (redirectUrl) {
+                window.location.assign(redirectUrl);
+            } else {
+                router.replace("/login");
+            }
         }
     }, [router]);
 

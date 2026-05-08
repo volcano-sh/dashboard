@@ -124,6 +124,7 @@ auth:
         clientId: volcano-dashboard
         clientSecret: keycloak-client-secret
         redirectUri: http://localhost:3000/sso/callback
+        logoutUrl: "https://keycloak.example.com/realms/volcano/protocol/openid-connect/logout?id_token_hint={{token}}&post_logout_redirect_uri={{logoutRedirectURL}}"
         scopes:
             - openid
             - profile
@@ -139,10 +140,13 @@ auth:
 The unified backend config is loaded from `DASHBOARD_CONFIG_FILE`. The auth
 section also accepts snake_case aliases commonly used by service config files,
 such as `users`, `password_hash`, `issuer_url`, `client_id`, `client_secret`,
-`redirect_uri`, `jwks_cache_ttl`, `access_mode`, and `group_mappings`. Tenant
-and admin mapping fields are not supported; use `accessMode` / `access_mode`
-with `read-only` or `read-write`. The file must still be YAML or JSON; TOML is
-not parsed by the dashboard today.
+`redirect_uri`, `logout_url`, `jwks_cache_ttl`, `access_mode`, and
+`group_mappings`. Optional `logoutUrl` supports `{{token}}` / `{{idToken}}` and
+`{{logoutRedirectURL}}` placeholders for OIDC provider logout; the redirect
+placeholder resolves to the dashboard login page. Tenant and admin mapping
+fields are not supported; use `accessMode` / `access_mode` with `read-only` or
+`read-write`. The file must still be YAML or JSON; TOML is not parsed by the
+dashboard today.
 
 3. Access the dashboard by port-forwarding the service:
 

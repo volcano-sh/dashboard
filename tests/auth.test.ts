@@ -293,6 +293,168 @@ auth:
         );
     });
 
+    it("returns actionable SSO discovery diagnostics when the issuer is unreachable", async () => {
+        const configFile = await writeAuthConfig(`
+auth:
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+  sso:
+    issuer: http://localhost:8080/realms/adak8s
+    clientId: squidflow-backend
+`);
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockRejectedValue(
+                Object.assign(new TypeError("fetch failed"), {
+                    cause: Object.assign(
+                        new Error("connect ECONNREFUSED 127.0.0.1:8080"),
+                        {
+                            code: "ECONNREFUSED",
+                        },
+                    ),
+                }),
+            ),
+        );
+        const { handleSsoStart } = await importAuth(configFile);
+
+        const response = await handleSsoStart(
+            new Request("http://dashboard.local/api/v1/auth/sso/start"),
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(500);
+        expect(body).toMatchObject({
+            details: {
+                cause: "connect ECONNREFUSED 127.0.0.1:8080",
+                causeCode: "ECONNREFUSED",
+                discoveryUrl:
+                    "http://localhost:8080/realms/adak8s/.well-known/openid-configuration",
+                issuer: "http://localhost:8080/realms/adak8s",
+            },
+            error: "SSO start failed",
+        });
+        expect(body.message).toContain(
+            "http://localhost:8080/realms/adak8s/.well-known/openid-configuration",
+        );
+    });
+
+    it("returns OIDC discovery HTTP status diagnostics", async () => {
+        const configFile = await writeAuthConfig(`
+auth:
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+  sso:
+    issuer: https://keycloak.example.com/realms/missing
+    clientId: volcano-dashboard
+`);
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue(
+                new Response("not found", {
+                    status: 404,
+                    statusText: "Not Found",
+                }),
+            ),
+        );
+        const { handleSsoStart } = await importAuth(configFile);
+
+        const response = await handleSsoStart(
+            new Request("http://dashboard.local/api/v1/auth/sso/start"),
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(500);
+        expect(body).toMatchObject({
+            details: {
+                discoveryUrl:
+                    "https://keycloak.example.com/realms/missing/.well-known/openid-configuration",
+                issuer: "https://keycloak.example.com/realms/missing",
+                status: 404,
+                statusText: "Not Found",
+            },
+            error: "SSO start failed",
+            message:
+                "Failed to load OIDC discovery document from https://keycloak.example.com/realms/missing/.well-known/openid-configuration: HTTP 404 Not Found",
+        });
+    });
+
+    it("builds configured SSO logout URL for SSO users", async () => {
+        const configFile = await writeAuthConfig(`
+auth:
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+  sso:
+    issuer: https://keycloak.example.com/realms/volcano
+    clientId: volcano-dashboard
+    logoutUrl: "https://keycloak.example.com/realms/volcano/protocol/openid-connect/logout?id_token_hint={{token}}&post_logout_redirect_uri={{logoutRedirectURL}}"
+`);
+        const { handleLogout, signAuthToken } = await importAuth(configFile);
+        const signed = await signAuthToken({
+            idToken: "header.payload.signature",
+            provider: "sso",
+            username: "sso-user",
+        });
+
+        const response = await handleLogout(
+            new Request("https://dashboard.example.com/api/v1/auth/logout", {
+                headers: { Authorization: `Bearer ${signed.token}` },
+                method: "POST",
+            }),
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body).toEqual({
+            message: "Logged out",
+            redirectUrl:
+                "https://keycloak.example.com/realms/volcano/protocol/openid-connect/logout?id_token_hint=header.payload.signature&post_logout_redirect_uri=https%3A%2F%2Fdashboard.example.com%2Flogin",
+        });
+    });
+
+    it("does not build SSO logout URL for local users", async () => {
+        const configFile = await writeAuthConfig(`
+auth:
+  mode: local-sso
+  jwt:
+    secret: test-secret
+  users:
+    - username: admin
+      passwordHash: "${adminHash}"
+  sso:
+    issuer: https://keycloak.example.com/realms/volcano
+    clientId: volcano-dashboard
+    logoutUrl: "https://keycloak.example.com/realms/volcano/protocol/openid-connect/logout?id_token_hint={{token}}"
+`);
+        const { handleLogout, signAuthToken } = await importAuth(configFile);
+        const signed = await signAuthToken({
+            provider: "local",
+            username: "admin",
+        });
+
+        const response = await handleLogout(
+            new Request("https://dashboard.example.com/api/v1/auth/logout", {
+                headers: { Authorization: `Bearer ${signed.token}` },
+                method: "POST",
+            }),
+        );
+
+        await expect(response.json()).resolves.toEqual({
+            message: "Logged out",
+        });
+    });
+
     it("resolves local user access modes with the global access ceiling", async () => {
         const configFile = await writeAuthConfig(`
 access:
