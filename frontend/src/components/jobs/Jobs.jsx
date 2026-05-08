@@ -86,7 +86,6 @@ const Jobs = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchJobs();
     };
 
     const handleJobClick = useCallback(async (job) => {
