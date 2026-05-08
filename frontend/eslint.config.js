@@ -4,6 +4,8 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import vitest from "eslint-plugin-vitest";
+import prettierPlugin from "eslint-plugin-prettier";
+import prettierConfig from "eslint-config-prettier";
 
 export default [
     { ignores: ["dist"] },
@@ -28,6 +30,7 @@ export default [
             "react-hooks": reactHooks,
             "react-refresh": reactRefresh,
             vitest,
+            prettier: prettierPlugin,
         },
         rules: {
             ...js.configs.recommended.rules,
@@ -49,6 +52,8 @@ export default [
                 },
             ],
             ...vitest.configs.recommended.rules,
+            "prettier/prettier": "error",
+            ...prettierConfig.rules,
         },
     },
 ];
