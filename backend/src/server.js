@@ -574,9 +574,8 @@ app.get("/api/all-jobs", async (req, res) => {
             status: {
                 state: job.status?.state || getJobState(job),
                 phase:
-                    job.status?.phase || job.spec?.minAvailable
-                        ? "Running"
-                        : "Unknown",
+                    job.status?.state?.phase ||
+                    (job.spec?.minAvailable ? "Running" : "Unknown"),
             },
         }));
 
@@ -593,10 +592,6 @@ app.get("/api/all-jobs", async (req, res) => {
 // Auxiliary function: determine the status based on the job status
 function getJobState(job) {
     if (job.status?.state) return job.status.state;
-    if (job.status === "Running") return "Running";
-    if (job.status === "Completed") return "Completed";
-    if (job.status === "Failed") return "Failed";
-    if (job.status === "Pending") return "Running";
     return job.status || "Unknown";
 }
 
