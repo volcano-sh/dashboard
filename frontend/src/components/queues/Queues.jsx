@@ -6,9 +6,11 @@ import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
+import { useNotification } from "../../contexts/NotificationContext";
 import TitleComponent from "../Titlecomponent";
 
 const Queues = () => {
+    const { showNotification } = useNotification();
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -66,14 +68,15 @@ const Queues = () => {
 
             if (response.status !== 201) {
                 let errMsg = response.data?.error || response.statusText;
-                alert("Failed to create queue: " + errMsg);
+                showNotification("Failed to create queue: " + errMsg, "error");
                 return;
             }
 
-            alert("Queue created successfully!");
+            showNotification("Queue created successfully!", "success");
         } catch (err) {
-            alert(
+            showNotification(
                 "Network error: " + (err?.response?.data?.error || err.message),
+                "error",
             );
         } finally {
             setLoading(false);

@@ -10,10 +10,12 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { useNotification } from "../../../contexts/NotificationContext";
 
 const JobEditDialog = ({ open, job, onClose, onSave }) => {
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
+    const { showNotification } = useNotification();
 
     useEffect(() => {
         if (open && job) {
@@ -35,7 +37,10 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Parsing error:", err);
-            alert("Invalid YAML format. Please check your input.");
+            showNotification(
+                "Invalid YAML format. Please check your input.",
+                "error",
+            );
         }
     };
 

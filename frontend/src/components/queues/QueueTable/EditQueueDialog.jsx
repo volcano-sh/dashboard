@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { useNotification } from "../../../contexts/NotificationContext";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
@@ -147,6 +148,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
     const [editMode, setEditMode] = useState("yaml");
     const [formState, setFormState] = useState({});
     const [saving, setSaving] = useState(false);
+    const { showNotification } = useNotification();
 
     // Refs to avoid infinite loops when syncing form & YAML
     const skipYamlUpdate = useRef(false);
@@ -251,7 +253,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Save failed:", err);
-            alert(err.message || "Failed to save");
+            showNotification(err.message || "Failed to save", "error");
         }
     };
 
