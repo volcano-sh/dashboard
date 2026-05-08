@@ -1,7 +1,7 @@
 import React from "react";
 import { Menu, MenuItem } from "@mui/material";
 
-const JobFilters = ({
+const TableFilterMenu = ({
     filterType,
     currentValue,
     options,
@@ -13,13 +13,13 @@ const JobFilters = ({
         <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
-            onClose={handleFilterClose}
+            onClose={() => handleFilterClose(filterType, currentValue)}
         >
             {options.map((option) => (
                 <MenuItem
                     key={option}
                     selected={option === currentValue}
-                    onClick={() => handleFilterClick(filterType, option)}
+                    onClick={() => handleFilterClose(filterType, option)}
                 >
                     {option}
                 </MenuItem>
@@ -28,4 +28,4 @@ const JobFilters = ({
     );
 };
 
-export default JobFilters;
+export default TableFilterMenu;
