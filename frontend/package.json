@@ -21,6 +21,7 @@
         "@monaco-editor/react": "^4.7.0",
         "@mui/icons-material": "^6.4.4",
         "@mui/material": "^6.4.4",
+        "@tanstack/react-table": "^8.21.3",
         "axios": "^1.7.9",
         "bootstrap": "^5.3.5",
         "chart.js": "^4.4.7",
