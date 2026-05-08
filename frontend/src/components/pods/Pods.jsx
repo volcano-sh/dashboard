@@ -86,17 +86,6 @@ const Pods = () => {
         fetchPods();
     }, [fetchPods]);
 
-    const fetchData = async () => {
-        try {
-            const response = await fetch("/api/pods");
-            if (response.ok) {
-                const data = await response.json();
-                setPods(data);
-            }
-        } catch (error) {
-            console.error("Error fetching pods:", error);
-        }
-    };
 
     const handleCreatePod = async (newPod) => {
         try {
@@ -119,7 +108,8 @@ const Pods = () => {
             }
 
             alert("Pod created successfully!");
-            await fetchData(); // Now fetchData is defined in the same scope
+            setPagination((prev) => ({ ...prev, page: 1 }));
+            await fetchPods();
         } catch (err) {
             alert("Network error: " + err.message);
         }
