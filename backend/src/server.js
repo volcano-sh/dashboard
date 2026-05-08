@@ -285,9 +285,9 @@ app.get("/api/queue/:name/yaml", async (req, res) => {
         res.setHeader("Content-Type", "text/yaml");
         res.send(formattedYaml);
     } catch (error) {
-        console.error("Error fetching job YAML:", error);
+        console.error("Error fetching queue YAML:", error);
         res.status(500).json({
-            error: "Failed to fetch job YAML",
+            error: "Failed to fetch queue YAML",
             details: error.message,
         });
     }
@@ -551,9 +551,9 @@ app.get("/api/pod/:namespace/:name/yaml", async (req, res) => {
         res.setHeader("Content-Type", "text/yaml");
         res.send(formattedYaml);
     } catch (error) {
-        console.error("Error fetching job YAML:", error);
+        console.error("Error fetching pod YAML:", error);
         res.status(500).json({
-            error: "Failed to fetch job YAML",
+            error: "Failed to fetch pod YAML",
             details: error.message,
         });
     }
@@ -822,49 +822,12 @@ app.post("/api/queues", async (req, res) => {
             ...customAnnotations,
         };
 
-        // Debug the API client
-        console.log("API client type:", typeof k8sApi);
-        console.log(
-            "createClusterCustomObject method exists:",
-            typeof k8sApi.createClusterCustomObject,
-        );
-
-        // Test if we can list queues first (simpler operation)
-        console.log("Testing list operation first...");
-        try {
-            const listResponse = await k8sApi.listClusterCustomObject({
-                group: "scheduling.volcano.sh",
-                version: "v1beta1",
-                plural: "queues",
-            });
-            console.log(
-                "List operation successful, found",
-                listResponse.items?.length || 0,
-                "queues",
-            );
-        } catch (listError) {
-            console.error("List operation failed:", listError.message);
-        }
-
-        // Add timeout and more detailed logging
-        console.log("About to call k8sApi.createClusterCustomObject...");
-
-        const response = await Promise.race([
-            k8sApi.createClusterCustomObject({
-                group: "scheduling.volcano.sh",
-                version: "v1beta1",
-                plural: "queues",
-                body: queueManifest,
-            }),
-            new Promise((_, reject) =>
-                setTimeout(
-                    () => reject(new Error("API call timeout after 30s")),
-                    30000,
-                ),
-            ),
-        ]);
-
-        console.log("API call successful, response:", response);
+        const response = await k8sApi.createClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            body: queueManifest,
+        });
 
         res.status(201).json({
             message: "Queue created successfully",
