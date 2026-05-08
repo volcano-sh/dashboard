@@ -164,6 +164,17 @@ const SearchBar = ({
                 />
             )}
 
+            {dialogResourceType === "Pod" && (
+                <CreateDialog
+                    open={dialogOpen}
+                    onClose={handleCloseDialog}
+                    onCreate={handleDialogCreate}
+                    title={dialogTitle}
+                    resourceNameLabel={dialogResourceNameLabel}
+                    resourceType={dialogResourceType}
+                />
+            )}
+
             {dialogResourceType === "Job" && (
                 <CreateJobDialog
                     open={dialogOpen}
