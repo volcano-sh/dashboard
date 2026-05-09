@@ -1,0 +1,12 @@
+{
+    "app": {
+        "title": "Volcano Dashboard"
+    },
+    "nav": {
+        "dashboard": "Dashboard",
+        "jobs": "Jobs",
+        "queues": "Queues",
+        "pods": "Pods",
+        "podGroups": "PodGroups"
+    }
+}

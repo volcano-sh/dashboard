@@ -1,6 +1,8 @@
 import Layout from "../src/components/Layout";
 import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { I18nextProvider } from "react-i18next";
+import i18n from "../src/i18n";
 
 const menuItems = [
     { text: "Dashboard", path: "/dashboard" },
@@ -11,11 +13,17 @@ const menuItems = [
 ];
 
 describe("Layout", () => {
+    beforeEach(async () => {
+        await i18n.changeLanguage("en");
+    });
+
     it("should render the layout", () => {
         render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
+            <I18nextProvider i18n={i18n}>
+                <MemoryRouter>
+                    <Layout />
+                </MemoryRouter>
+            </I18nextProvider>,
         );
 
         const heading = screen.getByText(/volcano dashboard/i);
@@ -24,9 +32,11 @@ describe("Layout", () => {
 
     it("should toggle the drawer when clicking the menu button", () => {
         render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
+            <I18nextProvider i18n={i18n}>
+                <MemoryRouter>
+                    <Layout />
+                </MemoryRouter>
+            </I18nextProvider>,
         );
 
         const menuButton = screen.getByRole("button", {
@@ -46,9 +56,11 @@ describe("Layout", () => {
 
     it("should have 5 navigation items", () => {
         render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
+            <I18nextProvider i18n={i18n}>
+                <MemoryRouter>
+                    <Layout />
+                </MemoryRouter>
+            </I18nextProvider>,
         );
 
         const navigationItems = screen.getAllByRole("link");
@@ -65,9 +77,11 @@ describe("Layout", () => {
 
     it("should render logo", () => {
         render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
+            <I18nextProvider i18n={i18n}>
+                <MemoryRouter>
+                    <Layout />
+                </MemoryRouter>
+            </I18nextProvider>,
         );
 
         const logo = screen.getByAltText(/volcano logo/i);

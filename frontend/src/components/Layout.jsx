@@ -13,6 +13,7 @@ import {
     Typography,
     Tooltip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
 import HomeIcon from "@mui/icons-material/Home";
@@ -24,6 +25,8 @@ import CategoryIcon from "@mui/icons-material/Category";
 import volcanoLogo from "../assets/volcano-icon-color.svg";
 
 const Layout = () => {
+    const { t } = useTranslation();
+
     // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
@@ -38,11 +41,36 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        {
+            id: "dashboard",
+            labelKey: "nav.dashboard",
+            icon: <HomeIcon />,
+            path: "/dashboard",
+        },
+        {
+            id: "jobs",
+            labelKey: "nav.jobs",
+            icon: <AssignmentIcon />,
+            path: "/jobs",
+        },
+        {
+            id: "queues",
+            labelKey: "nav.queues",
+            icon: <CloudIcon />,
+            path: "/queues",
+        },
+        {
+            id: "pods",
+            labelKey: "nav.pods",
+            icon: <WorkspacesIcon />,
+            path: "/pods",
+        },
+        {
+            id: "podgroups",
+            labelKey: "nav.podGroups",
+            icon: <CategoryIcon />,
+            path: "/podgroups",
+        },
     ];
 
     return (
@@ -73,7 +101,7 @@ const Layout = () => {
                             fontWeight: 500,
                         }}
                     >
-                        Volcano Dashboard
+                        {t("app.title")}
                     </Typography>
                 </Toolbar>
             </AppBar>
@@ -99,9 +127,10 @@ const Layout = () => {
                 <Box sx={{ overflow: "hidden auto", flexGrow: 1 }}>
                     <List>
                         {menuItems.map((item) => {
+                            const label = t(item.labelKey);
                             const listItem = (
                                 <ListItem
-                                    key={item.text}
+                                    key={item.id}
                                     component={Link}
                                     to={item.path}
                                     className={
@@ -128,20 +157,20 @@ const Layout = () => {
                                 >
                                     <ListItemIcon>{item.icon}</ListItemIcon>
                                     {open && (
-                                        <ListItemText primary={item.text} />
+                                        <ListItemText primary={label} />
                                     )}
                                 </ListItem>
                             );
                             return !open ? (
                                 <Tooltip
-                                    key={item.text}
-                                    title={item.text}
+                                    key={item.id}
+                                    title={label}
                                     placement="right"
                                 >
                                     {listItem}
                                 </Tooltip>
                             ) : (
-                                <React.Fragment key={item.text}>
+                                <React.Fragment key={item.id}>
                                     {listItem}
                                 </React.Fragment>
                             );
