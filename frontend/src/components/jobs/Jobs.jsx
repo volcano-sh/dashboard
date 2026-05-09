@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
+import apiClient from "../../config/apiClient";
+import { useCluster } from "../../config/ClusterContext";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
@@ -9,6 +11,7 @@ import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
 
 const Jobs = () => {
+    const { currentCluster } = useCluster();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -42,7 +45,7 @@ const Jobs = () => {
         setError(null);
 
         try {
-            const response = await axios.get(`/api/jobs`, {
+            const response = await apiClient.get(`/api/jobs`, {
                 params: {
                     search: searchText,
                     namespace: filters.namespace,
@@ -68,9 +71,9 @@ const Jobs = () => {
 
     useEffect(() => {
         fetchJobs();
-        fetchAllNamespaces().then(setAllNamespaces);
-        fetchAllQueues().then(setAllQueues);
-    }, [fetchJobs]);
+        fetchAllNamespaces(currentCluster).then(setAllNamespaces);
+        fetchAllQueues(currentCluster).then(setAllQueues);
+    }, [fetchJobs, currentCluster]);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -92,7 +95,7 @@ const Jobs = () => {
     const handleJobClick = useCallback(async (job) => {
         try {
             setLoading(true);
-            const response = await axios.get(
+            const response = await apiClient.get(
                 `/api/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
                 { responseType: "text" },
             );
@@ -145,7 +148,10 @@ const Jobs = () => {
         try {
             const response = await fetch("/api/jobs", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Cluster-Context": currentCluster,
+                },
                 body: JSON.stringify(newJob),
             });
 

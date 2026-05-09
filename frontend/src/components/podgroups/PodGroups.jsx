@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
+import apiClient from "../../config/apiClient";
+import { useCluster } from "../../config/ClusterContext";
 import { escape } from "lodash";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
@@ -10,6 +12,7 @@ import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
 
 const PodGroups = () => {
+    const { currentCluster } = useCluster();
     const [podGroups, setPodGroups] = useState([]);
     const [cachedPodGroups, setCachedPodGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -40,7 +43,7 @@ const PodGroups = () => {
         setError(null);
 
         try {
-            const response = await axios.get(`/api/podgroups`, {
+            const response = await apiClient.get(`/api/podgroups`, {
                 params: {
                     search: searchText,
                     namespace: filters.namespace,
@@ -65,8 +68,8 @@ const PodGroups = () => {
 
     useEffect(() => {
         fetchPodGroups();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPodGroups]);
+        fetchAllNamespaces(currentCluster).then(setAllNamespaces);
+    }, [fetchPodGroups, currentCluster]);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -88,7 +91,7 @@ const PodGroups = () => {
     const handleClick = useCallback(async (pg) => {
         try {
             setLoading(true);
-            const response = await axios.get(
+            const response = await apiClient.get(
                 `/api/podgroups/${pg.metadata.namespace}/${pg.metadata.name}/yaml`,
                 { responseType: "text" },
             );
