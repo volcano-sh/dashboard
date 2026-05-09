@@ -162,6 +162,7 @@ const Jobs = () => {
             }
 
             alert("Job created successfully!");
+            fetchJobs();
         } catch (err) {
             alert("Network error: " + err.message);
         }
