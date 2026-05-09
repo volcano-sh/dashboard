@@ -83,3 +83,31 @@ export const createPod = async (req, res) => {
         res.status(500).json({ error: msg });
     }
 };
+
+export const getPodLogs = async (req, res) => {
+    const { namespace, name } = req.params;
+    const container = req.query.container;
+    const follow = req.query.follow === "true";
+    const tailLines = parseInt(req.query.tailLines) || 100;
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    const logStream = new (import("stream").then(m => m.PassThrough))();
+    // Simplified streaming for now
+    try {
+        const stream = await k8sService.streamLogs(
+            req.clusterContext,
+            namespace,
+            name,
+            container,
+            tailLines,
+            follow,
+            res,
+        );
+    } catch (err) {
+        console.error("Error streaming logs:", err);
+        res.end();
+    }
+};

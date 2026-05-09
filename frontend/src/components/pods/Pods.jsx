@@ -26,6 +26,8 @@ const Pods = () => {
     const [searchText, setSearchText] = useState("");
     const theme = useTheme();
     const [selectedPodName, setSelectedPodName] = useState("");
+    const [selectedPodNamespace, setSelectedPodNamespace] = useState("");
+    const [selectedPodContainers, setSelectedPodContainers] = useState([]);
     const [pagination, setPagination] = useState({
         page: 1,
         rowsPerPage: 10,
@@ -155,6 +157,8 @@ const Pods = () => {
                 .join("\n");
 
             setSelectedPodName(pod.metadata.name);
+            setSelectedPodNamespace(pod.metadata.namespace);
+            setSelectedPodContainers(pod.spec.containers || []);
             setSelectedPodYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
@@ -228,6 +232,8 @@ const Pods = () => {
             <PodDetailsDialog
                 open={openDialog}
                 podName={selectedPodName}
+                namespace={selectedPodNamespace}
+                containers={selectedPodContainers}
                 podYaml={selectedPodYaml}
                 onClose={handleCloseDialog}
             />

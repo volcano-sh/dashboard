@@ -23,7 +23,8 @@
         "dotenv": "^16.4.5",
         "express": "^4.21.0",
         "lodash": "^4.17.21",
-        "superagent": "^5.3.0"
+        "superagent": "^5.3.0",
+        "ws": "^8.20.0"
     },
     "devDependencies": {
         "@babel/core": "^7.0.0",

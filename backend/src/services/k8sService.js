@@ -15,6 +15,7 @@ class K8sService {
         if (!contextName || contextName === "default") {
             const kc = this.defaultKc;
             return {
+                kc,
                 k8sApi: kc.makeApiClient(CustomObjectsApi),
                 k8sCoreApi: kc.makeApiClient(CoreV1Api),
             };
@@ -28,6 +29,7 @@ class K8sService {
         kc.loadFromDefault();
         kc.setCurrentContext(contextName);
         const clients = {
+            kc,
             k8sApi: kc.makeApiClient(CustomObjectsApi),
             k8sCoreApi: kc.makeApiClient(CoreV1Api),
         };
@@ -295,6 +297,16 @@ class K8sService {
         return await k8sCoreApi.createNamespacedPod({
             namespace,
             body: podManifest,
+        });
+    }
+
+    async streamLogs(contextName, namespace, podName, containerName, tailLines, follow, stream) {
+        const { kc } = this.getClients(contextName);
+        const log = new Log(kc);
+        return await log.log(namespace, podName, containerName, stream, {
+            follow,
+            tailLines,
+            pretty: true,
         });
     }
 

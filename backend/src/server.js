@@ -6,6 +6,9 @@ import queueRoutes from "./routes/queueRoutes.js";
 import namespaceRoutes from "./routes/namespaceRoutes.js";
 import podGroupRoutes from "./routes/podGroupRoutes.js";
 import { contextMiddleware } from "./middleware/contextMiddleware.js";
+import { WebSocketServer } from "ws";
+import terminalService from "./services/terminalService.js";
+import url from "url";
 
 export const app = express();
 app.use(express.json());
@@ -63,8 +66,20 @@ app.get("/api/all-pods", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-if (process.env.NODE_ENV !== "test") {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
-}
+const server = app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+const wss = new WebSocketServer({ server });
+
+wss.on("connection", (ws, req) => {
+    const parsedUrl = url.parse(req.url, true);
+    const pathname = parsedUrl.pathname;
+
+    if (pathname === "/api/v1/terminal") {
+        const { context, namespace, pod, container } = parsedUrl.query;
+        terminalService.setupTerminal(ws, context, namespace, pod, container);
+    } else {
+        ws.close();
+    }
+});
