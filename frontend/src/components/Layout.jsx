@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
     AppBar,
     Box,
@@ -19,6 +20,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import CategoryIcon from "@mui/icons-material/Category";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
@@ -27,6 +29,7 @@ const Layout = () => {
     // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
+    const { t } = useTranslation();
 
     // constants can be kept outside the component
     const volcanoOrange = "#E34C26"; // orange red theme
@@ -38,11 +41,11 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        { text: t("layout.sidebar.dashboard"), icon: <HomeIcon />, path: "/dashboard" },
+        { text: t("layout.sidebar.jobs"), icon: <AssignmentIcon />, path: "/jobs" },
+        { text: t("layout.sidebar.queues"), icon: <CloudIcon />, path: "/queues" },
+        { text: t("layout.sidebar.pods"), icon: <WorkspacesIcon />, path: "/pods" },
+        { text: t("layout.sidebar.podGroups"), icon: <CategoryIcon />, path: "/podgroups" },
     ];
 
     return (
@@ -71,10 +74,12 @@ const Layout = () => {
                         sx={{
                             color: "#ffffff",
                             fontWeight: 500,
+                            flexGrow: 1,
                         }}
                     >
-                        Volcano Dashboard
+                        {t("layout.appTitle")}
                     </Typography>
+                    <LanguageSwitcher />
                 </Toolbar>
             </AppBar>
 
