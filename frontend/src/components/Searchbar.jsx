@@ -1,5 +1,6 @@
 // SearchBar.js
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Container,
     Row,
@@ -31,6 +32,7 @@ const SearchBar = ({
     createlabel,
 }) => {
     const [dialogOpen, setDialogOpen] = useState(false);
+    const { t } = useTranslation();
 
     const handleOpenDialog = () => setDialogOpen(true);
     const handleCloseDialog = () => setDialogOpen(false);
@@ -127,7 +129,7 @@ const SearchBar = ({
                                     />
                                     <span>
                                         {isRefreshing
-                                            ? "Refreshing..."
+                                            ? t("common.refreshing")
                                             : refreshLabel}
                                     </span>
                                 </Button>
