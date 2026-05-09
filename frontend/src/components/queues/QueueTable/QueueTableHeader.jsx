@@ -53,7 +53,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Name
+                        名称
                     </Typography>
                 </TableCell>
 
@@ -83,7 +83,7 @@ const QueueTableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {`Allocated ${field}`}
+                                {`已分配 ${field}`}
                             </Typography>
                             <IconButton
                                 size="small"
@@ -135,7 +135,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Creation Time
+                        创建时间
                     </Typography>
                     <Button
                         size="small"
@@ -176,7 +176,7 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        排序
                     </Button>
                 </TableCell>
                 <TableCell
@@ -197,7 +197,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        State
+                        状态
                     </Typography>
                     <Button
                         size="small"
@@ -228,7 +228,7 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Filter: {filters.status}
+                        筛选：{filters.status}
                     </Button>
                     <Menu
                         anchorEl={anchorEl.status}
@@ -312,7 +312,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Actions
+                        操作
                     </Typography>
                 </TableCell>
             </TableRow>
