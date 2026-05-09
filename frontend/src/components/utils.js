@@ -1,6 +1,8 @@
-export const fetchAllNamespaces = async () => {
+export const fetchAllNamespaces = async (clusterContext = "default") => {
     try {
-        const response = await fetch(`/api/namespaces`);
+        const response = await fetch(`/api/namespaces`, {
+            headers: { "X-Cluster-Context": clusterContext },
+        });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -17,9 +19,11 @@ export const fetchAllNamespaces = async () => {
     }
 };
 
-export const fetchAllQueues = async () => {
+export const fetchAllQueues = async (clusterContext = "default") => {
     try {
-        const response = await fetch(`/api/all-queues`);
+        const response = await fetch(`/api/all-queues`, {
+            headers: { "X-Cluster-Context": clusterContext },
+        });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
+import apiClient from "../../config/apiClient";
+import { useCluster } from "../../config/ClusterContext";
 import SearchBar from "../Searchbar";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
@@ -9,6 +11,7 @@ import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
 
 const Pods = () => {
+    const { currentCluster } = useCluster();
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
     const [, setLoading] = useState(true);
@@ -35,7 +38,7 @@ const Pods = () => {
         setError(null);
 
         try {
-            const response = await axios.get(`/api/pods`, {
+            const response = await apiClient.get(`/api/pods`, {
                 params: {
                     search: searchText,
                     namespace: filters.namespace,
@@ -60,8 +63,8 @@ const Pods = () => {
 
     useEffect(() => {
         fetchPods();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPods]);
+        fetchAllNamespaces(currentCluster).then(setAllNamespaces);
+    }, [fetchPods, currentCluster]);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -88,7 +91,9 @@ const Pods = () => {
 
     const fetchData = async () => {
         try {
-            const response = await fetch("/api/pods");
+            const response = await fetch("/api/pods", {
+                headers: { "X-Cluster-Context": currentCluster },
+            });
             if (response.ok) {
                 const data = await response.json();
                 setPods(data);
@@ -102,7 +107,10 @@ const Pods = () => {
         try {
             const response = await fetch("/api/pods", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Cluster-Context": currentCluster,
+                },
                 body: JSON.stringify(newPod),
             });
 
@@ -128,7 +136,7 @@ const Pods = () => {
     const handlePodClick = useCallback(async (pod) => {
         try {
             setLoading(true);
-            const response = await axios.get(
+            const response = await apiClient.get(
                 `/api/pod/${pod.metadata.namespace}/${pod.metadata.name}/yaml`,
                 { responseType: "text" },
             );

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import axios from "axios";
+import apiClient from "../../config/apiClient";
+import { useCluster } from "../../config/ClusterContext";
 import { parseCPU, parseMemoryToMi } from "../utils";
 import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
@@ -9,6 +11,7 @@ import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
 
 const Queues = () => {
+    const { currentCluster } = useCluster();
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -30,7 +33,7 @@ const Queues = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get(`/api/queues`, {
+            const response = await apiClient.get(`/api/queues`, {
                 params: {
                     page: pagination.page,
                     limit: pagination.rowsPerPage,
@@ -56,13 +59,13 @@ const Queues = () => {
 
     useEffect(() => {
         fetchQueues();
-    }, [fetchQueues]);
+    }, [fetchQueues, currentCluster]);
 
     // Create Queue handler for SearchBar
     const handleCreateQueue = async (newQueue) => {
         try {
             setLoading(true);
-            const response = await axios.post("/api/queues", newQueue);
+            const response = await apiClient.post("/api/queues", newQueue);
 
             if (response.status !== 201) {
                 let errMsg = response.data?.error || response.statusText;
@@ -99,7 +102,7 @@ const Queues = () => {
     const handleQueueClick = useCallback(async (queue) => {
         try {
             setLoading(true);
-            const response = await axios.get(
+            const response = await apiClient.get(
                 `/api/queue/${queue.metadata.name}/yaml`,
                 { responseType: "text" },
             );

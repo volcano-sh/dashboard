@@ -71,10 +71,12 @@ const Layout = () => {
                         sx={{
                             color: "#ffffff",
                             fontWeight: 500,
+                            flexGrow: 1,
                         }}
                     >
                         Volcano Dashboard
                     </Typography>
+                    <ClusterSelector />
                 </Toolbar>
             </AppBar>
 
