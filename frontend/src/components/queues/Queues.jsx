@@ -233,7 +233,7 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text="火山队列状态" />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,13 +242,13 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder="搜索队列..."
+                    refreshLabel="刷新队列"
+                    createlabel="创建队列"
                     onCreateClick={handleCreateQueue}
-                    dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
-                    dialogResourceType="Queue"
+                    dialogTitle="创建队列"
+                    dialogResourceNameLabel="队列名称"
+                    dialogResourceType="队列"
                 />
             </Box>
             <QueueTable
