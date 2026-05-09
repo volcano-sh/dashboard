@@ -1,0 +1,12 @@
+{
+    "app": {
+        "title": "Volcano 仪表盘"
+    },
+    "nav": {
+        "dashboard": "仪表盘",
+        "jobs": "作业",
+        "queues": "队列",
+        "pods": "Pod",
+        "podGroups": "Pod 组"
+    }
+}
