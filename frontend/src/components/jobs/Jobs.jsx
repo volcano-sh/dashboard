@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import TitleComponent from "../Titlecomponent";
@@ -9,6 +10,7 @@ import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
 
 const Jobs = () => {
+    const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -213,7 +215,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text={t("jobs.pageTitle")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -222,11 +224,11 @@ const Jobs = () => {
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
+                    placeholder={t("jobs.searchPlaceholder")}
+                    refreshLabel={t("jobs.refreshLabel")}
+                    createlabel={t("jobs.createLabel")}
+                    dialogTitle={t("jobs.createDialogTitle")}
+                    dialogResourceNameLabel={t("jobs.resourceNameLabel")}
                     dialogResourceType="Job"
                     onCreateClick={handleCreateJob}
                 />

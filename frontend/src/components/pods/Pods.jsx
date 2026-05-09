@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import SearchBar from "../Searchbar";
@@ -9,6 +10,7 @@ import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
 
 const Pods = () => {
+    const { t } = useTranslation();
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
     const [, setLoading] = useState(true);
@@ -185,7 +187,7 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Pods Status" />
+            <TitleComponent text={t("pods.pageTitle")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -194,11 +196,11 @@ const Pods = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search Pods..."
-                    refreshLabel="Refresh Pods"
-                    createlabel="Create Pod"
-                    dialogTitle="Create a Pod"
-                    dialogResourceNameLabel="Pod Name"
+                    placeholder={t("pods.searchPlaceholder")}
+                    refreshLabel={t("pods.refreshLabel")}
+                    createlabel={t("pods.createLabel")}
+                    dialogTitle={t("pods.createDialogTitle")}
+                    dialogResourceNameLabel={t("pods.resourceNameLabel")}
                     dialogResourceType="Pod"
                     onCreateClick={handleCreatePod}
                 />

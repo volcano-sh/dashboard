@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography } from "@mui/material";
 import axios from "axios";
 import { parseCPU, parseMemoryToMi } from "../utils";
@@ -9,6 +10,7 @@ import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
 
 const Queues = () => {
+    const { t } = useTranslation();
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -233,7 +235,7 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text={t("queues.pageTitle")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,12 +244,12 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder={t("queues.searchPlaceholder")}
+                    refreshLabel={t("queues.refreshLabel")}
+                    createlabel={t("queues.createLabel")}
                     onCreateClick={handleCreateQueue}
-                    dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
+                    dialogTitle={t("queues.createDialogTitle")}
+                    dialogResourceNameLabel={t("queues.resourceNameLabel")}
                     dialogResourceType="Queue"
                 />
             </Box>
