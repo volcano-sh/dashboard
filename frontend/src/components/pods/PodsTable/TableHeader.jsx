@@ -54,7 +54,13 @@ const TableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {header}
+                                {{
+                                    Name: "名称",
+                                    Namespace: "命名空间",
+                                    "Creation Time": "创建时间",
+                                    Status: "状态",
+                                    Age: "存活时间",
+                                }[header] || header}
                             </Typography>
                             {(header === "Namespace" ||
                                 header === "Status") && (
@@ -105,7 +111,15 @@ const TableHeader = ({
                                         },
                                     }}
                                 >
-                                    Filter: {filters[header.toLowerCase()]}
+                                    筛选:{" "}
+                                    {{
+                                        All: "全部",
+                                        Running: "运行中",
+                                        Pending: "等待中",
+                                        Succeeded: "成功",
+                                        Failed: "失败",
+                                    }[filters[header.toLowerCase()]] ||
+                                        filters[header.toLowerCase()]}
                                 </Button>
                             )}
                             {header === "Creation Time" && (
@@ -150,7 +164,7 @@ const TableHeader = ({
                                         },
                                     }}
                                 >
-                                    Sort
+                                    排序
                                 </Button>
                             )}
                         </TableCell>
