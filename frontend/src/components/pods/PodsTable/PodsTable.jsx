@@ -3,7 +3,10 @@ import {
     TableContainer,
     Table,
     TableBody,
+    TableCell,
+    TableRow,
     Paper,
+    Typography,
     useTheme,
     alpha,
 } from "@mui/material";
@@ -120,14 +123,28 @@ const PodsTable = ({
                     sortDirection={sortDirection}
                 />
                 <TableBody>
-                    {sortedPods.map((pod) => (
-                        <PodRow
-                            key={`${pod.metadata.namespace}-${pod.metadata.name}`}
-                            pod={pod}
-                            getStatusColor={getStatusColor}
-                            onPodClick={onPodClick}
-                        />
-                    ))}
+                    {sortedPods.length === 0 ? (
+                        <TableRow>
+                            <TableCell
+                                colSpan={5}
+                                align="center"
+                                sx={{ py: 8, color: "text.secondary" }}
+                            >
+                                <Typography variant="body1">
+                                    暂无数据
+                                </Typography>
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        sortedPods.map((pod) => (
+                            <PodRow
+                                key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                pod={pod}
+                                getStatusColor={getStatusColor}
+                                onPodClick={onPodClick}
+                            />
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>

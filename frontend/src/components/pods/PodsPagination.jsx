@@ -24,9 +24,9 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
                 onChange={handleChangeRowsPerPage}
                 size="small"
             >
-                <MenuItem value={5}>5 per page</MenuItem>
-                <MenuItem value={10}>10 per page</MenuItem>
-                <MenuItem value={20}>20 per page</MenuItem>
+                <MenuItem value={5}>5 条/页</MenuItem>
+                <MenuItem value={10}>10 条/页</MenuItem>
+                <MenuItem value={20}>20 条/页</MenuItem>
             </Select>
             <Box
                 sx={{
@@ -38,7 +38,7 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
                 }}
             >
                 <Typography variant="body2" sx={{ mr: 2 }}>
-                    Total Pods: {totalPods}
+                    Pod 总数: {totalPods}
                 </Typography>
                 <Pagination
                     count={Math.ceil(totalPods / pagination.rowsPerPage)}

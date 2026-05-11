@@ -51,7 +51,7 @@ const Pods = () => {
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
+            setError("获取 Pod 失败: " + err.message);
             setCachedPods([]);
         } finally {
             setLoading(false);
@@ -107,21 +107,21 @@ const Pods = () => {
             });
 
             if (!response.ok) {
-                let errorMsg = "Unknown error";
+                let errorMsg = "未知错误";
                 try {
                     const errData = await response.json();
                     errorMsg = errData.error || response.statusText;
                 } catch {
                     // ignore error
                 }
-                alert("Error creating pod: " + errorMsg);
+                alert("创建 Pod 出错: " + errorMsg);
                 return;
             }
 
-            alert("Pod created successfully!");
+            alert("Pod 创建成功！");
             await fetchData(); // Now fetchData is defined in the same scope
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert("网络错误: " + err.message);
         }
     };
 
@@ -151,7 +151,7 @@ const Pods = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch pod YAML:", err);
-            setError("Failed to fetch pod YAML: " + err.message);
+            setError("获取 Pod YAML 失败: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -185,7 +185,7 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Pods Status" />
+            <TitleComponent text="Volcano Pod 状态" />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -194,11 +194,11 @@ const Pods = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search Pods..."
-                    refreshLabel="Refresh Pods"
-                    createlabel="Create Pod"
-                    dialogTitle="Create a Pod"
-                    dialogResourceNameLabel="Pod Name"
+                    placeholder="搜索 Pod..."
+                    refreshLabel="刷新 Pod"
+                    createlabel="创建 Pod"
+                    dialogTitle="创建 Pod"
+                    dialogResourceNameLabel="Pod 名称"
                     dialogResourceType="Pod"
                     onCreateClick={handleCreatePod}
                 />

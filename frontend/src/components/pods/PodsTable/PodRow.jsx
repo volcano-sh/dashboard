@@ -62,7 +62,17 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
 
             <TableCell sx={{ padding: "16px 24px" }}>
                 <Chip
-                    label={pod.status?.phase || "Unknown"}
+                    label={(() => {
+                        const phase = pod.status?.phase || "Unknown";
+                        const phaseMap = {
+                            Running: "运行中",
+                            Succeeded: "已成功",
+                            Failed: "已失败",
+                            Pending: "等待中",
+                            Unknown: "未知",
+                        };
+                        return phaseMap[phase] || phase;
+                    })()}
                     sx={{
                         bgcolor: getStatusColor(pod.status?.phase || "Unknown"),
                         color: "common.white",
