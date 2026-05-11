@@ -9,7 +9,13 @@ const FilterMenu = ({ anchorEl, handleClose, items, filterType }) => (
     >
         {items.map((item) => (
             <MenuItem key={item} onClick={() => handleClose(filterType, item)}>
-                {item}
+                {{
+                    All: "全部",
+                    Running: "运行中",
+                    Pending: "等待中",
+                    Succeeded: "成功",
+                    Failed: "失败",
+                }[item] || item}
             </MenuItem>
         ))}
     </Menu>

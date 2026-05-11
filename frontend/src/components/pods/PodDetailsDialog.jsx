@@ -26,7 +26,7 @@ const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
                 },
             }}
         >
-            <DialogTitle>Pod YAML - {podName}</DialogTitle>
+            <DialogTitle>Pod YAML 详情 - {podName}</DialogTitle>
             <DialogContent>
                 <Box
                     sx={{
@@ -75,7 +75,7 @@ const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
                             },
                         }}
                     >
-                        Close
+                        关闭
                     </Button>
                 </Box>
             </DialogActions>

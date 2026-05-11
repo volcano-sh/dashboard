@@ -185,7 +185,7 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Pods Status" />
+            <TitleComponent text="Volcano Pod 状态" />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -194,11 +194,11 @@ const Pods = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search Pods..."
-                    refreshLabel="Refresh Pods"
-                    createlabel="Create Pod"
-                    dialogTitle="Create a Pod"
-                    dialogResourceNameLabel="Pod Name"
+                    placeholder="搜索 Pod..."
+                    refreshLabel="刷新 Pod"
+                    createlabel="创建 Pod"
+                    dialogTitle="创建 Pod"
+                    dialogResourceNameLabel="Pod 名称"
                     dialogResourceType="Pod"
                     onCreateClick={handleCreatePod}
                 />
