@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     Box,
     Button,
@@ -9,6 +10,8 @@ import {
 } from "@mui/material";
 
 const JobDialog = ({ open, handleClose, selectedJobName, selectedJobYaml }) => {
+    const { t } = useTranslation();
+
     return (
         <Dialog
             open={open}
@@ -25,7 +28,7 @@ const JobDialog = ({ open, handleClose, selectedJobName, selectedJobYaml }) => {
                 },
             }}
         >
-            <DialogTitle>Job YAML - {selectedJobName}</DialogTitle>
+            <DialogTitle>{t("jobs.yamlDialogTitle", { name: selectedJobName })}</DialogTitle>
             <DialogContent>
                 <Box
                     sx={{
@@ -74,7 +77,7 @@ const JobDialog = ({ open, handleClose, selectedJobName, selectedJobYaml }) => {
                             },
                         }}
                     >
-                        Close
+                        {t("common.close")}
                     </Button>
                 </Box>
             </DialogActions>

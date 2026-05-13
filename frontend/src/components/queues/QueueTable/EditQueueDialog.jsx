@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { useTranslation } from "react-i18next";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
@@ -147,6 +148,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
     const [editMode, setEditMode] = useState("yaml");
     const [formState, setFormState] = useState({});
     const [saving, setSaving] = useState(false);
+    const { t } = useTranslation();
 
     // Refs to avoid infinite loops when syncing form & YAML
     const skipYamlUpdate = useRef(false);
@@ -207,11 +209,11 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                 editMode === "yaml" ? yaml.load(editorValue) : formState;
 
             if (!updated?.metadata?.name) {
-                throw new Error("Queue metadata.name is missing");
+                throw new Error(t("queues.editDialog.missingName"));
             }
 
             if (!updated.spec || Object.keys(updated.spec).length === 0) {
-                throw new Error("Queue spec is empty or missing");
+                throw new Error(t("queues.editDialog.emptySpec"));
             }
 
             setSaving(true);
@@ -251,7 +253,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Save failed:", err);
-            alert(err.message || "Failed to save");
+            alert(err.message || t("queues.editDialog.saveFailed"));
         }
     };
 
@@ -264,14 +266,14 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     alignItems: "center",
                 }}
             >
-                Edit Queue
+                {t("queues.editDialog.title")}
                 <ToggleButtonGroup
                     value={editMode}
                     exclusive
                     onChange={handleModeChange}
                 >
                     <ToggleButton value="yaml">YAML</ToggleButton>
-                    <ToggleButton value="form">Form</ToggleButton>
+                    <ToggleButton value="form">{t("queues.editDialog.form")}</ToggleButton>
                 </ToggleButtonGroup>
             </DialogTitle>
 
@@ -304,7 +306,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     variant="contained"
                     disabled={saving}
                 >
-                    Cancel
+                    {t("common.cancel")}
                 </Button>
                 <Button
                     onClick={handleSave}
@@ -313,7 +315,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     disabled={saving}
                     startIcon={saving && <CircularProgress size={18} />}
                 >
-                    {saving ? "Updating…" : "Update"}
+                    {saving ? t("queues.editDialog.updating") : t("common.update")}
                 </Button>
             </DialogActions>
         </Dialog>

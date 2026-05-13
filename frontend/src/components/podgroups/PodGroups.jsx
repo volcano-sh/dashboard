@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import { escape } from "lodash";
@@ -10,6 +11,7 @@ import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
 
 const PodGroups = () => {
+    const { t } = useTranslation();
     const [podGroups, setPodGroups] = useState([]);
     const [cachedPodGroups, setCachedPodGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ const PodGroups = () => {
             setCachedPodGroups(data.items || []);
             setTotalItems(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch podgroups: " + err.message);
+            setError(t("common.fetchError", { resource: "PodGroup", message: err.message }));
             setCachedPodGroups([]);
         } finally {
             setLoading(false);
@@ -111,7 +113,7 @@ const PodGroups = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch YAML:", err);
-            setError("Failed to fetch YAML: " + err.message);
+            setError(t("common.fetchYamlError", { resource: "PodGroup", message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -167,7 +169,7 @@ const PodGroups = () => {
 
     // For now, no creation dialog
     const handleCreate = () => {
-        alert("Create PodGroup not implemented yet");
+        alert(t("podGroups.notImplemented"));
     };
 
     return (
@@ -177,7 +179,7 @@ const PodGroups = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano PodGroups" />
+            <TitleComponent text={t("podGroups.pageTitle")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -186,11 +188,11 @@ const PodGroups = () => {
                     handleRefresh={fetchPodGroups}
                     fetchData={fetchPodGroups}
                     isRefreshing={loading}
-                    placeholder="Search PodGroups..."
-                    refreshLabel="Refresh Listings"
-                    createlabel="Create PodGroup"
-                    dialogTitle="Create PodGroup"
-                    dialogResourceNameLabel="Name"
+                    placeholder={t("podGroups.searchPlaceholder")}
+                    refreshLabel={t("podGroups.refreshLabel")}
+                    createlabel={t("podGroups.createLabel")}
+                    dialogTitle={t("podGroups.createDialogTitle")}
+                    dialogResourceNameLabel={t("podGroups.resourceNameLabel")}
                     dialogResourceType="PodGroup"
                     onCreateClick={handleCreate}
                 />

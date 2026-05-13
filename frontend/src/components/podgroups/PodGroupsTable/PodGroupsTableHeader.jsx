@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableHead,
     TableRow,
@@ -28,6 +29,7 @@ const PodGroupsTableHeader = ({
     toggleSortDirection,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
     const getFilterButtonStyle = (isActive) => ({
         textTransform: "none",
@@ -67,7 +69,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Name
+                        {t("common.name")}
                     </Typography>
                 </TableCell>
 
@@ -94,7 +96,7 @@ const PodGroupsTableHeader = ({
                             fontWeight="700"
                             color="text.primary"
                         >
-                            Namespace
+                            {t("common.namespace")}
                         </Typography>
                         <Button
                             size="small"
@@ -133,7 +135,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Queue
+                        {t("podGroups.queue")}
                     </Typography>
                 </TableCell>
 
@@ -153,7 +155,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Min Member
+                        {t("podGroups.minMember")}
                     </Typography>
                 </TableCell>
 
@@ -174,7 +176,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Creation Time
+                        {t("common.creationTime")}
                     </Typography>
                     <Button
                         size="small"
@@ -211,7 +213,7 @@ const PodGroupsTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {t("common.sort")}
                     </Button>
                 </TableCell>
 
@@ -239,7 +241,7 @@ const PodGroupsTableHeader = ({
                             fontWeight="700"
                             color="text.primary"
                         >
-                            Status
+                            {t("common.status")}
                         </Typography>
                         <Button
                             size="small"

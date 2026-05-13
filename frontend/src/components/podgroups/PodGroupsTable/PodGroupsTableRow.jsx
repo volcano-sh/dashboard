@@ -1,9 +1,11 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { TableRow, TableCell, Box, useTheme, alpha } from "@mui/material";
 import JobStatusChip from "../../jobs/JobStatusChip"; // Reuse chip
 
 const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
     return (
         <TableRow
@@ -57,7 +59,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                     fontSize: "0.95rem",
                 }}
             >
-                {podGroup.spec.queue || "N/A"}
+                {podGroup.spec.queue || t("common.na")}
             </TableCell>
 
             <TableCell
@@ -67,7 +69,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                     fontSize: "0.95rem",
                 }}
             >
-                {podGroup.spec.minMember || "N/A"}
+                {podGroup.spec.minMember || t("common.na")}
             </TableCell>
 
             <TableCell
@@ -95,7 +97,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                 >
                     <JobStatusChip
                         status={
-                            podGroup.status ? podGroup.status.phase : "Unknown"
+                            podGroup.status ? podGroup.status.phase : t("common.unknown")
                         }
                         sx={{
                             height: "30px",

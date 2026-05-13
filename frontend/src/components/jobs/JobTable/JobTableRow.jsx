@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableRow,
     TableCell,
@@ -18,6 +19,7 @@ const JobTableRow = ({
     onJobUpdate, // Function to update job after edit
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const handleOpenEditDialog = (e) => {
@@ -87,7 +89,7 @@ const JobTableRow = ({
                         fontSize: "0.95rem",
                     }}
                 >
-                    {job.spec.queue || "N/A"}
+                    {job.spec.queue || t("common.na")}
                 </TableCell>
 
                 <TableCell
@@ -115,7 +117,7 @@ const JobTableRow = ({
                     >
                         <JobStatusChip
                             status={
-                                job.status ? job.status.state.phase : "Unknown"
+                                job.status ? job.status.state.phase : t("common.unknown")
                             }
                             sx={{
                                 height: "30px",

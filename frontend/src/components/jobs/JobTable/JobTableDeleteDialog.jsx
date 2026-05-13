@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     Dialog,
     DialogTitle,
@@ -17,6 +18,7 @@ const JobTableDeleteDialog = ({
     jobToDelete,
     error,
 }) => {
+    const { t } = useTranslation();
     const showOnlyError = Boolean(error);
 
     return (
@@ -28,7 +30,7 @@ const JobTableDeleteDialog = ({
                     alignItems: "center",
                 }}
             >
-                {showOnlyError ? "Error" : "Delete Job"}
+                {showOnlyError ? t("common.error") : t("jobs.deleteDialog.title")}
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -38,14 +40,14 @@ const JobTableDeleteDialog = ({
                 {showOnlyError ? (
                     <Alert severity="error">{error}</Alert>
                 ) : (
-                    `Are you sure you want to delete job "${jobToDelete}"? This action cannot be undone.`
+                    t("jobs.deleteDialog.confirmation", { name: jobToDelete })
                 )}
             </DialogContent>
 
             <DialogActions>
                 {!showOnlyError && (
                     <Button onClick={onClose} color="primary">
-                        Cancel
+                        {t("common.cancel")}
                     </Button>
                 )}
                 {!showOnlyError && (
@@ -54,7 +56,7 @@ const JobTableDeleteDialog = ({
                         color="error"
                         variant="contained"
                     >
-                        Delete
+                        {t("common.delete")}
                     </Button>
                 )}
             </DialogActions>

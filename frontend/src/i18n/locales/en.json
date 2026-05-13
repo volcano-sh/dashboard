@@ -1,0 +1,184 @@
+{
+  "layout": {
+    "appTitle": "Volcano Dashboard",
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "jobs": "Jobs",
+      "queues": "Queues",
+      "pods": "Pods",
+      "podGroups": "PodGroups"
+    }
+  },
+  "dashboard": {
+    "title": "Volcano Dashboard",
+    "refreshTooltip": "Refresh Data",
+    "stats": {
+      "totalJobs": "Total Jobs",
+      "activeQueues": "Active Queues",
+      "runningPods": "Running Pods",
+      "completeRate": "Complete Rate"
+    }
+  }, 
+  "charts": {
+    "jobStatus": {
+      "title": "Jobs Status",
+      "noData": "No data available",
+      "completed": "Completed",
+      "running": "Running",
+      "failed": "Failed"
+    },
+    "queueResources": {
+      "title": "Queue Resources",
+      "noData": "No data available for selected resource type",
+      "allocated": "Allocated",
+      "capacity": "Capacity",
+      "allocatedLabel": "{{resource}} Allocated",
+      "capacityLabel": "{{resource}} Capacity",
+      "resourceLabel": "{{resource}} Resources",
+      "yAxis": {
+        "memory": "Memory (Gi)",
+        "cpu": "CPU Cores",
+        "pods": "Pod Count",
+        "gpu": "GPU Count",
+        "default": "Amount"
+      }
+    },
+    "podTimeline": {
+      "title": "Pod Status Timeline",
+      "runningPods": "Running Pods"
+    }
+  },
+  "common": {
+    "search": "Search",
+    "refresh": "Refresh",
+    "create": "Create",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "update": "Update",
+    "edit": "Edit",
+    "save": "Save",
+    "error": "Error",
+    "sort": "Sort",
+    "filter": "Filter",
+    "filterLabel": "Filter: {{value}}",
+    "actions": "Actions",
+    "name": "Name",
+    "namespace": "Namespace",
+    "status": "Status",
+    "creationTime": "Creation Time",
+    "unknown": "Unknown",
+    "refreshing": "Refreshing...",
+    "na": "N/A",
+    "age": "Age",
+    "noDataFound": "No {{resource}} found.",
+    "networkError": "Network error: {{message}}",
+    "fetchError": "Failed to fetch {{resource}}: {{message}}",
+    "createSuccess": "{{resource}} created successfully!",
+    "createError": "Error creating {{resource}}: {{message}}",
+    "fetchYamlError": "Failed to fetch {{resource}} YAML: {{message}}"
+  },
+  "jobs": {
+    "pageTitle": "Volcano Jobs Status",
+    "searchPlaceholder": "Search jobs...",
+    "refreshLabel": "Refresh Job Listings",
+    "createLabel": "Create Job",
+    "createDialogTitle": "Create a Job",
+    "resourceNameLabel": "Job Name",
+    "yamlDialogTitle": "Job YAML - {{name}}",
+    "queue": "Queue",
+    "pagination": {
+      "perPage": "{{count}} per page",
+      "totalJobs": "Total Jobs: {{count}}"
+    },
+    "createYaml": {
+      "title": "Create Job (YAML)",
+      "instruction": "Paste or type your Job YAML specification below:",
+      "yamlObjectError": "YAML must describe an object.",
+      "yamlFormatError": "Invalid YAML format."
+    },
+    "editDialog": {
+      "title": "Edit Job",
+      "invalidYaml": "Invalid YAML format. Please check your input."
+    },
+    "deleteDialog": {
+      "title": "Delete Job",
+      "confirmation": "Are you sure you want to delete job \"{{name}}\"? This action cannot be undone."
+    }
+  },
+  "queues": {
+    "pageTitle": "Volcano Queues Status",
+    "searchPlaceholder": "Search queues...",
+    "refreshLabel": "Refresh Queues",
+    "createLabel": "Create Queue",
+    "createDialogTitle": "Create a Queue",
+    "resourceNameLabel": "Queue Name",
+    "yamlDialogTitle": "Queue YAML - {{name}}",
+    "state": "State",
+    "allocatedField": "Allocated {{field}}",
+    "filterLabel": "Filter: {{value}}",
+    "pagination": {
+      "perPage": "{{count}} per page",
+      "totalQueues": "Total Queues: {{count}}"
+    },
+    "editDialog": {
+      "title": "Edit Queue",
+      "form": "Form",
+      "missingName": "Queue metadata.name is missing",
+      "emptySpec": "Queue spec is empty or missing",
+      "saveFailed": "Failed to save",
+      "updating": "Updating…"
+    },
+    "deleteDialog": {
+      "title": "Delete Queue",
+      "confirmation": "Are you sure you want to delete queue \"{{name}}\"? This action cannot be undone."
+    },
+    "createError": "Failed to create queue: {{message}}"
+  },
+  "pods": {
+    "pageTitle": "Volcano Pods Status",
+    "searchPlaceholder": "Search Pods...",
+    "refreshLabel": "Refresh Pods",
+    "createLabel": "Create Pod",
+    "createDialogTitle": "Create a Pod",
+    "resourceNameLabel": "Pod Name",
+    "yamlDialogTitle": "Pod YAML - {{name}}",
+    "age": "Age",
+    "pagination": {
+      "perPage": "{{count}} per page",
+      "totalPods": "Total Pods: {{count}}"
+    }
+  },
+  "podGroups": {
+    "pageTitle": "Volcano PodGroups",
+    "searchPlaceholder": "Search PodGroups...",
+    "refreshLabel": "Refresh Listings",
+    "createLabel": "Create PodGroup",
+    "createDialogTitle": "Create PodGroup",
+    "resourceNameLabel": "Name",
+    "yamlDialogTitle": "PodGroup YAML - {{name}}",
+    "queue": "Queue",
+    "minMember": "Min Member",
+    "notImplemented": "Create PodGroup not implemented yet"
+  },
+  "createDialog": {
+    "weight": "Weight *",
+    "reclaimable": "Reclaimable",
+    "resourceSection": "{{section}} Resources (Optional)",
+    "memory": "Memory",
+    "cpu": "CPU",
+    "customScalar": "Custom Scalar Resources",
+    "key": "Key",
+    "value": "Value",
+    "containerName": "Container Name",
+    "containerImage": "Container Image",
+    "containerPort": "Container Port",
+    "validation": {
+      "nameRequired": "{{type}} name is required",
+      "containerNameRequired": "Container name is required",
+      "containerImageRequired": "Container image is required",
+      "containerPortRequired": "Container port is required and must be positive",
+      "weightRequired": "Weight is required and must be positive"
+    }
+  }
+}

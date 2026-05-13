@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import TitleComponent from "../Titlecomponent";
@@ -9,9 +10,10 @@ import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
 
 const Jobs = () => {
+    const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
-    const [, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [allQueues, setAllQueues] = useState([]);
@@ -59,7 +61,7 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            setError(t("common.fetchError", { resource: t("layout.sidebar.jobs").toLowerCase(), message: err.message }));
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -115,7 +117,7 @@ const Jobs = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            setError(t("common.fetchYamlError", { resource: t("layout.sidebar.jobs").toLowerCase(), message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -157,13 +159,13 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                alert(t("common.createError", { resource: t("layout.sidebar.jobs").toLowerCase(), message: errorMsg }));
                 return;
             }
 
-            alert("Job created successfully!");
+            alert(t("common.createSuccess", { resource: t("layout.sidebar.jobs") }));
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(t("common.networkError", { message: err.message }));
         }
     };
 
@@ -213,7 +215,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text={t("jobs.pageTitle")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -221,12 +223,12 @@ const Jobs = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
+                    isRefreshing={loading}
+                    placeholder={t("jobs.searchPlaceholder")}
+                    refreshLabel={t("jobs.refreshLabel")}
+                    createlabel={t("jobs.createLabel")}
+                    dialogTitle={t("jobs.createDialogTitle")}
+                    dialogResourceNameLabel={t("jobs.resourceNameLabel")}
                     dialogResourceType="Job"
                     onCreateClick={handleCreateJob}
                 />

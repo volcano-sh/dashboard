@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography } from "@mui/material";
 import axios from "axios";
 import { parseCPU, parseMemoryToMi } from "../utils";
@@ -9,6 +10,7 @@ import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
 
 const Queues = () => {
+    const { t } = useTranslation();
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -47,7 +49,7 @@ const Queues = () => {
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            setError(t("common.fetchError", { resource: t("layout.sidebar.queues").toLowerCase(), message: err.message }));
             setQueues([]);
         } finally {
             setLoading(false);
@@ -66,15 +68,13 @@ const Queues = () => {
 
             if (response.status !== 201) {
                 let errMsg = response.data?.error || response.statusText;
-                alert("Failed to create queue: " + errMsg);
+                alert(t("queues.createError", { message: errMsg }));
                 return;
             }
 
-            alert("Queue created successfully!");
+            alert(t("common.createSuccess", { resource: t("layout.sidebar.queues") }));
         } catch (err) {
-            alert(
-                "Network error: " + (err?.response?.data?.error || err.message),
-            );
+            alert(t("common.networkError", { message: err?.response?.data?.error || err.message }));
         } finally {
             setLoading(false);
         }
@@ -122,7 +122,7 @@ const Queues = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            setError(t("common.fetchYamlError", { resource: t("layout.sidebar.queues").toLowerCase(), message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -233,7 +233,7 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text={t("queues.pageTitle")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,12 +242,12 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder={t("queues.searchPlaceholder")}
+                    refreshLabel={t("queues.refreshLabel")}
+                    createlabel={t("queues.createLabel")}
                     onCreateClick={handleCreateQueue}
-                    dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
+                    dialogTitle={t("queues.createDialogTitle")}
+                    dialogResourceNameLabel={t("queues.resourceNameLabel")}
                     dialogResourceType="Queue"
                 />
             </Box>

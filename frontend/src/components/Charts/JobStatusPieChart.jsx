@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
@@ -6,14 +7,17 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const JobStatusPieChart = ({ data }) => {
+    const { t } = useTranslation();
+
     if (!data || !Array.isArray(data)) {
         return (
             <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
+                <Typography>{t("charts.jobStatus.noData")}</Typography>
             </Box>
         );
     }
 
+    // Use English keys internally for data processing
     const statusCounts = data.reduce(
         (acc, job) => {
             const status = job.status;
@@ -36,6 +40,13 @@ const JobStatusPieChart = ({ data }) => {
         },
     );
 
+    // Map internal keys to translated labels for display
+    const statusLabels = {
+        Completed: t("charts.jobStatus.completed"),
+        Running: t("charts.jobStatus.running"),
+        Failed: t("charts.jobStatus.failed"),
+    };
+
     const total = Object.values(statusCounts).reduce((a, b) => a + b, 0);
     const colors = {
         Completed: "#4caf50",
@@ -44,7 +55,7 @@ const JobStatusPieChart = ({ data }) => {
     };
 
     const chartData = {
-        labels: Object.keys(statusCounts),
+        labels: Object.keys(statusCounts).map((key) => statusLabels[key]),
         datasets: [
             {
                 data: Object.values(statusCounts),
@@ -80,7 +91,7 @@ const JobStatusPieChart = ({ data }) => {
             }}
         >
             <Typography variant="h6" align="center" sx={{ mb: 1 }}>
-                Jobs Status
+                {t("charts.jobStatus.title")}
             </Typography>
 
             <Box
@@ -159,7 +170,7 @@ const JobStatusPieChart = ({ data }) => {
                                 variant="body2"
                                 sx={{ mr: 2, minWidth: 70 }}
                             >
-                                {status}
+                                {statusLabels[status]}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 {count} (

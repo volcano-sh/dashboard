@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Box, MenuItem, Pagination, Select, Typography } from "@mui/material";
 
 const JobPagination = ({
@@ -7,6 +8,8 @@ const JobPagination = ({
     handleChangePage,
     handleChangeRowsPerPage,
 }) => {
+    const { t } = useTranslation();
+
     return (
         <Box
             sx={{
@@ -21,9 +24,9 @@ const JobPagination = ({
                 onChange={handleChangeRowsPerPage}
                 size="small"
             >
-                <MenuItem value={5}>5 per page</MenuItem>
-                <MenuItem value={10}>10 per page</MenuItem>
-                <MenuItem value={20}>20 per page</MenuItem>
+                <MenuItem value={5}>{t("jobs.pagination.perPage", { count: 5 })}</MenuItem>
+                <MenuItem value={10}>{t("jobs.pagination.perPage", { count: 10 })}</MenuItem>
+                <MenuItem value={20}>{t("jobs.pagination.perPage", { count: 20 })}</MenuItem>
             </Select>
             <Box
                 sx={{
@@ -35,7 +38,7 @@ const JobPagination = ({
                 }}
             >
                 <Typography variant="body2" sx={{ mr: 2 }}>
-                    Total Jobs: {totalJobs}
+                    {t("jobs.pagination.totalJobs", { count: totalJobs })}
                 </Typography>
                 <Pagination
                     count={Math.ceil(totalJobs / pagination.rowsPerPage)}

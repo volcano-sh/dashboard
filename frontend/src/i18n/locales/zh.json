@@ -1,0 +1,184 @@
+{
+  "layout": {
+    "appTitle": "Volcano 仪表盘",
+    "sidebar": {
+      "dashboard": "仪表盘",
+      "jobs": "作业",
+      "queues": "队列",
+      "pods": "Pod",
+      "podGroups": "PodGroup"
+    }
+  },
+  "dashboard": {
+    "title": "Volcano 仪表盘",
+    "refreshTooltip": "刷新数据",
+    "stats": {
+      "totalJobs": "作业总数",
+      "activeQueues": "活跃队列",
+      "runningPods": "运行中的 Pod",
+      "completeRate": "完成率"
+    }
+  },
+  "charts": {
+    "jobStatus": {
+      "title": "作业状态",
+      "noData": "暂无数据",
+      "completed": "已完成",
+      "running": "运行中",
+      "failed": "失败"
+    },
+    "queueResources": {
+      "title": "队列资源",
+      "noData": "所选资源类型暂无数据",
+      "allocated": "已分配",
+      "capacity": "容量",
+      "allocatedLabel": "{{resource}} 已分配",
+      "capacityLabel": "{{resource}} 容量",
+      "resourceLabel": "{{resource}} 资源",
+      "yAxis": {
+        "memory": "内存 (Gi)",
+        "cpu": "CPU 核心数",
+        "pods": "Pod 数量",
+        "gpu": "GPU 数量",
+        "default": "数量"
+      }
+    },
+    "podTimeline": {
+      "title": "Pod 状态时间线",
+      "runningPods": "运行中的 Pod"
+    }
+  },
+  "common": {
+    "search": "搜索",
+    "refresh": "刷新",
+    "create": "创建",
+    "cancel": "取消",
+    "close": "关闭",
+    "delete": "删除",
+    "update": "更新",
+    "edit": "编辑",
+    "save": "保存",
+    "error": "错误",
+    "sort": "排序",
+    "filter": "筛选",
+    "filterLabel": "筛选: {{value}}",
+    "actions": "操作",
+    "name": "名称",
+    "namespace": "命名空间",
+    "status": "状态",
+    "creationTime": "创建时间",
+    "unknown": "未知",
+    "refreshing": "刷新中...",
+    "na": "N/A",
+    "age": "存活时间",
+    "noDataFound": "未找到{{resource}}。",
+    "networkError": "网络错误: {{message}}",
+    "fetchError": "获取{{resource}}失败: {{message}}",
+    "createSuccess": "{{resource}}创建成功！",
+    "createError": "创建{{resource}}时出错: {{message}}",
+    "fetchYamlError": "获取{{resource}} YAML 失败: {{message}}"
+  },
+  "jobs": {
+    "pageTitle": "Volcano 作业状态",
+    "searchPlaceholder": "搜索作业...",
+    "refreshLabel": "刷新作业列表",
+    "createLabel": "创建作业",
+    "createDialogTitle": "创建作业",
+    "resourceNameLabel": "作业名称",
+    "yamlDialogTitle": "作业 YAML - {{name}}",
+    "queue": "队列",
+    "pagination": {
+      "perPage": "每页 {{count}} 条",
+      "totalJobs": "作业总数: {{count}}"
+    },
+    "createYaml": {
+      "title": "创建作业 (YAML)",
+      "instruction": "请在下方粘贴或输入作业的 YAML 规格:",
+      "yamlObjectError": "YAML 必须描述一个对象。",
+      "yamlFormatError": "YAML 格式无效。"
+    },
+    "editDialog": {
+      "title": "编辑作业",
+      "invalidYaml": "无效的 YAML 格式，请检查输入。"
+    },
+    "deleteDialog": {
+      "title": "删除作业",
+      "confirmation": "确定要删除作业 \"{{name}}\" 吗？此操作无法撤消。"
+    }
+  },
+  "queues": {
+    "pageTitle": "Volcano 队列状态",
+    "searchPlaceholder": "搜索队列...",
+    "refreshLabel": "刷新队列",
+    "createLabel": "创建队列",
+    "createDialogTitle": "创建队列",
+    "resourceNameLabel": "队列名称",
+    "yamlDialogTitle": "队列 YAML - {{name}}",
+    "state": "状态",
+    "allocatedField": "已分配 {{field}}",
+    "filterLabel": "筛选: {{value}}",
+    "pagination": {
+      "perPage": "每页 {{count}} 条",
+      "totalQueues": "队列总数: {{count}}"
+    },
+    "editDialog": {
+      "title": "编辑队列",
+      "form": "表单",
+      "missingName": "队列 metadata.name 缺失",
+      "emptySpec": "队列 spec 为空或缺失",
+      "saveFailed": "保存失败",
+      "updating": "更新中…"
+    },
+    "deleteDialog": {
+      "title": "删除队列",
+      "confirmation": "确定要删除队列 \"{{name}}\" 吗？此操作无法撤消。"
+    },
+    "createError": "创建队列失败: {{message}}"
+  },
+  "pods": {
+    "pageTitle": "Volcano Pod 状态",
+    "searchPlaceholder": "搜索 Pod...",
+    "refreshLabel": "刷新 Pod",
+    "createLabel": "创建 Pod",
+    "createDialogTitle": "创建 Pod",
+    "resourceNameLabel": "Pod 名称",
+    "yamlDialogTitle": "Pod YAML - {{name}}",
+    "age": "存活时间",
+    "pagination": {
+      "perPage": "每页 {{count}} 条",
+      "totalPods": "Pod 总数: {{count}}"
+    }
+  },
+  "podGroups": {
+    "pageTitle": "Volcano PodGroup",
+    "searchPlaceholder": "搜索 PodGroup...",
+    "refreshLabel": "刷新列表",
+    "createLabel": "创建 PodGroup",
+    "createDialogTitle": "创建 PodGroup",
+    "resourceNameLabel": "名称",
+    "yamlDialogTitle": "PodGroup YAML - {{name}}",
+    "queue": "队列",
+    "minMember": "最小成员数",
+    "notImplemented": "PodGroup 创建功能尚未实现"
+  },
+  "createDialog": {
+    "weight": "权重 *",
+    "reclaimable": "可回收",
+    "resourceSection": "{{section}} 资源 (可选)",
+    "memory": "内存",
+    "cpu": "CPU",
+    "customScalar": "自定义标量资源",
+    "key": "键",
+    "value": "值",
+    "containerName": "容器名称",
+    "containerImage": "容器镜像",
+    "containerPort": "容器端口",
+    "validation": {
+      "nameRequired": "{{type}} 名称不能为空",
+      "containerNameRequired": "容器名称不能为空",
+      "containerImageRequired": "容器镜像不能为空",
+      "containerPortRequired": "容器端口不能为空且必须为正数",
+      "weightRequired": "权重不能为空且必须为正数"
+    }
+  }
+}

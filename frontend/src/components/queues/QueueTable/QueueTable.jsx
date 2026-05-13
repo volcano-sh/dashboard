@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableContainer,
     Table,
@@ -28,6 +29,7 @@ const QueueTable = ({
     onQueueUpdate,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
     const [queues, setQueues] = useState([]);
 
@@ -174,7 +176,7 @@ const QueueTable = ({
                                     colSpan={allocatedFields.length + 2}
                                     align="center"
                                 >
-                                    No queues found.
+                                    {t("common.noDataFound", { resource: t("layout.sidebar.queues").toLowerCase() })}
                                 </TableCell>
                             </TableRow>
                         ) : (
