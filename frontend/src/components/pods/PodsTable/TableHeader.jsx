@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableHead,
     TableRow,
@@ -26,14 +27,23 @@ const TableHeader = ({
     sortDirection,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
+
+    const headers = [
+        { key: "name", label: t("common.name") },
+        { key: "namespace", label: t("common.namespace") },
+        { key: "creationTime", label: t("common.creationTime") },
+        { key: "status", label: t("common.status") },
+        { key: "age", label: t("pods.age") },
+    ];
 
     return (
         <TableHead>
             <TableRow>
-                {["Name", "Namespace", "Creation Time", "Status", "Age"].map(
+                {headers.map(
                     (header) => (
                         <TableCell
-                            key={header}
+                            key={header.key}
                             sx={{
                                 backgroundColor: alpha(
                                     theme.palette.background.paper,
@@ -54,16 +64,16 @@ const TableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {header}
+                                {header.label}
                             </Typography>
-                            {(header === "Namespace" ||
-                                header === "Status") && (
+                            {(header.key === "namespace" ||
+                                header.key === "status") && (
                                 <Button
                                     size="small"
                                     startIcon={<FilterList fontSize="small" />}
                                     onClick={(e) =>
                                         handleFilterClick(
-                                            header.toLowerCase(),
+                                            header.key,
                                             e,
                                         )
                                     }
@@ -79,7 +89,7 @@ const TableHeader = ({
                                         transition:
                                             "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                         backgroundColor:
-                                            filters[header.toLowerCase()] !==
+                                            filters[header.key] !==
                                             "All"
                                                 ? alpha(
                                                       theme.palette.primary
@@ -105,10 +115,10 @@ const TableHeader = ({
                                         },
                                     }}
                                 >
-                                    Filter: {filters[header.toLowerCase()]}
+                                    {t("common.filterLabel", { value: filters[header.key] })}
                                 </Button>
                             )}
-                            {header === "Creation Time" && (
+                            {header.key === "creationTime" && (
                                 <Button
                                     size="small"
                                     onClick={onSortDirectionToggle}
@@ -150,7 +160,7 @@ const TableHeader = ({
                                         },
                                     }}
                                 >
-                                    Sort
+                                    {t("common.sort")}
                                 </Button>
                             )}
                         </TableCell>

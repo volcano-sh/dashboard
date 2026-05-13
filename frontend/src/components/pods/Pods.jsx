@@ -13,7 +13,7 @@ const Pods = () => {
     const { t } = useTranslation();
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
-    const [, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [filters, setFilters] = useState({
@@ -53,7 +53,7 @@ const Pods = () => {
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
+            setError(t("common.fetchError", { resource: "Pod", message: err.message }));
             setCachedPods([]);
         } finally {
             setLoading(false);
@@ -116,14 +116,14 @@ const Pods = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating pod: " + errorMsg);
+                alert(t("common.createError", { resource: "Pod", message: errorMsg }));
                 return;
             }
 
-            alert("Pod created successfully!");
+            alert(t("common.createSuccess", { resource: "Pod" }));
             await fetchData(); // Now fetchData is defined in the same scope
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(t("common.networkError", { message: err.message }));
         }
     };
 
@@ -153,7 +153,7 @@ const Pods = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch pod YAML:", err);
-            setError("Failed to fetch pod YAML: " + err.message);
+            setError(t("common.fetchYamlError", { resource: "Pod", message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -195,7 +195,7 @@ const Pods = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={loading}
                     placeholder={t("pods.searchPlaceholder")}
                     refreshLabel={t("pods.refreshLabel")}
                     createlabel={t("pods.createLabel")}

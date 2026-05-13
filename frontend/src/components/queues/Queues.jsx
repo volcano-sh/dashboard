@@ -49,7 +49,7 @@ const Queues = () => {
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            setError(t("common.fetchError", { resource: t("layout.sidebar.queues").toLowerCase(), message: err.message }));
             setQueues([]);
         } finally {
             setLoading(false);
@@ -68,15 +68,13 @@ const Queues = () => {
 
             if (response.status !== 201) {
                 let errMsg = response.data?.error || response.statusText;
-                alert("Failed to create queue: " + errMsg);
+                alert(t("queues.createError", { message: errMsg }));
                 return;
             }
 
-            alert("Queue created successfully!");
+            alert(t("common.createSuccess", { resource: t("layout.sidebar.queues") }));
         } catch (err) {
-            alert(
-                "Network error: " + (err?.response?.data?.error || err.message),
-            );
+            alert(t("common.networkError", { message: err?.response?.data?.error || err.message }));
         } finally {
             setLoading(false);
         }
@@ -124,7 +122,7 @@ const Queues = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            setError(t("common.fetchYamlError", { resource: t("layout.sidebar.queues").toLowerCase(), message: err.message }));
         } finally {
             setLoading(false);
         }

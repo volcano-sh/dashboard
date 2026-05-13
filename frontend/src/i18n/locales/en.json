@@ -32,6 +32,8 @@
       "noData": "No data available for selected resource type",
       "allocated": "Allocated",
       "capacity": "Capacity",
+      "allocatedLabel": "{{resource}} Allocated",
+      "capacityLabel": "{{resource}} Capacity",
       "resourceLabel": "{{resource}} Resources",
       "yAxis": {
         "memory": "Memory (Gi)",
@@ -59,6 +61,7 @@
     "error": "Error",
     "sort": "Sort",
     "filter": "Filter",
+    "filterLabel": "Filter: {{value}}",
     "actions": "Actions",
     "name": "Name",
     "namespace": "Namespace",
@@ -66,7 +69,14 @@
     "creationTime": "Creation Time",
     "unknown": "Unknown",
     "refreshing": "Refreshing...",
-    "na": "N/A"
+    "na": "N/A",
+    "age": "Age",
+    "noDataFound": "No {{resource}} found.",
+    "networkError": "Network error: {{message}}",
+    "fetchError": "Failed to fetch {{resource}}: {{message}}",
+    "createSuccess": "{{resource}} created successfully!",
+    "createError": "Error creating {{resource}}: {{message}}",
+    "fetchYamlError": "Failed to fetch {{resource}} YAML: {{message}}"
   },
   "jobs": {
     "pageTitle": "Volcano Jobs Status",
@@ -122,7 +132,8 @@
     "deleteDialog": {
       "title": "Delete Queue",
       "confirmation": "Are you sure you want to delete queue \"{{name}}\"? This action cannot be undone."
-    }
+    },
+    "createError": "Failed to create queue: {{message}}"
   },
   "pods": {
     "pageTitle": "Volcano Pods Status",
@@ -155,6 +166,7 @@
     "reclaimable": "Reclaimable",
     "resourceSection": "{{section}} Resources (Optional)",
     "memory": "Memory",
+    "cpu": "CPU",
     "customScalar": "Custom Scalar Resources",
     "key": "Key",
     "value": "Value",

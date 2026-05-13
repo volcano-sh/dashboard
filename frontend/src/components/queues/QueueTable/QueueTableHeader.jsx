@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableHead,
     TableRow,
@@ -31,6 +32,7 @@ const QueueTableHeader = ({
     setAnchorEl,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
     return (
         <TableHead>
@@ -53,7 +55,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Name
+                        {t("common.name")}
                     </Typography>
                 </TableCell>
 
@@ -83,7 +85,7 @@ const QueueTableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {`Allocated ${field}`}
+                                {t("queues.allocatedField", { field })}
                             </Typography>
                             <IconButton
                                 size="small"
@@ -135,7 +137,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Creation Time
+                        {t("common.creationTime")}
                     </Typography>
                     <Button
                         size="small"
@@ -176,7 +178,7 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {t("common.sort")}
                     </Button>
                 </TableCell>
                 <TableCell
@@ -197,7 +199,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        State
+                        {t("queues.state")}
                     </Typography>
                     <Button
                         size="small"
@@ -228,7 +230,7 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Filter: {filters.status}
+                        {t("common.filterLabel", { value: filters.status })}
                     </Button>
                     <Menu
                         anchorEl={anchorEl.status}
@@ -312,7 +314,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Actions
+                        {t("common.actions")}
                     </Typography>
                 </TableCell>
             </TableRow>

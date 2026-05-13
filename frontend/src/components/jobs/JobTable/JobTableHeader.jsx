@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableHead,
     TableRow,
@@ -24,6 +25,12 @@ const JobTableHeader = ({
     toggleSortDirection,
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
+
+    const headerFields = [
+        { key: "namespace", label: t("common.namespace") },
+        { key: "queue", label: t("jobs.queue") },
+    ];
 
     return (
         <TableHead>
@@ -45,13 +52,13 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Name
+                        {t("common.name")}
                     </Typography>
                 </TableCell>
 
-                {["Namespace", "Queue"].map((field) => (
+                {headerFields.map((field) => (
                     <TableCell
-                        key={field}
+                        key={field.key}
                         sx={{
                             backgroundColor: alpha(
                                 theme.palette.background.paper,
@@ -74,19 +81,19 @@ const JobTableHeader = ({
                                 fontWeight="700"
                                 color="text.primary"
                             >
-                                {field}
+                                {field.label}
                             </Typography>
                             <JobFilters
-                                filterType={field.toLowerCase()}
-                                currentValue={filters[field.toLowerCase()]}
+                                filterType={field.key}
+                                currentValue={filters[field.key]}
                                 options={
-                                    field === "Namespace"
+                                    field.key === "namespace"
                                         ? allNamespaces
                                         : allQueues
                                 }
                                 handleFilterClick={handleFilterClick}
                                 handleFilterClose={handleFilterClose}
-                                anchorEl={anchorEl[field.toLowerCase()]}
+                                anchorEl={anchorEl[field.key]}
                             />
                         </Box>
                     </TableCell>
@@ -109,7 +116,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Creation Time
+                        {t("common.creationTime")}
                     </Typography>
                     <Button
                         size="small"
@@ -146,7 +153,7 @@ const JobTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {t("common.sort")}
                     </Button>
                 </TableCell>
 
@@ -167,7 +174,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Status
+                        {t("common.status")}
                     </Typography>
                     <JobFilters
                         filterType="status"
@@ -198,7 +205,7 @@ const JobTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Actions
+                        {t("common.actions")}
                     </Typography>
                 </TableCell>
             </TableRow>

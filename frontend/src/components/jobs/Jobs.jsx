@@ -13,7 +13,7 @@ const Jobs = () => {
     const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
-    const [, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [allQueues, setAllQueues] = useState([]);
@@ -61,7 +61,7 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            setError(t("common.fetchError", { resource: t("layout.sidebar.jobs").toLowerCase(), message: err.message }));
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -117,7 +117,7 @@ const Jobs = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            setError(t("common.fetchYamlError", { resource: t("layout.sidebar.jobs").toLowerCase(), message: err.message }));
         } finally {
             setLoading(false);
         }
@@ -159,13 +159,13 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                alert(t("common.createError", { resource: t("layout.sidebar.jobs").toLowerCase(), message: errorMsg }));
                 return;
             }
 
-            alert("Job created successfully!");
+            alert(t("common.createSuccess", { resource: t("layout.sidebar.jobs") }));
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(t("common.networkError", { message: err.message }));
         }
     };
 
@@ -223,7 +223,7 @@ const Jobs = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={loading}
                     placeholder={t("jobs.searchPlaceholder")}
                     refreshLabel={t("jobs.refreshLabel")}
                     createlabel={t("jobs.createLabel")}

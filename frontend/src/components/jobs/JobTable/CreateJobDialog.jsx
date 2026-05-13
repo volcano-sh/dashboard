@@ -10,6 +10,7 @@ import {
 import { Button } from "react-bootstrap";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { useTranslation } from "react-i18next";
 
 const primaryColor = "#E34C26";
 
@@ -19,6 +20,7 @@ const CreateJobDialog = ({
     onCreate,
     title = "Create Job (YAML)",
 }) => {
+    const { t } = useTranslation();
     const [yamlText, setYamlText] = useState("");
     const [error, setError] = useState("");
 
@@ -31,7 +33,7 @@ const CreateJobDialog = ({
         try {
             const parsed = yaml.load(yamlText);
             if (!parsed || typeof parsed !== "object") {
-                setError("YAML must describe an object.");
+                setError(t("jobs.createYaml.yamlObjectError"));
                 return;
             }
             setError("");
@@ -39,7 +41,7 @@ const CreateJobDialog = ({
             setYamlText("");
             onClose();
         } catch (e) {
-            setError(e.message || "Invalid YAML format.");
+            setError(e.message || t("jobs.createYaml.yamlFormatError"));
         }
     };
 
@@ -76,7 +78,7 @@ const CreateJobDialog = ({
             <DialogContent>
                 <Box sx={{ mt: 2, mb: 1 }}>
                     <Typography sx={{ fontWeight: 500, color: "#333", mb: 1 }}>
-                        Paste or type your Job YAML specification below:
+                        {t("jobs.createYaml.instruction")}
                     </Typography>
                     <Editor
                         height="320px"
@@ -120,7 +122,7 @@ const CreateJobDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Cancel
+                    {t("common.cancel")}
                 </Button>
                 <Button
                     onClick={handleSubmit}
@@ -136,7 +138,7 @@ const CreateJobDialog = ({
                     }}
                     disabled={!yamlText.trim()}
                 >
-                    Create
+                    {t("common.create")}
                 </Button>
             </DialogActions>
         </Dialog>

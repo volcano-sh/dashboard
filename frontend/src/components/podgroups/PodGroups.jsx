@@ -58,7 +58,7 @@ const PodGroups = () => {
             setCachedPodGroups(data.items || []);
             setTotalItems(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch podgroups: " + err.message);
+            setError(t("common.fetchError", { resource: "PodGroup", message: err.message }));
             setCachedPodGroups([]);
         } finally {
             setLoading(false);
@@ -113,7 +113,7 @@ const PodGroups = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch YAML:", err);
-            setError("Failed to fetch YAML: " + err.message);
+            setError(t("common.fetchYamlError", { resource: "PodGroup", message: err.message }));
         } finally {
             setLoading(false);
         }

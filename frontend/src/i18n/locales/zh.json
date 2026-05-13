@@ -32,6 +32,8 @@
       "noData": "所选资源类型暂无数据",
       "allocated": "已分配",
       "capacity": "容量",
+      "allocatedLabel": "{{resource}} 已分配",
+      "capacityLabel": "{{resource}} 容量",
       "resourceLabel": "{{resource}} 资源",
       "yAxis": {
         "memory": "内存 (Gi)",
@@ -59,6 +61,7 @@
     "error": "错误",
     "sort": "排序",
     "filter": "筛选",
+    "filterLabel": "筛选: {{value}}",
     "actions": "操作",
     "name": "名称",
     "namespace": "命名空间",
@@ -66,7 +69,14 @@
     "creationTime": "创建时间",
     "unknown": "未知",
     "refreshing": "刷新中...",
-    "na": "N/A"
+    "na": "N/A",
+    "age": "存活时间",
+    "noDataFound": "未找到{{resource}}。",
+    "networkError": "网络错误: {{message}}",
+    "fetchError": "获取{{resource}}失败: {{message}}",
+    "createSuccess": "{{resource}}创建成功！",
+    "createError": "创建{{resource}}时出错: {{message}}",
+    "fetchYamlError": "获取{{resource}} YAML 失败: {{message}}"
   },
   "jobs": {
     "pageTitle": "Volcano 作业状态",
@@ -122,7 +132,8 @@
     "deleteDialog": {
       "title": "删除队列",
       "confirmation": "确定要删除队列 \"{{name}}\" 吗？此操作无法撤消。"
-    }
+    },
+    "createError": "创建队列失败: {{message}}"
   },
   "pods": {
     "pageTitle": "Volcano Pod 状态",
@@ -152,9 +163,10 @@
   },
   "createDialog": {
     "weight": "权重 *",
-    "reclaimable": "可回收 (Reclaimable)",
+    "reclaimable": "可回收",
     "resourceSection": "{{section}} 资源 (可选)",
     "memory": "内存",
+    "cpu": "CPU",
     "customScalar": "自定义标量资源",
     "key": "键",
     "value": "值",

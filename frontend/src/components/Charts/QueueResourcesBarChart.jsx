@@ -96,7 +96,7 @@ const QueueResourcesBarChart = ({ data }) => {
         labels: Object.keys(processedData),
         datasets: [
             {
-                label: `${selectedResource.toUpperCase()} ${t("charts.queueResources.allocated")}`,
+                label: t("charts.queueResources.allocatedLabel", { resource: selectedResource.toUpperCase() }),
                 data: Object.values(processedData).map(
                     (q) => q.allocated[selectedResource] || 0,
                 ),
@@ -105,7 +105,7 @@ const QueueResourcesBarChart = ({ data }) => {
                 borderWidth: 1,
             },
             {
-                label: `${selectedResource.toUpperCase()} ${t("charts.queueResources.capacity")}`,
+                label: t("charts.queueResources.capacityLabel", { resource: selectedResource.toUpperCase() }),
                 data: Object.values(processedData).map(
                     (q) => q.capability[selectedResource] || 0,
                 ),
