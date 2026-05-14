@@ -17,6 +17,8 @@ const JobTableRow = ({
     handleOpenDeleteDialog,
     onJobUpdate, // Function to update job after edit
 }) => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -87,7 +89,7 @@ const JobTableRow = ({
                         fontSize: "0.95rem",
                     }}
                 >
-                    {job.spec.queue || "N/A"}
+                    {job.spec.queue || (zh ? "无" : "N/A")}
                 </TableCell>
 
                 <TableCell

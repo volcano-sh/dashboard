@@ -7,8 +7,11 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const Jobs = () => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -59,7 +62,7 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            setError({ key: "fetchJobs", detail: err.message });
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -115,7 +118,7 @@ const Jobs = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            setError({ key: "fetchYaml", detail: err.message });
         } finally {
             setLoading(false);
         }
@@ -157,13 +160,13 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                alert((zh ? "创建作业失败：" : "Error creating job: ") + errorMsg);
                 return;
             }
 
-            alert("Job created successfully!");
+            alert(zh ? "作业创建成功！" : "Job created successfully!");
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert((zh ? "网络错误：" : "Network error: ") + err.message);
         }
     };
 
@@ -210,10 +213,16 @@ const Jobs = () => {
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
                 <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
+                    <Typography variant="body1">
+                        {zh
+                            ? error.key === "fetchYaml" ? "获取作业 YAML 失败：" : "获取作业失败："
+                            : error.key === "fetchYaml" ? "Failed to fetch job YAML: " : "Failed to fetch jobs: "
+                        }
+                        {error.detail}
+                    </Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text={zh ? "Volcano 作业状态" : "Volcano Jobs Status"} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -222,11 +231,11 @@ const Jobs = () => {
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
+                    placeholder={zh ? "搜索作业..." : "Search jobs..."}
+                    refreshLabel={zh ? "刷新作业列表" : "Refresh Job Listings"}
+                    createlabel={zh ? "创建作业" : "Create Job"}
+                    dialogTitle={zh ? "创建作业" : "Create a Job"}
+                    dialogResourceNameLabel={zh ? "作业名称" : "Job Name"}
                     dialogResourceType="Job"
                     onCreateClick={handleCreateJob}
                 />

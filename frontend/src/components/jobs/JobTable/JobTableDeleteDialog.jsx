@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import {
     Dialog,
     DialogTitle,
@@ -17,6 +18,8 @@ const JobTableDeleteDialog = ({
     jobToDelete,
     error,
 }) => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
     const showOnlyError = Boolean(error);
 
     return (
@@ -28,7 +31,7 @@ const JobTableDeleteDialog = ({
                     alignItems: "center",
                 }}
             >
-                {showOnlyError ? "Error" : "Delete Job"}
+                {showOnlyError ? (zh ? "错误" : "Error") : (zh ? "删除作业" : "Delete Job")}
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -38,14 +41,14 @@ const JobTableDeleteDialog = ({
                 {showOnlyError ? (
                     <Alert severity="error">{error}</Alert>
                 ) : (
-                    `Are you sure you want to delete job "${jobToDelete}"? This action cannot be undone.`
+                    zh ? `确定要删除作业 "${jobToDelete}"？此操作不可撤销。` : `Are you sure you want to delete job "${jobToDelete}"? This action cannot be undone.`
                 )}
             </DialogContent>
 
             <DialogActions>
                 {!showOnlyError && (
                     <Button onClick={onClose} color="primary">
-                        Cancel
+                        {zh ? "取消" : "Cancel"}
                     </Button>
                 )}
                 {!showOnlyError && (
@@ -54,7 +57,7 @@ const JobTableDeleteDialog = ({
                         color="error"
                         variant="contained"
                     >
-                        Delete
+                        {zh ? "删除" : "Delete"}
                     </Button>
                 )}
             </DialogActions>

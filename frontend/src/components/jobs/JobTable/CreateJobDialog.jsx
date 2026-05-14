@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import {
     Dialog,
     DialogTitle,
@@ -17,8 +18,11 @@ const CreateJobDialog = ({
     open,
     onClose,
     onCreate,
-    title = "Create Job (YAML)",
+    title,
 }) => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
+    const dialogTitle = title || (zh ? "创建作业 (YAML)" : "Create Job (YAML)");
     const [yamlText, setYamlText] = useState("");
     const [error, setError] = useState("");
 
@@ -31,7 +35,7 @@ const CreateJobDialog = ({
         try {
             const parsed = yaml.load(yamlText);
             if (!parsed || typeof parsed !== "object") {
-                setError("YAML must describe an object.");
+                    setError(zh ? "YAML 必须描述一个对象。" : "YAML must describe an object.");
                 return;
             }
             setError("");
@@ -39,7 +43,7 @@ const CreateJobDialog = ({
             setYamlText("");
             onClose();
         } catch (e) {
-            setError(e.message || "Invalid YAML format.");
+                    setError(e.message || (zh ? "YAML 格式无效。" : "Invalid YAML format."));
         }
     };
 
@@ -71,12 +75,12 @@ const CreateJobDialog = ({
                     letterSpacing: "0.5px",
                 }}
             >
-                {title}
+                {dialogTitle}
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ mt: 2, mb: 1 }}>
                     <Typography sx={{ fontWeight: 500, color: "#333", mb: 1 }}>
-                        Paste or type your Job YAML specification below:
+                        {zh ? "请在下方粘贴或输入作业 YAML 配置：" : "Paste or type your Job YAML specification below:"}
                     </Typography>
                     <Editor
                         height="320px"
@@ -120,7 +124,7 @@ const CreateJobDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Cancel
+                    {zh ? "取消" : "Cancel"}
                 </Button>
                 <Button
                     onClick={handleSubmit}
@@ -136,7 +140,7 @@ const CreateJobDialog = ({
                     }}
                     disabled={!yamlText.trim()}
                 >
-                    Create
+                    {zh ? "创建" : "Create"}
                 </Button>
             </DialogActions>
         </Dialog>
