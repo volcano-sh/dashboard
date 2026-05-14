@@ -4,8 +4,12 @@ import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
+import { useTranslation } from "react-i18next"
 
 const Dashboard = () => {
+
+    const { t }  = useTranslation();
+
     const [dashboardData, setDashboardData] = useState({
         jobs: [],
         queues: [],
@@ -26,11 +30,11 @@ const Dashboard = () => {
             ]);
 
             if (!jobsRes.ok)
-                throw new Error(`Jobs API error: ${jobsRes.status}`);
+                throw new Error(t("dashboard.errors.jobsApi",{status:jobsRes.status}));   
             if (!queuesRes.ok)
-                throw new Error(`Queues API error: ${queuesRes.status}`);
+                throw new Error(t("dashboard.errors.queuesApi",{status:queuesRes.status}));
             if (!podsRes.ok)
-                throw new Error(`Pods API error: ${podsRes.status}`);
+                throw new Error(t("dashboard.errors.podsApi",{status:podsRes.status}));
 
             const [jobsData, queuesData, podsData] = await Promise.all([
                 jobsRes.json(),
@@ -44,7 +48,7 @@ const Dashboard = () => {
                 pods: podsData.items || [],
             });
         } catch (error) {
-            console.error("Error fetching dashboard data:", error);
+            console.error(t("dashboard.errors.fetchDashboardData"), error);
             setError(error.message);
         } finally {
             setRefreshing(false);
