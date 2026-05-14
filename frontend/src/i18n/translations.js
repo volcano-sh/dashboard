@@ -47,6 +47,7 @@ export const translations = {
                     podsApi: "Pods API error: {{status}}",
                     fetchDashboardData: "Error fetching dashboard data",
                 },
+                
             },
         },
     },
@@ -91,6 +92,13 @@ export const translations = {
                         },
                     },
                 },
+                errors: {
+                    jobsApi: "作业 API 错误：{{status}}",
+                    queuesApi: "队列 API 错误：{{status}}",
+                    podsApi: "Pod API 错误：{{status}}",
+                    fetchDashboardData: "获取仪表盘数据时出错",
+                },
+                
             },
         },
     },
