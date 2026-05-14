@@ -1,0 +1,112 @@
+{
+  "nav": {
+    "appTitle": "Volcano Dashboard",
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "queues": "Queues",
+    "pods": "Pods",
+    "podGroups": "PodGroups"
+  },
+  "dashboard": {
+    "title": "Volcano Dashboard",
+    "refreshData": "Refresh Data",
+    "statCards": {
+      "totalJobs": "Total Jobs",
+      "activeQueues": "Active Queues",
+      "runningPods": "Running Pods",
+      "completeRate": "Complete Rate"
+    }
+  },
+  "charts": {
+    "jobsStatus": "Jobs Status",
+    "queueResources": "Queue Resources",
+    "podStatusTimeline": "Pod Status Timeline",
+    "runningPods": "Running Pods",
+    "noData": "No data available",
+    "noQueueData": "No queue resource data available",
+    "noDataForResource": "No data available for the selected resource type"
+  },
+  "pages": {
+    "jobs": "Volcano Jobs Status",
+    "queues": "Volcano Queues Status",
+    "pods": "Volcano Pods Status",
+    "podGroups": "Volcano PodGroups"
+  },
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "queue": "Queue",
+    "status": "Status",
+    "state": "State",
+    "age": "Age",
+    "creationTime": "Creation Time",
+    "weight": "Weight",
+    "actions": "Actions",
+    "sort": "Sort",
+    "minMember": "Min Member",
+    "allocated": "Allocated",
+    "filter": "Filter"
+  },
+  "searchbar": {
+    "searchJobs": "Search jobs...",
+    "searchQueues": "Search queues...",
+    "searchPods": "Search Pods...",
+    "searchPodGroups": "Search PodGroups...",
+    "refreshJobs": "Refresh Job Listings",
+    "refreshQueues": "Refresh Queues",
+    "refreshPods": "Refresh Pods",
+    "refreshPodGroups": "Refresh Listings",
+    "createJob": "Create Job",
+    "createQueue": "Create Queue",
+    "createPod": "Create Pod",
+    "createPodGroup": "Create PodGroup",
+    "refreshing": "Refreshing..."
+  },
+  "dialog": {
+    "createJob": "Create a Job",
+    "createQueue": "Create a Queue",
+    "createPod": "Create a Pod",
+    "createPodGroup": "Create PodGroup",
+    "jobName": "Job Name",
+    "queueName": "Queue Name",
+    "podName": "Pod Name",
+    "podGroupName": "Name"
+  },
+  "status": {
+    "all": "All",
+    "running": "Running",
+    "pending": "Pending",
+    "failed": "Failed",
+    "completed": "Completed",
+    "succeeded": "Succeeded",
+    "unknown": "Unknown",
+    "open": "Open",
+    "closing": "Closing",
+    "closed": "Closed"
+  },
+  "pagination": {
+    "perPage": "{{n}} per page",
+    "totalJobs": "Total Jobs: {{count}}",
+    "totalQueues": "Total Queues: {{count}}",
+    "totalPods": "Total Pods: {{count}}",
+    "totalPodGroups": "Total PodGroups: {{count}}"
+  },
+  "empty": {
+    "noJobs": "No jobs found.",
+    "noQueues": "No queues found.",
+    "noPods": "No pods found.",
+    "noPodGroups": "No podgroups found."
+  },
+  "errors": {
+    "fetchJobs": "Failed to fetch jobs",
+    "fetchQueues": "Failed to fetch queues",
+    "fetchPods": "Failed to fetch pods",
+    "fetchPodGroups": "Failed to fetch podgroups",
+    "fetchYaml": "Failed to fetch YAML"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "zh": "中文 (Chinese)"
+  }
+}

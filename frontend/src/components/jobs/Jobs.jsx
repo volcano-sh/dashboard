@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import TitleComponent from "../Titlecomponent";
+import { useTranslation } from "react-i18next";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
@@ -9,6 +10,7 @@ import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
 
 const Jobs = () => {
+    const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -59,7 +61,7 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            setError(t("errors.fetchJobs") + ": " + err.message);
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -115,7 +117,7 @@ const Jobs = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            setError(t("errors.fetchYaml") + ": " + err.message);
         } finally {
             setLoading(false);
         }
@@ -213,7 +215,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text={t("pages.jobs")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -222,11 +224,11 @@ const Jobs = () => {
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
+                    placeholder={t("searchbar.searchJobs")}
+                    refreshLabel={t("searchbar.refreshJobs")}
+                    createlabel={t("searchbar.createJob")}
+                    dialogTitle={t("dialog.createJob")}
+                    dialogResourceNameLabel={t("dialog.jobName")}
                     dialogResourceType="Job"
                     onCreateClick={handleCreateJob}
                 />

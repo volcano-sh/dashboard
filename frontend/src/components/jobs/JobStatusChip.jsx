@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import React from "react";
 import { Chip, useTheme } from "@mui/material";
 
 const JobStatusChip = ({ status }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     const getStatusColor = (status) => {
@@ -21,7 +23,11 @@ const JobStatusChip = ({ status }) => {
 
     return (
         <Chip
-            label={status || "Unknown"}
+            label={
+                status
+                    ? t(`status.${status.toLowerCase()}`, status)
+                    : t("status.unknown")
+            }
             sx={{
                 bgcolor: getStatusColor(status),
                 color: "common.white",

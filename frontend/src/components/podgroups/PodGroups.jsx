@@ -3,6 +3,7 @@ import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import { escape } from "lodash";
 import TitleComponent from "../Titlecomponent";
+import { useTranslation } from "react-i18next";
 import { fetchAllNamespaces } from "../utils";
 import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
@@ -10,6 +11,7 @@ import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
 
 const PodGroups = () => {
+    const { t } = useTranslation();
     const [podGroups, setPodGroups] = useState([]);
     const [cachedPodGroups, setCachedPodGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ const PodGroups = () => {
             setCachedPodGroups(data.items || []);
             setTotalItems(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch podgroups: " + err.message);
+            setError(t("errors.fetchPodGroups") + ": " + err.message);
             setCachedPodGroups([]);
         } finally {
             setLoading(false);
@@ -111,7 +113,7 @@ const PodGroups = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch YAML:", err);
-            setError("Failed to fetch YAML: " + err.message);
+            setError(t("errors.fetchYaml") + ": " + err.message);
         } finally {
             setLoading(false);
         }
@@ -177,7 +179,7 @@ const PodGroups = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano PodGroups" />
+            <TitleComponent text={t("pages.podGroups")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -186,11 +188,11 @@ const PodGroups = () => {
                     handleRefresh={fetchPodGroups}
                     fetchData={fetchPodGroups}
                     isRefreshing={loading}
-                    placeholder="Search PodGroups..."
-                    refreshLabel="Refresh Listings"
-                    createlabel="Create PodGroup"
-                    dialogTitle="Create PodGroup"
-                    dialogResourceNameLabel="Name"
+                    placeholder={t("searchbar.searchPodGroups")}
+                    refreshLabel={t("searchbar.refreshPodGroups")}
+                    createlabel={t("searchbar.createPodGroup")}
+                    dialogTitle={t("dialog.createPodGroup")}
+                    dialogResourceNameLabel={t("dialog.podGroupName")}
                     dialogResourceType="PodGroup"
                     onCreateClick={handleCreate}
                 />
@@ -209,7 +211,8 @@ const PodGroups = () => {
             />
             <JobPagination
                 pagination={pagination}
-                totalJobs={totalItems} // Prop name in JobPagination is totalJobs
+                totalJobs={totalItems}
+                totalLabelKey="pagination.totalPodGroups"
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />

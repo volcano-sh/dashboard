@@ -9,9 +9,11 @@ import {
     ListItem,
     ListItemIcon,
     ListItemText,
+    Menu,
+    MenuItem,
     Toolbar,
-    Typography,
     Tooltip,
+    Typography,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -19,40 +21,49 @@ import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import CategoryIcon from "@mui/icons-material/Category";
+import LanguageIcon from "@mui/icons-material/Language";
+import CheckIcon from "@mui/icons-material/Check";
+import { useTranslation } from "react-i18next";
 
-// use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
 
-const Layout = () => {
-    // Hooks must be used inside component functions
-    const location = useLocation();
-    const [open, setOpen] = useState(true);
+const LANGUAGES = [
+    { code: "en", label: "English" },
+    { code: "zh", label: "中文 (Chinese)" },
+];
 
-    // constants can be kept outside the component
-    const volcanoOrange = "#E34C26"; // orange red theme
-    const headerGrey = "#424242"; // dark gray top stripe
+const Layout = () => {
+    const location = useLocation();
+    const [drawerOpen, setDrawerOpen] = useState(true);
+    const [langAnchorEl, setLangAnchorEl] = useState(null);
+    const { t, i18n } = useTranslation();
+
+    const volcanoOrange = "#E34C26";
+    const headerGrey = "#424242";
     const drawerWidth = 240;
 
-    const handleDrawerToggle = () => {
-        setOpen(!open);
+    const handleDrawerToggle = () => setDrawerOpen((v) => !v);
+
+    const handleLangMenuOpen = (e) => setLangAnchorEl(e.currentTarget);
+    const handleLangMenuClose = () => setLangAnchorEl(null);
+    const handleLangSelect = (code) => {
+        i18n.changeLanguage(code);
+        handleLangMenuClose();
     };
 
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        { text: t("nav.dashboard"), icon: <HomeIcon />, path: "/dashboard" },
+        { text: t("nav.jobs"), icon: <AssignmentIcon />, path: "/jobs" },
+        { text: t("nav.queues"), icon: <CloudIcon />, path: "/queues" },
+        { text: t("nav.pods"), icon: <WorkspacesIcon />, path: "/pods" },
+        { text: t("nav.podGroups"), icon: <CategoryIcon />, path: "/podgroups" },
     ];
 
     return (
         <Box sx={{ display: "flex" }}>
             <AppBar
                 position="fixed"
-                sx={{
-                    zIndex: (theme) => theme.zIndex.drawer + 1,
-                    bgcolor: headerGrey,
-                }}
+                sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: headerGrey }}
             >
                 <Toolbar>
                     <IconButton
@@ -64,17 +75,94 @@ const Layout = () => {
                     >
                         <MenuIcon />
                     </IconButton>
+
                     <Typography
                         variant="h6"
                         noWrap
                         component="div"
-                        sx={{
-                            color: "#ffffff",
-                            fontWeight: 500,
+                        sx={{ color: "#ffffff", fontWeight: 500, flexGrow: 1 }}
+                    >
+                        {t("nav.appTitle")}
+                    </Typography>
+
+                    {/* Language selector */}
+                    <Tooltip title={t("language.label")}>
+                        <IconButton
+                            onClick={handleLangMenuOpen}
+                            size="small"
+                            sx={{
+                                color: "white",
+                                border: "1px solid rgba(255,255,255,0.35)",
+                                borderRadius: "6px",
+                                px: 1,
+                                gap: 0.5,
+                                "&:hover": {
+                                    backgroundColor: "rgba(255,255,255,0.12)",
+                                    border: "1px solid rgba(255,255,255,0.7)",
+                                },
+                            }}
+                            aria-controls={langAnchorEl ? "lang-menu" : undefined}
+                            aria-haspopup="true"
+                        >
+                            <LanguageIcon fontSize="small" />
+                            <Typography
+                                variant="caption"
+                                sx={{ fontWeight: 700, letterSpacing: "0.04em", ml: 0.25 }}
+                            >
+                                {i18n.language === "zh" ? "中文" : "EN"}
+                            </Typography>
+                        </IconButton>
+                    </Tooltip>
+
+                    <Menu
+                        id="lang-menu"
+                        anchorEl={langAnchorEl}
+                        open={Boolean(langAnchorEl)}
+                        onClose={handleLangMenuClose}
+                        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                        transformOrigin={{ vertical: "top", horizontal: "right" }}
+                        PaperProps={{
+                            elevation: 4,
+                            sx: {
+                                mt: 1,
+                                minWidth: 180,
+                                borderRadius: "8px",
+                                overflow: "hidden",
+                            },
                         }}
                     >
-                        Volcano Dashboard
-                    </Typography>
+                        {LANGUAGES.map(({ code, label }) => {
+                            const isActive = i18n.language === code;
+                            return (
+                                <MenuItem
+                                    key={code}
+                                    onClick={() => handleLangSelect(code)}
+                                    selected={isActive}
+                                    sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        gap: 2,
+                                        fontWeight: isActive ? 700 : 400,
+                                        color: isActive ? volcanoOrange : "inherit",
+                                        "&.Mui-selected": {
+                                            backgroundColor: "rgba(227,76,38,0.08)",
+                                        },
+                                        "&.Mui-selected:hover": {
+                                            backgroundColor: "rgba(227,76,38,0.14)",
+                                        },
+                                    }}
+                                >
+                                    {label}
+                                    {isActive && (
+                                        <CheckIcon
+                                            fontSize="small"
+                                            sx={{ color: volcanoOrange }}
+                                        />
+                                    )}
+                                </MenuItem>
+                            );
+                        })}
+                    </Menu>
                 </Toolbar>
             </AppBar>
 
@@ -82,10 +170,10 @@ const Layout = () => {
                 data-testid="sidebar-drawer"
                 variant="permanent"
                 sx={{
-                    width: open ? drawerWidth : 60,
+                    width: drawerOpen ? drawerWidth : 60,
                     flexShrink: 0,
                     [`& .MuiDrawer-paper`]: {
-                        width: open ? drawerWidth : 60,
+                        width: drawerOpen ? drawerWidth : 60,
                         boxSizing: "border-box",
                         backgroundColor: "#f5f5f5",
                         transition: "width 0.2s",
@@ -105,50 +193,36 @@ const Layout = () => {
                                     component={Link}
                                     to={item.path}
                                     className={
-                                        location.pathname === item.path
-                                            ? "active"
-                                            : ""
+                                        location.pathname === item.path ? "active" : ""
                                     }
                                     sx={{
                                         "&.active": {
                                             bgcolor: "rgba(0, 0, 0, 0.08)",
-                                            "& .MuiListItemIcon-root": {
-                                                color: volcanoOrange,
-                                            },
+                                            "& .MuiListItemIcon-root": { color: volcanoOrange },
                                             "& .MuiListItemText-primary": {
                                                 color: volcanoOrange,
                                                 fontWeight: 500,
                                             },
                                         },
-                                        "&:hover": {
-                                            backgroundColor:
-                                                "rgba(0, 0, 0, 0.1)",
-                                        },
+                                        "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.1)" },
                                     }}
                                 >
                                     <ListItemIcon>{item.icon}</ListItemIcon>
-                                    {open && (
-                                        <ListItemText primary={item.text} />
-                                    )}
+                                    {drawerOpen && <ListItemText primary={item.text} />}
                                 </ListItem>
                             );
-                            return !open ? (
-                                <Tooltip
-                                    key={item.text}
-                                    title={item.text}
-                                    placement="right"
-                                >
+
+                            return !drawerOpen ? (
+                                <Tooltip key={item.text} title={item.text} placement="right">
                                     {listItem}
                                 </Tooltip>
                             ) : (
-                                <React.Fragment key={item.text}>
-                                    {listItem}
-                                </React.Fragment>
+                                <React.Fragment key={item.text}>{listItem}</React.Fragment>
                             );
                         })}
                     </List>
                 </Box>
-                {/* Logo and text part */}
+
                 <Box
                     sx={{
                         p: 1,
@@ -158,38 +232,22 @@ const Layout = () => {
                         alignItems: "center",
                         mt: "auto",
                         mb: 1,
-                        // borderTop: "1px solid rgba(0, 0, 0, 0.12)",
                     }}
                 >
                     <img
                         src={volcanoLogo}
                         alt="Volcano Logo"
                         style={{
-                            maxWidth: open ? "150px" : "60px",
+                            maxWidth: drawerOpen ? "150px" : "60px",
                             height: "auto",
                             transition: "max-width 0.2s",
                             marginBottom: "1px",
                         }}
                     />
-                    {/* {open && (
-            <Typography
-              sx={{
-                fontWeight: 700,
-                color: "#000",
-                fontSize: "1.4rem",
-                letterSpacing: "0.1em",
-                mt: -6,
-              }}
-            >
-              VOLCANO
-            </Typography>
-          )} */}
                 </Box>
             </Drawer>
-            <Box
-                component="main"
-                sx={{ flexGrow: 1, p: 3, backgroundColor: "white" }}
-            >
+
+            <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: "white" }}>
                 <Toolbar />
                 <Outlet />
             </Box>

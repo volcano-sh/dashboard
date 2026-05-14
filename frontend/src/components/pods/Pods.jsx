@@ -3,12 +3,14 @@ import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import SearchBar from "../Searchbar";
 import TitleComponent from "../Titlecomponent";
+import { useTranslation } from "react-i18next";
 import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
 
 const Pods = () => {
+    const { t } = useTranslation();
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
     const [, setLoading] = useState(true);
@@ -51,7 +53,7 @@ const Pods = () => {
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
+            setError(t("errors.fetchPods") + ": " + err.message);
             setCachedPods([]);
         } finally {
             setLoading(false);
@@ -151,7 +153,7 @@ const Pods = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch pod YAML:", err);
-            setError("Failed to fetch pod YAML: " + err.message);
+            setError(t("errors.fetchYaml") + ": " + err.message);
         } finally {
             setLoading(false);
         }
@@ -185,7 +187,7 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Pods Status" />
+            <TitleComponent text={t("pages.pods")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -194,11 +196,11 @@ const Pods = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search Pods..."
-                    refreshLabel="Refresh Pods"
-                    createlabel="Create Pod"
-                    dialogTitle="Create a Pod"
-                    dialogResourceNameLabel="Pod Name"
+                    placeholder={t("searchbar.searchPods")}
+                    refreshLabel={t("searchbar.refreshPods")}
+                    createlabel={t("searchbar.createPod")}
+                    dialogTitle={t("dialog.createPod")}
+                    dialogResourceNameLabel={t("dialog.podName")}
                     dialogResourceType="Pod"
                     onCreateClick={handleCreatePod}
                 />

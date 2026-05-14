@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React from "react";
 import {
     TableHead,
@@ -23,6 +24,7 @@ const JobTableHeader = ({
     sortDirection,
     toggleSortDirection,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     return (
@@ -44,9 +46,7 @@ const JobTableHeader = ({
                         variant="subtitle1"
                         fontWeight="700"
                         color="text.primary"
-                    >
-                        Name
-                    </Typography>
+                    >{t("table.name")}</Typography>
                 </TableCell>
 
                 {["Namespace", "Queue"].map((field) => (
@@ -74,7 +74,7 @@ const JobTableHeader = ({
                                 fontWeight="700"
                                 color="text.primary"
                             >
-                                {field}
+                                {field === "Namespace" ? t("table.namespace") : t("table.queue")}
                             </Typography>
                             <JobFilters
                                 filterType={field.toLowerCase()}
@@ -108,9 +108,7 @@ const JobTableHeader = ({
                         variant="subtitle1"
                         fontWeight="700"
                         color="text.primary"
-                    >
-                        Creation Time
-                    </Typography>
+                    >{t("table.creationTime")}</Typography>
                     <Button
                         size="small"
                         onClick={toggleSortDirection}
@@ -145,9 +143,7 @@ const JobTableHeader = ({
                                 transform: "translateY(-2px)",
                             },
                         }}
-                    >
-                        Sort
-                    </Button>
+                    >{t("table.sort")}</Button>
                 </TableCell>
 
                 <TableCell
@@ -166,9 +162,7 @@ const JobTableHeader = ({
                         variant="subtitle1"
                         fontWeight="700"
                         color="text.primary"
-                    >
-                        Status
-                    </Typography>
+                    >{t("table.status")}</Typography>
                     <JobFilters
                         filterType="status"
                         currentValue={filters.status}
@@ -197,9 +191,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
-                    >
-                        Actions
-                    </Typography>
+                    >{t("table.actions")}</Typography>
                 </TableCell>
             </TableRow>
         </TableHead>

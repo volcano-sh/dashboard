@@ -1,7 +1,10 @@
 import React from "react";
 import { Box, MenuItem, Pagination, Select, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
+    const { t } = useTranslation();
+
     const handleChangePage = (event, newPage) => {
         onPaginationChange(newPage, null);
     };
@@ -24,9 +27,11 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
                 onChange={handleChangeRowsPerPage}
                 size="small"
             >
-                <MenuItem value={5}>5 per page</MenuItem>
-                <MenuItem value={10}>10 per page</MenuItem>
-                <MenuItem value={20}>20 per page</MenuItem>
+                {[5, 10, 20].map((n) => (
+                    <MenuItem key={n} value={n}>
+                        {t("pagination.perPage", { n })}
+                    </MenuItem>
+                ))}
             </Select>
             <Box
                 sx={{
@@ -38,7 +43,7 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
                 }}
             >
                 <Typography variant="body2" sx={{ mr: 2 }}>
-                    Total Pods: {totalPods}
+                    {t("pagination.totalPods", { count: totalPods })}
                 </Typography>
                 <Pagination
                     count={Math.ceil(totalPods / pagination.rowsPerPage)}

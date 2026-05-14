@@ -1,0 +1,112 @@
+{
+  "nav": {
+    "appTitle": "Volcano 仪表盘",
+    "dashboard": "仪表盘",
+    "jobs": "作业",
+    "queues": "队列",
+    "pods": "容器组",
+    "podGroups": "容器组集合"
+  },
+  "dashboard": {
+    "title": "Volcano 仪表盘",
+    "refreshData": "刷新数据",
+    "statCards": {
+      "totalJobs": "作业总数",
+      "activeQueues": "活跃队列",
+      "runningPods": "运行中容器组",
+      "completeRate": "完成率"
+    }
+  },
+  "charts": {
+    "jobsStatus": "作业状态",
+    "queueResources": "队列资源",
+    "podStatusTimeline": "容器组状态时间线",
+    "runningPods": "运行中容器组",
+    "noData": "暂无数据",
+    "noQueueData": "暂无队列资源数据",
+    "noDataForResource": "所选资源类型暂无数据"
+  },
+  "pages": {
+    "jobs": "Volcano 作业状态",
+    "queues": "Volcano 队列状态",
+    "pods": "Volcano 容器组状态",
+    "podGroups": "Volcano 容器组集合"
+  },
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "queue": "队列",
+    "status": "状态",
+    "state": "状态",
+    "age": "存在时长",
+    "creationTime": "创建时间",
+    "weight": "权重",
+    "actions": "操作",
+    "sort": "排序",
+    "minMember": "最小成员数",
+    "allocated": "已分配",
+    "filter": "筛选"
+  },
+  "searchbar": {
+    "searchJobs": "搜索作业...",
+    "searchQueues": "搜索队列...",
+    "searchPods": "搜索容器组...",
+    "searchPodGroups": "搜索容器组集合...",
+    "refreshJobs": "刷新作业列表",
+    "refreshQueues": "刷新队列",
+    "refreshPods": "刷新容器组",
+    "refreshPodGroups": "刷新列表",
+    "createJob": "创建作业",
+    "createQueue": "创建队列",
+    "createPod": "创建容器组",
+    "createPodGroup": "创建容器组集合",
+    "refreshing": "刷新中..."
+  },
+  "dialog": {
+    "createJob": "创建作业",
+    "createQueue": "创建队列",
+    "createPod": "创建容器组",
+    "createPodGroup": "创建容器组集合",
+    "jobName": "作业名称",
+    "queueName": "队列名称",
+    "podName": "容器组名称",
+    "podGroupName": "名称"
+  },
+  "status": {
+    "all": "全部",
+    "running": "运行中",
+    "pending": "等待中",
+    "failed": "失败",
+    "completed": "已完成",
+    "succeeded": "成功",
+    "unknown": "未知",
+    "open": "开放",
+    "closing": "关闭中",
+    "closed": "已关闭"
+  },
+  "pagination": {
+    "perPage": "每页 {{n}} 条",
+    "totalJobs": "作业总数：{{count}}",
+    "totalQueues": "队列总数：{{count}}",
+    "totalPods": "容器组总数：{{count}}",
+    "totalPodGroups": "容器组集合总数：{{count}}"
+  },
+  "empty": {
+    "noJobs": "暂无作业",
+    "noQueues": "暂无队列",
+    "noPods": "暂无容器组",
+    "noPodGroups": "暂无容器组集合"
+  },
+  "errors": {
+    "fetchJobs": "获取作业失败",
+    "fetchQueues": "获取队列失败",
+    "fetchPods": "获取容器组失败",
+    "fetchPodGroups": "获取容器组集合失败",
+    "fetchYaml": "获取 YAML 失败"
+  },
+  "language": {
+    "label": "语言",
+    "en": "English",
+    "zh": "中文 (Chinese)"
+  }
+}

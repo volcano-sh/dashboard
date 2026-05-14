@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableContainer,
     Table,
@@ -29,6 +30,7 @@ const JobTable = ({
     reloadJobs, // (optional) for refetching after delete
 }) => {
     const theme = useTheme();
+    const { t } = useTranslation();
 
     // State for delete dialog
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -160,7 +162,7 @@ const JobTable = ({
                         {jobs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={8} align="center">
-                                    No jobs found.
+                                    {t("empty.noJobs")}
                                 </TableCell>
                             </TableRow>
                         ) : (

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableContainer,
     Table,
@@ -24,6 +25,7 @@ const PodGroupsTable = ({
     sortDirection,
     toggleSortDirection,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     return (
@@ -76,7 +78,7 @@ const PodGroupsTable = ({
                         {podGroups.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} align="center">
-                                    No podgroups found.
+                                    {t("empty.noPodGroups")}
                                 </TableCell>
                             </TableRow>
                         ) : (

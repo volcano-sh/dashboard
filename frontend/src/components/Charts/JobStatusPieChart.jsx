@@ -2,14 +2,16 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
+import { useTranslation } from "react-i18next";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const JobStatusPieChart = ({ data }) => {
+    const { t } = useTranslation();
     if (!data || !Array.isArray(data)) {
         return (
             <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
+                <Typography>{t("charts.noData")}</Typography>
             </Box>
         );
     }
@@ -43,8 +45,15 @@ const JobStatusPieChart = ({ data }) => {
         Failed: "#f44336",
     };
 
+    // Translate display labels while keeping internal keys for color/count lookups
+    const translatedLabels = {
+        Completed: t("status.completed"),
+        Running: t("status.running"),
+        Failed: t("status.failed"),
+    };
+
     const chartData = {
-        labels: Object.keys(statusCounts),
+        labels: Object.keys(statusCounts).map((k) => translatedLabels[k] || k),
         datasets: [
             {
                 data: Object.values(statusCounts),
@@ -80,7 +89,7 @@ const JobStatusPieChart = ({ data }) => {
             }}
         >
             <Typography variant="h6" align="center" sx={{ mb: 1 }}>
-                Jobs Status
+                {t("charts.jobsStatus")}
             </Typography>
 
             <Box
@@ -159,7 +168,7 @@ const JobStatusPieChart = ({ data }) => {
                                 variant="body2"
                                 sx={{ mr: 2, minWidth: 70 }}
                             >
-                                {status}
+                                {translatedLabels[status] || status}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 {count} (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     TableContainer,
     Table,
@@ -27,6 +28,7 @@ const QueueTable = ({
     setAnchorEl,
     onQueueUpdate,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     const [queues, setQueues] = useState([]);
@@ -174,7 +176,7 @@ const QueueTable = ({
                                     colSpan={allocatedFields.length + 2}
                                     align="center"
                                 >
-                                    No queues found.
+                                    {t("empty.noQueues")}
                                 </TableCell>
                             </TableRow>
                         ) : (

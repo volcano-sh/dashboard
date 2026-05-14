@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React from "react";
 import {
     TableHead,
@@ -30,6 +31,7 @@ const QueueTableHeader = ({
     handleFilterClose,
     setAnchorEl,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     return (
@@ -52,9 +54,7 @@ const QueueTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
-                    >
-                        Name
-                    </Typography>
+                    >{t("table.name")}</Typography>
                 </TableCell>
 
                 {allocatedFields.map((field) => (
@@ -83,7 +83,7 @@ const QueueTableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {`Allocated ${field}`}
+                                {t("table.allocated") + " " + field}
                             </Typography>
                             <IconButton
                                 size="small"
@@ -134,8 +134,7 @@ const QueueTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
-                    >
-                        Creation Time
+                    >{t("table.creationTime")}
                     </Typography>
                     <Button
                         size="small"
@@ -175,9 +174,7 @@ const QueueTableHeader = ({
                                 boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
                             },
                         }}
-                    >
-                        Sort
-                    </Button>
+                    >{t("table.sort")}</Button>
                 </TableCell>
                 <TableCell
                     sx={{
@@ -196,9 +193,7 @@ const QueueTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
-                    >
-                        State
-                    </Typography>
+                    >{t("table.state")}</Typography>
                     <Button
                         size="small"
                         startIcon={<FilterList fontSize="small" />}
@@ -228,7 +223,7 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Filter: {filters.status}
+                        {t("table.filter")}: {t(`status.${filters.status?.toLowerCase()}`, filters.status)}
                     </Button>
                     <Menu
                         anchorEl={anchorEl.status}
@@ -311,9 +306,7 @@ const QueueTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
-                    >
-                        Actions
-                    </Typography>
+                    >{t("table.actions")}</Typography>
                 </TableCell>
             </TableRow>
         </TableHead>

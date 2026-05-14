@@ -7,8 +7,10 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { useTranslation } from "react-i18next";
 
 const Queues = () => {
+    const { t } = useTranslation();
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -47,7 +49,7 @@ const Queues = () => {
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            setError(t("errors.fetchQueues") + ": " + err.message);
             setQueues([]);
         } finally {
             setLoading(false);
@@ -122,7 +124,7 @@ const Queues = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            setError(t("errors.fetchYaml") + ": " + err.message);
         } finally {
             setLoading(false);
         }
@@ -233,7 +235,7 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text={t("pages.queues")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,12 +244,12 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder={t("searchbar.searchQueues")}
+                    refreshLabel={t("searchbar.refreshQueues")}
+                    createlabel={t("searchbar.createQueue")}
                     onCreateClick={handleCreateQueue}
-                    dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
+                    dialogTitle={t("dialog.createQueue")}
+                    dialogResourceNameLabel={t("dialog.queueName")}
                     dialogResourceType="Queue"
                 />
             </Box>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React from "react";
 import {
     TableHead,
@@ -27,6 +28,7 @@ const PodGroupsTableHeader = ({
     sortDirection,
     toggleSortDirection,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     const getFilterButtonStyle = (isActive) => ({
@@ -66,9 +68,7 @@ const PodGroupsTableHeader = ({
                         variant="subtitle1"
                         fontWeight="700"
                         color="text.primary"
-                    >
-                        Name
-                    </Typography>
+                    >{t("table.name")}</Typography>
                 </TableCell>
 
                 <TableCell
@@ -93,9 +93,7 @@ const PodGroupsTableHeader = ({
                             variant="subtitle1"
                             fontWeight="700"
                             color="text.primary"
-                        >
-                            Namespace
-                        </Typography>
+                        >{t("table.namespace")}</Typography>
                         <Button
                             size="small"
                             startIcon={<FilterList fontSize="small" />}
@@ -132,9 +130,7 @@ const PodGroupsTableHeader = ({
                         variant="subtitle1"
                         fontWeight="700"
                         color="text.primary"
-                    >
-                        Queue
-                    </Typography>
+                    >{t("table.queue")}</Typography>
                 </TableCell>
 
                 <TableCell
@@ -152,9 +148,7 @@ const PodGroupsTableHeader = ({
                         variant="subtitle1"
                         fontWeight="700"
                         color="text.primary"
-                    >
-                        Min Member
-                    </Typography>
+                    >{t("table.minMember")}</Typography>
                 </TableCell>
 
                 <TableCell
@@ -173,9 +167,7 @@ const PodGroupsTableHeader = ({
                         variant="subtitle1"
                         fontWeight="700"
                         color="text.primary"
-                    >
-                        Creation Time
-                    </Typography>
+                    >{t("table.creationTime")}</Typography>
                     <Button
                         size="small"
                         onClick={toggleSortDirection}
@@ -210,9 +202,7 @@ const PodGroupsTableHeader = ({
                                 transform: "translateY(-2px)",
                             },
                         }}
-                    >
-                        Sort
-                    </Button>
+                    >{t("table.sort")}</Button>
                 </TableCell>
 
                 <TableCell
@@ -238,9 +228,7 @@ const PodGroupsTableHeader = ({
                             variant="subtitle1"
                             fontWeight="700"
                             color="text.primary"
-                        >
-                            Status
-                        </Typography>
+                        >{t("table.status")}</Typography>
                         <Button
                             size="small"
                             startIcon={<FilterList fontSize="small" />}
