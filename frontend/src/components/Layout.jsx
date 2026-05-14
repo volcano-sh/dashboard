@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import { LanguageContext } from "../contexts/LanguageContext";
 import {
     AppBar,
     Box,
@@ -12,6 +14,7 @@ import {
     Toolbar,
     Typography,
     Tooltip,
+    Button,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -19,17 +22,19 @@ import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import CategoryIcon from "@mui/icons-material/Category";
+import SettingsIcon from "@mui/icons-material/Settings";
+import translations from "./scheduler/translations";
 
-// use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
 
 const Layout = () => {
-    // Hooks must be used inside component functions
     const location = useLocation();
+    const theme = useTheme();
     const [open, setOpen] = useState(true);
+    const { lang, setLang } = useContext(LanguageContext);
+    const navT = translations[lang].nav;
 
     // constants can be kept outside the component
-    const volcanoOrange = "#E34C26"; // orange red theme
     const headerGrey = "#424242"; // dark gray top stripe
     const drawerWidth = 240;
 
@@ -37,12 +42,41 @@ const Layout = () => {
         setOpen(!open);
     };
 
+    const handleLanguageToggle = () => {
+        setLang(lang === "en" ? "zh" : "en");
+    };
+
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        {
+            text: navT.dashboard,
+            icon: <HomeIcon />,
+            path: "/dashboard",
+        },
+        {
+            text: navT.jobs,
+            icon: <AssignmentIcon />,
+            path: "/jobs",
+        },
+        {
+            text: navT.queues,
+            icon: <CloudIcon />,
+            path: "/queues",
+        },
+        {
+            text: navT.pods,
+            icon: <WorkspacesIcon />,
+            path: "/pods",
+        },
+        {
+            text: navT.podgroups,
+            icon: <CategoryIcon />,
+            path: "/podgroups",
+        },
+        {
+            text: navT.scheduler,
+            icon: <SettingsIcon />,
+            path: "/scheduler",
+        },
     ];
 
     return (
@@ -75,6 +109,23 @@ const Layout = () => {
                     >
                         Volcano Dashboard
                     </Typography>
+                    <Box sx={{ flexGrow: 1 }} />
+                    <Button
+                        color="inherit"
+                        onClick={handleLanguageToggle}
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                            textTransform: "none",
+                            borderColor: "rgba(255, 255, 255, 0.5)",
+                            "&:hover": {
+                                borderColor: "white",
+                                bgcolor: "rgba(255, 255, 255, 0.1)",
+                            },
+                        }}
+                    >
+                        {lang === "en" ? "中文" : "English"}
+                    </Button>
                 </Toolbar>
             </AppBar>
 
@@ -101,7 +152,7 @@ const Layout = () => {
                         {menuItems.map((item) => {
                             const listItem = (
                                 <ListItem
-                                    key={item.text}
+                                    key={item.path}
                                     component={Link}
                                     to={item.path}
                                     className={
@@ -113,10 +164,12 @@ const Layout = () => {
                                         "&.active": {
                                             bgcolor: "rgba(0, 0, 0, 0.08)",
                                             "& .MuiListItemIcon-root": {
-                                                color: volcanoOrange,
+                                                color: theme.palette.primary
+                                                    .main,
                                             },
                                             "& .MuiListItemText-primary": {
-                                                color: volcanoOrange,
+                                                color: theme.palette.primary
+                                                    .main,
                                                 fontWeight: 500,
                                             },
                                         },
@@ -134,14 +187,14 @@ const Layout = () => {
                             );
                             return !open ? (
                                 <Tooltip
-                                    key={item.text}
+                                    key={item.path}
                                     title={item.text}
                                     placement="right"
                                 >
                                     {listItem}
                                 </Tooltip>
                             ) : (
-                                <React.Fragment key={item.text}>
+                                <React.Fragment key={item.path}>
                                     {listItem}
                                 </React.Fragment>
                             );

@@ -1,6 +1,8 @@
+import React from "react";
 import Layout from "../src/components/Layout";
 import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { LanguageContext } from "../src/contexts/LanguageContext";
 
 const menuItems = [
     { text: "Dashboard", path: "/dashboard" },
@@ -8,26 +10,28 @@ const menuItems = [
     { text: "Queues", path: "/queues" },
     { text: "Pods", path: "/pods" },
     { text: "PodGroups", path: "/podgroups" },
+    { text: "Scheduler", path: "/scheduler" },
 ];
+
+// Helper to render with all required providers
+const renderWithProviders = (ui) => {
+    return render(
+        <LanguageContext.Provider value={{ lang: "en" }}>
+            <MemoryRouter>{ui}</MemoryRouter>
+        </LanguageContext.Provider>,
+    );
+};
 
 describe("Layout", () => {
     it("should render the layout", () => {
-        render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
-        );
+        renderWithProviders(<Layout />);
 
         const heading = screen.getByText(/volcano dashboard/i);
         expect(heading).toBeInTheDocument();
     });
 
     it("should toggle the drawer when clicking the menu button", () => {
-        render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
-        );
+        renderWithProviders(<Layout />);
 
         const menuButton = screen.getByRole("button", {
             name: /toggle drawer/i,
@@ -44,16 +48,12 @@ describe("Layout", () => {
         expect(drawer).toHaveStyle("width: 60px");
     });
 
-    it("should have 5 navigation items", () => {
-        render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
-        );
+    it("should have 6 navigation items", () => {
+        renderWithProviders(<Layout />);
 
         const navigationItems = screen.getAllByRole("link");
 
-        expect(navigationItems).toHaveLength(5);
+        expect(navigationItems).toHaveLength(6);
 
         navigationItems.forEach((item, index) => {
             const { text, path } = menuItems[index];
@@ -64,11 +64,7 @@ describe("Layout", () => {
     });
 
     it("should render logo", () => {
-        render(
-            <MemoryRouter>
-                <Layout />
-            </MemoryRouter>,
-        );
+        renderWithProviders(<Layout />);
 
         const logo = screen.getByAltText(/volcano logo/i);
 
