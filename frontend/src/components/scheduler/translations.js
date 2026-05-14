@@ -26,6 +26,8 @@ const translations = {
             logsDesc:
                 "Centralized scheduler log exploration. Provides real-time streaming and keyword filtering across core Volcano system components.",
             placeholder: "This section is under development.",
+            save: "Save",
+            saveConfig: "Save Configuration",
         },
     },
     zh: {
@@ -49,6 +51,8 @@ const translations = {
             logsDesc:
                 "集中式调度器日志查看。提供 Volcano 核心组件的实时日志流和关键字过滤功能。",
             placeholder: "此功能正在开发中。",
+            save: "保存",
+            saveConfig: "保存配置",
         },
     },
 };
