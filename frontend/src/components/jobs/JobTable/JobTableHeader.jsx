@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import {
     TableHead,
     TableRow,
@@ -24,6 +25,8 @@ const JobTableHeader = ({
     toggleSortDirection,
 }) => {
     const theme = useTheme();
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
 
     return (
         <TableHead>
@@ -45,7 +48,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Name
+                        {zh ? "名称" : "Name"}
                     </Typography>
                 </TableCell>
 
@@ -74,7 +77,7 @@ const JobTableHeader = ({
                                 fontWeight="700"
                                 color="text.primary"
                             >
-                                {field}
+                                {zh ? {"Namespace": "命名空间", "Queue": "队列"}[field] || field : field}
                             </Typography>
                             <JobFilters
                                 filterType={field.toLowerCase()}
@@ -109,7 +112,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Creation Time
+                        {zh ? "创建时间" : "Creation Time"}
                     </Typography>
                     <Button
                         size="small"
@@ -146,7 +149,7 @@ const JobTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {zh ? "排序" : "Sort"}
                     </Button>
                 </TableCell>
 
@@ -167,7 +170,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Status
+                        {zh ? "状态" : "Status"}
                     </Typography>
                     <JobFilters
                         filterType="status"
@@ -198,7 +201,7 @@ const JobTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Actions
+                        {zh ? "操作" : "Actions"}
                     </Typography>
                 </TableCell>
             </TableRow>

@@ -14,9 +14,11 @@ import PodGroups from "./components/podgroups/PodGroups";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 function App() {
     return (
+        <LanguageProvider>
         <ThemeProvider theme={theme}>
             <Router>
                 <Routes>
@@ -34,6 +36,7 @@ function App() {
                 </Routes>
             </Router>
         </ThemeProvider>
+        </LanguageProvider>
     );
 }
 

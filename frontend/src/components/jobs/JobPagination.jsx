@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../../contexts/LanguageContext";
 import { Box, MenuItem, Pagination, Select, Typography } from "@mui/material";
 
 const JobPagination = ({
@@ -7,6 +8,8 @@ const JobPagination = ({
     handleChangePage,
     handleChangeRowsPerPage,
 }) => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
     return (
         <Box
             sx={{
@@ -21,9 +24,9 @@ const JobPagination = ({
                 onChange={handleChangeRowsPerPage}
                 size="small"
             >
-                <MenuItem value={5}>5 per page</MenuItem>
-                <MenuItem value={10}>10 per page</MenuItem>
-                <MenuItem value={20}>20 per page</MenuItem>
+                <MenuItem value={5}>{zh ? "每页 5 条" : "5 per page"}</MenuItem>
+                <MenuItem value={10}>{zh ? "每页 10 条" : "10 per page"}</MenuItem>
+                <MenuItem value={20}>{zh ? "每页 20 条" : "20 per page"}</MenuItem>
             </Select>
             <Box
                 sx={{
@@ -35,7 +38,7 @@ const JobPagination = ({
                 }}
             >
                 <Typography variant="body2" sx={{ mr: 2 }}>
-                    Total Jobs: {totalJobs}
+                    {zh ? "作业总数：" : "Total Jobs: "}{totalJobs}
                 </Typography>
                 <Pagination
                     count={Math.ceil(totalJobs / pagination.rowsPerPage)}

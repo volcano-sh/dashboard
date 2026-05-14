@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../../contexts/LanguageContext";
 import {
     Box,
     Button,
@@ -9,6 +10,8 @@ import {
 } from "@mui/material";
 
 const JobDialog = ({ open, handleClose, selectedJobName, selectedJobYaml }) => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
     return (
         <Dialog
             open={open}
@@ -25,7 +28,7 @@ const JobDialog = ({ open, handleClose, selectedJobName, selectedJobYaml }) => {
                 },
             }}
         >
-            <DialogTitle>Job YAML - {selectedJobName}</DialogTitle>
+            <DialogTitle>{zh ? "作业 YAML" : "Job YAML"} - {selectedJobName}</DialogTitle>
             <DialogContent>
                 <Box
                     sx={{
@@ -74,7 +77,7 @@ const JobDialog = ({ open, handleClose, selectedJobName, selectedJobYaml }) => {
                             },
                         }}
                     >
-                        Close
+                        {zh ? "关闭" : "Close"}
                     </Button>
                 </Box>
             </DialogActions>

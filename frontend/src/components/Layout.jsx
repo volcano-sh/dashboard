@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import {
     AppBar,
     Box,
+    Button,
     Drawer,
     IconButton,
     List,
@@ -10,9 +11,10 @@ import {
     ListItemIcon,
     ListItemText,
     Toolbar,
-    Typography,
     Tooltip,
+    Typography,
 } from "@mui/material";
+import { useLanguage } from "../contexts/LanguageContext";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
 import HomeIcon from "@mui/icons-material/Home";
@@ -27,6 +29,7 @@ const Layout = () => {
     // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
+    const { lang, toggle } = useLanguage();
 
     // constants can be kept outside the component
     const volcanoOrange = "#E34C26"; // orange red theme
@@ -71,10 +74,32 @@ const Layout = () => {
                         sx={{
                             color: "#ffffff",
                             fontWeight: 500,
+                            flexGrow: 1,
                         }}
                     >
                         Volcano Dashboard
                     </Typography>
+                    <Tooltip title={lang === "en" ? "切换至中文" : "Switch to English"}>
+                        <Button
+                            onClick={toggle}
+                            size="small"
+                            sx={{
+                                color: "#ffffff",
+                                border: "1px solid rgba(255,255,255,0.5)",
+                                borderRadius: "4px",
+                                px: 1.5,
+                                minWidth: "unset",
+                                fontWeight: 700,
+                                fontSize: "0.75rem",
+                                "&:hover": {
+                                    backgroundColor: "rgba(255,255,255,0.12)",
+                                    border: "1px solid rgba(255,255,255,0.9)",
+                                },
+                            }}
+                        >
+                            {lang === "en" ? "中文" : "EN"}
+                        </Button>
+                    </Tooltip>
                 </Toolbar>
             </AppBar>
 

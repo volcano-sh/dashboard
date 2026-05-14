@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { Menu, MenuItem } from "@mui/material";
 
 const JobFilters = ({
@@ -9,6 +10,8 @@ const JobFilters = ({
     handleFilterClose,
     anchorEl,
 }) => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
     return (
         <Menu
             anchorEl={anchorEl}
@@ -21,7 +24,7 @@ const JobFilters = ({
                     selected={option === currentValue}
                     onClick={() => handleFilterClick(filterType, option)}
                 >
-                    {option}
+                    {zh ? ({"All": "全部", "Running": "运行中", "Pending": "等待中", "Failed": "失败", "Completed": "已完成", "Succeeded": "成功"}[option] || option) : option}
                 </MenuItem>
             ))}
         </Menu>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import {
     TableContainer,
     Table,
@@ -29,6 +30,8 @@ const JobTable = ({
     reloadJobs, // (optional) for refetching after delete
 }) => {
     const theme = useTheme();
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
 
     // State for delete dialog
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -160,7 +163,7 @@ const JobTable = ({
                         {jobs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={8} align="center">
-                                    No jobs found.
+                                    {zh ? "暂无作业" : "No jobs found."}
                                 </TableCell>
                             </TableRow>
                         ) : (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import {
     Dialog,
     DialogTitle,
@@ -12,6 +13,8 @@ import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 
 const JobEditDialog = ({ open, job, onClose, onSave }) => {
+    const { lang } = useLanguage();
+    const zh = lang === "zh";
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
 
@@ -35,7 +38,7 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Parsing error:", err);
-            alert("Invalid YAML format. Please check your input.");
+                alert(zh ? "YAML 格式无效，请检查输入。" : "Invalid YAML format. Please check your input.");
         }
     };
 
@@ -48,7 +51,7 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
                     alignItems: "center",
                 }}
             >
-                Edit Job
+                {zh ? "编辑作业" : "Edit Job"}
                 <ToggleButtonGroup
                     value={editMode}
                     exclusive
@@ -72,14 +75,14 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} color="primary" variant="contained">
-                    Cancel
+                    {zh ? "取消" : "Cancel"}
                 </Button>
                 <Button
                     onClick={handleSave}
                     color="primary"
                     variant="contained"
                 >
-                    Update
+                    {zh ? "更新" : "Update"}
                 </Button>
             </DialogActions>
         </Dialog>
