@@ -1,23 +1,33 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { Box, Tab, Tabs, Typography, Paper, Button, Stack } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import TerminalIcon from "@mui/icons-material/Terminal";
 import SaveIcon from "@mui/icons-material/Save";
 import Editor from "@monaco-editor/react";
+import { Terminal } from "xterm";
+import { FitAddon } from "xterm-addon-fit";
+import "xterm/css/xterm.css";
+
 import TitleComponent from "../Titlecomponent";
 import translations from "./translations";
 import { LanguageContext } from "../../contexts/LanguageContext";
 
 /**
  * Scheduler management section — upgraded foundation for LFX Mentorship #197.
- * This version introduces the Monaco Editor for Configuration and 
- * premium placeholders for Metrics and Logs to showcase architectural intent.
+ * Features:
+ * - Monaco Editor for structured YAML configuration.
+ * - xterm.js for interactive, real-time log exploration.
+ * - Premium placeholders for observability metrics.
  */
 const Scheduler = () => {
     const [tabValue, setTabValue] = useState(0);
     const { lang } = useContext(LanguageContext);
     const t = translations[lang].scheduler;
+    
+    const terminalRef = useRef(null);
+    const xtermInstance = useRef(null);
+    const fitAddon = useRef(new FitAddon());
 
     const [configYaml, setConfigYaml] = useState(`actions: "enqueue, allocate, backfill"
 tiers:
@@ -34,6 +44,49 @@ tiers:
   - name: proportion
   - name: nodeorder
   - name: binpack`);
+
+    // Initialize xterm.js
+    useEffect(() => {
+        if (tabValue === 2 && terminalRef.current && !xtermInstance.current) {
+            const term = new Terminal({
+                cursorBlink: true,
+                fontSize: 13,
+                fontFamily: 'monospace',
+                theme: {
+                    background: '#1e1e1e',
+                },
+            });
+
+            term.loadAddon(fitAddon.current);
+            term.open(terminalRef.current);
+            fitAddon.current.fit();
+
+            term.writeln("\x1b[32m// Initializing real-time log stream from volcano-scheduler...\x1b[0m");
+            term.writeln("\x1b[34m[INFO]\x1b[0m 2026-05-14 12:54:11 - Successfully loaded configuration from volcano-system/volcano-scheduler-configmap");
+            term.writeln("\x1b[34m[INFO]\x1b[0m 2026-05-14 12:54:12 - Started Prometheus metrics server on :8080");
+            term.writeln("\x1b[33m[DEBUG]\x1b[0m 2026-05-14 12:54:15 - Action \"enqueue\" starting for job \"default/training-job-1\"");
+            term.writeln("\x1b[34m[INFO]\x1b[0m 2026-05-14 12:54:16 - Successfully scheduled 4 pods for Job \"default/training-job-1\" in Queue \"default\"");
+            term.write("\r\n\x1b[1;37m$\x1b[0m ");
+
+            xtermInstance.current = term;
+        }
+
+        // Handle resize
+        const handleResize = () => {
+            if (fitAddon.current) {
+                fitAddon.current.fit();
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (xtermInstance.current) {
+                xtermInstance.current.dispose();
+                xtermInstance.current = null;
+            }
+        };
+    }, [tabValue]);
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
@@ -168,32 +221,18 @@ tiers:
 
                         {tabValue === 2 && (
                             <Box
+                                ref={terminalRef}
                                 sx={{
                                     height: 400,
                                     bgcolor: "#1e1e1e",
                                     borderRadius: 2,
-                                    p: 2,
-                                    fontFamily: 'monospace',
-                                    color: "#d4d4d4",
-                                    fontSize: '0.8125rem',
-                                    overflow: 'auto',
-                                    border: '1px solid #333'
+                                    p: 1,
+                                    border: '1px solid #333',
+                                    "& .xterm-viewport": {
+                                        borderRadius: 2,
+                                    }
                                 }}
-                            >
-                                <Typography variant="caption" sx={{ color: "#6a9955", display: 'block', mb: 1 }}>
-                                    // Initializing real-time log stream from volcano-scheduler...
-                                </Typography>
-                                <Box sx={{ opacity: 0.7 }}>
-                                    <Box sx={{ mb: 0.5 }}><span style={{ color: '#569cd6' }}>[INFO]</span> 2026-05-14 12:54:11 - Successfully loaded configuration from volcano-system/volcano-scheduler-configmap</Box>
-                                    <Box sx={{ mb: 0.5 }}><span style={{ color: '#569cd6' }}>[INFO]</span> 2026-05-14 12:54:12 - Started Prometheus metrics server on :8080</Box>
-                                    <Box sx={{ mb: 0.5 }}><span style={{ color: '#ce9178' }}>[DEBUG]</span> 2026-05-14 12:54:15 - Action "enqueue" starting for job "default/training-job-1"</Box>
-                                    <Box sx={{ mb: 0.5 }}><span style={{ color: '#569cd6' }}>[INFO]</span> 2026-05-14 12:54:16 - Successfully scheduled 4 pods for Job "default/training-job-1" in Queue "default"</Box>
-                                </Box>
-                                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-                                    <Box sx={{ width: 8, height: 15, bgcolor: '#fff', animation: 'blink 1s infinite' }} />
-                                    <style>{`@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
-                                </Box>
-                            </Box>
+                            />
                         )}
                     </Box>
                 </Paper>
