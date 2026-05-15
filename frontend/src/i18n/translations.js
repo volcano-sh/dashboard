@@ -10,9 +10,9 @@ export const translations = {
                     runningPods: "Running Pods",
                     completeRate: "Complete Rate",
                 },
-                charts: {
-                    noDataAvailable: "No data available",
+                charts: {    
                     jobStatus: {
+                        noDataAvailable: "No data available",
                         title: "Jobs Status",
                         status: {
                             completed: "Completed",
@@ -26,6 +26,12 @@ export const translations = {
                             "No data available for selected resource type",
                         allocatedLabel: "{{resource}} Allocated",
                         capacityLabel: "{{resource}} Capacity",
+                        resourceNames: {
+                            memory: "Memory",
+                            cpu: "CPU",
+                            pods: "Pods",
+                            gpu: "GPU",
+                        },
                         resourceLabels: {
                             memory: "Memory Resources",
                             cpu: "CPU Resources",
@@ -63,8 +69,8 @@ export const translations = {
                     completeRate: "完成率",
                 },
                 charts: {
-                    noDataAvailable: "暂无数据",
                     jobStatus: {
+                        noDataAvailable: "暂无数据",
                         title: "作业状态",
                         status: {
                             completed: "已完成",
@@ -75,14 +81,20 @@ export const translations = {
                     queueResources: {
                         title: "队列资源",
                         noDataForResource: "所选资源类型暂无数据",
-                        allocatedLabel: "已分配 {{resource}}",
+                        allocatedLabel: "{{resource}} 已分配",
                         capacityLabel: "{{resource}} 容量",
+                        resourceNames: {
+                            memory: "内存",
+                            cpu: "CPU",
+                            pods: "Pod",
+                            gpu: "GPU",
+                        },
                         resourceLabels: {
                             memory: "内存资源",
                             cpu: "CPU 资源",
                             pods: "Pod 资源",
                             gpu: "GPU 资源",
-                        },
+                        },                   
                         yAxisLabels: {
                             memory: "内存 (Gi)",
                             cpu: "CPU 核数",
