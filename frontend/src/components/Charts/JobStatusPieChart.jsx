@@ -2,14 +2,37 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
+import { useTranslation } from "react-i18next";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const JobStatusPieChart = ({ data }) => {
+    const { t } = useTranslation();
+
+    const statusItems = [
+        {
+            key: "completed",
+            label: t("dashboard.charts.jobStatus.status.completed"),
+            color: "#4caf50",
+        },
+        {
+            key: "running",
+            label: t("dashboard.charts.jobStatus.status.running"),
+            color: "#2196f3",
+        },
+        {
+            key: "failed",
+            label: t("dashboard.charts.jobStatus.status.failed"),
+            color: "#f44336",
+        },
+    ];
+
     if (!data || !Array.isArray(data)) {
         return (
             <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
+                <Typography>
+                    {t("dashboard.charts.jobStatus.noDataAvailable")}
+                </Typography>
             </Box>
         );
     }
@@ -18,37 +41,32 @@ const JobStatusPieChart = ({ data }) => {
         (acc, job) => {
             const status = job.status;
             if (status?.succeeded) {
-                acc.Completed++;
+                acc.completed++;
             } else if (
                 status?.state?.phase === "Running" ||
                 status?.state?.phase === "Pending"
             ) {
-                acc.Running++;
+                acc.running++;
             } else if (status?.state?.phase === "Failed") {
-                acc.Failed++;
+                acc.failed++;
             }
             return acc;
         },
         {
-            Completed: 0,
-            Running: 0,
-            Failed: 0,
+            completed: 0,
+            running: 0,
+            failed: 0,
         },
     );
 
     const total = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-    const colors = {
-        Completed: "#4caf50",
-        Running: "#2196f3",
-        Failed: "#f44336",
-    };
 
     const chartData = {
-        labels: Object.keys(statusCounts),
+        labels: statusItems.map((status) => status.label),
         datasets: [
             {
-                data: Object.values(statusCounts),
-                backgroundColor: Object.values(colors),
+                data: statusItems.map((status) => statusCounts[status.key]),
+                backgroundColor: statusItems.map((status) => status.color),
                 borderColor: "white",
                 borderWidth: 2,
                 hoverBorderColor: "white",
@@ -80,7 +98,7 @@ const JobStatusPieChart = ({ data }) => {
             }}
         >
             <Typography variant="h6" align="center" sx={{ mb: 1 }}>
-                Jobs Status
+                {t("dashboard.charts.jobStatus.title")}
             </Typography>
 
             <Box
@@ -97,8 +115,8 @@ const JobStatusPieChart = ({ data }) => {
                 <Box
                     sx={{
                         flex: 1,
-                        minWidth: "250px", // Ensure that the chart is not too small
-                        height: "300px", // Fixed height to adapt to various screens
+                        minWidth: "250px",
+                        height: "300px",
                         position: "relative",
                         display: "flex",
                         alignItems: "center",
@@ -137,39 +155,46 @@ const JobStatusPieChart = ({ data }) => {
                         textAlign: "left",
                     }}
                 >
-                    {Object.entries(statusCounts).map(([status, count]) => (
-                        <Box
-                            key={status}
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                mb: 1.5,
-                            }}
-                        >
+                    {statusItems.map((status) => {
+                        const count = statusCounts[status.key];
+
+                        return (
                             <Box
+                                key={status.key}
                                 sx={{
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: "50%",
-                                    backgroundColor: colors[status],
-                                    mr: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    mb: 1.5,
                                 }}
-                            />
-                            <Typography
-                                variant="body2"
-                                sx={{ mr: 2, minWidth: 70 }}
                             >
-                                {status}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {count} (
-                                {total > 0
-                                    ? ((count / total) * 100).toFixed(1)
-                                    : 0}
-                                %)
-                            </Typography>
-                        </Box>
-                    ))}
+                                <Box
+                                    sx={{
+                                        width: 12,
+                                        height: 12,
+                                        borderRadius: "50%",
+                                        backgroundColor: status.color,
+                                        mr: 1,
+                                    }}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    sx={{ mr: 2, minWidth: 70 }}
+                                >
+                                    {status.label}
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    {count} (
+                                    {total > 0
+                                        ? ((count / total) * 100).toFixed(1)
+                                        : 0}
+                                    %)
+                                </Typography>
+                            </Box>
+                        );
+                    })}
                 </Box>
             </Box>
         </Box>
