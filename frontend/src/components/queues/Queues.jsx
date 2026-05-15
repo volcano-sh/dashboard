@@ -71,6 +71,8 @@ const Queues = () => {
             }
 
             alert("Queue created successfully!");
+            setPagination((prev) => ({ ...prev, page: 1 }));
+            await fetchQueues();
         } catch (err) {
             alert(
                 "Network error: " + (err?.response?.data?.error || err.message),
