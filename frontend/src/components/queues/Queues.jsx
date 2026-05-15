@@ -71,6 +71,7 @@ const Queues = () => {
             }
 
             alert("Queue created successfully!");
+            fetchQueues();
         } catch (err) {
             alert(
                 "Network error: " + (err?.response?.data?.error || err.message),
