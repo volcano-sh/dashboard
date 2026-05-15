@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Box } from "@mui/material";
 import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
@@ -19,7 +19,7 @@ const Dashboard = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchAllData = async () => {
+    const fetchAllData = useCallback(async () => {
         setRefreshing(true);
         setError(null);
         try {
@@ -54,7 +54,7 @@ const Dashboard = () => {
             setRefreshing(false);
             setIsLoading(false);
         }
-    };
+    },[t]);
 
     const handleRefresh = () => {
         fetchAllData();
@@ -62,7 +62,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchAllData();
-    }, []);
+    }, [fetchAllData]);
 
     return (
         <Box
