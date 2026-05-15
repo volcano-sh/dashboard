@@ -392,11 +392,6 @@ export function CreateQueueDialog({
       >
         <DialogHeader>
           <DialogTitle>Create a Queue</DialogTitle>
-          <DialogDescription>
-            {mode === "form"
-              ? "Form and YAML stay in sync: edits in one view update the other when you switch tabs (YAML is also updated live while you use the form)."
-              : "Form fields update from valid YAML as you type. Switch to Form to edit structured fields."}
-          </DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-2 border-b pb-2">
