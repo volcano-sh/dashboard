@@ -162,7 +162,8 @@ const Jobs = () => {
             }
 
             alert("Job created successfully!");
-            fetchJobs(); 
+            setPagination((prev) => ({ ...prev, page: 1 }));
+            fetchJobs();
         } catch (err) {
             alert("Network error: " + err.message);
         }
