@@ -14,10 +14,12 @@ import PodGroups from "./components/podgroups/PodGroups";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { Toaster } from "sonner";
 
 function App() {
     return (
         <ThemeProvider theme={theme}>
+            <Toaster position="top-center" richColors />
             <Router>
                 <Routes>
                     <Route path="/" element={<Layout />}>

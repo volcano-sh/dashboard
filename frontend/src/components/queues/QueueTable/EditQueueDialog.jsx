@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { toast } from "sonner";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
@@ -251,7 +252,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Save failed:", err);
-            alert(err.message || "Failed to save");
+            toast.error(err.message || "Failed to save");
         }
     };
 

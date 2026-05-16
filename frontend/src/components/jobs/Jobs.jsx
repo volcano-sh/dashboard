@@ -7,6 +7,7 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { toast } from "sonner";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -157,13 +158,13 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                toast.error("Error creating job: " + errorMsg);
                 return;
             }
 
-            alert("Job created successfully!");
+            toast.success("Job created successfully!");
         } catch (err) {
-            alert("Network error: " + err.message);
+            toast.error("Network error: " + err.message);
         }
     };
 

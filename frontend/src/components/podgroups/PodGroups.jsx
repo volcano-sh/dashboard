@@ -8,6 +8,7 @@ import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
 import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
+import { toast } from "sonner";
 
 const PodGroups = () => {
     const [podGroups, setPodGroups] = useState([]);
@@ -167,7 +168,7 @@ const PodGroups = () => {
 
     // For now, no creation dialog
     const handleCreate = () => {
-        alert("Create PodGroup not implemented yet");
+        toast.info("Create PodGroup not implemented yet");
     };
 
     return (
