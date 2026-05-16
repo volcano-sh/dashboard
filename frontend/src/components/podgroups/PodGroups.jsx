@@ -168,7 +168,7 @@ const PodGroups = () => {
 
     // For now, no creation dialog
     const handleCreate = () => {
-        toast("Create PodGroup not implemented yet");
+        toast.info("Create PodGroup not implemented yet");
     };
 
     return (

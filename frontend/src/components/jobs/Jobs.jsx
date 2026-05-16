@@ -158,7 +158,7 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                toast.error(errorMsg);
+                toast.error("Error creating job: " + errorMsg);
                 return;
             }
 
