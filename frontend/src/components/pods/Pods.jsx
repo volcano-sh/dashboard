@@ -53,7 +53,7 @@ const Pods = () => {
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0);
         } catch (err) {
-            setError(t("fetch_pods_error") + err.message);
+            setError({ key: "fetch_pods_error", message: err.message });
             setCachedPods([]);
         } finally {
             setLoading(false);
@@ -153,7 +153,7 @@ const Pods = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error(t("fetch_job_yaml_error"), err);
-            setError(t("fetch_job_yaml_error") + err.message);
+            setError({ key: "fetch_job_yaml_error", message: err.message });
         } finally {
             setLoading(false);
         }
@@ -184,7 +184,9 @@ const Pods = () => {
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
                 <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
+                    <Typography variant="body1">
+                        {error.key ? `${t(error.key)}${error.message}` : error}
+                    </Typography>
                 </Box>
             )}
             <TitleComponent text={t("pods_status_title")} />

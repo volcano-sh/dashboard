@@ -83,7 +83,7 @@
   "create_pod_label": "创建 Pod",
   "create_pod_dialog_title": "创建 Pod",
   "pod_name_label": "Pod 名称",
-  "pod_details_title": "Pod 详情",
+  "pod_details_title": "Pod 详情 - {{podName}}",
   "rows_per_page": "每页行数：",
   "per_page": "每页",
   "total_pods": "Pods 总数",
@@ -152,5 +152,7 @@
   "state": "状态",
   "guarantee_resources_optional": "保证资源（可选）",
   "capability_resources_optional": "能力资源（可选）",
-  "deserved_resources_optional": "应得资源（可选）"
+  "deserved_resources_optional": "应得资源（可选）",
+  "queue_yaml_title": "队列 YAML - {{selectedQueueName}}",
+  "yaml": "YAML"
 }

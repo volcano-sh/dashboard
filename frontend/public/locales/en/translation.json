@@ -79,7 +79,7 @@
   "create_pod_label": "Create Pod",
   "create_pod_dialog_title": "Create a Pod",
   "pod_name_label": "Pod Name",
-  "pod_details_title": "Pod Details",
+  "pod_details_title": "Pod Details - {{podName}}",
   "rows_per_page": "Rows per page:",
   "per_page": "per page",
   "total_pods": "Total Pods",
@@ -148,5 +148,7 @@
   "state": "State",
   "guarantee_resources_optional": "Guarantee Resources (Optional)",
   "capability_resources_optional": "Capability Resources (Optional)",
-  "deserved_resources_optional": "Deserved Resources (Optional)"
+  "deserved_resources_optional": "Deserved Resources (Optional)",
+  "queue_yaml_title": "Queue YAML - {{selectedQueueName}}",
+  "yaml": "YAML"
 }

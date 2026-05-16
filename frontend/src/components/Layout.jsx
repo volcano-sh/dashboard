@@ -90,7 +90,7 @@ const Layout = () => {
                         }
                         sx={{ color: "white" }}
                     >
-                        {i18n.language === "en" ? "中文" : "EN"}
+                        {i18n.language.startsWith("en") ? "中文" : "EN"}
                     </Button>
                 </Toolbar>
             </AppBar>

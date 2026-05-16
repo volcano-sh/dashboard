@@ -85,7 +85,7 @@ const QueueTableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {`${field.toUpperCase()}${t("allocated_suffix")}`}
+                                {`${t(field.toLowerCase())}${t("allocated_suffix")}`}
                             </Typography>
                             <IconButton
                                 size="small"
