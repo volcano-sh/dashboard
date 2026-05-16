@@ -11,7 +11,7 @@ import PodDetailsDialog from "./PodDetailsDialog";
 const Pods = () => {
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
-    const [, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [filters, setFilters] = useState({
@@ -193,7 +193,7 @@ const Pods = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={loading}
                     placeholder="Search Pods..."
                     refreshLabel="Refresh Pods"
                     createlabel="Create Pod"
