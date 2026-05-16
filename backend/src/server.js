@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { pathToFileURL } from "url";
 import {
     CoreV1Api,
     CustomObjectsApi,
@@ -999,13 +1000,21 @@ const verifyVolcanoSetup = async () => {
     }
 };
 
-// Update your server startup
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, async () => {
-    const volcanoReady = await verifyVolcanoSetup();
-    if (volcanoReady) {
-        console.log(`Server running on port ${PORT} with Volcano support`);
-    } else {
-        console.error("Server started but Volcano support is not available");
-    }
-});
+export const startServer = () => {
+    const PORT = process.env.PORT || 3001;
+    return app.listen(PORT, async () => {
+        const volcanoReady = await verifyVolcanoSetup();
+        if (volcanoReady) {
+            console.log(`Server running on port ${PORT} with Volcano support`);
+        } else {
+            console.error("Server started but Volcano support is not available");
+        }
+    });
+};
+
+if (
+    process.argv[1] &&
+    import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+    startServer();
+}
