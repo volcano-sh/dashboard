@@ -65,8 +65,17 @@ const PodGroups = () => {
 
     useEffect(() => {
         fetchPodGroups();
-        fetchAllNamespaces().then(setAllNamespaces);
     }, [fetchPodGroups]);
+
+    useEffect(() => {
+        let isMounted = true;
+        fetchAllNamespaces().then((data) => {
+            if (isMounted) setAllNamespaces(data);
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
