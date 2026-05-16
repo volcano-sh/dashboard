@@ -11,7 +11,7 @@ import SearchBar from "../Searchbar";
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
-    const [, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [allQueues, setAllQueues] = useState([]);
@@ -221,7 +221,7 @@ const Jobs = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={loading}
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
                     createlabel="Create Job"
