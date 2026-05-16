@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { toast } from "sonner";
 
 const JobEditDialog = ({ open, job, onClose, onSave }) => {
     const [editorValue, setEditorValue] = useState("");
@@ -35,7 +36,7 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Parsing error:", err);
-            alert("Invalid YAML format. Please check your input.");
+            toast.error("Invalid YAML format. Please check your input.");
         }
     };
 

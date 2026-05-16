@@ -7,6 +7,7 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { toast } from "sonner";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -66,13 +67,13 @@ const Queues = () => {
 
             if (response.status !== 201) {
                 let errMsg = response.data?.error || response.statusText;
-                alert("Failed to create queue: " + errMsg);
+                toast.error("Failed to create queue: " + errMsg);
                 return;
             }
 
-            alert("Queue created successfully!");
+            toast.success("Queue created successfully!");
         } catch (err) {
-            alert(
+            toast.error(
                 "Network error: " + (err?.response?.data?.error || err.message),
             );
         } finally {
