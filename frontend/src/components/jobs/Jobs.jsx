@@ -68,9 +68,20 @@ const Jobs = () => {
 
     useEffect(() => {
         fetchJobs();
-        fetchAllNamespaces().then(setAllNamespaces);
-        fetchAllQueues().then(setAllQueues);
     }, [fetchJobs]);
+
+    useEffect(() => {
+        let isMounted = true;
+        fetchAllNamespaces().then((data) => {
+            if (isMounted) setAllNamespaces(data);
+        });
+        fetchAllQueues().then((data) => {
+            if (isMounted) setAllQueues(data);
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
