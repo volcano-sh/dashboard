@@ -4,8 +4,10 @@ import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
+import { useTranslation } from "react-i18next";
 
 const Dashboard = () => {
+    const { t } = useTranslation();
     const [dashboardData, setDashboardData] = useState({
         jobs: [],
         queues: [],
@@ -44,8 +46,8 @@ const Dashboard = () => {
                 pods: podsData.items || [],
             });
         } catch (error) {
-            console.error("Error fetching dashboard data:", error);
-            setError(error.message);
+            console.error(t("fetch_dashboard_error"), error);
+            setError({ key: "fetch_dashboard_error", message: error.message });
         } finally {
             setRefreshing(false);
             setIsLoading(false);
@@ -69,7 +71,12 @@ const Dashboard = () => {
                 p: 3,
             }}
         >
-            {error && <ErrorDisplay message={error} />}
+            {error && (
+                <ErrorDisplay
+                    message={error.message || error}
+                    errorKey={error.key}
+                />
+            )}
 
             <DashboardHeader
                 onRefresh={handleRefresh}

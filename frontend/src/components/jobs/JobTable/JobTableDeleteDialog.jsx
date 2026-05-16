@@ -9,6 +9,7 @@ import {
     Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import { useTranslation } from "react-i18next";
 
 const JobTableDeleteDialog = ({
     open,
@@ -17,6 +18,7 @@ const JobTableDeleteDialog = ({
     jobToDelete,
     error,
 }) => {
+    const { t } = useTranslation();
     const showOnlyError = Boolean(error);
 
     return (
@@ -28,7 +30,7 @@ const JobTableDeleteDialog = ({
                     alignItems: "center",
                 }}
             >
-                {showOnlyError ? "Error" : "Delete Job"}
+                {showOnlyError ? t("error") : t("delete_job")}
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -38,14 +40,14 @@ const JobTableDeleteDialog = ({
                 {showOnlyError ? (
                     <Alert severity="error">{error}</Alert>
                 ) : (
-                    `Are you sure you want to delete job "${jobToDelete}"? This action cannot be undone.`
+                    t("delete_job_confirm_msg", { jobToDelete })
                 )}
             </DialogContent>
 
             <DialogActions>
                 {!showOnlyError && (
                     <Button onClick={onClose} color="primary">
-                        Cancel
+                        {t("cancel")}
                     </Button>
                 )}
                 {!showOnlyError && (
@@ -54,7 +56,7 @@ const JobTableDeleteDialog = ({
                         color="error"
                         variant="contained"
                     >
-                        Delete
+                        {t("delete")}
                     </Button>
                 )}
             </DialogActions>

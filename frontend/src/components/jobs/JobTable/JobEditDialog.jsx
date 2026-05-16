@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Dialog,
     DialogTitle,
@@ -12,6 +13,7 @@ import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 
 const JobEditDialog = ({ open, job, onClose, onSave }) => {
+    const { t } = useTranslation();
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
 
@@ -35,7 +37,7 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Parsing error:", err);
-            alert("Invalid YAML format. Please check your input.");
+            alert(t("invalid_yaml_alert"));
         }
     };
 
@@ -48,14 +50,14 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
                     alignItems: "center",
                 }}
             >
-                Edit Job
+                {t("edit_job")}
                 <ToggleButtonGroup
                     value={editMode}
                     exclusive
                     onChange={handleModeChange}
                     color="primary"
                 >
-                    <ToggleButton value="yaml">YAML</ToggleButton>
+                    <ToggleButton value="yaml">{t("yaml")}</ToggleButton>
                 </ToggleButtonGroup>
             </DialogTitle>
             <DialogContent sx={{ height: "500px" }}>
@@ -72,14 +74,14 @@ const JobEditDialog = ({ open, job, onClose, onSave }) => {
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} color="primary" variant="contained">
-                    Cancel
+                    {t("cancel")}
                 </Button>
                 <Button
                     onClick={handleSave}
                     color="primary"
                     variant="contained"
                 >
-                    Update
+                    {t("update")}
                 </Button>
             </DialogActions>
         </Dialog>

@@ -1,16 +1,18 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { Line } from "react-chartjs-2";
 import "./chartConfig";
 
 const PodStatusLineChart = ({ data }) => {
+    const { t } = useTranslation();
     const chartData = {
         labels: data.map((pod) =>
             new Date(pod.metadata.creationTimestamp).toLocaleTimeString(),
         ),
         datasets: [
             {
-                label: "Running Pods",
+                label: t("running_pods"),
                 data: data.map((pod) =>
                     pod.status.phase === "Running" ? 1 : 0,
                 ),
@@ -35,7 +37,7 @@ const PodStatusLineChart = ({ data }) => {
     return (
         <Box sx={{ height: 300, width: "100%", position: "relative" }}>
             <Typography variant="h6" gutterBottom>
-                Pod Status Timeline
+                {t("pod_status_timeline")}
             </Typography>
             <Line data={chartData} options={options} />
         </Box>

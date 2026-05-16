@@ -9,6 +9,7 @@ import {
     Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import { useTranslation } from "react-i18next";
 
 const QueueTableDeleteDialog = ({
     open,
@@ -17,6 +18,7 @@ const QueueTableDeleteDialog = ({
     queueToDelete,
     error,
 }) => {
+    const { t } = useTranslation();
     const showOnlyError = Boolean(error);
 
     return (
@@ -28,7 +30,7 @@ const QueueTableDeleteDialog = ({
                     alignItems: "center",
                 }}
             >
-                {showOnlyError ? "Error" : "Delete Queue"}
+                {showOnlyError ? t("error") : t("delete_queue")}
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -38,14 +40,14 @@ const QueueTableDeleteDialog = ({
                 {showOnlyError ? (
                     <Alert severity="error">{error}</Alert>
                 ) : (
-                    `Are you sure you want to delete queue "${queueToDelete}"? This action cannot be undone.`
+                    t("delete_queue_confirm_msg", { queueToDelete })
                 )}
             </DialogContent>
 
             <DialogActions>
                 {!showOnlyError && (
                     <Button onClick={onClose} color="primary">
-                        Cancel
+                        {t("cancel")}
                     </Button>
                 )}
                 {!showOnlyError && (
@@ -54,7 +56,7 @@ const QueueTableDeleteDialog = ({
                         color="error"
                         variant="contained"
                     >
-                        Delete
+                        {t("delete")}
                     </Button>
                 )}
             </DialogActions>

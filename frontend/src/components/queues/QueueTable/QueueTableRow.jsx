@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { TableRow, TableCell, Box, Chip, useTheme, alpha } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { Delete } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 import Edit from "@mui/icons-material/Edit";
@@ -12,6 +13,7 @@ const QueueTableRow = ({
     handleOpenDeleteDialog,
     onQueueUpdate,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -105,7 +107,11 @@ const QueueTableRow = ({
 
                 <TableCell sx={{ padding: "16px 24px" }}>
                     <Chip
-                        label={queue.status ? queue.status.state : "Unknown"}
+                        label={
+                            queue.status
+                                ? t(queue.status.state.toLowerCase())
+                                : t("unknown")
+                        }
                         sx={{
                             bgcolor: getStateColor(
                                 queue.status ? queue.status.state : "Unknown",

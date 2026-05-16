@@ -18,6 +18,7 @@ import {
     FilterList,
     UnfoldMore,
 } from "@mui/icons-material";
+import { useTranslation } from "react-i18next";
 
 const QueueTableHeader = ({
     allocatedFields,
@@ -30,6 +31,7 @@ const QueueTableHeader = ({
     handleFilterClose,
     setAnchorEl,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     return (
@@ -53,7 +55,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Name
+                        {t("name")}
                     </Typography>
                 </TableCell>
 
@@ -83,7 +85,7 @@ const QueueTableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {`Allocated ${field}`}
+                                {`${field.toUpperCase()}${t("allocated_suffix")}`}
                             </Typography>
                             <IconButton
                                 size="small"
@@ -135,7 +137,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Creation Time
+                        {t("creation_time")}
                     </Typography>
                     <Button
                         size="small"
@@ -176,7 +178,7 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {t("sort")}
                     </Button>
                 </TableCell>
                 <TableCell
@@ -197,7 +199,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        State
+                        {t("state")}
                     </Typography>
                     <Button
                         size="small"
@@ -228,7 +230,9 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Filter: {filters.status}
+                        {filters.status === "All"
+                            ? t("all")
+                            : t(filters.status.toLowerCase())}
                     </Button>
                     <Menu
                         anchorEl={anchorEl.status}
@@ -288,7 +292,9 @@ const QueueTableHeader = ({
                                     }),
                                 }}
                             >
-                                {status}
+                                {status === "All"
+                                    ? t("all")
+                                    : t(status.toLowerCase())}
                             </MenuItem>
                         ))}
                     </Menu>
@@ -312,7 +318,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Actions
+                        {t("actions")}
                     </Typography>
                 </TableCell>
             </TableRow>

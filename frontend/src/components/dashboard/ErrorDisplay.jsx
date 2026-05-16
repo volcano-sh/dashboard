@@ -1,7 +1,8 @@
-import React from "react";
 import { Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
-const ErrorDisplay = ({ message }) => {
+const ErrorDisplay = ({ message, errorKey }) => {
+    const { t } = useTranslation();
     return (
         <Paper
             sx={{
@@ -11,7 +12,9 @@ const ErrorDisplay = ({ message }) => {
                 color: "error.contrastText",
             }}
         >
-            <Typography>{message}</Typography>
+            <Typography>
+                {errorKey ? `${t(errorKey)} ${message}` : message}
+            </Typography>
         </Paper>
     );
 };

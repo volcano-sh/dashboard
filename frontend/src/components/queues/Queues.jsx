@@ -7,8 +7,10 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { useTranslation } from "react-i18next";
 
 const Queues = () => {
+    const { t } = useTranslation();
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -47,7 +49,7 @@ const Queues = () => {
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            setError({ key: "fetch_queues_error", message: err.message });
             setQueues([]);
         } finally {
             setLoading(false);
@@ -66,14 +68,14 @@ const Queues = () => {
 
             if (response.status !== 201) {
                 let errMsg = response.data?.error || response.statusText;
-                alert("Failed to create queue: " + errMsg);
+                alert(t("create_queue_error") + errMsg);
                 return;
             }
 
-            alert("Queue created successfully!");
+            alert(t("create_queue_success"));
         } catch (err) {
             alert(
-                "Network error: " + (err?.response?.data?.error || err.message),
+                t("network_error") + (err?.response?.data?.error || err.message),
             );
         } finally {
             setLoading(false);
@@ -122,7 +124,7 @@ const Queues = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            setError({ key: "fetch_yaml_error", message: err.message });
         } finally {
             setLoading(false);
         }
@@ -230,10 +232,12 @@ const Queues = () => {
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
                 <Box sx={{ mt: 2, color: "error.main" }}>
-                    <Typography variant="body1">{error}</Typography>
+                    <Typography variant="body1">
+                        {error.key ? `${t(error.key)}${error.message}` : error}
+                    </Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text={t("queues_status_title")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,12 +246,12 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder={t("search_queues_placeholder")}
+                    refreshLabel={t("refresh_queues_label")}
+                    createlabel={t("create_queue")}
                     onCreateClick={handleCreateQueue}
-                    dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
+                    dialogTitle={t("create_queue")}
+                    dialogResourceNameLabel={t("queue_name")}
                     dialogResourceType="Queue"
                 />
             </Box>

@@ -7,8 +7,10 @@ import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import { useTranslation } from "react-i18next";
 
 const Pods = () => {
+    const { t } = useTranslation();
     const [pods, setPods] = useState([]);
     const [cachedPods, setCachedPods] = useState([]);
     const [, setLoading] = useState(true);
@@ -51,7 +53,7 @@ const Pods = () => {
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
+            setError(t("fetch_pods_error") + err.message);
             setCachedPods([]);
         } finally {
             setLoading(false);
@@ -94,7 +96,7 @@ const Pods = () => {
                 setPods(data);
             }
         } catch (error) {
-            console.error("Error fetching pods:", error);
+            console.error(t("fetch_pods_error"), error);
         }
     };
 
@@ -107,21 +109,21 @@ const Pods = () => {
             });
 
             if (!response.ok) {
-                let errorMsg = "Unknown error";
+                let errorMsg = t("unexpected_error");
                 try {
                     const errData = await response.json();
                     errorMsg = errData.error || response.statusText;
                 } catch {
                     // ignore error
                 }
-                alert("Error creating pod: " + errorMsg);
+                alert(t("create_pod_error") + errorMsg);
                 return;
             }
 
-            alert("Pod created successfully!");
+            alert(t("create_pod_success"));
             await fetchData(); // Now fetchData is defined in the same scope
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(t("network_error") + err.message);
         }
     };
 
@@ -150,8 +152,8 @@ const Pods = () => {
             setSelectedPodYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
-            console.error("Failed to fetch pod YAML:", err);
-            setError("Failed to fetch pod YAML: " + err.message);
+            console.error(t("fetch_job_yaml_error"), err);
+            setError(t("fetch_job_yaml_error") + err.message);
         } finally {
             setLoading(false);
         }
@@ -185,7 +187,7 @@ const Pods = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Pods Status" />
+            <TitleComponent text={t("pods_status_title")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -194,11 +196,11 @@ const Pods = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search Pods..."
-                    refreshLabel="Refresh Pods"
-                    createlabel="Create Pod"
-                    dialogTitle="Create a Pod"
-                    dialogResourceNameLabel="Pod Name"
+                    placeholder={t("search_pods_placeholder")}
+                    refreshLabel={t("refresh_pods_label")}
+                    createlabel={t("create_pod_label")}
+                    dialogTitle={t("create_pod_dialog_title")}
+                    dialogResourceNameLabel={t("pod_name_label")}
                     dialogResourceType="Pod"
                     onCreateClick={handleCreatePod}
                 />

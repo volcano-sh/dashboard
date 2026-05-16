@@ -9,7 +9,6 @@ const TitleComponent = ({ text }) => {
             sx={{
                 color: "#dc3545",
                 letterSpacing: "1px",
-                textTransform: "uppercase",
                 maxWidth: "80%",
                 position: "relative",
                 "&::after": {

@@ -9,6 +9,7 @@ import {
     useTheme,
     alpha,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
@@ -28,6 +29,7 @@ const JobTable = ({
     onJobUpdate,
     reloadJobs, // (optional) for refetching after delete
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     // State for delete dialog
@@ -92,7 +94,7 @@ const JobTable = ({
                     data.message ||
                     data.details ||
                     text ||
-                    `Job "${namespace}/${name}" could not be deleted.`;
+                    t("delete_job_error_msg", { namespace, name });
 
                 setDeleteError(k8sMessage);
                 return;
@@ -103,7 +105,7 @@ const JobTable = ({
 
             handleCloseDeleteDialog();
         } catch (error) {
-            setDeleteError(error.message || "An unexpected error occurred.");
+            setDeleteError(error.message || t("unexpected_error"));
         } finally {
             setIsDeleting(false);
         }
@@ -160,7 +162,7 @@ const JobTable = ({
                         {jobs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={8} align="center">
-                                    No jobs found.
+                                    {t("no_jobs_found")}
                                 </TableCell>
                             </TableRow>
                         ) : (

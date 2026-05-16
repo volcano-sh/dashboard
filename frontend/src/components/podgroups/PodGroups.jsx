@@ -4,12 +4,14 @@ import axios from "axios";
 import { escape } from "lodash";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
+import { useTranslation } from "react-i18next";
 import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
 import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
 
 const PodGroups = () => {
+    const { t } = useTranslation();
     const [podGroups, setPodGroups] = useState([]);
     const [cachedPodGroups, setCachedPodGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ const PodGroups = () => {
             setCachedPodGroups(data.items || []);
             setTotalItems(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch podgroups: " + err.message);
+            setError({ key: "fetch_podgroups_error", message: err.message });
             setCachedPodGroups([]);
         } finally {
             setLoading(false);
@@ -111,7 +113,7 @@ const PodGroups = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch YAML:", err);
-            setError("Failed to fetch YAML: " + err.message);
+            setError({ key: "fetch_yaml_error", message: err.message });
         } finally {
             setLoading(false);
         }
@@ -167,17 +169,19 @@ const PodGroups = () => {
 
     // For now, no creation dialog
     const handleCreate = () => {
-        alert("Create PodGroup not implemented yet");
+        alert(t("create_podgroup_not_implemented"));
     };
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
                 <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
+                    <Typography variant="body1">
+                        {error.key ? `${t(error.key)}${error.message}` : error}
+                    </Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano PodGroups" />
+            <TitleComponent text={t("podgroups_title")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -186,11 +190,11 @@ const PodGroups = () => {
                     handleRefresh={fetchPodGroups}
                     fetchData={fetchPodGroups}
                     isRefreshing={loading}
-                    placeholder="Search PodGroups..."
-                    refreshLabel="Refresh Listings"
-                    createlabel="Create PodGroup"
-                    dialogTitle="Create PodGroup"
-                    dialogResourceNameLabel="Name"
+                    placeholder={t("search_podgroups_placeholder")}
+                    refreshLabel={t("refresh_listings_label")}
+                    createlabel={t("create_podgroup_label")}
+                    dialogTitle={t("create_podgroup_label")}
+                    dialogResourceNameLabel={t("name_label")}
                     dialogResourceType="PodGroup"
                     onCreateClick={handleCreate}
                 />
@@ -209,9 +213,10 @@ const PodGroups = () => {
             />
             <JobPagination
                 pagination={pagination}
-                totalJobs={totalItems} // Prop name in JobPagination is totalJobs
+                totalJobs={totalItems}
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
+                totalKey="total_podgroups"
             />
             <PodGroupDialog
                 open={openDialog}

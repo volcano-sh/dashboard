@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     Dialog,
     DialogTitle,
@@ -14,6 +15,7 @@ const QueueYamlDialog = ({
     selectedQueueName,
     selectedQueueYaml,
 }) => {
+    const { t } = useTranslation();
     return (
         <Dialog
             open={openDialog}
@@ -30,7 +32,7 @@ const QueueYamlDialog = ({
                 },
             }}
         >
-            <DialogTitle>Queue YAML - {selectedQueueName}</DialogTitle>
+            <DialogTitle>{t("queue_yaml_title", { selectedQueueName })}</DialogTitle>
             <DialogContent>
                 <Box
                     sx={{
@@ -79,7 +81,7 @@ const QueueYamlDialog = ({
                             },
                         }}
                     >
-                        Close
+                        {t("close")}
                     </Button>
                 </Box>
             </DialogActions>

@@ -12,6 +12,7 @@ import {
     Toolbar,
     Typography,
     Tooltip,
+    Button,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -19,11 +20,14 @@ import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import CategoryIcon from "@mui/icons-material/Category";
+import LanguageIcon from "@mui/icons-material/Language";
+import { useTranslation } from "react-i18next";
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
 
 const Layout = () => {
+    const { t, i18n } = useTranslation();
     // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
@@ -38,11 +42,11 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        { text: t("dashboard"), icon: <HomeIcon />, path: "/dashboard" },
+        { text: t("jobs"), icon: <AssignmentIcon />, path: "/jobs" },
+        { text: t("queues"), icon: <CloudIcon />, path: "/queues" },
+        { text: t("pods"), icon: <WorkspacesIcon />, path: "/pods" },
+        { text: t("pod_groups"), icon: <CategoryIcon />, path: "/podgroups" },
     ];
 
     return (
@@ -57,7 +61,7 @@ const Layout = () => {
                 <Toolbar>
                     <IconButton
                         color="inherit"
-                        aria-label="toggle drawer"
+                        aria-label={t("toggle_drawer")}
                         onClick={handleDrawerToggle}
                         edge="start"
                         sx={{ mr: 2, color: "white" }}
@@ -71,10 +75,23 @@ const Layout = () => {
                         sx={{
                             color: "#ffffff",
                             fontWeight: 500,
+                            flexGrow: 1,
                         }}
                     >
-                        Volcano Dashboard
+                        {t("app_title")}
                     </Typography>
+                    <Button
+                        color="inherit"
+                        startIcon={<LanguageIcon />}
+                        onClick={() =>
+                            i18n.changeLanguage(
+                                i18n.language === "en" ? "zh" : "en",
+                            )
+                        }
+                        sx={{ color: "white" }}
+                    >
+                        {i18n.language === "en" ? "中文" : "EN"}
+                    </Button>
                 </Toolbar>
             </AppBar>
 
@@ -163,7 +180,7 @@ const Layout = () => {
                 >
                     <img
                         src={volcanoLogo}
-                        alt="Volcano Logo"
+                        alt={t("volcano_logo_alt")}
                         style={{
                             maxWidth: open ? "150px" : "60px",
                             height: "auto",

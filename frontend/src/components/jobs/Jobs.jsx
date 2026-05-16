@@ -7,8 +7,10 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { useTranslation } from "react-i18next";
 
 const Jobs = () => {
+    const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -59,7 +61,7 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            setError({ key: "fetch_jobs_error", message: err.message });
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -115,7 +117,7 @@ const Jobs = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            setError({ key: "fetch_job_yaml_error", message: err.message });
         } finally {
             setLoading(false);
         }
@@ -157,13 +159,13 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                alert(t("job_created_error") + errorMsg);
                 return;
             }
 
-            alert("Job created successfully!");
+            alert(t("job_created_success"));
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(t("network_error") + err.message);
         }
     };
 
@@ -210,10 +212,12 @@ const Jobs = () => {
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
                 <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
+                    <Typography variant="body1">
+                        {error.key ? `${t(error.key)}${error.message}` : error}
+                    </Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text={t("jobs_status_title")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -222,11 +226,11 @@ const Jobs = () => {
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
+                    placeholder={t("search_jobs_placeholder")}
+                    refreshLabel={t("refresh_jobs_label")}
+                    createlabel={t("create_job_label")}
+                    dialogTitle={t("create_job_dialog_title")}
+                    dialogResourceNameLabel={t("job_name_label")}
                     dialogResourceType="Job"
                     onCreateClick={handleCreateJob}
                 />

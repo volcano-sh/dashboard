@@ -9,6 +9,7 @@ import {
     useTheme,
     alpha,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
@@ -27,6 +28,7 @@ const QueueTable = ({
     setAnchorEl,
     onQueueUpdate,
 }) => {
+    const { t } = useTranslation();
     const theme = useTheme();
 
     const [queues, setQueues] = useState([]);
@@ -84,7 +86,7 @@ const QueueTable = ({
             }
 
             if (!response.ok) {
-                let customMessage = `queues.scheduling.volcano.sh "${queueToDelete}" is forbidden.`;
+                let customMessage = t("delete_queue_forbidden", { queueToDelete });
                 let errorType = "UnknownError";
 
                 if (
@@ -100,7 +102,7 @@ const QueueTable = ({
                     }
                 }
 
-                const fullMessage = `Cannot delete "${queueToDelete}". Error message: ${customMessage}`;
+                const fullMessage = t("delete_queue_error_msg", { queueToDelete, customMessage });
                 const error = new Error(fullMessage);
                 error.type = errorType;
                 error.status = response.status;
@@ -114,7 +116,7 @@ const QueueTable = ({
             handleCloseDeleteDialog();
         } catch (error) {
             console.error("Error deleting queue:", error);
-            setDeleteError(error.message || "An unexpected error occurred.");
+            setDeleteError(error.message || t("unexpected_error"));
         } finally {
             setIsDeleting(false);
         }
@@ -174,7 +176,7 @@ const QueueTable = ({
                                     colSpan={allocatedFields.length + 2}
                                     align="center"
                                 >
-                                    No queues found.
+                                    {t("no_queues_found")}
                                 </TableCell>
                             </TableRow>
                         ) : (

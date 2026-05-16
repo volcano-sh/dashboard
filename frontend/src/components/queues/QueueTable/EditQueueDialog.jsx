@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Dialog,
     DialogTitle,
@@ -143,6 +144,7 @@ const updateNestedValue = (obj, path, value) => {
 };
 
 const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
+    const { t } = useTranslation();
     const [editorValue, setEditorValue] = useState("");
     const [editMode, setEditMode] = useState("yaml");
     const [formState, setFormState] = useState({});
@@ -264,14 +266,14 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     alignItems: "center",
                 }}
             >
-                Edit Queue
+                {t("edit_queue")}
                 <ToggleButtonGroup
                     value={editMode}
                     exclusive
                     onChange={handleModeChange}
                 >
-                    <ToggleButton value="yaml">YAML</ToggleButton>
-                    <ToggleButton value="form">Form</ToggleButton>
+                    <ToggleButton value="yaml">{t("yaml")}</ToggleButton>
+                    <ToggleButton value="form">{t("form")}</ToggleButton>
                 </ToggleButtonGroup>
             </DialogTitle>
 
@@ -304,7 +306,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     variant="contained"
                     disabled={saving}
                 >
-                    Cancel
+                    {t("cancel")}
                 </Button>
                 <Button
                     onClick={handleSave}
@@ -313,7 +315,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     disabled={saving}
                     startIcon={saving && <CircularProgress size={18} />}
                 >
-                    {saving ? "Updating…" : "Update"}
+                    {saving ? t("updating") : t("update")}
                 </Button>
             </DialogActions>
         </Dialog>

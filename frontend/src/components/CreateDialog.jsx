@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { Button } from "react-bootstrap";
 import { Plus, Minus, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const primaryColor = "#E34C26";
 
@@ -27,6 +28,7 @@ const CreateDialog = ({
     resourceNameLabel,
     resourceType,
 }) => {
+    const { t } = useTranslation();
     const [queueData, setQueueData] = useState({
         name: "",
         weight: "",
@@ -106,23 +108,22 @@ const CreateDialog = ({
     const validate = () => {
         let newErrors = {};
         if (!queueData.name.trim()) {
-            newErrors.name = `${resourceType} name is required`;
+            newErrors.name = t("name_required", { resourceType });
         }
 
         if (isPod) {
             if (!queueData.containerName.trim()) {
-                newErrors.containerName = "Container name is required";
+                newErrors.containerName = t("container_name_required");
             }
             if (!queueData.image.trim()) {
-                newErrors.image = "Container image is required";
+                newErrors.image = t("container_image_required");
             }
             if (
                 !queueData.containerPort ||
                 isNaN(queueData.containerPort) ||
                 parseInt(queueData.containerPort) < 1
             ) {
-                newErrors.containerPort =
-                    "Container port is required and must be positive";
+                newErrors.containerPort = t("container_port_required");
             }
         } else {
             // Queue validation
@@ -131,7 +132,7 @@ const CreateDialog = ({
                 isNaN(queueData.weight) ||
                 parseInt(queueData.weight) < 1
             ) {
-                newErrors.weight = "Weight is required and must be positive";
+                newErrors.weight = t("weight_required");
             }
         }
 
@@ -299,14 +300,13 @@ const CreateDialog = ({
                 expandIcon={<ChevronDown size={18} color="#888" />}
             >
                 <Typography sx={{ fontWeight: 500 }}>
-                    {section.charAt(0).toUpperCase() + section.slice(1)}{" "}
-                    Resources (Optional)
+                    {t(section + "_resources_optional")}
                 </Typography>
             </AccordionSummary>
             <AccordionDetails>
                 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                     <TextField
-                        label="CPU"
+                        label={t("cpu")}
                         value={queueData[section].cpu}
                         onChange={handleResourceChange(section, "cpu")}
                         fullWidth
@@ -314,7 +314,7 @@ const CreateDialog = ({
                         sx={tfStyle}
                     />
                     <TextField
-                        label="Memory"
+                        label={t("memory")}
                         value={queueData[section].memory}
                         onChange={handleResourceChange(section, "memory")}
                         fullWidth
@@ -332,7 +332,7 @@ const CreateDialog = ({
                                 fontSize: "0.9rem",
                             }}
                         >
-                            Custom Scalar Resources
+                            {t("custom_scalar_resources")}
                         </Box>
                         <IconButton
                             size="small"
@@ -360,7 +360,7 @@ const CreateDialog = ({
                             }}
                         >
                             <TextField
-                                label="Key"
+                                label={t("key_label")}
                                 value={scalar.key}
                                 onChange={handleScalarChange(
                                     section,
@@ -373,7 +373,7 @@ const CreateDialog = ({
                                 size="small"
                             />
                             <TextField
-                                label="Value"
+                                label={t("value_label")}
                                 value={scalar.value}
                                 onChange={handleScalarChange(
                                     section,
@@ -410,7 +410,7 @@ const CreateDialog = ({
     const renderPodFields = () => (
         <>
             <TextField
-                label="Namespace"
+                label={t("namespace")}
                 value={queueData.namespace}
                 onChange={handleChange("namespace")}
                 fullWidth
@@ -419,7 +419,7 @@ const CreateDialog = ({
             />
             <TextField
                 required
-                label="Container Name"
+                label={t("container_name")}
                 value={queueData.containerName}
                 onChange={handleChange("containerName")}
                 fullWidth
@@ -430,7 +430,7 @@ const CreateDialog = ({
             />
             <TextField
                 required
-                label="Container Image"
+                label={t("container_image")}
                 value={queueData.image}
                 onChange={handleChange("image")}
                 fullWidth
@@ -441,7 +441,7 @@ const CreateDialog = ({
             />
             <TextField
                 required
-                label="Container Port"
+                label={t("container_port")}
                 type="number"
                 value={queueData.containerPort}
                 onChange={handleChange("containerPort")}
@@ -458,7 +458,7 @@ const CreateDialog = ({
     const renderQueueFields = () => (
         <>
             <TextField
-                label="Weight *"
+                label={t("weight_asterisk")}
                 type="number"
                 value={queueData.weight}
                 onChange={handleChange("weight")}
@@ -479,7 +479,7 @@ const CreateDialog = ({
                         }}
                     />
                 }
-                label="Reclaimable"
+                label={t("reclaimable")}
                 sx={{
                     ".MuiTypography-root": {
                         fontWeight: 500,
@@ -556,7 +556,7 @@ const CreateDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Cancel
+                    {t("cancel")}
                 </Button>
                 <Button
                     onClick={handleSubmit}
@@ -571,7 +571,7 @@ const CreateDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Create
+                    {t("create")}
                 </Button>
             </DialogActions>
         </Dialog>

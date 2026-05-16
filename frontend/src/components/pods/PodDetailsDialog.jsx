@@ -1,5 +1,6 @@
 // File: components/PodDetailsDialog.jsx
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
     Box,
     Button,
@@ -10,6 +11,7 @@ import {
 } from "@mui/material";
 
 const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
+    const { t } = useTranslation();
     return (
         <Dialog
             open={open}
@@ -26,7 +28,7 @@ const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
                 },
             }}
         >
-            <DialogTitle>Pod YAML - {podName}</DialogTitle>
+            <DialogTitle>{t("pod_details_title", { podName })}</DialogTitle>
             <DialogContent>
                 <Box
                     sx={{
@@ -75,7 +77,7 @@ const PodDetailsDialog = ({ open, podName, podYaml, onClose }) => {
                             },
                         }}
                     >
-                        Close
+                        {t("close")}
                     </Button>
                 </Box>
             </DialogActions>

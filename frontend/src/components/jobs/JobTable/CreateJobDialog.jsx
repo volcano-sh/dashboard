@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     Dialog,
     DialogTitle,
@@ -17,8 +18,9 @@ const CreateJobDialog = ({
     open,
     onClose,
     onCreate,
-    title = "Create Job (YAML)",
+    title,
 }) => {
+    const { t } = useTranslation();
     const [yamlText, setYamlText] = useState("");
     const [error, setError] = useState("");
 
@@ -31,7 +33,7 @@ const CreateJobDialog = ({
         try {
             const parsed = yaml.load(yamlText);
             if (!parsed || typeof parsed !== "object") {
-                setError("YAML must describe an object.");
+                setError(t("yaml_object_error"));
                 return;
             }
             setError("");
@@ -39,7 +41,7 @@ const CreateJobDialog = ({
             setYamlText("");
             onClose();
         } catch (e) {
-            setError(e.message || "Invalid YAML format.");
+            setError(e.message || t("invalid_yaml_error"));
         }
     };
 
@@ -71,12 +73,12 @@ const CreateJobDialog = ({
                     letterSpacing: "0.5px",
                 }}
             >
-                {title}
+                {title || t("create_job_yaml_title")}
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ mt: 2, mb: 1 }}>
                     <Typography sx={{ fontWeight: 500, color: "#333", mb: 1 }}>
-                        Paste or type your Job YAML specification below:
+                        {t("yaml_specification_label")}
                     </Typography>
                     <Editor
                         height="320px"
@@ -120,7 +122,7 @@ const CreateJobDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Cancel
+                    {t("cancel")}
                 </Button>
                 <Button
                     onClick={handleSubmit}
@@ -136,7 +138,7 @@ const CreateJobDialog = ({
                     }}
                     disabled={!yamlText.trim()}
                 >
-                    Create
+                    {t("create")}
                 </Button>
             </DialogActions>
         </Dialog>
