@@ -28,6 +28,18 @@ const translations = {
             runningPods: "Running Pods",
             completeRate: "Complete Rate",
             sort: "Sort",
+            cpu: "CPU",
+            memory: "Memory",
+            resources: "Resources",
+            allocated: "Allocated",
+            capacity: "Capacity",
+            completed: "Completed",
+            running: "Running",
+            failed: "Failed",
+            pending: "Pending",
+            cores: "Cores",
+            count: "Count",
+            amount: "Amount",
         },
         sidebar: {
             dashboard: "Dashboard",
@@ -53,6 +65,8 @@ const translations = {
             activeQueues: "Active Queues",
             runningPods: "Running Pods",
             completeRate: "Complete Rate",
+            podStatusTimeline: "Pod Status Timeline",
+            noDataForResource: "No data available for selected resource type",
         },
         jobs: {
             title: "Volcano Jobs Status",
@@ -124,6 +138,18 @@ const translations = {
             runningPods: "运行中 Pods",
             completeRate: "完成率",
             sort: "排序",
+            cpu: "CPU",
+            memory: "内存",
+            resources: "资源",
+            allocated: "已分配",
+            capacity: "容量",
+            completed: "已完成",
+            running: "运行中",
+            failed: "已失败",
+            pending: "等待中",
+            cores: "核数",
+            count: "数量",
+            amount: "数量",
         },
         sidebar: {
             dashboard: "控制台",
@@ -149,6 +175,8 @@ const translations = {
             activeQueues: "活动队列",
             runningPods: "运行中 Pods",
             completeRate: "完成率",
+            podStatusTimeline: "Pod 状态时间线",
+            noDataForResource: "所选资源类型无可用数据",
         },
         jobs: {
             title: "Volcano 任务状态",
@@ -229,6 +257,8 @@ export const I18nProvider = ({ children }) => {
             if (result && typeof result === "object" && key in result) {
                 result = result[key];
             } else {
+                if (locale === "en") return defaultValue || path;
+
                 // Key not found, fall back to English dictionary.
                 let fallback = translations["en"];
                 for (const fallbackKey of keys) {
