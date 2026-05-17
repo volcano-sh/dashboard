@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Box, FormControl, MenuItem, Select, Typography } from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import "./chartConfig";
+import { useI18n } from "../../context/I18nContext";
 
 const convertMemoryToGi = (memoryStr) => {
     if (!memoryStr) return 0;
@@ -54,6 +55,7 @@ const processData = (data) => {
 };
 
 const QueueResourcesBarChart = ({ data }) => {
+    const { t } = useI18n();
     const [selectedResource, setSelectedResource] = useState("");
 
     // Obtain resource type options dynamically
@@ -71,11 +73,19 @@ const QueueResourcesBarChart = ({ data }) => {
         });
 
         // Convert resource type from Set to Array
-        return Array.from(resourceTypes).map((resource) => ({
-            value: resource,
-            label: `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`,
-        }));
-    }, [data]);
+        return Array.from(resourceTypes).map((resource) => {
+            let label = `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`;
+            if (resource === "cpu")
+                label = `${t("common.cpu", "CPU")} ${t("common.resources", "Resources")}`;
+            else if (resource === "memory")
+                label = `${t("common.memory", "Memory")} ${t("common.resources", "Resources")}`;
+            else if (resource === "pods")
+                label = `${t("common.pods", "Pods")} ${t("common.resources", "Resources")}`;
+            else if (resource.includes("gpu"))
+                label = `GPU ${t("common.resources", "Resources")}`;
+            return { value: resource, label };
+        });
+    }, [data, t]);
 
     useEffect(() => {
         // If there is a resource option, the first resource is selected by default
@@ -92,7 +102,7 @@ const QueueResourcesBarChart = ({ data }) => {
         labels: Object.keys(processedData),
         datasets: [
             {
-                label: `${selectedResource.toUpperCase()} Allocated`,
+                label: `${selectedResource.toUpperCase()} ${t("common.allocated", "Allocated")}`,
                 data: Object.values(processedData).map(
                     (q) => q.allocated[selectedResource] || 0,
                 ),
@@ -101,7 +111,7 @@ const QueueResourcesBarChart = ({ data }) => {
                 borderWidth: 1,
             },
             {
-                label: `${selectedResource.toUpperCase()} Capacity`,
+                label: `${selectedResource.toUpperCase()} ${t("common.capacity", "Capacity")}`,
                 data: Object.values(processedData).map(
                     (q) => q.capability[selectedResource] || 0,
                 ),
@@ -116,15 +126,15 @@ const QueueResourcesBarChart = ({ data }) => {
     const getYAxisLabel = () => {
         switch (selectedResource) {
             case "memory":
-                return "Memory (Gi)";
+                return `${t("common.memory", "Memory")} (Gi)`;
             case "cpu":
-                return "CPU Cores";
+                return `${t("common.cpu", "CPU")} ${t("common.cores", "Cores")}`;
             case "pods":
-                return "Pod Count";
+                return `${t("common.pods", "Pods")} ${t("common.count", "Count")}`;
             case "nvidia.com/gpu":
-                return "GPU Count";
+                return `GPU ${t("common.count", "Count")}`;
             default:
-                return "Amount";
+                return t("common.amount", "Amount");
         }
     };
 
@@ -175,7 +185,9 @@ const QueueResourcesBarChart = ({ data }) => {
                     mb: 2,
                 }}
             >
-                <Typography variant="h6">Queue Resources</Typography>
+                <Typography variant="h6">
+                    {t("dashboard.resourceAllocation", "Queue Resources")}
+                </Typography>
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                     <Select
                         value={selectedResource}
@@ -203,7 +215,10 @@ const QueueResourcesBarChart = ({ data }) => {
                         color="text.secondary"
                         sx={{ mt: 4 }}
                     >
-                        No data available for selected resource type
+                        {t(
+                            "dashboard.noDataForResource",
+                            "No data available for selected resource type",
+                        )}
                     </Typography>
                 )}
             </Box>

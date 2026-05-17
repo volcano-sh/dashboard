@@ -2,15 +2,17 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { Line } from "react-chartjs-2";
 import "./chartConfig";
+import { useI18n } from "../../context/I18nContext";
 
 const PodStatusLineChart = ({ data }) => {
+    const { t } = useI18n();
     const chartData = {
         labels: data.map((pod) =>
             new Date(pod.metadata.creationTimestamp).toLocaleTimeString(),
         ),
         datasets: [
             {
-                label: "Running Pods",
+                label: t("common.runningPods", "Running Pods"),
                 data: data.map((pod) =>
                     pod.status.phase === "Running" ? 1 : 0,
                 ),
@@ -35,7 +37,7 @@ const PodStatusLineChart = ({ data }) => {
     return (
         <Box sx={{ height: 300, width: "100%", position: "relative" }}>
             <Typography variant="h6" gutterBottom>
-                Pod Status Timeline
+                {t("dashboard.podStatusTimeline", "Pod Status Timeline")}
             </Typography>
             <Line data={chartData} options={options} />
         </Box>

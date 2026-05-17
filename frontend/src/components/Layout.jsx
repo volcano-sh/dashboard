@@ -12,6 +12,9 @@ import {
     Toolbar,
     Typography,
     Tooltip,
+    Menu,
+    MenuItem,
+    Button,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -19,6 +22,10 @@ import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import CategoryIcon from "@mui/icons-material/Category";
+import TranslateIcon from "@mui/icons-material/Translate";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+
+import { useI18n } from "../context/I18nContext";
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
@@ -27,6 +34,8 @@ const Layout = () => {
     // Hooks must be used inside component functions
     const location = useLocation();
     const [open, setOpen] = useState(true);
+    const { locale, setLocale, t } = useI18n();
+    const [langAnchorEl, setLangAnchorEl] = useState(null);
 
     // constants can be kept outside the component
     const volcanoOrange = "#E34C26"; // orange red theme
@@ -37,12 +46,48 @@ const Layout = () => {
         setOpen(!open);
     };
 
+    const handleLangClick = (event) => {
+        setLangAnchorEl(event.currentTarget);
+    };
+
+    const handleLangClose = (newLocale) => {
+        setLangAnchorEl(null);
+        if (newLocale === "en" || newLocale === "zh") {
+            setLocale(newLocale);
+        }
+    };
+
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        {
+            text: t("sidebar.dashboard"),
+            icon: <HomeIcon />,
+            path: "/dashboard",
+            key: "dashboard",
+        },
+        {
+            text: t("sidebar.jobs"),
+            icon: <AssignmentIcon />,
+            path: "/jobs",
+            key: "jobs",
+        },
+        {
+            text: t("sidebar.queues"),
+            icon: <CloudIcon />,
+            path: "/queues",
+            key: "queues",
+        },
+        {
+            text: t("sidebar.pods"),
+            icon: <WorkspacesIcon />,
+            path: "/pods",
+            key: "pods",
+        },
+        {
+            text: t("sidebar.podgroups"),
+            icon: <CategoryIcon />,
+            path: "/podgroups",
+            key: "podgroups",
+        },
     ];
 
     return (
@@ -71,10 +116,81 @@ const Layout = () => {
                         sx={{
                             color: "#ffffff",
                             fontWeight: 500,
+                            flexGrow: 1,
                         }}
                     >
-                        Volcano Dashboard
+                        {t("dashboard.title")}
                     </Typography>
+
+                    {/* Language Dropdown Selector */}
+                    <Box sx={{ ml: "auto" }}>
+                        <Button
+                            color="inherit"
+                            onClick={handleLangClick}
+                            startIcon={<TranslateIcon />}
+                            endIcon={<KeyboardArrowDownIcon />}
+                            sx={{
+                                color: "#ffffff",
+                                textTransform: "none",
+                                borderRadius: "20px",
+                                px: 2,
+                                py: 0.5,
+                                fontSize: "0.9rem",
+                                fontWeight: 500,
+                                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                                "&:hover": {
+                                    backgroundColor:
+                                        "rgba(255, 255, 255, 0.15)",
+                                },
+                            }}
+                        >
+                            {locale === "en" ? "English" : "简体中文"}
+                        </Button>
+                        <Menu
+                            anchorEl={langAnchorEl}
+                            open={Boolean(langAnchorEl)}
+                            onClose={() => handleLangClose()}
+                            PaperProps={{
+                                sx: {
+                                    mt: 1,
+                                    borderRadius: "12px",
+                                    boxShadow: "0px 10px 25px rgba(0,0,0,0.1)",
+                                    border: "1px solid rgba(0,0,0,0.06)",
+                                    "& .MuiMenuItem-root": {
+                                        fontSize: "0.9rem",
+                                        py: 1,
+                                        px: 2,
+                                        borderRadius: "6px",
+                                        mx: 0.5,
+                                        my: 0.2,
+                                        fontWeight: 500,
+                                        "&.Mui-selected": {
+                                            backgroundColor:
+                                                "rgba(227, 76, 38, 0.08)",
+                                            color: "#E34C26",
+                                            "&:hover": {
+                                                backgroundColor:
+                                                    "rgba(227, 76, 38, 0.12)",
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            <MenuItem
+                                selected={locale === "en"}
+                                onClick={() => handleLangClose("en")}
+                            >
+                                English
+                            </MenuItem>
+                            <MenuItem
+                                selected={locale === "zh"}
+                                onClick={() => handleLangClose("zh")}
+                            >
+                                简体中文
+                            </MenuItem>
+                        </Menu>
+                    </Box>
                 </Toolbar>
             </AppBar>
 
@@ -101,7 +217,7 @@ const Layout = () => {
                         {menuItems.map((item) => {
                             const listItem = (
                                 <ListItem
-                                    key={item.text}
+                                    key={item.key}
                                     component={Link}
                                     to={item.path}
                                     className={
@@ -134,14 +250,14 @@ const Layout = () => {
                             );
                             return !open ? (
                                 <Tooltip
-                                    key={item.text}
+                                    key={item.key}
                                     title={item.text}
                                     placement="right"
                                 >
                                     {listItem}
                                 </Tooltip>
                             ) : (
-                                <React.Fragment key={item.text}>
+                                <React.Fragment key={item.key}>
                                     {listItem}
                                 </React.Fragment>
                             );
@@ -158,7 +274,6 @@ const Layout = () => {
                         alignItems: "center",
                         mt: "auto",
                         mb: 1,
-                        // borderTop: "1px solid rgba(0, 0, 0, 0.12)",
                     }}
                 >
                     <img
@@ -171,19 +286,6 @@ const Layout = () => {
                             marginBottom: "1px",
                         }}
                     />
-                    {/* {open && (
-            <Typography
-              sx={{
-                fontWeight: 700,
-                color: "#000",
-                fontSize: "1.4rem",
-                letterSpacing: "0.1em",
-                mt: -6,
-              }}
-            >
-              VOLCANO
-            </Typography>
-          )} */}
                 </Box>
             </Drawer>
             <Box
