@@ -177,6 +177,11 @@ const Pods = () => {
     const toggleSortDirection = useCallback(() => {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     }, []);
+    
+    // For now, no creation dialog
+    const handleCreate = () => {
+        alert("Create Pod is not supported yet");
+    };
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
@@ -200,7 +205,7 @@ const Pods = () => {
                     dialogTitle="Create a Pod"
                     dialogResourceNameLabel="Pod Name"
                     dialogResourceType="Pod"
-                    onCreateClick={handleCreatePod}
+                    onCreateDialogUnavailable={handleCreate}
                 />
             </Box>
             <PodsTable

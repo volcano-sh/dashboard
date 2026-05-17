@@ -29,17 +29,24 @@ const SearchBar = ({
     refreshLabel,
     onCreateClick,
     createlabel,
+    onCreateDialogUnavailable,
 }) => {
     const [dialogOpen, setDialogOpen] = useState(false);
 
-    const handleOpenDialog = () => setDialogOpen(true);
+    const handleOpenDialog = () => {
+        if(onCreateDialogUnavailable) {
+            onCreateDialogUnavailable();
+            return ;
+        }
+        setDialogOpen(true);
+    };
     const handleCloseDialog = () => setDialogOpen(false);
 
     const handleDialogCreate = async (resourceData) => {
         if (onCreateClick) {
             await onCreateClick(resourceData);
         }
-        setDialogOpen(false);
+        setDialogOpen(false);              
     };
 
     return (
