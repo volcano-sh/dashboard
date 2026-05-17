@@ -192,7 +192,7 @@ const PodGroups = () => {
                     dialogTitle="Create PodGroup"
                     dialogResourceNameLabel="Name"
                     dialogResourceType="PodGroup"
-                    onCreateClick={handleCreate}
+                    onCreateDialogUnavailable={handleCreate}
                 />
             </Box>
             <PodGroupsTable
