@@ -7,8 +7,10 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { useI18n } from "../../context/I18nContext";
 
 const Jobs = () => {
+    const { t } = useI18n();
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
     const [, setLoading] = useState(true);
@@ -157,13 +159,13 @@ const Jobs = () => {
                 } catch {
                     // ignore error
                 }
-                alert("Error creating job: " + errorMsg);
+                alert(t("jobs.createError", "Error creating job: ") + errorMsg);
                 return;
             }
 
-            alert("Job created successfully!");
+            alert(t("jobs.createSuccess", "Job created successfully!"));
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert(t("jobs.networkError", "Network error: ") + err.message);
         }
     };
 
@@ -213,7 +215,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text={t("jobs.title")} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -222,12 +224,12 @@ const Jobs = () => {
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
-                    dialogResourceType="Job"
+                    placeholder={t("jobs.searchPlaceholder")}
+                    refreshLabel={t("jobs.refreshLabel")}
+                    createlabel={t("jobs.createLabel")}
+                    dialogTitle={t("jobs.dialogTitle")}
+                    dialogResourceNameLabel={t("jobs.dialogResourceNameLabel")}
+                    dialogResourceType={t("jobs.dialogResourceType")}
                     onCreateClick={handleCreateJob}
                 />
             </Box>

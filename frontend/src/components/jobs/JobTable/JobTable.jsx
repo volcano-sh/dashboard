@@ -12,6 +12,7 @@ import {
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
+import { useI18n } from "../../../context/I18nContext";
 
 const JobTable = ({
     jobs,
@@ -29,6 +30,7 @@ const JobTable = ({
     reloadJobs, // (optional) for refetching after delete
 }) => {
     const theme = useTheme();
+    const { t } = useI18n();
 
     // State for delete dialog
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -160,7 +162,7 @@ const JobTable = ({
                         {jobs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={8} align="center">
-                                    No jobs found.
+                                    {t("jobs.noJobs")}
                                 </TableCell>
                             </TableRow>
                         ) : (
