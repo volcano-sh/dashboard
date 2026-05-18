@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "Volcano Dashboard",
+    "refresh": "Refresh Data",
+    "totalJobs": "Total Jobs",
+    "activeQueues": "Active Queues",
+    "runningPods": "Running Pods",
+    "completeRate": "Complete Rate",
+    "jobsStatus": "Jobs Status",
+    "noData": "No data available",
+    "queueResources": "Queue Resources",
+    "noDataForResource": "No data available for selected resource type",
+    "allocated": "Allocated",
+    "capacity": "Capacity",
+    "amount": "Amount",
+    "memory": "Memory (Gi)",
+    "cpu": "CPU Cores",
+    "pods": "Pod Count",
+    "gpu": "GPU Count",
+    "nvidiaGpu": "GPU Count",
+    "status": {
+      "Completed": "Completed",
+      "Running": "Running",
+      "Failed": "Failed"
+    },
+    "apiError": {
+      "jobs": "Jobs API error: {{status}}",
+      "queues": "Queues API error: {{status}}",
+      "pods": "Pods API error: {{status}}",
+      "network": "Network or API request failed. Please check if the backend service is running."
+    }
+  },
+  "pods": {
+    "pagination": {
+      "perPage_5": "5 per page",
+      "perPage_10": "10 per page",
+      "perPage_20": "20 per page",
+      "totalPods": "Total Pods: {{count}}"
+    }
+  }
+}
