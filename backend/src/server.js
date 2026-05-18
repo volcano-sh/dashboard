@@ -4,8 +4,10 @@ import {
     CoreV1Api,
     CustomObjectsApi,
     KubeConfig,
+    Log,
 } from "@kubernetes/client-node";
 import yaml from "js-yaml";
+import stream from "stream";
 
 export const app = express();
 app.use(express.json());
@@ -980,6 +982,156 @@ app.delete("/api/queues/:name", async (req, res) => {
         return res.status(statusCode).json({
             error: "Kubernetes Error",
             details: message,
+        });
+    }
+});
+
+// GET Config endpoint
+app.get("/api/v1/config", async (req, res) => {
+    try {
+        // v1.x ObjectParamAPI returns the object directly (no .body wrapper)
+        const cm = await k8sCoreApi.readNamespacedConfigMap({
+            name: "volcano-scheduler-configmap",
+            namespace: "volcano-system",
+        });
+        const conf = cm.data ? cm.data["volcano-scheduler.conf"] : "";
+        res.json({ conf });
+    } catch (err) {
+        console.error("Error reading volcano configmap:", err);
+        res.status(500).json({
+            error: "Failed to read volcano scheduler configuration",
+            details: err.body?.message || err.message,
+        });
+    }
+});
+
+// PATCH Config endpoint
+app.patch("/api/v1/config", async (req, res) => {
+    try {
+        const { conf } = req.body;
+        if (typeof conf !== "string") {
+            return res.status(400).json({ error: "Invalid body, conf must be string" });
+        }
+
+        const patchBody = {
+            data: {
+                "volcano-scheduler.conf": conf,
+            },
+        };
+
+    const options = {
+        headers: { "Content-Type": "application/merge-patch+json" },
+    };
+
+        const updated = await k8sCoreApi.patchNamespacedConfigMap(
+            {
+                name: "volcano-scheduler-configmap",
+                namespace: "volcano-system",
+                body: patchBody,
+            },
+            options,
+        );
+
+        res.json({
+            message: "Scheduler configuration updated successfully",
+            data: updated,
+        });
+    } catch (err) {
+        console.error("Error patching volcano configmap:", err);
+        // Log additional details for debugging
+        if (err.response) {
+            console.error("Response body:", err.response.body);
+        }
+        res.status(500).json({
+            error: "Failed to update volcano scheduler configuration",
+            details: err.body?.message || err.message,
+        });
+    }
+});
+
+// GET logs EventSource SSE stream
+app.get("/api/v1/logs", async (req, res) => {
+    const { component } = req.query;
+    const tailLines = parseInt(req.query.tailLines) || 200;
+
+    if (!component) {
+        return res.status(400).json({ error: "Missing component query parameter" });
+    }
+
+    try {
+        // Resolve target pod in namespace volcano-system
+        const labelSelector = `app=${component}`;
+        console.log(`Resolving pod for logs stream with selector: ${labelSelector}`);
+        const podListResponse = await k8sCoreApi.listNamespacedPod({
+            namespace: "volcano-system",
+            labelSelector,
+        });
+        const pods = podListResponse.items || [];
+        const runningPod = pods.find((p) => p.status?.phase === "Running") || pods[0];
+
+        if (!runningPod) {
+            return res.status(404).json({
+                error: `No pods found for component ${component} in namespace volcano-system`,
+            });
+        }
+
+        const podName = runningPod.metadata.name;
+        console.log(`Streaming logs from pod: ${podName}`);
+
+        // Set SSE Headers
+        res.writeHead(200, {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        });
+        res.flushHeaders();
+
+        // Initialize Log Stream
+        const k8sLog = new Log(kc);
+        const logStream = new stream.PassThrough();
+
+        logStream.on("data", (chunk) => {
+            const dataStr = chunk.toString();
+            const lines = dataStr.split("\n");
+            lines.forEach((line) => {
+                if (line.trim()) {
+                    res.write(`data: ${line}\n\n`);
+                }
+            });
+        });
+
+        const logRequest = await k8sLog.log(
+            "volcano-system",
+            podName,
+            undefined, // containerName
+            logStream,
+            {
+                follow: true,
+                tailLines,
+                pretty: false,
+            }
+        );
+
+        // Handle Disconnection
+        req.on("close", () => {
+            console.log(`Client disconnected from log stream for ${podName}`);
+            try {
+                if (logRequest) logRequest.destroy();
+            } catch (err) {
+                console.error("Error destroying log request:", err);
+            }
+            try {
+                logStream.destroy();
+            } catch (err) {
+                console.error("Error destroying log stream:", err);
+            }
+        });
+
+    } catch (err) {
+        console.error("Error initiating log stream:", err);
+        res.status(500).json({
+            error: "Failed to initiate log stream",
+            details: err.body?.message || err.message,
         });
     }
 });

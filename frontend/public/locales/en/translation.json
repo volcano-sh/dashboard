@@ -1,6 +1,8 @@
 {
   "dashboard": "Dashboard",
   "jobs": "Jobs",
+  "config": "Config",
+  "logs": "Logs",
   "queues": "Queues",
   "pods": "Pods",
   "pod_groups": "PodGroups",

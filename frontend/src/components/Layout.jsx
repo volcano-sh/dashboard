@@ -21,6 +21,8 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import CategoryIcon from "@mui/icons-material/Category";
 import LanguageIcon from "@mui/icons-material/Language";
+import SettingsIcon from "@mui/icons-material/Settings";
+import TerminalIcon from "@mui/icons-material/Terminal";
 import { useTranslation } from "react-i18next";
 
 // use relative path to load Logo
@@ -47,6 +49,8 @@ const Layout = () => {
         { text: t("queues"), icon: <CloudIcon />, path: "/queues" },
         { text: t("pods"), icon: <WorkspacesIcon />, path: "/pods" },
         { text: t("pod_groups"), icon: <CategoryIcon />, path: "/podgroups" },
+        { text: t("config"), icon: <SettingsIcon />, path: "/config" },
+        { text: t("logs"), icon: <TerminalIcon />, path: "/logs" },
     ];
 
     return (

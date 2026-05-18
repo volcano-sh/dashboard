@@ -116,6 +116,21 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - configmaps
+    resourceNames:
+      - volcano-scheduler-configmap
+    verbs:
+      - get
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/log
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
       - namespaces
     verbs:
       - get

@@ -11,6 +11,8 @@ import Jobs from "./components/jobs/Jobs";
 import Queues from "./components/queues/Queues";
 import Pods from "./components/pods/Pods";
 import PodGroups from "./components/podgroups/PodGroups";
+import ConfigPage from "./pages/Config";
+import LogsPage from "./pages/Logs";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -30,6 +32,8 @@ function App() {
                         <Route path="queues" element={<Queues />} />
                         <Route path="pods" element={<Pods />} />
                         <Route path="podgroups" element={<PodGroups />} />
+                        <Route path="config" element={<ConfigPage />} />
+                        <Route path="logs" element={<LogsPage />} />
                     </Route>
                 </Routes>
             </Router>
