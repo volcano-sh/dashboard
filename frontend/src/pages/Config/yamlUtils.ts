@@ -28,13 +28,12 @@ export const parseConf = (yamlStr: string): SchedulerConfig => {
                 const rawArgs = p.arguments || {};
                 const argsList: PluginArg[] = Object.entries(rawArgs).map(
                     ([key, val]) => {
-                        let typedVal: string | number | boolean = String(val);
-                        if (val === "true" || val === true) typedVal = true;
-                        else if (val === "false" || val === false)
-                            typedVal = false;
-                        else if (!isNaN(Number(val)) && typeof val !== "boolean")
+                        let typedVal: string | number | boolean = val;
+                        if (val === "true") typedVal = true;
+                        else if (val === "false") typedVal = false;
+                        else if (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val))) {
                             typedVal = Number(val);
-                        else typedVal = val as string | number | boolean;
+                        }
 
                         return { key, value: typedVal };
                     },
