@@ -1,15 +1,18 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
+import { useTranslation } from "react-i18next";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const JobStatusPieChart = ({ data }) => {
+    const { t } = useTranslation();
+
     if (!data || !Array.isArray(data)) {
         return (
             <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
+                <Typography>{t("dashboard.noData")}</Typography>
             </Box>
         );
     }
@@ -44,7 +47,9 @@ const JobStatusPieChart = ({ data }) => {
     };
 
     const chartData = {
-        labels: Object.keys(statusCounts),
+        labels: Object.keys(statusCounts).map((status) =>
+            t(`dashboard.status.${status}`),
+        ),
         datasets: [
             {
                 data: Object.values(statusCounts),
@@ -80,7 +85,7 @@ const JobStatusPieChart = ({ data }) => {
             }}
         >
             <Typography variant="h6" align="center" sx={{ mb: 1 }}>
-                Jobs Status
+                {t("dashboard.jobsStatus")}
             </Typography>
 
             <Box
@@ -159,7 +164,7 @@ const JobStatusPieChart = ({ data }) => {
                                 variant="body2"
                                 sx={{ mr: 2, minWidth: 70 }}
                             >
-                                {status}
+                                {t(`dashboard.status.${status}`)}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 {count} (

@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "火山仪表盘",
+    "refresh": "刷新数据",
+    "totalJobs": "作业总数",
+    "activeQueues": "活动队列数",
+    "runningPods": "运行中的容器组数",
+    "completeRate": "完成率",
+    "jobsStatus": "作业状态",
+    "noData": "暂无数据",
+    "queueResources": "队列资源",
+    "noDataForResource": "选定资源类型无可用数据",
+    "allocated": "已分配",
+    "capacity": "容量",
+    "amount": "数量",
+    "memory": "内存 (Gi)",
+    "cpu": "CPU 核数",
+    "pods": "容器组数量",
+    "gpu": "GPU 数量",
+    "nvidiaGpu": "GPU 数量",
+    "status": {
+      "Completed": "已完成",
+      "Running": "运行中",
+      "Failed": "已失败"
+    },
+    "apiError": {
+      "jobs": "作业应用程序接口错误: {{status}}",
+      "queues": "队列应用程序接口错误: {{status}}",
+      "pods": "容器组应用程序接口错误: {{status}}",
+      "network": "网络或接口请求失败，请检查后端服务是否正常运行。"
+    }
+  },
+  "pods": {
+    "pagination": {
+      "perPage_5": "每页 5 条",
+      "perPage_10": "每页 10 条",
+      "perPage_20": "每页 20 条",
+      "totalPods": "容器组总数：{{count}}"
+    }
+  }
+}
