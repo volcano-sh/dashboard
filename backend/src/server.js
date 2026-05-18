@@ -639,7 +639,21 @@ app.patch("/api/jobs/:namespace/:name", async (req, res) => {
         res.json({ message: "Job updated successfully", data: response.body });
     } catch (error) {
         console.error("Error updating job:", error);
-        res.status(500).json({ error: "Failed to update job" });
+        const statusCode = error?.statusCode || error?.response?.statusCode || 500;
+        const k8sMessage = error?.body?.message || error?.message || "";
+        let msg;
+
+        if (statusCode === 404) {
+            msg = `Job '${req.params.name}' not found in namespace '${req.params.namespace}'.`;
+        } else if (statusCode === 409) {
+            msg = "Conflict: the job was modified by another process. Please refresh and try again.";
+        } else if (statusCode === 403) {
+            msg = "Permission denied. Check your cluster RBAC permissions.";
+        } else {
+            msg = k8sMessage || "Failed to update job";
+        }
+
+        res.status(statusCode).json({ error: msg });
     }
 });
 app.patch("/api/queues/:namespace/:name", async (req, res) => {
@@ -667,7 +681,21 @@ app.patch("/api/queues/:namespace/:name", async (req, res) => {
         });
     } catch (error) {
         console.error("Error updating queue:", error);
-        res.status(500).json({ error: "Failed to update queue" });
+        const statusCode = error?.statusCode || error?.response?.statusCode || 500;
+        const k8sMessage = error?.body?.message || error?.message || "";
+        let msg;
+
+        if (statusCode === 404) {
+            msg = `Queue '${req.params.name}' not found.`;
+        } else if (statusCode === 409) {
+            msg = "Conflict: the queue was modified by another process. Please refresh and try again.";
+        } else if (statusCode === 403) {
+            msg = "Permission denied. Check your cluster RBAC permissions.";
+        } else {
+            msg = k8sMessage || "Failed to update queue";
+        }
+
+        res.status(statusCode).json({ error: msg });
     }
 });
 
@@ -758,13 +786,22 @@ app.post("/api/pods", async (req, res) => {
         });
     } catch (error) {
         console.error("Error creating pod:", error?.body || error);
-        let msg = "Failed to create pod";
-        if (error?.body?.message) {
-            msg = error.body.message;
-        } else if (error?.message) {
-            msg = error.message;
+        const statusCode = error?.statusCode || error?.response?.statusCode || 500;
+        const k8sMessage = error?.body?.message || error?.message || "";
+        let msg;
+
+        if (statusCode === 409) {
+            const podName = podManifest?.metadata?.name || "unknown";
+            msg = `A pod named '${podName}' already exists in this namespace.`;
+        } else if (statusCode === 403) {
+            msg = "Permission denied. Check your cluster RBAC permissions.";
+        } else if (statusCode === 422) {
+            msg = "Invalid pod specification: " + k8sMessage;
+        } else {
+            msg = k8sMessage || "Failed to create pod";
         }
-        res.status(500).json({ error: msg });
+
+        res.status(statusCode).json({ error: msg });
     }
 });
 // POST /api/jobs - Create a job (Volcano custom job)
@@ -796,9 +833,22 @@ app.post("/api/jobs", async (req, res) => {
         });
     } catch (error) {
         console.error("Error creating job:", error?.body || error);
-        let msg = "Failed to create job";
-        if (error?.body?.message) msg = error.body.message;
-        res.status(500).json({ error: msg });
+        const statusCode = error?.statusCode || error?.response?.statusCode || 500;
+        const k8sMessage = error?.body?.message || error?.message || "";
+        let msg;
+
+        if (statusCode === 409) {
+            const jobName = jobManifest?.metadata?.name || "unknown";
+            msg = `A job named '${jobName}' already exists in this namespace.`;
+        } else if (statusCode === 403) {
+            msg = "Permission denied. Check your cluster RBAC permissions.";
+        } else if (statusCode === 422) {
+            msg = "Invalid job specification: " + k8sMessage;
+        } else {
+            msg = k8sMessage || "Failed to create job";
+        }
+
+        res.status(statusCode).json({ error: msg });
     }
 });
 
@@ -872,9 +922,22 @@ app.post("/api/queues", async (req, res) => {
         });
     } catch (error) {
         console.error("Error creating queue:", error?.body || error);
-        let msg = "Failed to create queue";
-        if (error?.body?.message) msg = error.body.message;
-        res.status(500).json({ error: msg });
+        const statusCode = error?.statusCode || error?.response?.statusCode || 500;
+        const k8sMessage = error?.body?.message || error?.message || "";
+        let msg;
+
+        if (statusCode === 409) {
+            const queueName = queueManifest?.metadata?.name || "unknown";
+            msg = `A queue named '${queueName}' already exists.`;
+        } else if (statusCode === 403) {
+            msg = "Permission denied. Check your cluster RBAC permissions.";
+        } else if (statusCode === 422) {
+            msg = "Invalid queue specification: " + k8sMessage;
+        } else {
+            msg = k8sMessage || "Failed to create queue";
+        }
+
+        res.status(statusCode).json({ error: msg });
     }
 });
 // Delete a Volcano Job
