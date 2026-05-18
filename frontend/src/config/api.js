@@ -1,29 +1,24 @@
-// Prioritize using the port in the environment variable, if not, use the default port 3001
-const getServerPort = () => {
-    return process.env.APP_SERVER_PORT || "3001";
-};
+import axios from 'axios'
 
-// Build API base URL
-const API_CONFIG = {
-    baseURL: `http://localhost:${getServerPort()}`,
-};
+// Single axios instance — works in dev (Vite proxy) and production (Nginx)
+const apiClient = axios.create({
+    baseURL: '/api'
+})
 
-//API endpoint configuration
 export const API_ENDPOINTS = {
     jobs: {
-        list: `${API_CONFIG.baseURL}/api/jobs`,
-        detail: (namespace, name) =>
-            `${API_CONFIG.baseURL}/jobs/${namespace}/${name}`,
+        list: '/jobs',
+        detail: (namespace, name) => `/jobs/${namespace}/${name}`,
     },
     queues: {
-        list: `${API_CONFIG.baseURL}/api/queues`,
+        list: '/queues',
     },
     pods: {
-        list: `${API_CONFIG.baseURL}/api/pods`,
+        list: '/pods',
     },
     podgroups: {
-        list: `${API_CONFIG.baseURL}/api/podgroups`,
+        list: '/podgroups',
     },
-};
+}
 
-export default API_CONFIG;
+export default apiClient

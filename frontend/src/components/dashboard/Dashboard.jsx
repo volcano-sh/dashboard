@@ -4,6 +4,7 @@ import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
+import apiClient from "../../config/api";
 
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -20,28 +21,15 @@ const Dashboard = () => {
         setError(null);
         try {
             const [jobsRes, queuesRes, podsRes] = await Promise.all([
-                fetch("/api/jobs?limit=1000"),
-                fetch("/api/queues?limit=1000"),
-                fetch("/api/pods?limit=1000"),
-            ]);
-
-            if (!jobsRes.ok)
-                throw new Error(`Jobs API error: ${jobsRes.status}`);
-            if (!queuesRes.ok)
-                throw new Error(`Queues API error: ${queuesRes.status}`);
-            if (!podsRes.ok)
-                throw new Error(`Pods API error: ${podsRes.status}`);
-
-            const [jobsData, queuesData, podsData] = await Promise.all([
-                jobsRes.json(),
-                queuesRes.json(),
-                podsRes.json(),
+                apiClient.get("/jobs?limit=1000"),
+                apiClient.get("/queues?limit=1000"),
+                apiClient.get("/pods?limit=1000"),
             ]);
 
             setDashboardData({
-                jobs: jobsData.items || [],
-                queues: queuesData.items || [],
-                pods: podsData.items || [],
+                jobs: jobsRes.data.items || [],
+                queues: queuesRes.data.items || [],
+                pods: podsRes.data.items || [],
             });
         } catch (error) {
             console.error("Error fetching dashboard data:", error);

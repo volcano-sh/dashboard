@@ -12,6 +12,7 @@ import {
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+import apiClient, { API_ENDPOINTS } from "../../config/api";
 
 const QueueTable = ({
     sortedQueues,
@@ -39,6 +40,7 @@ const QueueTable = ({
     const [queueToDelete, setQueueToDelete] = useState(null);
     const [deleteError, setDeleteError] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
     const handleOpenDeleteDialog = (queueName) => {
         setQueueToDelete(queueName);
         setOpenDeleteDialog(true);
@@ -55,66 +57,24 @@ const QueueTable = ({
         try {
             setIsDeleting(true);
 
-            const response = await fetch(
-                `/api/queues/${encodeURIComponent(queueToDelete)}`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                    },
-                },
+            await apiClient.delete(
+                `${API_ENDPOINTS.queues.list}/${encodeURIComponent(queueToDelete)}`
             );
 
-            let data = {};
-            const contentType = response.headers.get("content-type");
-            const text = await response.text();
-
-            let isJsonResponse = false;
-            try {
-                if (
-                    (contentType && contentType.includes("application/json")) ||
-                    (text && !text.trim().startsWith("<"))
-                ) {
-                    data = text ? JSON.parse(text) : {};
-                    isJsonResponse = true;
-                }
-            } catch (parseError) {
-                console.warn("Failed to parse response as JSON:", parseError);
-            }
-
-            if (!response.ok) {
-                let customMessage = `queues.scheduling.volcano.sh "${queueToDelete}" is forbidden.`;
-                let errorType = "UnknownError";
-
-                if (
-                    isJsonResponse &&
-                    typeof data === "object" &&
-                    (data.message || data.details)
-                ) {
-                    customMessage = data.message || data.details;
-                    if (customMessage.toLowerCase().includes("denied")) {
-                        errorType = "ValidationError";
-                    } else {
-                        errorType = "KubernetesError";
-                    }
-                }
-
-                const fullMessage = `Cannot delete "${queueToDelete}". Error message: ${customMessage}`;
-                const error = new Error(fullMessage);
-                error.type = errorType;
-                error.status = response.status;
-                throw error;
-            }
-
-            // Success
             setQueues((prev) =>
                 prev.filter((queue) => queue.metadata.name !== queueToDelete),
             );
             handleCloseDeleteDialog();
         } catch (error) {
             console.error("Error deleting queue:", error);
-            setDeleteError(error.message || "An unexpected error occurred.");
+            const data = error.response?.data;
+            const customMessage =
+                data?.message ||
+                data?.details ||
+                error.message ||
+                `queues.scheduling.volcano.sh "${queueToDelete}" is forbidden.`;
+            const fullMessage = `Cannot delete "${queueToDelete}". Error message: ${customMessage}`;
+            setDeleteError(fullMessage);
         } finally {
             setIsDeleting(false);
         }
