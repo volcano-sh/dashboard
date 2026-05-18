@@ -38,7 +38,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./deployment/Dockerfile
           push: true
           tags: volcanosh/vc-dashboard:${{ env.TAG }}
           platforms: linux/amd64,linux/arm64

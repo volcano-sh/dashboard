@@ -82,7 +82,7 @@ The dev server reads your local `~/.kube/config` automatically. No extra environ
 Build the production image from the project root:
 
 ```bash
-docker build -t dashboard-app .
+docker build -f deployment/Dockerfile -t dashboard-app .
 ```
 
 Find the port your Kubernetes API server is listening on:
@@ -96,7 +96,7 @@ Run the container, passing the port you found above and mounting your kube crede
 
 ```bash
 docker run --rm \
-  -p 3000:3000 \
+  -p 8080:8080 \
   --name dashboard-app \
   -e K8S_SERVER=https://host.docker.internal:<PORT> \
   -e K8S_SKIP_TLS_VERIFY=true \
@@ -108,7 +108,7 @@ docker run --rm \
 
 Replace `<PORT>` with the port from the previous step (e.g. `58960`).
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 #### Environment variables
 
@@ -118,21 +118,88 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `K8S_SKIP_TLS_VERIFY` | Recommended locally | Set to `true` to skip TLS certificate verification (useful with self-signed certs from minikube or kind). |
 | `KUBECONFIG` | Yes | Path to the kubeconfig file inside the container. |
 
-### Inside a Kubernetes cluster
+### Deploy to a local Kubernetes cluster (kind)
 
-You can build the volcano dashboard image locally and deploy it to your cluster:
+Use this workflow to run your locally built image instead of the default `volcanosh/volcano-dashboard:latest` from the manifest. The steps below use [kind](https://kind.sigs.k8s.io/); adjust the image-load command for your environment (e.g. `minikube image load dashboard-app:dev`).
+
+**1. Build the dashboard image locally**
+
+From the repository root:
 
 ```bash
-docker build -t dashboard-app .
+docker build -f deployment/Dockerfile -t dashboard-app:dev .
 ```
 
-After that, update the image reference in `volcano-dashboard.yaml` and apply:
+**2. Load the image into your kind cluster**
 
 ```bash
+kind load docker-image dashboard-app:dev --name kind
+```
+
+Replace `kind` with your cluster name if different (`kind get clusters`).
+
+**3. Deploy dashboard resources**
+
+```bash
+kubectl create ns volcano-system --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f deployment/volcano-dashboard.yaml
 ```
 
-When running inside a cluster the app automatically uses the pod's service account via in-cluster config — no `K8S_SERVER` or `K8S_SKIP_TLS_VERIFY` variables are needed.
+**4. Point the deployment at your local image**
+
+The manifest ships with `volcanosh/volcano-dashboard:latest`. Override it without editing YAML:
+
+```bash
+kubectl -n volcano-system set image deploy/volcano-dashboard \
+  volcano-dashboard=dashboard-app:dev
+kubectl -n volcano-system rollout status deploy/volcano-dashboard
+```
+
+Use any tag you built (e.g. `dashboard-app:dev`). The container name `volcano-dashboard` must match the deployment spec.
+
+To switch back to the published image later:
+
+```bash
+kubectl -n volcano-system set image deploy/volcano-dashboard \
+  volcano-dashboard=volcanosh/volcano-dashboard:latest
+```
+
+**5. Install Volcano (required for dashboard APIs)**
+
+If Volcano is not already on the cluster:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/volcano-sh/volcano/master/installer/volcano-development.yaml
+```
+
+**6. Verify Volcano APIs**
+
+```bash
+kubectl api-resources | grep -E "batch.volcano.sh|scheduling.volcano.sh"
+kubectl get jobs.batch.volcano.sh -A
+kubectl get queues.scheduling.volcano.sh
+kubectl get podgroups.scheduling.volcano.sh -A
+```
+
+**7. Access the dashboard**
+
+```bash
+kubectl -n volcano-system port-forward svc/volcano-dashboard 8080:80
+```
+
+Open [http://localhost:8080](http://localhost:8080).
+
+When running inside a cluster the app uses the pod service account via in-cluster config — no `K8S_SERVER` or `K8S_SKIP_TLS_VERIFY` variables are needed.
+
+#### Replacing the image on other clusters
+
+| Environment | Load local image | Set deployment image |
+|---|---|---|
+| kind | `kind load docker-image dashboard-app:dev --name <cluster>` | `kubectl -n volcano-system set image deploy/volcano-dashboard volcano-dashboard=dashboard-app:dev` |
+| minikube | `minikube image load dashboard-app:dev` | same `kubectl set image` as above |
+| Remote / cloud | Push to a registry, then `kubectl set image ... volcano-dashboard=<registry>/dashboard-app:dev` | Ensure `imagePullPolicy` allows pulls (change in the manifest if needed) |
+
+You can also edit `image:` in `deployment/volcano-dashboard.yaml` before `kubectl apply`, but `kubectl set image` is usually faster while iterating on a build.
 
 ## Code Style and Standards
 

@@ -23,17 +23,17 @@ spec:
       serviceAccountName: volcano-dashboard
       containers:
         - name: volcano-dashboard
-          image: volcanosh/volcano-dashboard:latest
-          imagePullPolicy: Never
+          image: volcanosh/volcano-dashboard:v1.2.0
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 3000
-              name: http
+            - containerPort: 8080
+              name: frontend
               protocol: TCP
           env:
             - name: NODE_ENV
               value: "production"
             - name: PORT
-              value: "3000"
+              value: "8080"
             - name: K8S_SKIP_TLS_VERIFY
               value: "false"
           securityContext:
@@ -153,9 +153,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - name: http
+    - name: frontend
       port: 80
       protocol: TCP
-      targetPort: 3000
+      targetPort: 8080
   selector:
     app: volcano-dashboard
