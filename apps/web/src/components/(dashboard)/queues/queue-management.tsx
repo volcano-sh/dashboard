@@ -10,19 +10,15 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
 import { trpc } from "@volcano/trpc/react"
-import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react"
+import { Plus, RefreshCw } from "lucide-react"
+import { ListPagination } from "../list-pagination"
 import { useCallback, useEffect, useState } from "react"
 import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
+import { isProtectedQueue, protectedQueueDeleteMessage } from "@/lib/queue-constants"
 import { CreateQueueDialog } from "./create-queue-dialog"
 import { QueueEditDialog } from "./queue-edit-dialog"
 
@@ -45,7 +41,6 @@ export default function QueueManagement() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [queueToEdit, setQueueToEdit] = useState<QueueStatus | null>(null)
     const [queueToDelete, setQueueToDelete] = useState<QueueStatus | null>(null)
-    const [totalQueues, setTotalQueues] = useState(0)
 
     const utils = trpc.useUtils()
 
@@ -77,7 +72,6 @@ export default function QueueManagement() {
                 setQueues(prevQueues =>
                     prevQueues?.filter(q => q.name !== queueToDelete.name)
                 )
-                setTotalQueues(prev => Math.max(0, prev - 1))
             }
 
             setQueueToDelete(null)
@@ -92,8 +86,12 @@ export default function QueueManagement() {
         onError: (error) => {
             let errorMessage = error.message
 
-            if (errorMessage.includes('root') && errorMessage.includes('can not be deleted')) {
-                errorMessage = "The 'root' queue is a system queue and cannot be deleted."
+            if (
+                errorMessage.includes("can not be delete") ||
+                errorMessage.includes("cannot be delete")
+            ) {
+                const queueName = queueToDelete?.name ?? "system"
+                errorMessage = protectedQueueDeleteMessage(queueName)
             } else if (errorMessage.includes('denied the request')) {
                 const match = errorMessage.match(/denied the request: (.+?)(?:"|$)/)
                 if (match && match[1]) {
@@ -128,6 +126,10 @@ export default function QueueManagement() {
     }, [utils])
 
     const handleDelete = useCallback((queue: QueueStatus) => {
+        if (isProtectedQueue(queue.name)) {
+            setError(protectedQueueDeleteMessage(queue.name))
+            return
+        }
         setQueueToDelete(queue)
         setShowDeleteConfirm(true)
     }, [])
@@ -171,9 +173,16 @@ export default function QueueManagement() {
             }));
 
             setQueues(transformedQueues);
-            setTotalQueues(queuesQuery.data.totalCount || 0);
         }
     }, [queuesQuery.data]);
+
+    const listTotal = queuesQuery.data?.total ?? 0;
+    const listTotalPages = queuesQuery.data?.totalPages ?? 0;
+    const listPage = queuesQuery.data?.page ?? pagination.page;
+
+    usePaginationClamp(listTotal, pagination.page, pagination.pageSize, (page) =>
+        setPagination((prev) => ({ ...prev, page }))
+    );
 
     const handleRefresh = useCallback(async () => {
         setLoading(true)
@@ -237,10 +246,6 @@ export default function QueueManagement() {
     const isLoading = queuesQuery.isLoading
     const isRefreshing = queuesQuery.isRefetching
 
-    const totalPages = Math.ceil(totalQueues / pagination.pageSize);
-    const startItem = (pagination.page - 1) * pagination.pageSize + 1;
-    const endItem = Math.min(pagination.page * pagination.pageSize, totalQueues);
-
     return (
         <div className="container mx-auto p-4 mt-4">
             <div className="flex justify-between items-center mb-6">
@@ -288,79 +293,15 @@ export default function QueueManagement() {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between space-x-2 py-4">
-                        <div className="flex-1 text-sm text-muted-foreground">
-                            Showing {startItem} to {endItem} of {totalQueues} results
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm text-muted-foreground">Show:</span>
-                                <Select
-                                    value={pagination.pageSize.toString()}
-                                    onValueChange={handlePageSizeChange}
-                                >
-                                    <SelectTrigger className="w-20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="10">10</SelectItem>
-                                        <SelectItem value="20">20</SelectItem>
-                                        <SelectItem value="50">50</SelectItem>
-                                        <SelectItem value="100">100</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(pagination.page - 1)}
-                                    disabled={pagination.page <= 1}
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                    Previous
-                                </Button>
-
-                                <div className="flex items-center space-x-1">
-                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                        let pageNum;
-                                        if (totalPages <= 5) {
-                                            pageNum = i + 1;
-                                        } else if (pagination.page <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (pagination.page >= totalPages - 2) {
-                                            pageNum = totalPages - 4 + i;
-                                        } else {
-                                            pageNum = pagination.page - 2 + i;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={pageNum}
-                                                variant={pagination.page === pageNum ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => handlePageChange(pageNum)}
-                                                className="w-8 h-8"
-                                            >
-                                                {pageNum}
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(pagination.page + 1)}
-                                    disabled={pagination.page >= totalPages}
-                                >
-                                    Next
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
+                    <ListPagination
+                        page={listPage}
+                        pageSize={pagination.pageSize}
+                        total={listTotal}
+                        totalPages={listTotalPages}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        disabled={isRefreshing}
+                    />
                 </>
             )}
 

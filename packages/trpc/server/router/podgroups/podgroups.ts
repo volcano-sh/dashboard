@@ -1,6 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
 import { k8sApi } from "../../utils/k8s";
+import { fetchPodGroups } from "../helpers";
 import { getPodGroupsInputSchema, getPodGroupInputSchema, getPodGroupYamlInputSchema } from "./schema";
 
 export const podgroupsRouter = router({
@@ -9,51 +10,11 @@ export const podgroupsRouter = router({
             namespace = "",
             search = "",
             status = "",
+            page = 1,
+            pageSize = 10,
         } = input;
 
-        console.log("Fetching podgroups with params:", {
-            namespace,
-            search,
-            status,
-        });
-
-        let response;
-        if (namespace === "" || namespace === "All") {
-            response = await k8sApi.listClusterCustomObject({
-                group: "scheduling.volcano.sh",
-                version: "v1beta1",
-                plural: "podgroups",
-            });
-        } else {
-            response = await k8sApi.listNamespacedCustomObject({
-                group: "scheduling.volcano.sh",
-                version: "v1beta1",
-                namespace,
-                plural: "podgroups",
-            });
-        }
-
-        // k8sApi (CustomObjectsApi) v1.2.0 ObjectParamAPI returns the body directly
-        let filteredPodGroups = response.items || [];
-
-        if (search) {
-            filteredPodGroups = filteredPodGroups.filter((pg: any) =>
-                pg.metadata.name
-                    .toLowerCase()
-                    .includes(search.toLowerCase()),
-            );
-        }
-
-        if (status && status !== "All") {
-            filteredPodGroups = filteredPodGroups.filter(
-                (pg: any) => pg.status?.phase === status,
-            );
-        }
-
-        return {
-            items: filteredPodGroups,
-            totalCount: filteredPodGroups.length,
-        };
+        return fetchPodGroups(page, pageSize, { namespace, search, status });
     }),
 
     getPodGroup: procedure.input(getPodGroupInputSchema).query(async ({ input }) => {
@@ -90,4 +51,3 @@ export const podgroupsRouter = router({
             return formattedYaml;
         }),
 });
-

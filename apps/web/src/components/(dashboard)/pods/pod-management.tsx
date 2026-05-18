@@ -11,17 +11,12 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
 import { trpc } from "@volcano/trpc/react"
-import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react"
+import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
+import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
 import { CreatePodDialog } from "./pod-create-dialog"
@@ -49,7 +44,6 @@ export default function PodManagement() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [podToEdit, setPodToEdit] = useState<PodStatus | null>(null)
     const [podToDelete, setPodToDelete] = useState<PodStatus | null>(null)
-    const [totalPods, setTotalPods] = useState(0)
 
     const utils = trpc.useUtils()
 
@@ -99,15 +93,6 @@ export default function PodManagement() {
         onSuccess: async () => {
             const deletedPodName = podToDelete?.name
             setShowDeleteConfirm(false)
-
-            if (podToDelete) {
-                setPods(prevPods =>
-                    prevPods?.filter(p =>
-                        !(p.name === podToDelete.name && p.namespace === podToDelete.namespace)
-                    )
-                )
-                setTotalPods(prev => Math.max(0, prev - 1))
-            }
 
             setPodToDelete(null)
             setError(null)
@@ -172,11 +157,7 @@ export default function PodManagement() {
 
     useEffect(() => {
         if (podsQuery.data) {
-            const transformedPods: PodStatus[] = (podsQuery.data.items || [])
-                .filter((pod: any) => {
-                    return !pod.metadata?.deletionTimestamp;
-                })
-                .map((pod: any) => {
+            const transformedPods: PodStatus[] = (podsQuery.data.items || []).map((pod: any) => {
                     const createdAt = new Date(pod.metadata?.creationTimestamp || Date.now());
                     const now = new Date();
                     const ageInMs = now.getTime() - createdAt.getTime();
@@ -194,9 +175,16 @@ export default function PodManagement() {
                 });
 
             setPods(transformedPods);
-            setTotalPods(transformedPods.length);
         }
     }, [podsQuery.data]);
+
+    const listTotal = podsQuery.data?.total ?? 0;
+    const listTotalPages = podsQuery.data?.totalPages ?? 0;
+    const listPage = podsQuery.data?.page ?? pagination.page;
+
+    usePaginationClamp(listTotal, pagination.page, pagination.pageSize, (page) =>
+        setPagination((prev) => ({ ...prev, page }))
+    );
 
     const handleRefresh = useCallback(async () => {
         setLoading(true)
@@ -264,11 +252,6 @@ export default function PodManagement() {
     const isLoading = podsQuery.isLoading
     const isRefreshing = podsQuery.isRefetching
 
-    // Calculate pagination info
-    const totalPages = Math.ceil(totalPods / pagination.pageSize);
-    const startItem = (pagination.page - 1) * pagination.pageSize + 1;
-    const endItem = Math.min(pagination.page * pagination.pageSize, totalPods);
-
     return (
         <div className="container mx-auto p-4 mt-4">
             <div className="flex justify-between items-center mb-6">
@@ -316,79 +299,15 @@ export default function PodManagement() {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between space-x-2 py-4">
-                        <div className="flex-1 text-sm text-muted-foreground">
-                            Showing {startItem} to {endItem} of {totalPods} results
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm text-muted-foreground">Show:</span>
-                                <Select
-                                    value={pagination.pageSize.toString()}
-                                    onValueChange={handlePageSizeChange}
-                                >
-                                    <SelectTrigger className="w-20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="10">10</SelectItem>
-                                        <SelectItem value="20">20</SelectItem>
-                                        <SelectItem value="50">50</SelectItem>
-                                        <SelectItem value="100">100</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(pagination.page - 1)}
-                                    disabled={pagination.page <= 1}
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                    Previous
-                                </Button>
-
-                                <div className="flex items-center space-x-1">
-                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                        let pageNum;
-                                        if (totalPages <= 5) {
-                                            pageNum = i + 1;
-                                        } else if (pagination.page <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (pagination.page >= totalPages - 2) {
-                                            pageNum = totalPages - 4 + i;
-                                        } else {
-                                            pageNum = pagination.page - 2 + i;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={pageNum}
-                                                variant={pagination.page === pageNum ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => handlePageChange(pageNum)}
-                                                className="w-8 h-8"
-                                            >
-                                                {pageNum}
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(pagination.page + 1)}
-                                    disabled={pagination.page >= totalPages}
-                                >
-                                    Next
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
+                    <ListPagination
+                        page={listPage}
+                        pageSize={pagination.pageSize}
+                        total={listTotal}
+                        totalPages={listTotalPages}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        disabled={isRefreshing}
+                    />
                 </>
             )}
 

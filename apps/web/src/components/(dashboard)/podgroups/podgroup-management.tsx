@@ -21,8 +21,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { trpc } from "@volcano/trpc/react"
-import { ChevronLeft, ChevronRight, RefreshCw, Search, X } from "lucide-react"
+import { RefreshCw, Search, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
+import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
 
@@ -42,7 +44,6 @@ export default function PodGroupManagement() {
     const [error, setError] = useState<string | null>(null)
     const [selectedPodGroup, setSelectedPodGroup] = useState<PodGroupStatus | null>(null)
     const [showPodGroupDetails, setShowPodGroupDetails] = useState(false)
-    const [totalPodGroups, setTotalPodGroups] = useState(0)
     const [searchTerm, setSearchTerm] = useState("")
     const [namespaceFilter, setNamespaceFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
@@ -57,6 +58,8 @@ export default function PodGroupManagement() {
             namespace: namespaceFilter || "",
             search: searchTerm || "",
             status: statusFilter || "",
+            page: pagination.page,
+            pageSize: pagination.pageSize,
         },
         {
             keepPreviousData: true,
@@ -97,9 +100,6 @@ export default function PodGroupManagement() {
     useEffect(() => {
         if (podGroupsQuery.data) {
             const transformedPodGroups: PodGroupStatus[] = (podGroupsQuery.data.items || [])
-                .filter((pg: any) => {
-                    return !pg.metadata?.deletionTimestamp;
-                })
                 .map((pg: any) => {
                     const createdAt = new Date(pg.metadata?.creationTimestamp || Date.now());
 
@@ -115,9 +115,16 @@ export default function PodGroupManagement() {
                 });
 
             setPodGroups(transformedPodGroups);
-            setTotalPodGroups(transformedPodGroups.length);
         }
     }, [podGroupsQuery.data]);
+
+    const listTotal = podGroupsQuery.data?.total ?? 0;
+    const listTotalPages = podGroupsQuery.data?.totalPages ?? 0;
+    const listPage = podGroupsQuery.data?.page ?? pagination.page;
+
+    usePaginationClamp(listTotal, pagination.page, pagination.pageSize, (page) =>
+        setPagination((prev) => ({ ...prev, page }))
+    );
 
     const handleRefresh = useCallback(async () => {
         setLoading(true)
@@ -180,18 +187,6 @@ export default function PodGroupManagement() {
 
     const isLoading = podGroupsQuery.isLoading
     const isRefreshing = podGroupsQuery.isRefetching
-
-    // Calculate pagination info
-    const totalPages = Math.ceil(totalPodGroups / pagination.pageSize);
-    const startItem = (pagination.page - 1) * pagination.pageSize + 1;
-    const endItem = Math.min(pagination.page * pagination.pageSize, totalPodGroups);
-
-    // Filter and paginate locally
-    const filteredPodGroups = podGroups || [];
-    const paginatedPodGroups = filteredPodGroups.slice(
-        (pagination.page - 1) * pagination.pageSize,
-        pagination.page * pagination.pageSize
-    );
 
     return (
         <div className="container mx-auto p-4 mt-4">
@@ -293,85 +288,21 @@ export default function PodGroupManagement() {
                     <div className="rounded-lg">
                         <DataTable
                             columns={columns}
-                            data={paginatedPodGroups}
+                            data={podGroups || []}
                             onRowClick={handlePodGroupClick}
                             disablePagination={true}
                         />
                     </div>
 
-                    <div className="flex items-center justify-between space-x-2 py-4">
-                        <div className="flex-1 text-sm text-muted-foreground">
-                            Showing {startItem} to {endItem} of {totalPodGroups} results
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm text-muted-foreground">Show:</span>
-                                <Select
-                                    value={pagination.pageSize.toString()}
-                                    onValueChange={handlePageSizeChange}
-                                >
-                                    <SelectTrigger className="w-20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="10">10</SelectItem>
-                                        <SelectItem value="20">20</SelectItem>
-                                        <SelectItem value="50">50</SelectItem>
-                                        <SelectItem value="100">100</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(pagination.page - 1)}
-                                    disabled={pagination.page <= 1}
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                    Previous
-                                </Button>
-
-                                <div className="flex items-center space-x-1">
-                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                        let pageNum;
-                                        if (totalPages <= 5) {
-                                            pageNum = i + 1;
-                                        } else if (pagination.page <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (pagination.page >= totalPages - 2) {
-                                            pageNum = totalPages - 4 + i;
-                                        } else {
-                                            pageNum = pagination.page - 2 + i;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={pageNum}
-                                                variant={pagination.page === pageNum ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => handlePageChange(pageNum)}
-                                                className="w-8 h-8"
-                                            >
-                                                {pageNum}
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(pagination.page + 1)}
-                                    disabled={pagination.page >= totalPages}
-                                >
-                                    Next
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
+                    <ListPagination
+                        page={listPage}
+                        pageSize={pagination.pageSize}
+                        total={listTotal}
+                        totalPages={listTotalPages}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        disabled={isRefreshing}
+                    />
                 </>
             )}
 

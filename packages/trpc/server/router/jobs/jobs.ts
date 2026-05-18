@@ -1,5 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
+import { formatK8sApiError } from "../../utils/k8s-errors";
+import { validateJobManifest } from "../../utils/job-validation";
 import { k8sApi } from "../../utils/k8s";
 import { fetchJobs, getJobState } from "../helpers";
 import {
@@ -21,12 +23,7 @@ export const jobsRouter = router({
             pageSize,
         });
 
-        const filteredJobs = await fetchJobs(
-            page,
-            pageSize,
-        );
-
-        return filteredJobs;
+        return fetchJobs(page, pageSize);
     }),
     getJob: procedure.input(getJobInputSchema).query(async ({ input }) => {
         const { namespace, name } = input;
@@ -90,20 +87,29 @@ export const jobsRouter = router({
             throw new Error("Invalid job manifest: name and spec are required");
         }
 
+        const jobError = validateJobManifest(jobManifest as Record<string, unknown>);
+        if (jobError) {
+            throw new Error(jobError);
+        }
+
         const namespace = jobManifest.metadata.namespace || "default";
 
-        const response = await k8sApi.createNamespacedCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            namespace,
-            plural: "jobs",
-            body: jobManifest,
-        });
+        try {
+            const response = await k8sApi.createNamespacedCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
+                namespace,
+                plural: "jobs",
+                body: jobManifest,
+            });
 
-        return {
-            message: "Job created successfully",
-            data: response.body,
-        };
+            return {
+                message: "Job created successfully",
+                data: response.body,
+            };
+        } catch (error) {
+            throw new Error(formatK8sApiError(error));
+        }
     }),
     updateJob: procedure.input(updateJobInputSchema).mutation(async ({ input }) => {
         const { namespace, name, patchData } = input;

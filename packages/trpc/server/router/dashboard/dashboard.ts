@@ -97,15 +97,26 @@ const getQueueResourcesMetrics = async () => {
         const queueMetrics = queues.map((queue: any) => {
             const spec = queue.spec || {};
             const status = queue.status || {};
+            const allocated = status.allocated || {};
+            const capability = spec.capability || {};
+
+            const runningPods =
+                (status.running ?? 0) +
+                (status.pending ?? 0) +
+                (status.inqueue ?? 0);
 
             return {
                 name: queue.metadata?.name || "Unknown",
                 weight: spec.weight || 0,
-                reclaimable: status.reclaimable || false,
-                inqueue: status.inqueue || 0,
-                pending: status.pending || 0,
-                running: status.running || 0,
-                unknown: status.unknown || 0,
+                reclaimable: spec.reclaimable ?? status.reclaimable ?? false,
+                cpu: allocated.cpu != null ? String(allocated.cpu) : "0",
+                memory: allocated.memory != null ? String(allocated.memory) : "0",
+                pods: allocated.pods != null ? String(allocated.pods) : String(runningPods),
+                cpuCapability: capability.cpu != null ? String(capability.cpu) : "0",
+                memoryCapability:
+                    capability.memory != null ? String(capability.memory) : "0",
+                podsCapability:
+                    capability.pods != null ? String(capability.pods) : "0",
             };
         });
 

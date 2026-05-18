@@ -25,13 +25,15 @@ interface QueueResourcesBarChartProps {
   isLoading?: boolean
 }
 
+const CHART_HEIGHT_PX = 300
+
 const BarChartSkeleton = () => (
-  <Card className="h-full flex flex-col">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+  <Card className="w-full">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <Skeleton className="h-6 w-32" />
       <Skeleton className="h-10 w-[180px]" />
     </CardHeader>
-    <CardContent className="flex items-center justify-center h-[300px]">
+    <CardContent className="flex items-center justify-center p-6 pt-0" style={{ height: CHART_HEIGHT_PX }}>
       <div className="flex flex-col items-center space-y-2">
         <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
         <p className="text-muted-foreground">Loading queue data...</p>
@@ -43,24 +45,27 @@ const BarChartSkeleton = () => (
 const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResourcesBarChartProps) => {
   const [selectedResource, setSelectedResource] = useState("")
 
-  const parseResourceValue = (value: string): number => {
-    if (!value || value === "0") return 0;
+  const parseResourceValue = (value: string | number | undefined): number => {
+    if (value === undefined || value === null || value === "") return 0
+    const str = String(value).trim()
+    if (str === "0") return 0
 
-    if (value.endsWith('m')) {
-      return parseInt(value) / 1000;
-    }
-
-    if (value.endsWith('Gi')) {
-      return parseFloat(value);
-    }
-    if (value.endsWith('Mi')) {
-      return parseFloat(value) / 1024;
-    }
-    if (value.endsWith('Ki')) {
-      return parseFloat(value) / (1024 * 1024);
+    if (str.endsWith("m")) {
+      return Number.parseFloat(str.slice(0, -1)) / 1000
     }
 
-    return parseFloat(value) || 0;
+    if (/Gi$/i.test(str)) {
+      return Number.parseFloat(str)
+    }
+    if (/Mi$/i.test(str)) {
+      return Number.parseFloat(str) / 1024
+    }
+    if (/Ki$/i.test(str)) {
+      return Number.parseFloat(str) / (1024 * 1024)
+    }
+
+    const n = Number.parseFloat(str)
+    return Number.isFinite(n) ? n : 0
   };
 
   // Transform API data to match the expected format
@@ -92,7 +97,9 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
 
     transformedData.forEach((queue) => {
       const allocated = queue.status?.allocated || {}
+      const capability = queue.spec?.capability || {}
       Object.keys(allocated).forEach((resource) => resourceTypes.add(resource))
+      Object.keys(capability).forEach((resource) => resourceTypes.add(resource))
     })
 
     return Array.from(resourceTypes).map((resource) => ({
@@ -154,11 +161,11 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
 
   const chartConfig = {
     allocated: {
-      label: `${selectedResource.toUpperCase()} Allocated`,
+      label: "Allocated",
       color: "hsl(var(--chart-1))",
     },
     capacity: {
-      label: `${selectedResource.toUpperCase()} Capacity`,
+      label: "Capability",
       color: "hsl(var(--chart-2))",
     },
   }
@@ -169,11 +176,11 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
 
   if (transformedData.length === 0) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Queue Resources</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-[300px]">
+        <CardContent className="flex items-center justify-center p-6 pt-0" style={{ height: CHART_HEIGHT_PX }}>
           <div className="flex flex-col items-center space-y-2">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
               <span className="text-2xl">📈</span>
@@ -187,8 +194,8 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle>Queue Resources</CardTitle>
         <Select value={selectedResource} onValueChange={setSelectedResource}>
           <SelectTrigger className="w-[180px]">
@@ -203,34 +210,40 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0">
-        {chartData.length > 0 ? (
-          <ChartContainer config={chartConfig} className="h-full">
+      <CardContent className="p-6 pt-0">
+        {chartData.length > 0 && selectedResource ? (
+          <div className="w-full" style={{ height: CHART_HEIGHT_PX }}>
+            <ChartContainer
+              config={chartConfig}
+              className="h-full w-full !aspect-auto [&_.recharts-responsive-container]:!h-full"
+            >
             <BarChart
               accessibilityLayer
               data={chartData}
               margin={{
-                top: 20,
-                right: 30,
-                left: 20,
-                bottom: 60,
+                top: 16,
+                right: 24,
+                left: 8,
+                bottom: 4,
               }}
             >
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="name"
                 tickLine={false}
-                tickMargin={10}
+                tickMargin={8}
                 axisLine={false}
                 angle={-45}
                 textAnchor="end"
-                height={80}
+                height={56}
                 interval={0}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                allowDecimals={selectedResource !== "pods"}
+                domain={[0, "auto"]}
                 label={{
                   value: getYAxisLabel(),
                   angle: -90,
@@ -239,12 +252,26 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
                 }}
               />
               <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-              <Bar dataKey="allocated" fill="var(--color-allocated)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="capacity" fill="var(--color-capacity)" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="allocated"
+                fill="var(--color-allocated)"
+                radius={[4, 4, 0, 0]}
+                minPointSize={2}
+              />
+              <Bar
+                dataKey="capacity"
+                fill="var(--color-capacity)"
+                radius={[4, 4, 0, 0]}
+                minPointSize={2}
+              />
             </BarChart>
-          </ChartContainer>
+            </ChartContainer>
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div
+            className="flex items-center justify-center"
+            style={{ height: CHART_HEIGHT_PX }}
+          >
             <p className="text-muted-foreground">No data available for selected resource type</p>
           </div>
         )}

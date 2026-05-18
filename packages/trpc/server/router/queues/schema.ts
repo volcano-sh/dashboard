@@ -1,13 +1,12 @@
 import { z } from "zod";
 
+import { paginationInputSchema } from "../pagination";
+
 export const getQueueInputSchema = z.object({
     name: z.string(),
 });
 
-export const getQueuesInputSchema = z.object({
-    page: z.number().optional(),
-    pageSize: z.number().optional(),
-});
+export const getQueuesInputSchema = paginationInputSchema.extend({});
 
 export const createQueueInputSchema = z.object({
     queueManifest: z.object({

@@ -9,17 +9,12 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
 import { trpc } from "@volcano/trpc/react"
-import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react"
+import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
+import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
 import { CreateJobDialog } from "./create-job-dialog"
@@ -45,7 +40,6 @@ export default function JobsManagement() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [jobToEdit, setJobToEdit] = useState<JobStatus | null>(null)
   const [jobToDelete, setJobToDelete] = useState<JobStatus | null>(null)
-  const [totalJobs, setTotalJobs] = useState(0)
 
   const utils = trpc.useUtils()
 
@@ -105,7 +99,6 @@ export default function JobsManagement() {
             !(j.name === jobToDelete.name && j.namespace === jobToDelete.namespace)
           )
         )
-        setTotalJobs(prev => Math.max(0, prev - 1))
       }
 
       setJobToDelete(null)
@@ -184,9 +177,16 @@ export default function JobsManagement() {
       }));
 
       setJobs(transformedJobs);
-      setTotalJobs(jobsQuery.data.totalCount || 0);
     }
   }, [jobsQuery.data]);
+
+  const listTotal = jobsQuery.data?.total ?? 0;
+  const listTotalPages = jobsQuery.data?.totalPages ?? 0;
+  const listPage = jobsQuery.data?.page ?? pagination.page;
+
+  usePaginationClamp(listTotal, pagination.page, pagination.pageSize, (page) =>
+    setPagination((prev) => ({ ...prev, page }))
+  );
 
   const handleRefresh = useCallback(async () => {
     setLoading(true)
@@ -258,11 +258,6 @@ export default function JobsManagement() {
   const isLoading = jobsQuery.isLoading
   const isRefreshing = jobsQuery.isRefetching
 
-  // Calculate pagination info
-  const totalPages = Math.ceil(totalJobs / pagination.pageSize);
-  const startItem = (pagination.page - 1) * pagination.pageSize + 1;
-  const endItem = Math.min(pagination.page * pagination.pageSize, totalJobs);
-
   return (
     <div className="container mx-auto p-4 mt-4">
       <div className="flex justify-between items-center mb-6">
@@ -312,83 +307,15 @@ export default function JobsManagement() {
             />
           </div>
 
-          {/* Server-side Pagination Controls */}
-          <div className="flex items-center justify-between space-x-2 py-4">
-            <div className="flex-1 text-sm text-muted-foreground">
-              Showing {startItem} to {endItem} of {totalJobs} results
-            </div>
-            <div className="flex items-center space-x-2">
-              {/* Page Size Selector */}
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Show:</span>
-                <Select
-                  value={pagination.pageSize.toString()}
-                  onValueChange={handlePageSizeChange}
-                >
-                  <SelectTrigger className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Pagination Controls */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-
-                {/* Page Numbers */}
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (pagination.page <= 3) {
-                      pageNum = i + 1;
-                    } else if (pagination.page >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = pagination.page - 2 + i;
-                    }
-
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={pagination.page === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                        className="w-8 h-8"
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+          <ListPagination
+            page={listPage}
+            pageSize={pagination.pageSize}
+            total={listTotal}
+            totalPages={listTotalPages}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            disabled={isRefreshing}
+          />
         </>
       )}
 

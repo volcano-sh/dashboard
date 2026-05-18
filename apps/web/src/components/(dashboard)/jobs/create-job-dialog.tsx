@@ -17,41 +17,22 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { validateJobManifest } from "@/lib/job-validation"
 import { trpc } from "@volcano/trpc/react"
 
 const defaultJobYaml = `apiVersion: batch.volcano.sh/v1alpha1
 kind: Job
 metadata:
   name: test-job
+  namespace: default
 spec:
-  minAvailable: 3
+  minAvailable: 1
   schedulerName: volcano
-  priorityClassName: high-priority
-  policies:
-    - event: PodEvicted
-      action: RestartJob
-  plugins:
-    ssh: []
-    env: []
-    svc: []
-  maxRetry: 5
   queue: default
-  volumes:
-    - mountPath: "/myinput"
-    - mountPath: "/myoutput"
-      volumeClaimName: "testvolumeclaimname"
-      volumeClaim:
-        accessModes: [ "ReadWriteOnce" ]
-        storageClassName: "my-storage-class"
-        resources:
-          requests:
-            storage: 1Gi
   tasks:
-    - replicas: 6
+    - replicas: 1
       name: "default-nginx"
       template:
-        metadata:
-          name: web
         spec:
           containers:
             - image: nginx
@@ -60,6 +41,33 @@ spec:
               resources:
                 requests:
                   cpu: "1"
+          restartPolicy: OnFailure`
+
+const jobWithVolumesYaml = `apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: test-job-with-volumes
+  namespace: default
+spec:
+  minAvailable: 1
+  schedulerName: volcano
+  queue: default
+  volumes:
+    - mountPath: "/data"
+      volumeClaim:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "standard"
+        resources:
+          requests:
+            storage: 1Gi
+  tasks:
+    - replicas: 1
+      name: "worker"
+      template:
+        spec:
+          containers:
+            - image: nginx
+              name: nginx
           restartPolicy: OnFailure`
 
 export function CreateJobDialog({ open, setOpen, handleRefresh }: { open: boolean, setOpen: (open: boolean) => void, handleRefresh: () => void }) {
@@ -138,6 +146,11 @@ export function CreateJobDialog({ open, setOpen, handleRefresh }: { open: boolea
                 throw new Error('Job spec must include at least one task')
             }
 
+            const jobError = validateJobManifest(parsed)
+            if (jobError) {
+                throw new Error(jobError)
+            }
+
             return parsed
         } catch (error) {
             if (error instanceof YAMLException) {
@@ -169,7 +182,10 @@ export function CreateJobDialog({ open, setOpen, handleRefresh }: { open: boolea
             <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Create Volcano Job</DialogTitle>
-                    <DialogDescription>Enter your job configuration in YAML format below.</DialogDescription>
+                    <DialogDescription>
+                        Enter your job YAML below. If you use spec.volumes, each entry needs volumeClaim or
+                        volumeClaimName — not just mountPath.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex-1 space-y-4 overflow-hidden">
@@ -194,6 +210,16 @@ export function CreateJobDialog({ open, setOpen, handleRefresh }: { open: boolea
                 </div>
 
                 <DialogFooter className="gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setYaml(jobWithVolumesYaml)
+                            setStatus({ type: null, message: "" })
+                        }}
+                        disabled={isCreating}
+                    >
+                        Example with volumes
+                    </Button>
                     <Button variant="outline" onClick={handleReset} disabled={isCreating}>
                         Reset
                     </Button>

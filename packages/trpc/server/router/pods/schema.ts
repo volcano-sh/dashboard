@@ -1,9 +1,8 @@
 import { z } from "zod";
 
-export const getPodsInputSchema = z.object({
-    page: z.number().optional().default(1),
-    pageSize: z.number().optional().default(10),
-});
+import { paginationInputSchema } from "../pagination";
+
+export const getPodsInputSchema = paginationInputSchema.extend({});
 
 export const getPodYamlInputSchema = z.object({
     namespace: z.string(),

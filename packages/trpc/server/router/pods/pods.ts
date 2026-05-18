@@ -15,12 +15,7 @@ export const podRouter = router({
             pageSize,
         });
 
-        const result = await fetchPods(
-            page,
-            pageSize,
-        );
-
-        return result;
+        return fetchPods(page, pageSize);
     }),
     getPodYaml: procedure
         .input(getPodYamlInputSchema)

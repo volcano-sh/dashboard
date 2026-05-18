@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/tooltip"
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Edit, Filter, Trash2 } from 'lucide-react'
+import { isProtectedQueue, protectedQueueDeleteMessage } from "@/lib/queue-constants"
 import { QueueStatus } from "./queue-management"
 
 interface CreateColumnsOptions {
@@ -126,7 +127,7 @@ export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): Colum
         header: "Actions",
         cell: ({ row }) => {
             const queue = row.original
-            const isRootQueue = queue.name.toLowerCase() === 'root'
+            const isDeleteDisabled = isProtectedQueue(queue.name)
 
             return (
                 <div className="flex items-center gap-2">
@@ -162,11 +163,11 @@ export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): Colum
                                             size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation()
-                                                if (!isRootQueue) {
+                                                if (!isDeleteDisabled) {
                                                     onDelete(queue)
                                                 }
                                             }}
-                                            disabled={isRootQueue}
+                                            disabled={isDeleteDisabled}
                                             className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -174,7 +175,11 @@ export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): Colum
                                     </span>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>{isRootQueue ? "Root queue cannot be deleted" : "Delete queue"}</p>
+                                    <p>
+                                      {isDeleteDisabled
+                                        ? protectedQueueDeleteMessage(queue.name)
+                                        : "Delete queue"}
+                                    </p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>

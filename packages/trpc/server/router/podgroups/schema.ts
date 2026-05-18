@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-export const getPodGroupsInputSchema = z.object({
+import { paginationInputSchema } from "../pagination";
+
+export const getPodGroupsInputSchema = paginationInputSchema.extend({
     namespace: z.string().optional().default(""),
     search: z.string().optional().default(""),
     status: z.string().optional().default(""),

@@ -1,9 +1,8 @@
 import { z } from "zod";
 
-export const getJobsInputSchema = z.object({
-    page: z.number().optional(),
-    pageSize: z.number().optional(),
-});
+import { paginationInputSchema } from "../pagination";
+
+export const getJobsInputSchema = paginationInputSchema.extend({});
 
 export const getJobInputSchema = z.object({
     namespace: z.string(),

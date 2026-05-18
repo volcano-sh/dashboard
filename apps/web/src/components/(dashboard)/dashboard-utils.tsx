@@ -146,7 +146,7 @@ export const DashboardUtils = () => {
           />
         ))}
       </section>
-      <section className="grid gap-2 grid-col-1 md:grid-cols-2 mt-4 w-full">
+      <section className="grid gap-2 grid-cols-1 md:grid-cols-2 items-start mt-4 w-full">
         <JobStatusPieChart data={jobStatusMetrics} isLoading={jobStatusLoading} />
         <QueueResourcesBarChart data={queueMetrics} isLoading={queueMetricsLoading} />
       </section>

@@ -1,6 +1,9 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
+import { formatK8sApiError } from "../../utils/k8s-errors";
 import { k8sApi } from "../../utils/k8s";
+import { isProtectedQueue, protectedQueueDeleteMessage } from "../../utils/queue-constants";
+import { validateQueueManifestSpec } from "../../utils/queue-validation";
 import { fetchQueues } from "../helpers";
 import {
     createQueueInputSchema,
@@ -50,12 +53,7 @@ export const queueRouter = router({
                 pageSize,
             });
 
-            const filteredQueues = await fetchQueues(
-                page,
-                pageSize,
-            );
-
-            return filteredQueues;
+            return fetchQueues(page, pageSize);
         }),
     getAllQueues: procedure.query(async () => {
         const response = await k8sApi.listClusterCustomObject({
@@ -75,23 +73,41 @@ export const queueRouter = router({
             throw new Error("Invalid queue manifest: name and spec are required");
         }
 
-        const response = await k8sApi.createClusterCustomObject({
-            group: "scheduling.volcano.sh",
-            version: "v1beta1",
-            plural: "queues",
-            body: queueManifest,
-        });
+        const specError = validateQueueManifestSpec(
+            queueManifest.spec as Record<string, unknown>
+        );
+        if (specError) {
+            throw new Error(specError);
+        }
 
-        return {
-            message: "Queue created successfully",
-            data: response.body,
-        };
+        try {
+            const response = await k8sApi.createClusterCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "queues",
+                body: queueManifest,
+            });
+
+            return {
+                message: "Queue created successfully",
+                data: response.body,
+            };
+        } catch (error) {
+            throw new Error(formatK8sApiError(error));
+        }
     }),
     updateQueue: procedure.input(updateQueueInputSchema).mutation(async ({ input }) => {
         const { name, updatedBody } = input;
 
         if (!updatedBody.spec || Object.keys(updatedBody.spec).length === 0) {
             throw new Error("spec object is required and cannot be empty");
+        }
+
+        const specError = validateQueueManifestSpec(
+            updatedBody.spec as Record<string, unknown>
+        );
+        if (specError) {
+            throw new Error(specError);
         }
 
         try {
@@ -130,30 +146,38 @@ export const queueRouter = router({
             });
         });
 
-        const response = await k8sApi.patchClusterCustomObject({
-            group: "scheduling.volcano.sh",
-            version: "v1beta1",
-            plural: "queues",
-            name: name,
-            body: patchOperations,
-        });
+        try {
+            const response = await k8sApi.patchClusterCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "queues",
+                name: name,
+                body: patchOperations,
+            });
 
-        const updatedQueue = await k8sApi.getClusterCustomObject({
-            group: "scheduling.volcano.sh",
-            version: "v1beta1",
-            plural: "queues",
-            name: name,
-        });
+            const updatedQueue = await k8sApi.getClusterCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "queues",
+                name: name,
+            });
 
-        return {
-            message: `Successfully updated queue ${name}`,
-            patchResponse: response.body,
-            updatedQueue: updatedQueue.body,
-        };
+            return {
+                message: `Successfully updated queue ${name}`,
+                patchResponse: response.body,
+                updatedQueue: updatedQueue.body,
+            };
+        } catch (error) {
+            throw new Error(formatK8sApiError(error));
+        }
     }),
     deleteQueue: procedure.input(deleteQueueInputSchema).mutation(async ({ input }) => {
         const { name } = input;
         const queueName = name.toLowerCase();
+
+        if (isProtectedQueue(queueName)) {
+            throw new Error(protectedQueueDeleteMessage(queueName));
+        }
 
         await k8sApi.getClusterCustomObject({
             group: "scheduling.volcano.sh",
