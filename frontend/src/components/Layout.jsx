@@ -38,11 +38,11 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
+        { text: "仪表板", icon: <HomeIcon />, path: "/dashboard" },
+        { text: "作业", icon: <AssignmentIcon />, path: "/jobs" },
+        { text: "队列", icon: <CloudIcon />, path: "/queues" },
         { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        { text: "Pod组", icon: <CategoryIcon />, path: "/podgroups" },
     ];
 
     return (
@@ -73,7 +73,7 @@ const Layout = () => {
                             fontWeight: 500,
                         }}
                     >
-                        Volcano Dashboard
+                        Volcano 仪表板
                     </Typography>
                 </Toolbar>
             </AppBar>

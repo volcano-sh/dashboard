@@ -1,0 +1,9 @@
+{
+  "Sidebar": {
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "queues": "Queues",
+    "pods": "Pods",
+    "podGroups": "PodGroups"
+  }
+}
