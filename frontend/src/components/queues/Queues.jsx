@@ -4,11 +4,13 @@ import axios from "axios";
 import { parseCPU, parseMemoryToMi } from "../utils";
 import SearchBar from "../Searchbar";
 import QueueTable from "./QueueTable/QueueTable";
+import { queueTranslations } from "./translations";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
 
 const Queues = () => {
+    const t = queueTranslations.zhCN;
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -47,7 +49,7 @@ const Queues = () => {
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            setError(`${t.fetchQueuesError}: ${err.message}`);
             setQueues([]);
         } finally {
             setLoading(false);
@@ -70,10 +72,12 @@ const Queues = () => {
                 return;
             }
 
-            alert("Queue created successfully!");
+            alert(t.queueCreatedSuccess);
         } catch (err) {
             alert(
-                "Network error: " + (err?.response?.data?.error || err.message),
+                `${t.networkError}: ${
+                    err?.response?.data?.error || err.message
+                }`,
             );
         } finally {
             setLoading(false);
@@ -122,7 +126,7 @@ const Queues = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            setError(`${t.fetchQueueYamlError}: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -233,7 +237,7 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text={t.title} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,13 +246,13 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder={t.searchPlaceholder}
+                    refreshLabel={t.refreshQueues}
+                    createlabel={t.createQueue}
                     onCreateClick={handleCreateQueue}
-                    dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
-                    dialogResourceType="Queue"
+                    dialogTitle={t.createQueueDialog}
+                    dialogResourceNameLabel={t.queueName}
+                    dialogResourceType={t.queue}
                 />
             </Box>
             <QueueTable

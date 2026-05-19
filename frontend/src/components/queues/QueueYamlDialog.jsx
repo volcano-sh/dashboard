@@ -7,6 +7,7 @@ import {
     Box,
     Button,
 } from "@mui/material";
+import { queueTranslations } from "./translations";
 
 const QueueYamlDialog = ({
     openDialog,
@@ -14,6 +15,8 @@ const QueueYamlDialog = ({
     selectedQueueName,
     selectedQueueYaml,
 }) => {
+    const t = queueTranslations.zhCN;
+
     return (
         <Dialog
             open={openDialog}
@@ -30,7 +33,7 @@ const QueueYamlDialog = ({
                 },
             }}
         >
-            <DialogTitle>Queue YAML - {selectedQueueName}</DialogTitle>
+            <DialogTitle>{t.queueYamlTitle} - {selectedQueueName}</DialogTitle>
             <DialogContent>
                 <Box
                     sx={{
@@ -79,7 +82,7 @@ const QueueYamlDialog = ({
                             },
                         }}
                     >
-                        Close
+                        {t.close}
                     </Button>
                 </Box>
             </DialogActions>
