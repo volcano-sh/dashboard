@@ -13,8 +13,8 @@ const DashboardHeader = ({ onRefresh, refreshing }) => {
                 mb: 3,
             }}
         >
-            <TitleComponent text="Volcano Dashboard" />
-            <Tooltip title="Refresh Data">
+            <TitleComponent text="Volcano 仪表板" />
+            <Tooltip title="刷新数据">
                 <IconButton onClick={onRefresh} disabled={refreshing}>
                     <RefreshIcon />
                 </IconButton>
