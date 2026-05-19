@@ -12,7 +12,7 @@ import {
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
-import apiClient, { API_ENDPOINTS } from "../../config/api";
+import apiClient, { API_ENDPOINTS } from "../../../config/api";
 
 const QueueTable = ({
     sortedQueues,

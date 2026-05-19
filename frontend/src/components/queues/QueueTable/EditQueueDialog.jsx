@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
-import apiClient, { API_ENDPOINTS } from "../../config/api";
+import apiClient, { API_ENDPOINTS } from "../../../config/api";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
