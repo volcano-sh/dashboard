@@ -1,6 +1,7 @@
 "use client"
 import { dump } from "js-yaml"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import * as React from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -51,6 +52,8 @@ export function QueueEditDialog({
   const [guarantee, setGuarantee] = React.useState<ResourcePair>(() => emptyResource())
   const [capability, setCapability] = React.useState<ResourcePair>(() => emptyResource())
   const [deserved, setDeserved] = React.useState<ResourcePair>(() => emptyResource())
+    const t = useTranslations("queues")
+    const tc = useTranslations("common")
   const [yaml, setYaml] = React.useState(initialYaml)
   const [status, setStatus] = React.useState<{
     type: "success" | "error" | null
@@ -86,7 +89,7 @@ export function QueueEditDialog({
 
   const { mutateAsync: updateQueue, isPending: isUpdating } = trpc.queueRouter.updateQueue.useMutation({
     onSuccess: () => {
-      setStatus({ type: "success", message: "Queue updated successfully!" })
+      setStatus({ type: "success", message: t("edit.success") })
       setTimeout(() => {
         setOpen(false)
         handleRefresh()
@@ -200,7 +203,7 @@ export function QueueEditDialog({
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Failed to update queue"
+        message: error instanceof Error ? error.message : t("edit.failed")
       })
     }
   }
@@ -276,12 +279,12 @@ export function QueueEditDialog({
             />
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="yaml-input">Queue YAML Configuration</Label>
+              <Label htmlFor="yaml-input">{t("create.yamlLabel")}</Label>
               <Textarea
                 id="yaml-input"
                 value={yaml}
                 onChange={(e) => setYaml(e.target.value)}
-                placeholder="Enter your queue YAML configuration..."
+                placeholder={t("edit.yamlPlaceholder")}
                 className="min-h-[360px] font-mono text-sm resize-none"
                 disabled={isUpdating}
               />
@@ -309,11 +312,11 @@ export function QueueEditDialog({
           >
             {isUpdating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Updating...
+                <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                {tc("actions.updating")}
               </>
             ) : (
-              "Update Queue"
+              t("edit.button")
             )}
           </Button>
         </DialogFooter>

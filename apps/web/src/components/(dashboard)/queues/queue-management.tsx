@@ -17,7 +17,8 @@ import { Plus, RefreshCw } from "lucide-react"
 import { ListPagination } from "../list-pagination"
 import { useCallback, useEffect, useState } from "react"
 import { DataTable } from "../data-table"
-import { createColumns } from "./columns"
+import { ServerPagination } from "../server-pagination"
+import { useQueueColumns } from "./columns"
 import { isProtectedQueue, protectedQueueDeleteMessage } from "@/lib/queue-constants"
 import { CreateQueueDialog } from "./create-queue-dialog"
 import { QueueEditDialog } from "./queue-edit-dialog"
@@ -31,6 +32,9 @@ export type QueueStatus = {
 }
 
 export default function QueueManagement() {
+    const t = useTranslations("queues")
+    const tc = useTranslations("common")
+    const format = useFormatter()
     const [queues, setQueues] = useState<QueueStatus[]>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -58,7 +62,7 @@ export default function QueueManagement() {
             keepPreviousData: true,
             onError: (err) => {
                 console.error("Error fetching queues:", err);
-                setError(`Queues API error: ${err.message}`);
+                setError(t("errors.api", { message: err.message }));
             },
         }
     )
@@ -99,7 +103,7 @@ export default function QueueManagement() {
                 }
             }
 
-            setError(`Failed to delete queue: ${errorMessage}`)
+            setError(t("errors.delete", { message: errorMessage }))
             setShowDeleteConfirm(false)
         }
     })
@@ -114,13 +118,13 @@ export default function QueueManagement() {
             });
 
             if (!yaml) {
-                setError("No YAML configuration available for this queue");
+                setError(t("errors.noYaml"));
             }
 
             setQueueToEdit({ ...queue, yaml: yaml || queue.yaml || "" });
             setShowEditQueueModal(true);
         } catch (err) {
-            setError("Failed to fetch queue YAML for editing");
+            setError(t("errors.fetchYamlEdit"));
             console.error(err)
         }
     }, [utils])
@@ -146,7 +150,7 @@ export default function QueueManagement() {
         }
     }, [queueToDelete, deleteQueue])
 
-    const columns = createColumns({
+    const columns = useQueueColumns({
         onEdit: handleEdit,
         onDelete: handleDelete
     })
@@ -157,7 +161,7 @@ export default function QueueManagement() {
             enabled: false,
             onError: (err) => {
                 console.error("Error fetching queue YAML:", err);
-                setError(`Queue YAML API error: ${err.message}`);
+                setError(t("errors.yamlApi", { message: err.message }));
             },
         },
     );
@@ -191,7 +195,7 @@ export default function QueueManagement() {
         try {
             await queuesQuery.refetch();
         } catch (err) {
-            setError("Failed to refresh queues")
+            setError(t("errors.refresh"))
             console.error(err)
         } finally {
             setLoading(false)
@@ -207,7 +211,7 @@ export default function QueueManagement() {
             setSelectedQueue({ ...queue, yaml });
             setShowQueueDetails(true);
         } catch (err) {
-            setError("Failed to fetch queue YAML");
+            setError(t("errors.fetchYaml"));
             console.error(err)
         }
     }, [queueYamlQuery])
@@ -249,19 +253,19 @@ export default function QueueManagement() {
     return (
         <div className="container mx-auto p-4 mt-4">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Queue Management</h1>
+                <h1 className="text-2xl font-bold">{t("title")}</h1>
                 <div className="flex items-center">
                     <Button
                         onClick={handleRefresh}
                         disabled={loading || isRefreshing}
-                        className="flex items-center gap-2 mr-4"
+                        className="flex items-center gap-2 me-4"
                     >
                         <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-                        Refresh
+                        {tc("actions.refresh")}
                     </Button>
                     <Button onClick={handleCreateQueue} className="flex items-center gap-2">
                         <Plus className="h-4 w-4" />
-                        Create Queue
+                        {t("createQueue")}
                     </Button>
                 </div>
             </div>
@@ -290,6 +294,7 @@ export default function QueueManagement() {
                             data={queues || []}
                             onRowClick={handleQueueClick}
                             disablePagination={true}
+                            filterPlaceholder={t("filterPlaceholder")}
                         />
                     </div>
 
@@ -309,7 +314,7 @@ export default function QueueManagement() {
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            Queue Details: {selectedQueue?.name}
+                            {t("details.title", { name: selectedQueue?.name ?? "" })}
                             {selectedQueue && (
                                 <Badge className={getStateColor(selectedQueue.state)}>
                                     {selectedQueue.state}
@@ -322,21 +327,25 @@ export default function QueueManagement() {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                                 <div>
-                                    <span className="font-semibold">Name:</span> {selectedQueue.name}
+                                    <span className="font-semibold">{tc("details.name")}</span> {selectedQueue.name}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Created:</span> {selectedQueue.createdAt.toLocaleString()}
+                                    <span className="font-semibold">{tc("details.created")}</span>{" "}
+                                    {format.dateTime(selectedQueue.createdAt, {
+                                        dateStyle: "medium",
+                                        timeStyle: "short",
+                                    })}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">State:</span>
-                                    <Badge className={`ml-2 ${getStateColor(selectedQueue.state)}`}>
+                                    <span className="font-semibold">{tc("details.state")}</span>
+                                    <Badge className={`ms-2 ${getStateColor(selectedQueue.state)}`}>
                                         {selectedQueue.state}
                                     </Badge>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="font-semibold mb-2">YAML Configuration</h3>
+                                <h3 className="font-semibold mb-2">{tc("details.yamlConfiguration")}</h3>
                                 <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
                                     <code>{selectedQueue.yaml}</code>
                                 </pre>
@@ -361,11 +370,11 @@ export default function QueueManagement() {
             }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete Queue</DialogTitle>
+                        <DialogTitle>{t("delete.title")}</DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
-                        <p>Are you sure you want to delete the queue <strong>{queueToDelete?.name}</strong>?</p>
-                        <p className="mt-2 text-sm text-gray-500">This action cannot be undone.</p>
+                        <p>{t("delete.message", { name: queueToDelete?.name ?? "" })}</p>
+                        <p className="mt-2 text-sm text-gray-500">{tc("deleteConfirm.cannotUndo")}</p>
                     </div>
                     <div className="flex justify-end gap-2">
                         <Button
@@ -373,7 +382,7 @@ export default function QueueManagement() {
                             onClick={() => setShowDeleteConfirm(false)}
                             disabled={isDeleting}
                         >
-                            Cancel
+                            {tc("actions.cancel")}
                         </Button>
                         <Button
                             variant="destructive"
@@ -382,11 +391,11 @@ export default function QueueManagement() {
                         >
                             {isDeleting ? (
                                 <>
-                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                                    Deleting...
+                                    <RefreshCw className="w-4 h-4 me-2 animate-spin" />
+                                    {tc("actions.deleting")}
                                 </>
                             ) : (
-                                "Delete"
+                                tc("actions.delete")
                             )}
                         </Button>
                     </div>

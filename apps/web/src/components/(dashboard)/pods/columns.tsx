@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Edit, Filter, Trash2 } from 'lucide-react'
+import { useTranslations } from "next-intl"
 import { PodStatus } from "./pod-management"
 
 interface CreateColumnsOptions {
@@ -25,8 +26,13 @@ export const createColumns = ({
     availableNamespaces,
     availableStatuses,
     onEdit,
-    onDelete
-}: CreateColumnsOptions): ColumnDef<PodStatus>[] => [
+    onDelete,
+    t,
+    tc,
+}: CreateColumnsOptions & {
+    t: ReturnType<typeof useTranslations<"pods">>
+    tc: ReturnType<typeof useTranslations<"common">>
+}): ColumnDef<PodStatus>[] => [
         {
             accessorKey: "name",
             header: ({ column }) => (
@@ -34,8 +40,8 @@ export const createColumns = ({
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
-                    Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                    {t("table.name")}
+                    <ArrowUpDown className="ms-2 h-4 w-4" />
                 </Button>
             ),
         },
@@ -43,15 +49,15 @@ export const createColumns = ({
             accessorKey: "namespace",
             header: ({ column }) => (
                 <div className="flex items-center">
-                    Namespace
+                    {t("table.namespace")}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="ml-2 h-8 p-1">
+                            <Button variant="ghost" size="sm" className="ms-2 h-8 p-1">
                                 <Filter className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                            <DropdownMenuLabel>Filter by Namespace</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t("table.filterByNamespace")}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuCheckboxItem
                                 checked={!column.getFilterValue()}
@@ -59,7 +65,7 @@ export const createColumns = ({
                                     if (checked) column.setFilterValue(undefined)
                                 }}
                             >
-                                All
+                                {tc("actions.all")}
                             </DropdownMenuCheckboxItem>
                             {availableNamespaces.map((namespace) => (
                                 <DropdownMenuCheckboxItem
@@ -77,51 +83,30 @@ export const createColumns = ({
                 </div>
             ),
             cell: ({ row }) => {
-                const namespace = row.getValue("namespace") as string;
+                const namespace = row.getValue("namespace") as string
                 return (
-                    <Badge
-                        className="bg-blue-100 text-blue-800 hover:bg-blue-100/60"
-                    >
+                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100/60">
                         {namespace}
                     </Badge>
-                );
+                )
             },
             filterFn: (row, columnId, filterValue) => {
                 return row.getValue(columnId) === filterValue
             },
         },
         {
-            accessorKey: "createdAt",
-            header: ({ column }) => (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    Creation Time
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            ),
-            cell: ({ row }) => {
-                const createdAt = row.getValue("createdAt") as Date
-                return new Intl.DateTimeFormat("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                }).format(createdAt)
-            },
-        },
-        {
             accessorKey: "status",
             header: ({ column }) => (
                 <div className="flex items-center">
-                    Status
+                    {t("table.status")}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="ml-2 h-8 p-1">
+                            <Button variant="ghost" size="sm" className="ms-2 h-8 p-1">
                                 <Filter className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                            <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t("table.filterByStatus")}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuCheckboxItem
                                 checked={!column.getFilterValue()}
@@ -129,7 +114,7 @@ export const createColumns = ({
                                     if (checked) column.setFilterValue(undefined)
                                 }}
                             >
-                                All
+                                {tc("actions.all")}
                             </DropdownMenuCheckboxItem>
                             {availableStatuses.map((status) => (
                                 <DropdownMenuCheckboxItem
@@ -177,25 +162,21 @@ export const createColumns = ({
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
-                    Age
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                    {t("table.age")}
+                    <ArrowUpDown className="ms-2 h-4 w-4" />
                 </Button>
             ),
-            cell: ({ row }) => {
-                const age = row.getValue("age") as string
-                return (
-                    <span className="text-sm text-gray-600 font-mono">
-                        {age}
-                    </span>
-                )
-            },
+            cell: ({ row }) => (
+                <span className="text-sm text-gray-600 font-mono">
+                    {row.getValue("age") as string}
+                </span>
+            ),
         },
         {
             id: "actions",
-            header: "Actions",
+            header: t("table.actions"),
             cell: ({ row }) => {
                 const pod = row.original
-
                 return (
                     <div className="flex items-center gap-2">
                         {onEdit && (
@@ -230,4 +211,13 @@ export const createColumns = ({
         },
     ]
 
-export const columns = createColumns({ availableNamespaces: [], availableStatuses: [] }) 
+export function usePodColumns(options: CreateColumnsOptions) {
+    const t = useTranslations("pods")
+    const tc = useTranslations("common")
+
+    return createColumns({
+        ...options,
+        t,
+        tc,
+    })
+}

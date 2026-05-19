@@ -1,0 +1,43 @@
+{
+  "title": "仪表盘",
+  "cards": {
+    "totalJobs": "作业总数",
+    "activeJobs": "活跃作业",
+    "runningPods": "运行中 Pod",
+    "completeRate": "完成率"
+  },
+  "alerts": {
+    "loadingTitle": "加载中...",
+    "loadingDescription": "正在从集群获取仪表盘数据。",
+    "jobsRunningTitle": "作业运行中",
+    "jobsRunningDescription": "{count, plural, other {当前有 # 个作业在后台运行。您可以继续操作，我们将在后台处理数据。}}",
+    "allCompleteTitle": "全部作业已完成",
+    "allCompleteDescription": "所有作业已成功完成，当前没有活跃作业在运行。",
+    "noJobsTitle": "未找到作业",
+    "noJobsDescription": "尚未创建任何作业。创建您的第一个作业以开始使用。"
+  },
+  "pieChart": {
+    "title": "作业状态",
+    "loading": "正在加载作业状态...",
+    "noData": "暂无作业数据",
+    "noDataHint": "创建作业以查看状态信息"
+  },
+  "barChart": {
+    "title": "队列资源",
+    "loading": "正在加载队列数据...",
+    "noData": "暂无队列数据",
+    "noDataHint": "创建队列以查看资源信息",
+    "selectResource": "选择资源",
+    "noDataForResource": "所选资源类型暂无数据",
+    "axis": {
+      "memory": "内存 (Gi)",
+      "cpu": "CPU 核数",
+      "pods": "Pod 数量",
+      "gpu": "GPU 数量",
+      "amount": "数量"
+    },
+    "resourceLabel": "{resource} 资源",
+    "allocated": "已分配 {resource}",
+    "capacity": "{resource} 容量"
+  }
+}

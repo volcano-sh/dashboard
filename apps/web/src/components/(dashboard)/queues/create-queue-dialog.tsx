@@ -1,6 +1,7 @@
 "use client"
 import { dump } from "js-yaml"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import * as React from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -56,6 +57,8 @@ export function CreateQueueDialog({
   setOpen: (open: boolean) => void
   handleRefresh: () => void
 }) {
+  const t = useTranslations("queues")
+  const tc = useTranslations("common")
   const [mode, setMode] = React.useState<"form" | "yaml">("form")
   const [queueName, setQueueName] = React.useState("")
   const [weight, setWeight] = React.useState("1")
@@ -91,7 +94,7 @@ export function CreateQueueDialog({
 
   const { mutateAsync: createQueue, isPending: isCreating } = trpc.queueRouter.createQueue.useMutation({
     onSuccess: () => {
-      setStatus({ type: "success", message: "Queue created successfully!" })
+      setStatus({ type: "success", message: t("create.success") })
       setOpen(false)
       handleRefresh()
     },
@@ -100,6 +103,47 @@ export function CreateQueueDialog({
     }
   })
 
+  const parseYamlToManifest = React.useCallback((yamlString: string) => {
+    try {
+      const parsed = load(yamlString) as any
+
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("Invalid YAML: must be an object")
+      }
+
+      const requiredFields = ["apiVersion", "kind", "metadata", "spec"]
+      const missingFields = requiredFields.filter((field) => !(field in parsed))
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(", ")}`)
+      }
+
+      if (parsed.kind !== "Queue") {
+        throw new Error('Kind must be "Queue"')
+      }
+
+      if (!parsed.metadata || typeof parsed.metadata !== "object") {
+        throw new Error("Invalid metadata: must be an object")
+      }
+
+      if (!parsed.metadata.name || typeof parsed.metadata.name !== "string") {
+        throw new Error("Missing required field: metadata.name")
+      }
+
+      if (!parsed.spec || typeof parsed.spec !== "object") {
+        throw new Error("Invalid spec: must be an object")
+      }
+
+      return parsed
+    } catch (error) {
+      if (error instanceof YAMLException) {
+        throw new Error(`YAML parsing error: ${error.message}`)
+      }
+      throw error
+    }
+  }, [])
+
+  // Form → YAML while on Form tab (YAML stays ready when you switch views)
   React.useEffect(() => {
     if (!open || mode !== "form") return
     try {
@@ -157,7 +201,7 @@ export function CreateQueueDialog({
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Could not parse YAML into the form"
+        message: error instanceof Error ? error.message : t("create.parseFormFailed")
       })
     }
   }, [yaml])
@@ -202,7 +246,7 @@ export function CreateQueueDialog({
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Failed to create queue"
+        message: error instanceof Error ? error.message : t("create.failed")
       })
     }
   }
@@ -238,15 +282,15 @@ export function CreateQueueDialog({
         )}
       >
         <DialogHeader>
-          <DialogTitle>Create a Queue</DialogTitle>
+          <DialogTitle>{t("create.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex gap-2 border-b pb-2">
           <Button type="button" variant={mode === "form" ? "default" : "outline"} size="sm" onClick={goForm}>
-            Form
+            {t("create.formTab")}
           </Button>
           <Button type="button" variant={mode === "yaml" ? "default" : "outline"} size="sm" onClick={goYaml}>
-            YAML
+            {t("create.yamlTab")}
           </Button>
         </div>
 
@@ -272,12 +316,12 @@ export function CreateQueueDialog({
             />
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="yaml-input">Queue YAML Configuration</Label>
+              <Label htmlFor="yaml-input">{t("create.yamlLabel")}</Label>
               <Textarea
                 id="yaml-input"
                 value={yaml}
                 onChange={(e) => setYaml(e.target.value)}
-                placeholder="Enter your queue YAML configuration..."
+                placeholder={t("create.yamlPlaceholder")}
                 className="min-h-[360px] font-mono text-sm resize-none"
                 disabled={isCreating}
               />
@@ -294,10 +338,10 @@ export function CreateQueueDialog({
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isCreating}>
-            Cancel
+            {tc("actions.cancel")}
           </Button>
           <Button type="button" variant="outline" onClick={handleReset} disabled={isCreating}>
-            Reset
+            {tc("actions.reset")}
           </Button>
           <Button
             onClick={handleCreateQueue}
@@ -305,15 +349,65 @@ export function CreateQueueDialog({
           >
             {isCreating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
+                <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                {tc("actions.creating")}
               </>
             ) : (
-              "Create"
+              t("create.button")
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function ResourceCollapsible({
+  title,
+  pair,
+  onChange,
+  disabled,
+  helper
+}: {
+  title: string
+  pair: ResourcePair
+  onChange: (p: ResourcePair) => void
+  disabled: boolean
+  helper: string
+}) {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger
+        className="flex w-full items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2 text-sm font-medium hover:bg-muted/60"
+        type="button"
+      >
+        {title}
+        <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-3 border border-t-0 border-border rounded-b-md p-3">
+        <p className="text-xs text-muted-foreground">{helper}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">CPU</Label>
+            <Input
+              placeholder='e.g. "2"'
+              value={pair.cpu}
+              onChange={(e) => onChange({ ...pair, cpu: e.target.value })}
+              disabled={disabled}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Memory</Label>
+            <Input
+              placeholder="e.g. 4Gi"
+              value={pair.memory}
+              onChange={(e) => onChange({ ...pair, memory: e.target.value })}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

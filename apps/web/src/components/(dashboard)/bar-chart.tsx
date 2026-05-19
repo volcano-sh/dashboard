@@ -5,6 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Loader2Icon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useEffect, useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
@@ -27,22 +28,27 @@ interface QueueResourcesBarChartProps {
 
 const CHART_HEIGHT_PX = 300
 
-const BarChartSkeleton = () => (
-  <Card className="w-full">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <Skeleton className="h-6 w-32" />
-      <Skeleton className="h-10 w-[180px]" />
-    </CardHeader>
-    <CardContent className="flex items-center justify-center p-6 pt-0" style={{ height: CHART_HEIGHT_PX }}>
-      <div className="flex flex-col items-center space-y-2">
-        <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-muted-foreground">Loading queue data...</p>
-      </div>
-    </CardContent>
-  </Card>
-);
+function BarChartSkeleton() {
+  const t = useTranslations("dashboard")
+
+  return (
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-10 w-[180px]" />
+      </CardHeader>
+      <CardContent className="flex items-center justify-center p-6 pt-0" style={{ height: CHART_HEIGHT_PX }}>
+        <div className="flex flex-col items-center space-y-2">
+          <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-muted-foreground">{t("barChart.loading")}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResourcesBarChartProps) => {
+  const t = useTranslations("dashboard")
   const [selectedResource, setSelectedResource] = useState("")
 
   const parseResourceValue = (value: string | number | undefined): number => {
@@ -68,7 +74,6 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
     return Number.isFinite(n) ? n : 0
   };
 
-  // Transform API data to match the expected format
   const transformedData = useMemo(() => {
     return data.map(queue => ({
       metadata: { name: queue.name },
@@ -86,10 +91,9 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
           pods: parseResourceValue(queue.podsCapability),
         },
       },
-    }));
-  }, [data]);
+    }))
+  }, [data])
 
-  // Get resource type options dynamically
   const resourceOptions = useMemo(() => {
     if (!transformedData || transformedData.length === 0) return []
 
@@ -102,11 +106,17 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
       Object.keys(capability).forEach((resource) => resourceTypes.add(resource))
     })
 
-    return Array.from(resourceTypes).map((resource) => ({
-      value: resource,
-      label: `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`.replace("Nvidia.com/gpu", "GPU"),
-    }))
-  }, [transformedData])
+    return Array.from(resourceTypes).map((resource) => {
+      const label =
+        resource === "nvidia.com/gpu"
+          ? "GPU"
+          : resource.charAt(0).toUpperCase() + resource.slice(1)
+      return {
+        value: resource,
+        label: t("barChart.resourceLabel", { resource: label }),
+      }
+    })
+  }, [transformedData, t])
 
   useEffect(() => {
     if (resourceOptions.length > 0 && !selectedResource) {
@@ -143,21 +153,25 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
     }))
   }, [processedData, selectedResource])
 
-
   const getYAxisLabel = () => {
     switch (selectedResource) {
       case "memory":
-        return "Memory (Gi)"
+        return t("barChart.axis.memory")
       case "cpu":
-        return "CPU Cores"
+        return t("barChart.axis.cpu")
       case "pods":
-        return "Pod Count"
+        return t("barChart.axis.pods")
       case "nvidia.com/gpu":
-        return "GPU Count"
+        return t("barChart.axis.gpu")
       default:
-        return "Amount"
+        return t("barChart.axis.amount")
     }
   }
+
+  const resourceLabel =
+    selectedResource === "nvidia.com/gpu"
+      ? "GPU"
+      : selectedResource.charAt(0).toUpperCase() + selectedResource.slice(1)
 
   const chartConfig = {
     allocated: {
@@ -171,35 +185,35 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
   }
 
   if (isLoading) {
-    return <BarChartSkeleton />;
+    return <BarChartSkeleton />
   }
 
   if (transformedData.length === 0) {
     return (
       <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle>Queue Resources</CardTitle>
+          <CardTitle>{t("barChart.title")}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center p-6 pt-0" style={{ height: CHART_HEIGHT_PX }}>
           <div className="flex flex-col items-center space-y-2">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
               <span className="text-2xl">📈</span>
             </div>
-            <p className="text-muted-foreground">No queue data available</p>
-            <p className="text-sm text-muted-foreground">Create a queue to see resource information</p>
+            <p className="text-muted-foreground">{t("barChart.noData")}</p>
+            <p className="text-sm text-muted-foreground">{t("barChart.noDataHint")}</p>
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle>Queue Resources</CardTitle>
+        <CardTitle>{t("barChart.title")}</CardTitle>
         <Select value={selectedResource} onValueChange={setSelectedResource}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select resource" />
+            <SelectValue placeholder={t("barChart.selectResource")} />
           </SelectTrigger>
           <SelectContent>
             {resourceOptions.map((option) => (
@@ -272,7 +286,7 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
             className="flex items-center justify-center"
             style={{ height: CHART_HEIGHT_PX }}
           >
-            <p className="text-muted-foreground">No data available for selected resource type</p>
+            <p className="text-muted-foreground">{t("barChart.noDataForResource")}</p>
           </div>
         )}
       </CardContent>

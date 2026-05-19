@@ -1,0 +1,43 @@
+{
+  "title": "Dashboard",
+  "cards": {
+    "totalJobs": "Total Jobs",
+    "activeJobs": "Active Jobs",
+    "runningPods": "Running Pods",
+    "completeRate": "Complete Rate"
+  },
+  "alerts": {
+    "loadingTitle": "Loading...",
+    "loadingDescription": "Fetching dashboard data from the cluster.",
+    "jobsRunningTitle": "Jobs Running",
+    "jobsRunningDescription": "{count, plural, one {# job is currently running in the background. You can continue to work while we process your data.} other {# jobs are currently running in the background. You can continue to work while we process your data.}}",
+    "allCompleteTitle": "All Jobs Complete",
+    "allCompleteDescription": "All jobs have been completed successfully. No active jobs are currently running.",
+    "noJobsTitle": "No Jobs Found",
+    "noJobsDescription": "No jobs have been created yet. Create your first job to get started."
+  },
+  "pieChart": {
+    "title": "Jobs Status",
+    "loading": "Loading job status...",
+    "noData": "No job data available",
+    "noDataHint": "Create a job to see status information"
+  },
+  "barChart": {
+    "title": "Queue Resources",
+    "loading": "Loading queue data...",
+    "noData": "No queue data available",
+    "noDataHint": "Create a queue to see resource information",
+    "selectResource": "Select resource",
+    "noDataForResource": "No data available for selected resource type",
+    "axis": {
+      "memory": "Memory (Gi)",
+      "cpu": "CPU Cores",
+      "pods": "Pod Count",
+      "gpu": "GPU Count",
+      "amount": "Amount"
+    },
+    "resourceLabel": "{resource} Resources",
+    "allocated": "{resource} Allocated",
+    "capacity": "{resource} Capacity"
+  }
+}

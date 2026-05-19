@@ -1,0 +1,64 @@
+{
+  "title": "Queue Management",
+  "createQueue": "Create Queue",
+  "filterPlaceholder": "Filter queues...",
+  "table": {
+    "name": "Name",
+    "parent": "Parent",
+    "creationTime": "Creation Time",
+    "state": "State",
+    "actions": "Actions"
+  },
+  "details": {
+    "title": "Queue Details: {name}"
+  },
+  "delete": {
+    "title": "Delete Queue",
+    "message": "Are you sure you want to delete the queue {name}?",
+    "rootQueueTooltip": "Root queue cannot be deleted",
+    "deleteTooltip": "Delete queue"
+  },
+  "errors": {
+    "api": "Queues API error: {message}",
+    "yamlApi": "Queue YAML API error: {message}",
+    "refresh": "Failed to refresh queues",
+    "fetchYaml": "Failed to fetch queue YAML",
+    "fetchYamlEdit": "Failed to fetch queue YAML for editing",
+    "noYaml": "No YAML configuration available for this queue",
+    "delete": "Failed to delete queue: {message}",
+    "rootQueue": "The 'root' queue is a system queue and cannot be deleted."
+  },
+  "create": {
+    "title": "Create a Queue",
+    "formTab": "Form",
+    "yamlTab": "YAML",
+    "queueName": "Queue Name",
+    "weight": "Weight",
+    "priority": "Priority",
+    "reclaimable": "Reclaimable",
+    "guaranteeTitle": "Guarantee Resources (Optional)",
+    "guaranteeHelper": "Maps to spec.guarantee.resource (cpu / memory).",
+    "capabilityTitle": "Capability Resources (Optional)",
+    "capabilityHelper": "Maps to spec.capability.",
+    "deservedTitle": "Deserved Resources (Optional)",
+    "deservedHelper": "Maps to spec.deserved (capacity plugin).",
+    "cpu": "CPU",
+    "memory": "Memory",
+    "yamlLabel": "Queue YAML Configuration",
+    "yamlPlaceholder": "Enter your queue YAML configuration...",
+    "success": "Queue created successfully!",
+    "failed": "Failed to create queue",
+    "parseFormFailed": "Could not parse YAML into the form",
+    "button": "Create",
+    "nameRequired": "Queue name is required",
+    "weightInvalid": "Weight must be a non-negative integer"
+  },
+  "edit": {
+    "title": "Edit Queue: {name}",
+    "description": "The current queue configuration is shown below. Make your changes and click Update to apply them.",
+    "success": "Queue updated successfully!",
+    "failed": "Failed to update queue",
+    "button": "Update Queue",
+    "yamlPlaceholder": "Enter your queue YAML configuration..."
+  }
+}
