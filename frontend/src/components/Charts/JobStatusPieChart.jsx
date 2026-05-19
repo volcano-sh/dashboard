@@ -9,7 +9,7 @@ const JobStatusPieChart = ({ data }) => {
     if (!data || !Array.isArray(data)) {
         return (
             <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
+                <Typography>暂无数据</Typography>
             </Box>
         );
     }
@@ -43,8 +43,14 @@ const JobStatusPieChart = ({ data }) => {
         Failed: "#f44336",
     };
 
+    const statusMap = {
+        Completed: "已完成",
+        Running: "运行中",
+        Failed: "已失败",
+    };
+
     const chartData = {
-        labels: Object.keys(statusCounts),
+        labels: Object.keys(statusCounts).map(k => statusMap[k] || k),
         datasets: [
             {
                 data: Object.values(statusCounts),
@@ -80,7 +86,7 @@ const JobStatusPieChart = ({ data }) => {
             }}
         >
             <Typography variant="h6" align="center" sx={{ mb: 1 }}>
-                Jobs Status
+                作业状态
             </Typography>
 
             <Box
@@ -159,7 +165,7 @@ const JobStatusPieChart = ({ data }) => {
                                 variant="body2"
                                 sx={{ mr: 2, minWidth: 70 }}
                             >
-                                {status}
+                                {statusMap[status] || status}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 {count} (

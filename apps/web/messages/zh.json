@@ -1,0 +1,9 @@
+{
+  "Sidebar": {
+    "dashboard": "仪表板",
+    "jobs": "作业",
+    "queues": "队列",
+    "pods": "Pods",
+    "podGroups": "Pod组"
+  }
+}
