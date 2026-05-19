@@ -212,7 +212,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             setSaving(true);
 
             const response = await apiClient.put(
-                `${API_ENDPOINTS.queues.list}/${updated.metadata.name}`,
+                API_ENDPOINTS.queues.detail(updated.metadata.name),
                 { spec: updated.spec },
             );
 

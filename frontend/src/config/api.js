@@ -1,6 +1,5 @@
 import axios from 'axios'
 
-// Single axios instance — works in dev (Vite proxy) and production (Nginx)
 const apiClient = axios.create({
     baseURL: '/api'
 })
@@ -8,16 +7,24 @@ const apiClient = axios.create({
 export const API_ENDPOINTS = {
     jobs: {
         list: '/jobs',
-        detail: (namespace, name) => `/jobs/${namespace}/${name}`,
+        detail: (namespace, name) => `/jobs/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`,
+        yaml: (namespace, name) => `/job/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/yaml`,
     },
     queues: {
         list: '/queues',
+        all: '/all-queues',
+        detail: (name) => `/queues/${encodeURIComponent(name)}`,
     },
     pods: {
         list: '/pods',
+        yaml: (namespace, name) => `/pod/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/yaml`,
+
     },
     podgroups: {
         list: '/podgroups',
+    },
+    namespaces: {
+        list: '/namespaces',
     },
 }
 

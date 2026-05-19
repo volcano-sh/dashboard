@@ -57,9 +57,7 @@ const QueueTable = ({
         try {
             setIsDeleting(true);
 
-            await apiClient.delete(
-                `${API_ENDPOINTS.queues.list}/${encodeURIComponent(queueToDelete)}`
-            );
+            await apiClient.delete(API_ENDPOINTS.queues.detail(queueToDelete));
 
             setQueues((prev) =>
                 prev.filter((queue) => queue.metadata.name !== queueToDelete),

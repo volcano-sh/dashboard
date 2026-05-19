@@ -1,8 +1,8 @@
-import apiClient from "../config/api";
+import apiClient, { API_ENDPOINTS } from "../config/api";
 
 export const fetchAllNamespaces = async () => {
     try {
-        const response = await apiClient.get("/namespaces");
+        const response = await apiClient.get(API_ENDPOINTS.namespaces.list);
         return [
             "All",
             ...new Set(response.data.items.map((item) => item.metadata.name)),
@@ -15,7 +15,7 @@ export const fetchAllNamespaces = async () => {
 
 export const fetchAllQueues = async () => {
     try {
-        const response = await apiClient.get("/all-queues");
+        const response = await apiClient.get(API_ENDPOINTS.queues.all);
         return [
             "All",
             ...new Set(response.data.items.map((item) => item.metadata.name)),

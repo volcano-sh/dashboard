@@ -4,8 +4,7 @@ import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
-import apiClient from "../../config/api";
-
+import apiClient, { API_ENDPOINTS } from "../../config/api";
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState({
         jobs: [],
@@ -21,9 +20,9 @@ const Dashboard = () => {
         setError(null);
         try {
             const [jobsRes, queuesRes, podsRes] = await Promise.all([
-                apiClient.get("/jobs?limit=1000"),
-                apiClient.get("/queues?limit=1000"),
-                apiClient.get("/pods?limit=1000"),
+                apiClient.get(`${API_ENDPOINTS.jobs.list}?limit=1000`),
+                apiClient.get(`${API_ENDPOINTS.queues.list}?limit=1000`),
+                apiClient.get(`${API_ENDPOINTS.pods.list}?limit=1000`),
             ]);
 
             setDashboardData({

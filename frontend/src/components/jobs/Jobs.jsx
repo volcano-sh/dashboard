@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import apiClient from "../../config/api";
+import apiClient, { API_ENDPOINTS } from "../../config/api";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
@@ -42,7 +42,7 @@ const Jobs = () => {
         setError(null);
 
         try {
-            const response = await apiClient.get("/jobs", {
+            const response = await apiClient.get(API_ENDPOINTS.jobs.list, {
                 params: {
                     search: searchText,
                     namespace: filters.namespace,
@@ -88,10 +88,12 @@ const Jobs = () => {
         try {
             setLoading(true);
             const response = await apiClient.get(
-                `/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
+                API_ENDPOINTS.jobs.yaml(
+                    job.metadata.namespace,
+                    job.metadata.name,
+                ),
                 { responseType: "text" },
             );
-
             const formattedYaml = response.data
                 .split("\n")
                 .map((line) => {
@@ -138,7 +140,7 @@ const Jobs = () => {
 
     const handleCreateJob = async (newJob) => {
         try {
-            await apiClient.post("/jobs", newJob);
+            await apiClient.post(API_ENDPOINTS.jobs.list, newJob);
             alert("Job created successfully!");
         } catch (err) {
             const errorMsg = err.response?.data?.error || err.message;
