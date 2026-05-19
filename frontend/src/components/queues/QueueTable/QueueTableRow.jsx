@@ -4,6 +4,7 @@ import { Delete } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 import Edit from "@mui/icons-material/Edit";
 import EditQueueDialog from "./EditQueueDialog";
+import { queueTranslations } from "../translations";
 
 const QueueTableRow = ({
     queue,
@@ -13,6 +14,7 @@ const QueueTableRow = ({
     onQueueUpdate,
 }) => {
     const theme = useTheme();
+    const t = queueTranslations.zhCN;
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const getStateColor = (status) => {
@@ -105,7 +107,7 @@ const QueueTableRow = ({
 
                 <TableCell sx={{ padding: "16px 24px" }}>
                     <Chip
-                        label={queue.status ? queue.status.state : "Unknown"}
+                        label={queue.status ? queue.status.state : t.unknown}
                         sx={{
                             bgcolor: getStateColor(
                                 queue.status ? queue.status.state : "Unknown",
