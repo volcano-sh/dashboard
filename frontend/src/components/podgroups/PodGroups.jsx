@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import { escape } from "lodash";
@@ -8,6 +8,7 @@ import PodGroupsTable from "./PodGroupsTable/PodGroupsTable";
 import JobPagination from "../jobs/JobPagination"; // Reuse pagination
 import SearchBar from "../Searchbar";
 import PodGroupDialog from "./PodGroupDialog"; // Need to create this
+import { translations } from "../../config/translations";
 
 const PodGroups = () => {
     const [podGroups, setPodGroups] = useState([]);
@@ -34,39 +35,70 @@ const PodGroups = () => {
     });
     const [totalItems, setTotalItems] = useState(0);
     const [sortDirection, setSortDirection] = useState("desc");
+    const hasFetchedRef = useRef(false);
+    const isFetchingRef = useRef(false);
 
-    const fetchPodGroups = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const getPodGroupsErrorMessage = (code) =>
+        translations.zh.fetchError
+            .replace("{resource}", translations.zh.podGroups)
+            .replace("{code}", code);
 
-        try {
-            const response = await axios.get(`/api/podgroups`, {
-                params: {
-                    search: searchText,
-                    namespace: filters.namespace,
-                    status: filters.status,
-                },
-            });
+    const getPodGroupsApiErrorMessage = (code) =>
+        translations.zh.apiError
+            .replace("{resource}", translations.zh.podGroups)
+            .replace("{code}", code);
 
-            if (response.status !== 200) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    const fetchPodGroups = useCallback(
+        async ({
+            search = searchText,
+            namespace = filters.namespace,
+            status = filters.status,
+        } = {}) => {
+            if (isFetchingRef.current) return;
+            isFetchingRef.current = true;
+            setLoading(true);
+            setError(null);
+
+            try {
+                const response = await axios.get(`/api/podgroups`, {
+                    params: {
+                        search,
+                        namespace,
+                        status,
+                    },
+                });
+
+                if (response.status !== 200) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = response.data;
+                setCachedPodGroups(data.items || []);
+                setTotalItems(data.totalCount || 0);
+            } catch (err) {
+                const errorCode = err.response?.status || err.message || "Unknown";
+                setError(getPodGroupsErrorMessage(errorCode));
+                setCachedPodGroups([]);
+            } finally {
+                isFetchingRef.current = false;
+                setLoading(false);
             }
-
-            const data = response.data;
-            setCachedPodGroups(data.items || []);
-            setTotalItems(data.totalCount || 0);
-        } catch (err) {
-            setError("Failed to fetch podgroups: " + err.message);
-            setCachedPodGroups([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [searchText, filters]);
+        },
+        [searchText, filters],
+    );
 
     useEffect(() => {
+        if (hasFetchedRef.current) return;
+        hasFetchedRef.current = true;
+
         fetchPodGroups();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPodGroups]);
+        fetchAllNamespaces()
+            .then(setAllNamespaces)
+                .catch((err) => {
+                    console.error(translations.zh.errorFetch, err);
+                    setAllNamespaces([]);
+                });
+    }, []);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -110,8 +142,9 @@ const PodGroups = () => {
             setSelectedYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
-            console.error("Failed to fetch YAML:", err);
-            setError("Failed to fetch YAML: " + err.message);
+            console.error(translations.zh.errorFetch, err);
+            const errorCode = err.response?.status || err.message || "Unknown";
+            setError(getPodGroupsApiErrorMessage(errorCode));
         } finally {
             setLoading(false);
         }
@@ -138,8 +171,10 @@ const PodGroups = () => {
     }, []);
 
     const handleFilterClose = useCallback((filterType, value) => {
-        setFilters((prev) => ({ ...prev, [filterType]: value }));
-        setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+        if (filterType) {
+            setFilters((prev) => ({ ...prev, [filterType]: value }));
+            setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+        }
         setPagination((prev) => ({ ...prev, page: 1 }));
     }, []);
 
@@ -166,9 +201,10 @@ const PodGroups = () => {
     }, []);
 
     // For now, no creation dialog
-    const handleCreate = () => {
+    const handleCreatePodGroup = useCallback(async (resourceData) => {
+        console.log("Create PodGroup data:", resourceData);
         alert("Create PodGroup not implemented yet");
-    };
+    }, []);
 
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
@@ -177,7 +213,7 @@ const PodGroups = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano PodGroups" />
+            <TitleComponent text={translations.zh.volcanoPodGroups} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -186,13 +222,13 @@ const PodGroups = () => {
                     handleRefresh={fetchPodGroups}
                     fetchData={fetchPodGroups}
                     isRefreshing={loading}
-                    placeholder="Search PodGroups..."
-                    refreshLabel="Refresh Listings"
-                    createlabel="Create PodGroup"
-                    dialogTitle="Create PodGroup"
-                    dialogResourceNameLabel="Name"
+                    placeholder={translations.zh.searchPodGroups}
+                    refreshLabel={translations.zh.refreshListings}
+                    createlabel={translations.zh.createPodGroup}
+                    dialogTitle={translations.zh.createPodGroupTitle}
+                    dialogResourceNameLabel={translations.zh.podGroupName}
                     dialogResourceType="PodGroup"
-                    onCreateClick={handleCreate}
+                    onCreateClick={handleCreatePodGroup}
                 />
             </Box>
             <PodGroupsTable
@@ -210,6 +246,7 @@ const PodGroups = () => {
             <JobPagination
                 pagination={pagination}
                 totalJobs={totalItems} // Prop name in JobPagination is totalJobs
+                totalLabel={translations.zh.totalCountPodGroups}
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
             />

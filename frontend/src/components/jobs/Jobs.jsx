@@ -7,11 +7,12 @@ import JobTable from "./JobTable/JobTable";
 import JobPagination from "./JobPagination";
 import JobDialog from "./JobDialog";
 import SearchBar from "../Searchbar";
+import { translations } from "../../config/translations";
 
 const Jobs = () => {
     const [jobs, setJobs] = useState([]);
     const [cachedJobs, setCachedJobs] = useState([]);
-    const [, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allNamespaces, setAllNamespaces] = useState([]);
     const [allQueues, setAllQueues] = useState([]);
@@ -37,6 +38,16 @@ const Jobs = () => {
     const [totalJobs, setTotalJobs] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
 
+    const getJobsErrorMessage = (code) =>
+        translations.zh.fetchError
+            .replace("{resource}", translations.zh.jobs)
+            .replace("{code}", code);
+
+    const getJobsApiErrorMessage = (code) =>
+        translations.zh.apiError
+            .replace("{resource}", translations.zh.jobs)
+            .replace("{code}", code);
+
     const fetchJobs = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -59,7 +70,8 @@ const Jobs = () => {
             setCachedJobs(data.items || []);
             setTotalJobs(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch jobs: " + err.message);
+            const errorCode = err.response?.status || err.message || "Unknown";
+            setError(getJobsErrorMessage(errorCode));
             setCachedJobs([]);
         } finally {
             setLoading(false);
@@ -114,8 +126,9 @@ const Jobs = () => {
             setSelectedJobYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
-            console.error("Failed to fetch job YAML:", err);
-            setError("Failed to fetch job YAML: " + err.message);
+            console.error(translations.zh.errorFetch, err);
+            const errorCode = err.response?.status || err.message || "Unknown";
+            setError(getJobsApiErrorMessage(errorCode));
         } finally {
             setLoading(false);
         }
@@ -213,7 +226,7 @@ const Jobs = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Jobs Status" />
+            <TitleComponent text={translations.zh.volcanoJobsStatus} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -221,12 +234,12 @@ const Jobs = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
-                    placeholder="Search jobs..."
-                    refreshLabel="Refresh Job Listings"
-                    createlabel="Create Job"
-                    dialogTitle="Create a Job"
-                    dialogResourceNameLabel="Job Name"
+                    isRefreshing={loading}
+                    placeholder={translations.zh.searchJobs}
+                    refreshLabel={translations.zh.refreshListings}
+                    createlabel={translations.zh.createJob}
+                    dialogTitle={translations.zh.createJobTitle}
+                    dialogResourceNameLabel={translations.zh.jobName}
                     dialogResourceType="Job"
                     onCreateClick={handleCreateJob}
                 />

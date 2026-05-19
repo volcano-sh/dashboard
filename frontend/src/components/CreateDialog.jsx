@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { Button } from "react-bootstrap";
 import { Plus, Minus, ChevronDown } from "lucide-react";
+import { translations } from "../config/translations";
 
 const primaryColor = "#E34C26";
 
@@ -23,7 +24,6 @@ const CreateDialog = ({
     open,
     onClose,
     onCreate,
-    title,
     resourceNameLabel,
     resourceType,
 }) => {
@@ -44,6 +44,18 @@ const CreateDialog = ({
     const [errors, setErrors] = useState({});
 
     const isPod = resourceType === "Pod";
+    const dialogTitle =
+        resourceType === "Queue"
+            ? translations.zh.createQueueTitle
+            : resourceType === "Pod"
+            ? translations.zh.createPodTitle
+            : translations.zh.createJobTitle;
+
+    const sectionTitleMap = {
+        guarantee: translations.zh.guaranteeResources,
+        capability: translations.zh.capabilityResources,
+        deserved: translations.zh.deservedResources,
+    };
 
     const handleChange = (field) => (event) => {
         let value = event.target.value;
@@ -299,26 +311,25 @@ const CreateDialog = ({
                 expandIcon={<ChevronDown size={18} color="#888" />}
             >
                 <Typography sx={{ fontWeight: 500 }}>
-                    {section.charAt(0).toUpperCase() + section.slice(1)}{" "}
-                    Resources (Optional)
+                    {sectionTitleMap[section]}
                 </Typography>
             </AccordionSummary>
             <AccordionDetails>
                 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                     <TextField
-                        label="CPU"
+                        label={translations.zh.cpu}
                         value={queueData[section].cpu}
                         onChange={handleResourceChange(section, "cpu")}
                         fullWidth
-                        placeholder="e.g. 1000m"
+                        placeholder={`${translations.zh.example} 1000m`}
                         sx={tfStyle}
                     />
                     <TextField
-                        label="Memory"
+                        label={translations.zh.memory}
                         value={queueData[section].memory}
                         onChange={handleResourceChange(section, "memory")}
                         fullWidth
-                        placeholder="e.g. 1Gi"
+                        placeholder={`${translations.zh.example} 1Gi`}
                         sx={tfStyle}
                     />
                 </Box>
@@ -332,7 +343,7 @@ const CreateDialog = ({
                                 fontSize: "0.9rem",
                             }}
                         >
-                            Custom Scalar Resources
+                            {translations.zh.customScalarResources}
                         </Box>
                         <IconButton
                             size="small"
@@ -360,7 +371,7 @@ const CreateDialog = ({
                             }}
                         >
                             <TextField
-                                label="Key"
+                                label={translations.zh.key}
                                 value={scalar.key}
                                 onChange={handleScalarChange(
                                     section,
@@ -368,12 +379,12 @@ const CreateDialog = ({
                                     "key",
                                 )}
                                 fullWidth
-                                placeholder="e.g. nvidia.com/gpu"
+                                placeholder={`${translations.zh.example} nvidia.com/gpu`}
                                 sx={tfStyle}
                                 size="small"
                             />
                             <TextField
-                                label="Value"
+                                label={translations.zh.value}
                                 value={scalar.value}
                                 onChange={handleScalarChange(
                                     section,
@@ -381,7 +392,7 @@ const CreateDialog = ({
                                     "value",
                                 )}
                                 fullWidth
-                                placeholder="e.g. 1"
+                                placeholder={`${translations.zh.example} 1`}
                                 sx={tfStyle}
                                 size="small"
                             />
@@ -410,7 +421,7 @@ const CreateDialog = ({
     const renderPodFields = () => (
         <>
             <TextField
-                label="Namespace"
+                label={translations.zh.namespace}
                 value={queueData.namespace}
                 onChange={handleChange("namespace")}
                 fullWidth
@@ -419,7 +430,7 @@ const CreateDialog = ({
             />
             <TextField
                 required
-                label="Container Name"
+                label={translations.zh.containerName}
                 value={queueData.containerName}
                 onChange={handleChange("containerName")}
                 fullWidth
@@ -430,7 +441,7 @@ const CreateDialog = ({
             />
             <TextField
                 required
-                label="Container Image"
+                label={translations.zh.containerImage}
                 value={queueData.image}
                 onChange={handleChange("image")}
                 fullWidth
@@ -441,7 +452,7 @@ const CreateDialog = ({
             />
             <TextField
                 required
-                label="Container Port"
+                label={translations.zh.containerPort}
                 type="number"
                 value={queueData.containerPort}
                 onChange={handleChange("containerPort")}
@@ -458,7 +469,7 @@ const CreateDialog = ({
     const renderQueueFields = () => (
         <>
             <TextField
-                label="Weight *"
+                label={translations.zh.weight}
                 type="number"
                 value={queueData.weight}
                 onChange={handleChange("weight")}
@@ -467,6 +478,7 @@ const CreateDialog = ({
                 error={!!errors.weight}
                 helperText={errors.weight}
                 inputProps={{ min: 1 }}
+                placeholder={translations.zh.weight}
             />
             <FormControlLabel
                 control={
@@ -479,7 +491,7 @@ const CreateDialog = ({
                         }}
                     />
                 }
-                label="Reclaimable"
+                label={translations.zh.reclaimable}
                 sx={{
                     ".MuiTypography-root": {
                         fontWeight: 500,
@@ -518,7 +530,7 @@ const CreateDialog = ({
                     letterSpacing: "0.5px",
                 }}
             >
-                {title}
+                {dialogTitle}
             </DialogTitle>
             <DialogContent>
                 <Box
@@ -556,7 +568,7 @@ const CreateDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Cancel
+                    {translations.zh.cancel}
                 </Button>
                 <Button
                     onClick={handleSubmit}
@@ -571,7 +583,7 @@ const CreateDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Create
+                    {translations.zh.create}
                 </Button>
             </DialogActions>
         </Dialog>

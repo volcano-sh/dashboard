@@ -2,6 +2,7 @@ import React from "react";
 import { Box, IconButton, Tooltip } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import TitleComponent from "../Titlecomponent";
+import { translations } from "../../config/translations";
 
 const DashboardHeader = ({ onRefresh, refreshing }) => {
     return (
@@ -13,7 +14,7 @@ const DashboardHeader = ({ onRefresh, refreshing }) => {
                 mb: 3,
             }}
         >
-            <TitleComponent text="Volcano Dashboard" />
+            <TitleComponent text={translations.zh.volcanoDashboard} />
             <Tooltip title="Refresh Data">
                 <IconButton onClick={onRefresh} disabled={refreshing}>
                     <RefreshIcon />

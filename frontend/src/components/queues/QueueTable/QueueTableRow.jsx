@@ -15,6 +15,12 @@ const QueueTableRow = ({
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+    const queueStatusMap = {
+        Open: "开启",
+        Closing: "关闭中",
+        Closed: "已关闭",
+    };
+
     const getStateColor = (status) => {
         switch (status) {
             case "Open":
@@ -98,14 +104,16 @@ const QueueTableRow = ({
                         color: alpha(theme.palette.text.primary, 0.85),
                     }}
                 >
-                    {new Date(
-                        queue.metadata.creationTimestamp,
-                    ).toLocaleString()}
+                    {new Date(queue.metadata.creationTimestamp).toLocaleString("zh-CN")}
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>
                     <Chip
-                        label={queue.status ? queue.status.state : "Unknown"}
+                        label={
+                            queueStatusMap[queue.status?.state] ||
+                            queue.status?.state ||
+                            "未知"
+                        }
                         sx={{
                             bgcolor: getStateColor(
                                 queue.status ? queue.status.state : "Unknown",

@@ -4,6 +4,13 @@ import { Chip, useTheme } from "@mui/material";
 const JobStatusChip = ({ status }) => {
     const theme = useTheme();
 
+    const statusTranslations = {
+        Running: "运行中",
+        Completed: "已完成",
+        Failed: "失败",
+        Pending: "等待中",
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case "Failed":
@@ -21,7 +28,7 @@ const JobStatusChip = ({ status }) => {
 
     return (
         <Chip
-            label={status || "Unknown"}
+            label={statusTranslations[status] || status || "Unknown"}
             sx={{
                 bgcolor: getStatusColor(status),
                 color: "common.white",

@@ -1,9 +1,11 @@
 import React from "react";
 import { Box, MenuItem, Pagination, Select, Typography } from "@mui/material";
+import { translations } from "../../config/translations";
 
 const JobPagination = ({
     pagination,
     totalJobs,
+    totalLabel,
     handleChangePage,
     handleChangeRowsPerPage,
 }) => {
@@ -21,9 +23,9 @@ const JobPagination = ({
                 onChange={handleChangeRowsPerPage}
                 size="small"
             >
-                <MenuItem value={5}>5 per page</MenuItem>
-                <MenuItem value={10}>10 per page</MenuItem>
-                <MenuItem value={20}>20 per page</MenuItem>
+                <MenuItem value={5}>5 {translations.zh.perPage}</MenuItem>
+                <MenuItem value={10}>10 {translations.zh.perPage}</MenuItem>
+                <MenuItem value={20}>20 {translations.zh.perPage}</MenuItem>
             </Select>
             <Box
                 sx={{
@@ -35,7 +37,7 @@ const JobPagination = ({
                 }}
             >
                 <Typography variant="body2" sx={{ mr: 2 }}>
-                    Total Jobs: {totalJobs}
+                    {totalLabel || translations.zh.totalCountJobs}: {totalJobs}
                 </Typography>
                 <Pagination
                     count={Math.ceil(totalJobs / pagination.rowsPerPage)}

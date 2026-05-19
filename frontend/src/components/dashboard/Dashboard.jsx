@@ -4,6 +4,7 @@ import ErrorDisplay from "./ErrorDisplay";
 import DashboardHeader from "./DashboardHeader";
 import StatCardsContainer from "./StatCardsContainer";
 import ChartsContainer from "./ChartsContainer";
+import { translations } from "../../config/translations";
 
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -19,37 +20,55 @@ const Dashboard = () => {
         setRefreshing(true);
         setError(null);
         try {
-            const [jobsRes, queuesRes, podsRes] = await Promise.all([
-                fetch("/api/jobs?limit=1000"),
-                fetch("/api/queues?limit=1000"),
-                fetch("/api/pods?limit=1000"),
-            ]);
+        const [jobsRes, queuesRes, podsRes] = await Promise.all([
+            fetch("/api/jobs?limit=1000"),
+            fetch("/api/queues?limit=1000"),
+            fetch("/api/pods?limit=1000"),
+        ]);
 
-            if (!jobsRes.ok)
-                throw new Error(`Jobs API error: ${jobsRes.status}`);
-            if (!queuesRes.ok)
-                throw new Error(`Queues API error: ${queuesRes.status}`);
-            if (!podsRes.ok)
-                throw new Error(`Pods API error: ${podsRes.status}`);
-
-            const [jobsData, queuesData, podsData] = await Promise.all([
-                jobsRes.json(),
-                queuesRes.json(),
-                podsRes.json(),
-            ]);
-
-            setDashboardData({
-                jobs: jobsData.items || [],
-                queues: queuesData.items || [],
-                pods: podsData.items || [],
-            });
-        } catch (error) {
-            console.error("Error fetching dashboard data:", error);
-            setError(error.message);
-        } finally {
-            setRefreshing(false);
-            setIsLoading(false);
+        // Dynamically build the localized error messages
+        if (!jobsRes.ok) {
+            throw new Error(
+                translations.zh.apiError
+                    .replace("{resource}", translations.zh.jobs)
+                    .replace("{code}", jobsRes.status)
+            );
         }
+        if (!queuesRes.ok) {
+            throw new Error(
+                translations.zh.apiError
+                    .replace("{resource}", translations.zh.queues)
+                    .replace("{code}", queuesRes.status)
+            );
+        }
+        if (!podsRes.ok) {
+            throw new Error(
+                translations.zh.apiError
+                    .replace("{resource}", translations.zh.pods)
+                    .replace("{code}", podsRes.status)
+            );
+        }
+
+        const [jobsData, queuesData, podsData] = await Promise.all([
+            jobsRes.json(),
+            queuesRes.json(),
+            podsRes.json(),
+        ]);
+
+        setDashboardData({
+            jobs: jobsData.items || [],
+            queues: queuesData.items || [],
+            pods: podsData.items || [],
+        });
+        } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        // If the error came from our throw statements above, it will already be Chinese.
+        // If it's a network crash (ECONNREFUSED), we can provide a fallback:
+        setError(error.message);
+        } finally {
+        setRefreshing(false);
+        setIsLoading(false);
+       }
     };
 
     const handleRefresh = () => {

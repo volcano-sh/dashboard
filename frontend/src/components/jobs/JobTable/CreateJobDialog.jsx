@@ -10,6 +10,7 @@ import {
 import { Button } from "react-bootstrap";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { translations } from '../../../config/translations';
 
 const primaryColor = "#E34C26";
 
@@ -17,7 +18,7 @@ const CreateJobDialog = ({
     open,
     onClose,
     onCreate,
-    title = "Create Job (YAML)",
+    title = translations.zh.createJob || "创建任务",
 }) => {
     const [yamlText, setYamlText] = useState("");
     const [error, setError] = useState("");
@@ -76,7 +77,7 @@ const CreateJobDialog = ({
             <DialogContent>
                 <Box sx={{ mt: 2, mb: 1 }}>
                     <Typography sx={{ fontWeight: 500, color: "#333", mb: 1 }}>
-                        Paste or type your Job YAML specification below:
+                        {translations.zh.yamlInstruction}
                     </Typography>
                     <Editor
                         height="320px"
@@ -120,7 +121,7 @@ const CreateJobDialog = ({
                         transition: "all 0.2s",
                     }}
                 >
-                    Cancel
+                    {translations.zh.cancel}
                 </Button>
                 <Button
                     onClick={handleSubmit}
@@ -136,7 +137,7 @@ const CreateJobDialog = ({
                     }}
                     disabled={!yamlText.trim()}
                 >
-                    Create
+                    {translations.zh.create}
                 </Button>
             </DialogActions>
         </Dialog>

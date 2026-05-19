@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { ArrowDownward, ArrowUpward, UnfoldMore } from "@mui/icons-material";
 import JobFilters from "./JobFilters";
+import { translations } from "../../../config/translations";
 
 const JobTableHeader = ({
     filters,
@@ -45,13 +46,16 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Name
+                        {translations.zh.name}
                     </Typography>
                 </TableCell>
 
-                {["Namespace", "Queue"].map((field) => (
+                {[
+                    { key: "namespace", label: translations.zh.namespace },
+                    { key: "queue", label: translations.zh.queue }
+                ].map((field) => (
                     <TableCell
-                        key={field}
+                        key={field.key}
                         sx={{
                             backgroundColor: alpha(
                                 theme.palette.background.paper,
@@ -74,19 +78,19 @@ const JobTableHeader = ({
                                 fontWeight="700"
                                 color="text.primary"
                             >
-                                {field}
+                                {field.label}
                             </Typography>
                             <JobFilters
-                                filterType={field.toLowerCase()}
-                                currentValue={filters[field.toLowerCase()]}
+                                filterType={field.key}
+                                currentValue={filters[field.key]}
                                 options={
-                                    field === "Namespace"
+                                    field.key === "namespace"
                                         ? allNamespaces
                                         : allQueues
                                 }
                                 handleFilterClick={handleFilterClick}
                                 handleFilterClose={handleFilterClose}
-                                anchorEl={anchorEl[field.toLowerCase()]}
+                                anchorEl={anchorEl[field.key]}
                             />
                         </Box>
                     </TableCell>
@@ -109,7 +113,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Creation Time
+                        {translations.zh.creationTime}
                     </Typography>
                     <Button
                         size="small"
@@ -146,7 +150,7 @@ const JobTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {translations.zh.sort}
                     </Button>
                 </TableCell>
 
@@ -167,7 +171,7 @@ const JobTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Status
+                        {translations.zh.status}
                     </Typography>
                     <JobFilters
                         filterType="status"
@@ -198,7 +202,7 @@ const JobTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Actions
+                        {translations.zh.actions}
                     </Typography>
                 </TableCell>
             </TableRow>

@@ -1,9 +1,17 @@
 import React from "react";
 import { TableRow, TableCell, Box, useTheme, alpha } from "@mui/material";
 import JobStatusChip from "../../jobs/JobStatusChip"; // Reuse chip
+import { translations } from "../../../config/translations";
 
 const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
     const theme = useTheme();
+
+    const queueLabel = podGroup.spec.queue || translations.zh.unknown;
+    const minMemberLabel =
+        podGroup.spec.minMember != null
+            ? podGroup.spec.minMember
+            : translations.zh.unknown;
+    const rawStatus = podGroup.status?.phase || "Unknown";
 
     return (
         <TableRow
@@ -57,7 +65,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                     fontSize: "0.95rem",
                 }}
             >
-                {podGroup.spec.queue || "N/A"}
+                {queueLabel}
             </TableCell>
 
             <TableCell
@@ -67,7 +75,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                     fontSize: "0.95rem",
                 }}
             >
-                {podGroup.spec.minMember || "N/A"}
+                {minMemberLabel}
             </TableCell>
 
             <TableCell
@@ -77,7 +85,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                     color: alpha(theme.palette.text.primary, 0.85),
                 }}
             >
-                {new Date(podGroup.metadata.creationTimestamp).toLocaleString()}
+                {new Date(podGroup.metadata.creationTimestamp).toLocaleString("zh-CN")}
             </TableCell>
 
             <TableCell sx={{ padding: "16px 24px" }}>
@@ -94,9 +102,7 @@ const PodGroupsTableRow = ({ podGroup, handlePodGroupClick }) => {
                     }}
                 >
                     <JobStatusChip
-                        status={
-                            podGroup.status ? podGroup.status.phase : "Unknown"
-                        }
+                        status={rawStatus}
                         sx={{
                             height: "30px",
                             fontWeight: 600,
