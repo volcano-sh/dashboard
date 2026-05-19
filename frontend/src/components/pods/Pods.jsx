@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
 import SearchBar from "../Searchbar";
@@ -7,6 +7,7 @@ import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import { translations } from "../../config/translations";
 
 const Pods = () => {
     const [pods, setPods] = useState([]);
@@ -18,9 +19,15 @@ const Pods = () => {
         status: "All",
         namespace: "default",
     });
+    const [anchorEl, setAnchorEl] = useState({
+        status: null,
+        namespace: null,
+    });
     const [selectedPodYaml, setSelectedPodYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [searchText, setSearchText] = useState("");
+    const hasFetchedRef = useRef(false);
+    const isFetchingRef = useRef(false);
     const theme = useTheme();
     const [selectedPodName, setSelectedPodName] = useState("");
     const [pagination, setPagination] = useState({
@@ -30,7 +37,19 @@ const Pods = () => {
     const [totalPods, setTotalPods] = useState(0);
     const [sortDirection, setSortDirection] = useState("");
 
+    const getPodsErrorMessage = (code) =>
+        translations.zh.fetchError
+            .replace("{resource}", translations.zh.pods)
+            .replace("{code}", code);
+
+    const getPodsApiErrorMessage = (code) =>
+        translations.zh.apiError
+            .replace("{resource}", translations.zh.pods)
+            .replace("{code}", code);
+
     const fetchPods = useCallback(async () => {
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
         setLoading(true);
         setError(null);
 
@@ -51,17 +70,26 @@ const Pods = () => {
             setCachedPods(data.items || []);
             setTotalPods(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch pods: " + err.message);
-            setCachedPods([]);
+            const errorCode = err.response?.status || err.message || "Unknown";
+            console.error(translations.zh.errorFetch, err);
+            setError(errorCode);
         } finally {
+            isFetchingRef.current = false;
             setLoading(false);
         }
     }, [searchText, filters]);
 
     useEffect(() => {
+        if (hasFetchedRef.current) return;
+        hasFetchedRef.current = true;
+
         fetchPods();
-        fetchAllNamespaces().then(setAllNamespaces);
-    }, [fetchPods]);
+        fetchAllNamespaces().then(setAllNamespaces).catch((err) => {
+            console.error(translations.zh.errorFetch, err);
+            setAllNamespaces([]);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         const startIndex = (pagination.page - 1) * pagination.rowsPerPage;
@@ -79,6 +107,21 @@ const Pods = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
         fetchPods();
     };
+
+    const handleFilterClick = useCallback((filterType, event) => {
+        setAnchorEl((prev) => ({
+            ...prev,
+            [filterType]: event.currentTarget,
+        }));
+    }, []);
+
+    const handleFilterClose = useCallback((filterType, value) => {
+        if (filterType) {
+            setFilters((prev) => ({ ...prev, [filterType]: value }));
+            setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+        }
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
@@ -151,7 +194,8 @@ const Pods = () => {
             setOpenDialog(true);
         } catch (err) {
             console.error("Failed to fetch pod YAML:", err);
-            setError("Failed to fetch pod YAML: " + err.message);
+            const errorCode = err.response?.status || err.message || "Unknown";
+            setError(getPodsApiErrorMessage(errorCode));
         } finally {
             setLoading(false);
         }
@@ -181,11 +225,11 @@ const Pods = () => {
     return (
         <Box sx={{ bgcolor: "background.default", minHeight: "100vh", p: 3 }}>
             {error && (
-                <Box sx={{ mt: 2, color: theme.palette.error.main }}>
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
+                <Typography color="error" sx={{ mb: 2 }}>
+                    获取 Pods 失败: 请求失败, 状态码 {String(error)}
+                </Typography>
             )}
-            <TitleComponent text="Volcano Pods Status" />
+            <TitleComponent text={translations.zh.volcanoPodsStatus} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -194,11 +238,11 @@ const Pods = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchPods}
                     isRefreshing={false} // Update if needed
-                    placeholder="Search Pods..."
-                    refreshLabel="Refresh Pods"
-                    createlabel="Create Pod"
-                    dialogTitle="Create a Pod"
-                    dialogResourceNameLabel="Pod Name"
+                    placeholder={translations.zh.searchPods}
+                    refreshLabel={translations.zh.refreshListings}
+                    createlabel={translations.zh.createPod}
+                    dialogTitle={translations.zh.createPod}
+                    dialogResourceNameLabel={translations.zh.podName}
                     dialogResourceType="Pod"
                     onCreateClick={handleCreatePod}
                 />
@@ -211,6 +255,9 @@ const Pods = () => {
                 onSortDirectionToggle={toggleSortDirection}
                 onFilterChange={handleFilterChange}
                 onPodClick={handlePodClick}
+                anchorEl={anchorEl}
+                handleFilterClick={handleFilterClick}
+                handleFilterClose={handleFilterClose}
             />
             <PodsPagination
                 totalPods={totalPods}
@@ -223,6 +270,7 @@ const Pods = () => {
                 podYaml={selectedPodYaml}
                 onClose={handleCloseDialog}
             />
+            
         </Box>
     );
 };

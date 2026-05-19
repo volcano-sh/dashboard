@@ -16,6 +16,7 @@ import {
     FilterList,
 } from "@mui/icons-material";
 import JobFilters from "../../jobs/JobTable/JobFilters";
+import { translations } from "../../../config/translations";
 
 const PodGroupsTableHeader = ({
     filters,
@@ -47,6 +48,19 @@ const PodGroupsTableHeader = ({
         },
     });
 
+    const getFilterLabel = (value) => {
+        if (value === null || value === undefined) return "";
+        if (value === "All")
+            return `${translations.zh.filter}: ${translations.zh.all}`;
+        if (value === "default")
+            return `${translations.zh.filter}: ${translations.zh.default}`;
+        if (typeof value === "string") {
+            const key = value.toLowerCase();
+            return translations.zh[key] || value;
+        }
+        return "";
+    };
+
     return (
         <TableHead>
             <TableRow>
@@ -67,7 +81,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Name
+                        {translations.zh.name}
                     </Typography>
                 </TableCell>
 
@@ -94,7 +108,7 @@ const PodGroupsTableHeader = ({
                             fontWeight="700"
                             color="text.primary"
                         >
-                            Namespace
+                            {translations.zh.namespace}
                         </Typography>
                         <Button
                             size="small"
@@ -104,16 +118,18 @@ const PodGroupsTableHeader = ({
                                 filters.namespace !== "All",
                             )}
                         >
-                            {filters.namespace}
+                            {getFilterLabel(filters.namespace)}
                         </Button>
-                        <JobFilters
-                            filterType="namespace"
-                            currentValue={filters.namespace}
-                            options={allNamespaces}
-                            handleFilterClick={handleFilterClick}
-                            handleFilterClose={handleFilterClose}
-                            anchorEl={anchorEl.namespace}
-                        />
+                        {anchorEl.namespace instanceof Element && (
+                            <JobFilters
+                                filterType="namespace"
+                                currentValue={filters.namespace}
+                                options={allNamespaces}
+                                handleFilterClick={handleFilterClick}
+                                handleFilterClose={handleFilterClose}
+                                anchorEl={anchorEl.namespace}
+                            />
+                        )}
                     </Box>
                 </TableCell>
 
@@ -133,7 +149,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Queue
+                        {translations.zh.queue}
                     </Typography>
                 </TableCell>
 
@@ -153,7 +169,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Min Member
+                        {translations.zh.minMember}
                     </Typography>
                 </TableCell>
 
@@ -174,7 +190,7 @@ const PodGroupsTableHeader = ({
                         fontWeight="700"
                         color="text.primary"
                     >
-                        Creation Time
+                        {translations.zh.creationTime}
                     </Typography>
                     <Button
                         size="small"
@@ -211,7 +227,7 @@ const PodGroupsTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {translations.zh.sort}
                     </Button>
                 </TableCell>
 
@@ -239,7 +255,7 @@ const PodGroupsTableHeader = ({
                             fontWeight="700"
                             color="text.primary"
                         >
-                            Status
+                            {translations.zh.status}
                         </Typography>
                         <Button
                             size="small"
@@ -247,16 +263,18 @@ const PodGroupsTableHeader = ({
                             onClick={(e) => handleFilterClick("status", e)}
                             sx={getFilterButtonStyle(filters.status !== "All")}
                         >
-                            {filters.status}
+                            {getFilterLabel(filters.status)}
                         </Button>
-                        <JobFilters
-                            filterType="status"
-                            currentValue={filters.status}
-                            options={uniqueStatuses}
-                            handleFilterClick={handleFilterClick}
-                            handleFilterClose={handleFilterClose}
-                            anchorEl={anchorEl.status}
-                        />
+                        {anchorEl.status instanceof Element && (
+                            <JobFilters
+                                filterType="status"
+                                currentValue={filters.status}
+                                options={uniqueStatuses}
+                                handleFilterClick={handleFilterClick}
+                                handleFilterClose={handleFilterClose}
+                                anchorEl={anchorEl.status}
+                            />
+                        )}
                     </Box>
                 </TableCell>
             </TableRow>

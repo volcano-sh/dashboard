@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import { translations } from "../../../config/translations";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
@@ -264,7 +265,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     alignItems: "center",
                 }}
             >
-                Edit Queue
+                {translations.zh.editQueue || "编辑队列"}
                 <ToggleButtonGroup
                     value={editMode}
                     exclusive
@@ -304,7 +305,7 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     variant="contained"
                     disabled={saving}
                 >
-                    Cancel
+                    {translations.zh.cancel}
                 </Button>
                 <Button
                     onClick={handleSave}
@@ -313,7 +314,9 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
                     disabled={saving}
                     startIcon={saving && <CircularProgress size={18} />}
                 >
-                    {saving ? "Updating…" : "Update"}
+                    {saving
+                        ? translations.zh.updating || "更新中..."
+                        : translations.zh.update || "更新"}
                 </Button>
             </DialogActions>
         </Dialog>

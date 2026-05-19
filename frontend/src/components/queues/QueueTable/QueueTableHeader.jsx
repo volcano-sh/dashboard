@@ -18,6 +18,7 @@ import {
     FilterList,
     UnfoldMore,
 } from "@mui/icons-material";
+import { translations } from "../../../config/translations";
 
 const QueueTableHeader = ({
     allocatedFields,
@@ -31,6 +32,12 @@ const QueueTableHeader = ({
     setAnchorEl,
 }) => {
     const theme = useTheme();
+
+    const allocatedFieldLabelMap = {
+        cpu: "已分配 CPU",
+        memory: "已分配 内存",
+        pods: "已分配 Pod",
+    };
 
     return (
         <TableHead>
@@ -53,7 +60,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Name
+                        {translations.zh.name}
                     </Typography>
                 </TableCell>
 
@@ -83,7 +90,7 @@ const QueueTableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {`Allocated ${field}`}
+                                {allocatedFieldLabelMap[field] || `Allocated ${field}`}
                             </Typography>
                             <IconButton
                                 size="small"
@@ -135,7 +142,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Creation Time
+                        {translations.zh.creationTime}
                     </Typography>
                     <Button
                         size="small"
@@ -176,7 +183,7 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Sort
+                        {translations.zh.sort}
                     </Button>
                 </TableCell>
                 <TableCell
@@ -197,7 +204,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        State
+                        {translations.zh.status}
                     </Typography>
                     <Button
                         size="small"
@@ -228,7 +235,9 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        Filter: {filters.status}
+                        {filters.status === "All"
+                            ? translations.zh.filterAll
+                            : `筛选: ${translations.zh[filters.status.toLowerCase()] || filters.status}`}
                     </Button>
                     <Menu
                         anchorEl={anchorEl.status}
@@ -252,45 +261,51 @@ const QueueTableHeader = ({
                             },
                         }}
                     >
-                        {uniqueStates.map((status) => (
-                            <MenuItem
-                                key={status}
-                                onClick={() =>
-                                    handleFilterClose("status", status)
-                                }
-                                sx={{
-                                    fontSize: "0.875rem",
-                                    minHeight: "40px",
-                                    transition: "all 0.2s ease",
-                                    "&:hover": {
-                                        backgroundColor: alpha(
-                                            theme.palette.primary.main,
-                                            0.08,
-                                        ),
-                                        paddingLeft: "24px",
-                                    },
-                                    ...(filters.status === status && {
-                                        backgroundColor: alpha(
-                                            theme.palette.primary.main,
-                                            0.12,
-                                        ),
-                                        fontWeight: 600,
-                                        "&::before": {
-                                            content: '""',
-                                            position: "absolute",
-                                            left: "0",
-                                            top: "0",
-                                            bottom: "0",
-                                            width: "3px",
-                                            backgroundColor:
+                        {uniqueStates.map((status) => {
+                            const displayStatus =
+                                status === "All"
+                                    ? translations.zh.all
+                                    : translations.zh[status.toLowerCase()] || status;
+                            return (
+                                <MenuItem
+                                    key={status}
+                                    onClick={() =>
+                                        handleFilterClose("status", status)
+                                    }
+                                    sx={{
+                                        fontSize: "0.875rem",
+                                        minHeight: "40px",
+                                        transition: "all 0.2s ease",
+                                        "&:hover": {
+                                            backgroundColor: alpha(
                                                 theme.palette.primary.main,
+                                                0.08,
+                                            ),
+                                            paddingLeft: "24px",
                                         },
-                                    }),
-                                }}
-                            >
-                                {status}
-                            </MenuItem>
-                        ))}
+                                        ...(filters.status === status && {
+                                            backgroundColor: alpha(
+                                                theme.palette.primary.main,
+                                                0.12,
+                                            ),
+                                            fontWeight: 600,
+                                            "&::before": {
+                                                content: '""',
+                                                position: "absolute",
+                                                left: "0",
+                                                top: "0",
+                                                bottom: "0",
+                                                width: "3px",
+                                                backgroundColor:
+                                                    theme.palette.primary.main,
+                                            },
+                                        }),
+                                    }}
+                                >
+                                    {displayStatus}
+                                </MenuItem>
+                            );
+                        })}
                     </Menu>
                 </TableCell>
                 {/* Added 'Action' column */}
@@ -312,7 +327,7 @@ const QueueTableHeader = ({
                         color="text.primary"
                         sx={{ letterSpacing: "0.02em" }}
                     >
-                        Actions
+                        {translations.zh.actions}
                     </Typography>
                 </TableCell>
             </TableRow>

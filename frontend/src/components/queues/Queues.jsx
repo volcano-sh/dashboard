@@ -7,6 +7,7 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import { translations } from "../../config/translations";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -24,6 +25,16 @@ const Queues = () => {
         field: null,
         direction: "asc",
     });
+
+    const getQueuesErrorMessage = (code) =>
+        translations.zh.fetchError
+            .replace("{resource}", translations.zh.queues)
+            .replace("{code}", code);
+
+    const getQueuesApiErrorMessage = (code) =>
+        translations.zh.apiError
+            .replace("{resource}", translations.zh.queues)
+            .replace("{code}", code);
 
     // 🟢 1. Fetch all queues
     const fetchQueues = useCallback(async () => {
@@ -47,7 +58,8 @@ const Queues = () => {
             setQueues(data.items || []);
             setTotalQueues(data.totalCount || 0);
         } catch (err) {
-            setError("Failed to fetch queues: " + err.message);
+            const errorCode = err.response?.status || err.message || "Unknown";
+            setError(getQueuesErrorMessage(errorCode));
             setQueues([]);
         } finally {
             setLoading(false);
@@ -121,8 +133,9 @@ const Queues = () => {
             setSelectedQueueYaml(formattedYaml);
             setOpenDialog(true);
         } catch (err) {
-            console.error("Failed to fetch queue YAML:", err);
-            setError("Failed to fetch queue YAML: " + err.message);
+            console.error(translations.zh.errorFetch, err);
+            const errorCode = err.response?.status || err.message || "Unknown";
+            setError(getQueuesApiErrorMessage(errorCode));
         } finally {
             setLoading(false);
         }
@@ -233,7 +246,7 @@ const Queues = () => {
                     <Typography variant="body1">{error}</Typography>
                 </Box>
             )}
-            <TitleComponent text="Volcano Queues Status" />
+            <TitleComponent text={translations.zh.volcanoQueuesStatus} />
             <Box>
                 <SearchBar
                     searchText={searchText}
@@ -242,12 +255,12 @@ const Queues = () => {
                     handleRefresh={handleRefresh}
                     fetchData={fetchQueues}
                     isRefreshing={loading}
-                    placeholder="Search queues..."
-                    refreshLabel="Refresh Queues"
-                    createlabel="Create Queue"
+                    placeholder={translations.zh.searchQueues}
+                    refreshLabel={translations.zh.refreshListings}
+                    createlabel={translations.zh.createQueue}
                     onCreateClick={handleCreateQueue}
                     dialogTitle="Create a Queue"
-                    dialogResourceNameLabel="Queue Name"
+                    dialogResourceNameLabel={translations.zh.queueName}
                     dialogResourceType="Queue"
                 />
             </Box>

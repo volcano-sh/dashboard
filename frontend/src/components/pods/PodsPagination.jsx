@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, MenuItem, Pagination, Select, Typography } from "@mui/material";
+import { translations } from "../../config/translations";
 
 const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
     const handleChangePage = (event, newPage) => {
@@ -24,9 +25,9 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
                 onChange={handleChangeRowsPerPage}
                 size="small"
             >
-                <MenuItem value={5}>5 per page</MenuItem>
-                <MenuItem value={10}>10 per page</MenuItem>
-                <MenuItem value={20}>20 per page</MenuItem>
+                <MenuItem value={5}>5 {translations.zh.perPage}</MenuItem>
+                <MenuItem value={10}>10 {translations.zh.perPage}</MenuItem>
+                <MenuItem value={20}>20 {translations.zh.perPage}</MenuItem>
             </Select>
             <Box
                 sx={{
@@ -38,7 +39,7 @@ const PodsPagination = ({ totalPods, pagination, onPaginationChange }) => {
                 }}
             >
                 <Typography variant="body2" sx={{ mr: 2 }}>
-                    Total Pods: {totalPods}
+                    {translations.zh.totalPods}: {totalPods}
                 </Typography>
                 <Pagination
                     count={Math.ceil(totalPods / pagination.rowsPerPage)}

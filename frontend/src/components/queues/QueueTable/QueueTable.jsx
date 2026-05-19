@@ -12,6 +12,7 @@ import {
 import QueueTableHeader from "./QueueTableHeader";
 import QueueTableRow from "./QueueTableRow";
 import QueueTableDeleteDialog from "./QueueTableDeleteDialog";
+import { translations } from "../../../config/translations";
 
 const QueueTable = ({
     sortedQueues,
@@ -171,10 +172,10 @@ const QueueTable = ({
                         {queues.length === 0 ? (
                             <TableRow>
                                 <TableCell
-                                    colSpan={allocatedFields.length + 2}
+                                    colSpan={allocatedFields.length + 4}
                                     align="center"
                                 >
-                                    No queues found.
+                                    {translations.zh.noQueuesFound}
                                 </TableCell>
                             </TableRow>
                         ) : (

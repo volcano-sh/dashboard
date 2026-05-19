@@ -4,11 +4,14 @@ import {
     Table,
     TableBody,
     Paper,
+    TableRow,
+    TableCell,
     useTheme,
     alpha,
 } from "@mui/material";
 import TableHeader from "./TableHeader";
 import PodRow from "./PodRow";
+import { translations } from "../../../config/translations";
 
 const PodsTable = ({
     pods,
@@ -18,24 +21,11 @@ const PodsTable = ({
     onSortDirectionToggle,
     onFilterChange,
     onPodClick,
+    anchorEl,
+    handleFilterClick,
+    handleFilterClose,
 }) => {
     const theme = useTheme();
-    const [anchorEl, setAnchorEl] = React.useState({
-        status: null,
-        namespace: null,
-    });
-
-    const handleFilterClick = React.useCallback((filterType, event) => {
-        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
-    }, []);
-
-    const handleFilterClose = React.useCallback(
-        (filterType, value) => {
-            onFilterChange(filterType, value);
-            setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
-        },
-        [onFilterChange],
-    );
 
     const filteredPods = React.useMemo(
         () =>
@@ -120,14 +110,22 @@ const PodsTable = ({
                     sortDirection={sortDirection}
                 />
                 <TableBody>
-                    {sortedPods.map((pod) => (
-                        <PodRow
-                            key={`${pod.metadata.namespace}-${pod.metadata.name}`}
-                            pod={pod}
-                            getStatusColor={getStatusColor}
-                            onPodClick={onPodClick}
-                        />
-                    ))}
+                    {sortedPods.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={5} align="center">
+                                {translations.zh.noPods}
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        sortedPods.map((pod) => (
+                            <PodRow
+                                key={`${pod.metadata.namespace}-${pod.metadata.name}`}
+                                pod={pod}
+                                getStatusColor={getStatusColor}
+                                onPodClick={onPodClick}
+                            />
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>

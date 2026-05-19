@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Box, FormControl, MenuItem, Select, Typography } from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import "./chartConfig";
+import { translations } from "../../config/translations";
 
 const convertMemoryToGi = (memoryStr) => {
     if (!memoryStr) return 0;
@@ -53,6 +54,66 @@ const processData = (data) => {
     }, {});
 };
 
+const getResourceDisplayLabel = (resource) => {
+    switch (resource) {
+        case "cpu":
+            return "CPU 资源";
+        case "memory":
+            return "内存资源";
+        case "pods":
+            return "Pod 资源";
+        case "nvidia.com/gpu":
+            return "GPU 资源";
+        default:
+            return `${resource.charAt(0).toUpperCase() + resource.slice(1)} 资源`;
+    }
+};
+
+const getAllocatedLabel = (resource) => {
+    switch (resource) {
+        case "cpu":
+            return "已分配 CPU";
+        case "memory":
+            return "已分配 内存";
+        case "pods":
+            return "已分配 Pod";
+        case "nvidia.com/gpu":
+            return "已分配 GPU";
+        default:
+            return `已分配 ${resource}`;
+    }
+};
+
+const getCapacityLabel = (resource) => {
+    switch (resource) {
+        case "cpu":
+            return "CPU 总额";
+        case "memory":
+            return "内存 总额";
+        case "pods":
+            return "Pod 总额";
+        case "nvidia.com/gpu":
+            return "GPU 总额";
+        default:
+            return `${resource} 总额`;
+    }
+};
+
+const getYAxisLabel = (resource) => {
+    switch (resource) {
+        case "memory":
+            return "内存 (Gi)";
+        case "cpu":
+            return "CPU 核心数";
+        case "pods":
+            return "Pod 数量";
+        case "nvidia.com/gpu":
+            return "GPU 数量";
+        default:
+            return "数量";
+    }
+};
+
 const QueueResourcesBarChart = ({ data }) => {
     const [selectedResource, setSelectedResource] = useState("");
 
@@ -73,7 +134,7 @@ const QueueResourcesBarChart = ({ data }) => {
         // Convert resource type from Set to Array
         return Array.from(resourceTypes).map((resource) => ({
             value: resource,
-            label: `${resource.charAt(0).toUpperCase() + resource.slice(1)} Resources`,
+            label: getResourceDisplayLabel(resource),
         }));
     }, [data]);
 
@@ -92,7 +153,7 @@ const QueueResourcesBarChart = ({ data }) => {
         labels: Object.keys(processedData),
         datasets: [
             {
-                label: `${selectedResource.toUpperCase()} Allocated`,
+                label: getAllocatedLabel(selectedResource),
                 data: Object.values(processedData).map(
                     (q) => q.allocated[selectedResource] || 0,
                 ),
@@ -101,7 +162,7 @@ const QueueResourcesBarChart = ({ data }) => {
                 borderWidth: 1,
             },
             {
-                label: `${selectedResource.toUpperCase()} Capacity`,
+                label: getCapacityLabel(selectedResource),
                 data: Object.values(processedData).map(
                     (q) => q.capability[selectedResource] || 0,
                 ),
@@ -110,22 +171,6 @@ const QueueResourcesBarChart = ({ data }) => {
                 borderWidth: 1,
             },
         ],
-    };
-
-    // Get Y-axis label
-    const getYAxisLabel = () => {
-        switch (selectedResource) {
-            case "memory":
-                return "Memory (Gi)";
-            case "cpu":
-                return "CPU Cores";
-            case "pods":
-                return "Pod Count";
-            case "nvidia.com/gpu":
-                return "GPU Count";
-            default:
-                return "Amount";
-        }
     };
 
     const options = {
@@ -145,7 +190,7 @@ const QueueResourcesBarChart = ({ data }) => {
                 beginAtZero: true,
                 title: {
                     display: true,
-                    text: getYAxisLabel(),
+                    text: getYAxisLabel(selectedResource),
                 },
             },
         },
@@ -175,7 +220,7 @@ const QueueResourcesBarChart = ({ data }) => {
                     mb: 2,
                 }}
             >
-                <Typography variant="h6">Queue Resources</Typography>
+                <Typography variant="h6">{translations.zh.queueResources}</Typography>
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                     <Select
                         value={selectedResource}
@@ -203,7 +248,7 @@ const QueueResourcesBarChart = ({ data }) => {
                         color="text.secondary"
                         sx={{ mt: 4 }}
                     >
-                        No data available for selected resource type
+                        {translations.zh.noData}
                     </Typography>
                 )}
             </Box>

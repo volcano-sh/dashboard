@@ -10,6 +10,7 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import JobStatusChip from "../JobStatusChip";
 import JobEditDialog from "./JobEditDialog";
+import { translations } from "../../../config/translations";
 
 const JobTableRow = ({
     job,
@@ -19,6 +20,8 @@ const JobTableRow = ({
 }) => {
     const theme = useTheme();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+    const rawStatus = job.status?.state?.phase || job.status?.phase;
 
     const handleOpenEditDialog = (e) => {
         e.stopPropagation();
@@ -87,7 +90,7 @@ const JobTableRow = ({
                         fontSize: "0.95rem",
                     }}
                 >
-                    {job.spec.queue || "N/A"}
+                    {job.spec?.queue || "N/A"}
                 </TableCell>
 
                 <TableCell
@@ -97,36 +100,38 @@ const JobTableRow = ({
                         color: alpha(theme.palette.text.primary, 0.85),
                     }}
                 >
-                    {new Date(job.metadata.creationTimestamp).toLocaleString()}
+                    {new Date(job.metadata.creationTimestamp).toLocaleString("zh-CN")}
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>
-                    <Box
-                        sx={{
-                            display: "inline-block",
-                            transition: "all 0.3s ease",
-                            "&:hover": {
-                                transform: "translateY(-2px)",
-                                filter: "brightness(1.05)",
-                            },
-                            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
-                            borderRadius: "15px",
-                        }}
-                    >
-                        <JobStatusChip
-                            status={
-                                job.status ? job.status.state.phase : "Unknown"
-                            }
+                    {rawStatus ? (
+                        <Box
                             sx={{
-                                height: "30px",
-                                fontWeight: 600,
-                                fontSize: "0.8rem",
-                                padding: "0 12px",
-                                color: "common.white",
+                                display: "inline-block",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    filter: "brightness(1.05)",
+                                },
+                                boxShadow: "0 3px 6px rgba(0, 0, 0, 0.15)",
                                 borderRadius: "15px",
                             }}
-                        />
-                    </Box>
+                        >
+                            <JobStatusChip
+                                status={rawStatus}
+                                sx={{
+                                    height: "30px",
+                                    fontWeight: 600,
+                                    fontSize: "0.8rem",
+                                    padding: "0 12px",
+                                    color: "common.white",
+                                    borderRadius: "15px",
+                                }}
+                            />
+                        </Box>
+                    ) : (
+                        translations.zh.unknown
+                    )}
                 </TableCell>
 
                 <TableCell sx={{ padding: "16px 24px" }}>

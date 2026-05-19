@@ -22,6 +22,8 @@ import CategoryIcon from "@mui/icons-material/Category";
 
 // use relative path to load Logo
 import volcanoLogo from "../assets/volcano-icon-color.svg";
+// Import translations configuration
+import { translations } from "../config/translations";
 
 const Layout = () => {
     // Hooks must be used inside component functions
@@ -38,11 +40,11 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/dashboard" },
-        { text: "Jobs", icon: <AssignmentIcon />, path: "/jobs" },
-        { text: "Queues", icon: <CloudIcon />, path: "/queues" },
-        { text: "Pods", icon: <WorkspacesIcon />, path: "/pods" },
-        { text: "PodGroups", icon: <CategoryIcon />, path: "/podgroups" },
+        { text: translations.zh.dashboard, icon: <HomeIcon />, path: "/dashboard" },
+        { text: translations.zh.jobs, icon: <AssignmentIcon />, path: "/jobs" },
+        { text: translations.zh.queues, icon: <CloudIcon />, path: "/queues" },
+        { text: translations.zh.pods, icon: <WorkspacesIcon />, path: "/pods" },
+        { text: translations.zh.podGroups, icon: <CategoryIcon />, path: "/podgroups" },
     ];
 
     return (
@@ -73,7 +75,7 @@ const Layout = () => {
                             fontWeight: 500,
                         }}
                     >
-                        Volcano Dashboard
+                        {translations.zh.volcanoDashboard}
                     </Typography>
                 </Toolbar>
             </AppBar>

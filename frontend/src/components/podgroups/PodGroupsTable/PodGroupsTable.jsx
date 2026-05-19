@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import PodGroupsTableHeader from "./PodGroupsTableHeader";
 import PodGroupsTableRow from "./PodGroupsTableRow";
+import { translations } from "../../../config/translations";
 
 const PodGroupsTable = ({
     podGroups,
@@ -76,7 +77,7 @@ const PodGroupsTable = ({
                         {podGroups.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} align="center">
-                                    No podgroups found.
+                                    {translations.zh.noPodGroupsFound}
                                 </TableCell>
                             </TableRow>
                         ) : (

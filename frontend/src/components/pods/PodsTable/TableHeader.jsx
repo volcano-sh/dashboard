@@ -14,7 +14,8 @@ import {
     FilterList,
     UnfoldMore,
 } from "@mui/icons-material";
-import FilterMenu from "./FilterMenu";
+import JobFilters from "../../jobs/JobTable/JobFilters";
+import { translations } from "../../../config/translations";
 
 const TableHeader = ({
     filters,
@@ -27,13 +28,30 @@ const TableHeader = ({
 }) => {
     const theme = useTheme();
 
+    const getFilterLabel = (value) => {
+        if (value === null || value === undefined) return "";
+        if (value === "All") return `${translations.zh.filter}: ${translations.zh.all}`;
+        if (value === "default") return `${translations.zh.filter}: ${translations.zh.default}`;
+        if (typeof value === "string") {
+            const key = value.toLowerCase();
+            return `${translations.zh.filter}: ${translations.zh[key] || value}`;
+        }
+        return `${translations.zh.filter}: ${String(value)}`;
+    };
+
     return (
         <TableHead>
             <TableRow>
-                {["Name", "Namespace", "Creation Time", "Status", "Age"].map(
+                {[
+                    { key: "name", label: translations.zh.name },
+                    { key: "namespace", label: translations.zh.namespace },
+                    { key: "creationTime", label: translations.zh.creationTime },
+                    { key: "status", label: translations.zh.status },
+                    { key: "age", label: translations.zh.age }
+                ].map(
                     (header) => (
                         <TableCell
-                            key={header}
+                            key={header.key}
                             sx={{
                                 backgroundColor: alpha(
                                     theme.palette.background.paper,
@@ -54,16 +72,16 @@ const TableHeader = ({
                                 color="text.primary"
                                 sx={{ letterSpacing: "0.02em" }}
                             >
-                                {header}
+                                {header.label}
                             </Typography>
-                            {(header === "Namespace" ||
-                                header === "Status") && (
+                            {(header.key === "namespace" ||
+                                header.key === "status") && (
                                 <Button
                                     size="small"
                                     startIcon={<FilterList fontSize="small" />}
                                     onClick={(e) =>
                                         handleFilterClick(
-                                            header.toLowerCase(),
+                                            header.key,
                                             e,
                                         )
                                     }
@@ -79,7 +97,7 @@ const TableHeader = ({
                                         transition:
                                             "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                         backgroundColor:
-                                            filters[header.toLowerCase()] !==
+                                            filters[header.key] !==
                                             "All"
                                                 ? alpha(
                                                       theme.palette.primary
@@ -105,10 +123,10 @@ const TableHeader = ({
                                         },
                                     }}
                                 >
-                                    Filter: {filters[header.toLowerCase()]}
+                                    {getFilterLabel(filters[header.key])}
                                 </Button>
                             )}
-                            {header === "Creation Time" && (
+                            {header.key === "creationTime" && (
                                 <Button
                                     size="small"
                                     onClick={onSortDirectionToggle}
@@ -150,24 +168,28 @@ const TableHeader = ({
                                         },
                                     }}
                                 >
-                                    Sort
+                                    {translations.zh.sort}
                                 </Button>
                             )}
                         </TableCell>
                     ),
                 )}
             </TableRow>
-            <FilterMenu
-                anchorEl={anchorEl.namespace}
-                handleClose={handleFilterClose}
-                items={allNamespaces}
+            <JobFilters
                 filterType="namespace"
+                currentValue={filters.namespace}
+                options={allNamespaces}
+                handleFilterClick={handleFilterClick}
+                handleFilterClose={handleFilterClose}
+                anchorEl={anchorEl.namespace}
             />
-            <FilterMenu
-                anchorEl={anchorEl.status}
-                handleClose={handleFilterClose}
-                items={["All", "Running", "Pending", "Succeeded", "Failed"]}
+            <JobFilters
                 filterType="status"
+                currentValue={filters.status}
+                options={["All", "Running", "Pending", "Succeeded", "Failed"]}
+                handleFilterClick={handleFilterClick}
+                handleFilterClose={handleFilterClose}
+                anchorEl={anchorEl.status}
             />
         </TableHead>
     );

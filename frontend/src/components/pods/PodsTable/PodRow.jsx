@@ -5,6 +5,17 @@ import { calculateAge } from "../../utils";
 const PodRow = ({ pod, getStatusColor, onPodClick }) => {
     const theme = useTheme();
 
+    const statusMap = {
+        Running: "运行中",
+        Pending: "等待中",
+        Succeeded: "成功",
+        Failed: "失败",
+        Unknown: "未知",
+    };
+
+    const rawStatus = pod.status?.phase || "Unknown";
+    const ageLabel = calculateAge(pod.metadata.creationTimestamp).replace("d", "天");
+
     return (
         <TableRow
             hover
@@ -57,14 +68,14 @@ const PodRow = ({ pod, getStatusColor, onPodClick }) => {
                     color: alpha(theme.palette.text.primary, 0.85),
                 }}
             >
-                {new Date(pod.metadata.creationTimestamp).toLocaleString()}
+                {new Date(pod.metadata.creationTimestamp).toLocaleString("zh-CN")}
             </TableCell>
 
             <TableCell sx={{ padding: "16px 24px" }}>
                 <Chip
-                    label={pod.status?.phase || "Unknown"}
+                    label={statusMap[rawStatus] || rawStatus}
                     sx={{
-                        bgcolor: getStatusColor(pod.status?.phase || "Unknown"),
+                        bgcolor: getStatusColor(rawStatus),
                         color: "common.white",
                         height: "30px",
                         fontWeight: 600,

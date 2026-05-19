@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
+import { translations } from "../../config/translations";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
@@ -9,7 +10,7 @@ const JobStatusPieChart = ({ data }) => {
     if (!data || !Array.isArray(data)) {
         return (
             <Box sx={{ height: 300, width: "100%", position: "relative" }}>
-                <Typography>No data available</Typography>
+                <Typography>{translations.zh.noData}</Typography>
             </Box>
         );
     }
@@ -43,11 +44,21 @@ const JobStatusPieChart = ({ data }) => {
         Failed: "#f44336",
     };
 
+    const statusLabels = [
+        translations.zh.completed,
+        translations.zh.running,
+        translations.zh.failed,
+    ];
+
     const chartData = {
-        labels: Object.keys(statusCounts),
+        labels: statusLabels,
         datasets: [
             {
-                data: Object.values(statusCounts),
+                data: [
+                    statusCounts.Completed,
+                    statusCounts.Running,
+                    statusCounts.Failed,
+                ],
                 backgroundColor: Object.values(colors),
                 borderColor: "white",
                 borderWidth: 2,
@@ -80,7 +91,7 @@ const JobStatusPieChart = ({ data }) => {
             }}
         >
             <Typography variant="h6" align="center" sx={{ mb: 1 }}>
-                Jobs Status
+                {translations.zh.jobsStatus}
             </Typography>
 
             <Box
@@ -137,39 +148,44 @@ const JobStatusPieChart = ({ data }) => {
                         textAlign: "left",
                     }}
                 >
-                    {Object.entries(statusCounts).map(([status, count]) => (
-                        <Box
-                            key={status}
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                mb: 1.5,
-                            }}
-                        >
+                    {Object.entries(statusCounts).map(([status, count]) => {
+                        const labelKey = status.toLowerCase();
+                        const label = translations.zh[labelKey] || status;
+
+                        return (
                             <Box
+                                key={status}
                                 sx={{
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: "50%",
-                                    backgroundColor: colors[status],
-                                    mr: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    mb: 1.5,
                                 }}
-                            />
-                            <Typography
-                                variant="body2"
-                                sx={{ mr: 2, minWidth: 70 }}
                             >
-                                {status}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {count} (
-                                {total > 0
-                                    ? ((count / total) * 100).toFixed(1)
-                                    : 0}
-                                %)
-                            </Typography>
-                        </Box>
-                    ))}
+                                <Box
+                                    sx={{
+                                        width: 12,
+                                        height: 12,
+                                        borderRadius: "50%",
+                                        backgroundColor: colors[status],
+                                        mr: 1,
+                                    }}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    sx={{ mr: 2, minWidth: 70 }}
+                                >
+                                    {label}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {count} (
+                                    {total > 0
+                                        ? ((count / total) * 100).toFixed(1)
+                                        : 0}
+                                    %)
+                                </Typography>
+                            </Box>
+                        );
+                    })}
                 </Box>
             </Box>
         </Box>

@@ -12,6 +12,7 @@ import {
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
+import { translations } from "../../../config/translations";
 
 const JobTable = ({
     jobs,
@@ -29,6 +30,33 @@ const JobTable = ({
     reloadJobs, // (optional) for refetching after delete
 }) => {
     const theme = useTheme();
+
+    const columns = [
+        {
+            title: translations.zh.name,
+            dataIndex: ["metadata", "name"],
+        },
+        {
+            title: translations.zh.namespace,
+            dataIndex: ["metadata", "namespace"],
+        },
+        {
+            title: translations.zh.queue,
+            dataIndex: ["spec", "queue"],
+        },
+        {
+            title: translations.zh.creationTime,
+            dataIndex: ["metadata", "creationTimestamp"],
+        },
+        {
+            title: translations.zh.status,
+            render: (job) => job.status?.state?.phase || job.status?.phase || translations.zh.unknown,
+        },
+        {
+            title: translations.zh.actions,
+            dataIndex: "actions",
+        },
+    ];
 
     // State for delete dialog
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -159,8 +187,8 @@ const JobTable = ({
                     <TableBody>
                         {jobs.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} align="center">
-                                    No jobs found.
+                                <TableCell colSpan={6} align="center">
+                                    {translations.zh.noJobsFound}
                                 </TableCell>
                             </TableRow>
                         ) : (
