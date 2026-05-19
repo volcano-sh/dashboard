@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
+import apiClient, { API_ENDPOINTS } from "../../../config/api";
 
 const RenderFields = ({ data, onChange, path = [] }) =>
     Object.entries(data || {}).map(([key, value]) => {
@@ -91,7 +92,6 @@ const RenderFields = ({ data, onChange, path = [] }) =>
             );
         }
 
-        // Render checkbox for booleans
         if (typeof value === "boolean") {
             return (
                 <FormControlLabel
@@ -110,7 +110,6 @@ const RenderFields = ({ data, onChange, path = [] }) =>
             );
         }
 
-        // For other primitives, convert strings "true"/"false" to boolean, numbers too
         return (
             <TextField
                 key={currentPath.join(".")}
@@ -148,11 +147,9 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
     const [formState, setFormState] = useState({});
     const [saving, setSaving] = useState(false);
 
-    // Refs to avoid infinite loops when syncing form & YAML
     const skipYamlUpdate = useRef(false);
     const skipFormUpdate = useRef(false);
 
-    // Load initial data on open
     useEffect(() => {
         if (open && queue) {
             const dumpedYaml = yaml.dump(queue);
@@ -162,7 +159,6 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
         }
     }, [open, queue]);
 
-    // Sync YAML editor -> formState (parse YAML)
     useEffect(() => {
         if (skipYamlUpdate.current) {
             skipYamlUpdate.current = false;
@@ -177,7 +173,6 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
         }
     }, [editorValue]);
 
-    // Sync formState -> YAML editor (stringify)
     useEffect(() => {
         if (skipFormUpdate.current) {
             skipFormUpdate.current = false;
@@ -216,29 +211,18 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
 
             setSaving(true);
 
-            const resp = await fetch(`/api/queues/${updated.metadata.name}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ spec: updated.spec }),
-            });
+            const response = await apiClient.put(
+                API_ENDPOINTS.queues.detail(updated.metadata.name),
+                { spec: updated.spec },
+            );
 
-            if (!resp.ok) {
-                const contentType = resp.headers.get("content-type");
-                const errText = contentType?.includes("application/json")
-                    ? (await resp.json()).details || "Unknown error"
-                    : await resp.text();
-                throw new Error(errText);
-            }
+            const responseData = response.data;
 
-            const responseData = await resp.json();
-
-            // Update local state with the response data from server
             const fullUpdatedQueue = {
                 ...updated,
                 spec: responseData.spec || updated.spec,
             };
 
-            // Prevent infinite loops while syncing
             skipFormUpdate.current = true;
             setFormState(fullUpdatedQueue);
             skipYamlUpdate.current = true;
@@ -251,7 +235,14 @@ const EditQueueDialog = ({ open, queue, onClose, onSave }) => {
             onClose();
         } catch (err) {
             console.error("Save failed:", err);
-            alert(err.message || "Failed to save");
+            const errMsg =
+                err.response?.data?.details ||
+                err.response?.data?.message ||
+                err.message ||
+                "Failed to save";
+            alert(errMsg);
+        } finally {
+            setSaving(false);
         }
     };
 

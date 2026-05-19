@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import axios from "axios";
+import apiClient, { API_ENDPOINTS } from "../../config/api";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
@@ -42,7 +42,7 @@ const Jobs = () => {
         setError(null);
 
         try {
-            const response = await axios.get(`/api/jobs`, {
+            const response = await apiClient.get(API_ENDPOINTS.jobs.list, {
                 params: {
                     search: searchText,
                     namespace: filters.namespace,
@@ -51,13 +51,8 @@ const Jobs = () => {
                 },
             });
 
-            if (response.status !== 200) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = response.data;
-            setCachedJobs(data.items || []);
-            setTotalJobs(data.totalCount || 0);
+            setCachedJobs(response.data.items || []);
+            setTotalJobs(response.data.totalCount || 0);
         } catch (err) {
             setError("Failed to fetch jobs: " + err.message);
             setCachedJobs([]);
@@ -86,17 +81,19 @@ const Jobs = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchJobs();
+        // removed fetchJobs() — useEffect handles re-fetch automatically
     };
 
     const handleJobClick = useCallback(async (job) => {
         try {
             setLoading(true);
-            const response = await axios.get(
-                `/api/job/${job.metadata.namespace}/${job.metadata.name}/yaml`,
+            const response = await apiClient.get(
+                API_ENDPOINTS.jobs.yaml(
+                    job.metadata.namespace,
+                    job.metadata.name,
+                ),
                 { responseType: "text" },
             );
-
             const formattedYaml = response.data
                 .split("\n")
                 .map((line) => {
@@ -143,27 +140,11 @@ const Jobs = () => {
 
     const handleCreateJob = async (newJob) => {
         try {
-            const response = await fetch("/api/jobs", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newJob),
-            });
-
-            if (!response.ok) {
-                let errorMsg = "Unknown error";
-                try {
-                    const errData = await response.json();
-                    errorMsg = errData.error || response.statusText;
-                } catch {
-                    // ignore error
-                }
-                alert("Error creating job: " + errorMsg);
-                return;
-            }
-
+            await apiClient.post(API_ENDPOINTS.jobs.list, newJob);
             alert("Job created successfully!");
         } catch (err) {
-            alert("Network error: " + err.message);
+            const errorMsg = err.response?.data?.error || err.message;
+            alert("Error creating job: " + errorMsg);
         }
     };
 
@@ -221,7 +202,7 @@ const Jobs = () => {
                     handleClearSearch={handleClearSearch}
                     handleRefresh={fetchJobs}
                     fetchData={fetchJobs}
-                    isRefreshing={false} // Update if needed
+                    isRefreshing={false}
                     placeholder="Search jobs..."
                     refreshLabel="Refresh Job Listings"
                     createlabel="Create Job"

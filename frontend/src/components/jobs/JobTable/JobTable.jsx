@@ -12,6 +12,7 @@ import {
 import JobTableHeader from "./JobTableHeader";
 import JobTableRow from "./JobTableRow";
 import JobTableDeleteDialog from "./JobTableDeleteDialog"; // Be sure to have this component
+import apiClient, { API_ENDPOINTS } from "../../../config/api";
 
 const JobTable = ({
     jobs,
@@ -56,54 +57,23 @@ const JobTable = ({
         setIsDeleting(true);
         try {
             const { namespace, name } = jobToDelete.metadata;
-            const response = await fetch(
-                `/api/jobs/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                    },
-                },
+            await apiClient.delete(
+                API_ENDPOINTS.jobs.detail(
+                    encodeURIComponent(namespace),
+                    encodeURIComponent(name),
+                ),
             );
 
-            // Try to parse the JSON error or success body
-            let data = {};
-            const contentType = response.headers.get("content-type");
-            const text = await response.text();
-            try {
-                if (
-                    contentType &&
-                    contentType.includes("application/json") &&
-                    text
-                ) {
-                    data = JSON.parse(text);
-                } else {
-                    data = { message: text };
-                }
-            } catch {
-                data = { message: text };
-            }
-
-            // If DELETE failed, show the message from K8s API (data.message or data.details)
-            if (!response.ok) {
-                // Prefer Kubernetes' error message or fallback to the raw response
-                const k8sMessage =
-                    data.message ||
-                    data.details ||
-                    text ||
-                    `Job "${namespace}/${name}" could not be deleted.`;
-
-                setDeleteError(k8sMessage);
-                return;
-            }
-
-            // On success, optionally reload jobs
             if (reloadJobs) reloadJobs();
-
             handleCloseDeleteDialog();
         } catch (error) {
-            setDeleteError(error.message || "An unexpected error occurred.");
+            const data = error.response?.data;
+            const k8sMessage =
+                data?.message ||
+                data?.details ||
+                error.message ||
+                `Job "${jobToDelete.metadata.namespace}/${jobToDelete.metadata.name}" could not be deleted.`;
+            setDeleteError(k8sMessage);
         } finally {
             setIsDeleting(false);
         }

@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import axios from "axios";
-import SearchBar from "../Searchbar";
+import apiClient, { API_ENDPOINTS } from "../../config/api";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import SearchBar from "../Searchbar";
 
 const Pods = () => {
     const [pods, setPods] = useState([]);
@@ -35,7 +35,7 @@ const Pods = () => {
         setError(null);
 
         try {
-            const response = await axios.get(`/api/pods`, {
+            const response = await apiClient.get(API_ENDPOINTS.pods.list, {
                 params: {
                     search: searchText,
                     namespace: filters.namespace,
@@ -88,11 +88,8 @@ const Pods = () => {
 
     const fetchData = async () => {
         try {
-            const response = await fetch("/api/pods");
-            if (response.ok) {
-                const data = await response.json();
-                setPods(data);
-            }
+            const response = await apiClient.get(API_ENDPOINTS.pods.list);
+            setPods(response.data);
         } catch (error) {
             console.error("Error fetching pods:", error);
         }
@@ -100,26 +97,9 @@ const Pods = () => {
 
     const handleCreatePod = async (newPod) => {
         try {
-            const response = await fetch("/api/pods", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newPod),
-            });
-
-            if (!response.ok) {
-                let errorMsg = "Unknown error";
-                try {
-                    const errData = await response.json();
-                    errorMsg = errData.error || response.statusText;
-                } catch {
-                    // ignore error
-                }
-                alert("Error creating pod: " + errorMsg);
-                return;
-            }
-
+            await apiClient.post(API_ENDPOINTS.pods.list, newPod);
             alert("Pod created successfully!");
-            await fetchData(); // Now fetchData is defined in the same scope
+            await fetchData();
         } catch (err) {
             alert("Network error: " + err.message);
         }
@@ -128,8 +108,8 @@ const Pods = () => {
     const handlePodClick = useCallback(async (pod) => {
         try {
             setLoading(true);
-            const response = await axios.get(
-                `/api/pod/${pod.metadata.namespace}/${pod.metadata.name}/yaml`,
+            const response = await apiClient.get(
+                `/pod/${pod.metadata.namespace}/${pod.metadata.name}/yaml`,
                 { responseType: "text" },
             );
 

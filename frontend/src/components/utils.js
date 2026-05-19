@@ -1,15 +1,11 @@
+import apiClient, { API_ENDPOINTS } from "../config/api";
+
 export const fetchAllNamespaces = async () => {
     try {
-        const response = await fetch(`/api/namespaces`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
+        const response = await apiClient.get(API_ENDPOINTS.namespaces.list);
         return [
             "All",
-            ...new Set(data.items.map((item) => item.metadata.name)),
+            ...new Set(response.data.items.map((item) => item.metadata.name)),
         ];
     } catch (error) {
         console.error("Error fetching namespaces:", error);
@@ -19,16 +15,10 @@ export const fetchAllNamespaces = async () => {
 
 export const fetchAllQueues = async () => {
     try {
-        const response = await fetch(`/api/all-queues`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
+        const response = await apiClient.get(API_ENDPOINTS.queues.all);
         return [
             "All",
-            ...new Set(data.items.map((item) => item.metadata.name)),
+            ...new Set(response.data.items.map((item) => item.metadata.name)),
         ];
     } catch (error) {
         console.error("Error fetching queues:", error);
@@ -69,5 +59,5 @@ export const parseMemoryToMi = (memoryStr) => {
     if (memoryStr.includes("Gi")) return value * 1024;
     if (memoryStr.includes("Mi")) return value;
     if (memoryStr.includes("Ki")) return value / 1024;
-    return value / 1024 / 1024; // default Bi
+    return value / 1024 / 1024;
 };

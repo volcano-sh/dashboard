@@ -1,29 +1,31 @@
-// Prioritize using the port in the environment variable, if not, use the default port 3001
-const getServerPort = () => {
-    return process.env.APP_SERVER_PORT || "3001";
-};
+import axios from 'axios'
 
-// Build API base URL
-const API_CONFIG = {
-    baseURL: `http://localhost:${getServerPort()}`,
-};
+const apiClient = axios.create({
+    baseURL: '/api'
+})
 
-//API endpoint configuration
 export const API_ENDPOINTS = {
     jobs: {
-        list: `${API_CONFIG.baseURL}/api/jobs`,
-        detail: (namespace, name) =>
-            `${API_CONFIG.baseURL}/jobs/${namespace}/${name}`,
+        list: '/jobs',
+        detail: (namespace, name) => `/jobs/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`,
+        yaml: (namespace, name) => `/job/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/yaml`,
     },
     queues: {
-        list: `${API_CONFIG.baseURL}/api/queues`,
+        list: '/queues',
+        all: '/all-queues',
+        detail: (name) => `/queues/${encodeURIComponent(name)}`,
     },
     pods: {
-        list: `${API_CONFIG.baseURL}/api/pods`,
+        list: '/pods',
+        yaml: (namespace, name) => `/pod/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/yaml`,
+
     },
     podgroups: {
-        list: `${API_CONFIG.baseURL}/api/podgroups`,
+        list: '/podgroups',
     },
-};
+    namespaces: {
+        list: '/namespaces',
+    },
+}
 
-export default API_CONFIG;
+export default apiClient
