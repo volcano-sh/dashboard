@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "tsx server.ts",
         "build": "next build && npm run build:server",
-        "build:server": "tsc -p tsconfig.server.json",
+        "build:server": "tsc -p tsconfig.server.json && node -e \"require('fs').writeFileSync('dist/server/package.json', '{\\\"type\\\":\\\"commonjs\\\"}\\n')\"",
         "build:image": "docker build -t volcano-dashboard:dev .",
         "routes:audit": "node scripts/audit-api-routes.ts",
         "start": "tsx server.ts",

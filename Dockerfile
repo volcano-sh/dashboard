@@ -9,6 +9,14 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
+# Install only production dependencies for the runtime image.
+FROM base AS prod-deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev && npm cache clean --force
+
 # Build the Next.js application
 FROM base AS builder
 WORKDIR /app
@@ -40,12 +48,11 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/app/api-reference/config/next-config-js/output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/server.ts ./server.ts
-COPY --from=builder --chown=nextjs:nodejs /app/lib/server ./lib/server
+COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/dist/server ./dist/server
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["./node_modules/.bin/tsx", "server.ts"]
+CMD ["node", "dist/server/server.js"]

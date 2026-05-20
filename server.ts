@@ -144,12 +144,15 @@ const logDashboardConfig = async () => {
     console.log(JSON.stringify(summarizeDashboardConfig(config), null, 2));
 };
 
-const dashboardConfig = await getDashboardConfig();
-const accessMode = dashboardConfig.access?.mode || AccessModes.READ_WRITE;
-const readOnlyAccessMode = accessMode === AccessModes.READ_ONLY;
+let nextUpgradeHandler;
+let readOnlyAccessMode = false;
+let websocketRoutes = [];
 
-const websocketRoutes = [
-    ...(readOnlyAccessMode
+const initializeServer = async () => {
+    const dashboardConfig = await getDashboardConfig();
+    const accessMode = dashboardConfig.access?.mode || AccessModes.READ_WRITE;
+    readOnlyAccessMode = accessMode === AccessModes.READ_ONLY;
+    websocketRoutes = readOnlyAccessMode
         ? []
         : [
               {
@@ -160,8 +163,19 @@ const websocketRoutes = [
                   kind: "pod-logs",
                   pattern: podLogsStreamPathPattern,
               },
-          ]),
-];
+          ];
+
+    await app.prepare();
+    await logDashboardConfig();
+
+    // Route all websocket upgrades through one dispatcher. Next's custom-server
+    // request handler normally auto-registers its own upgrade listener, but that
+    // would also receive terminal sockets after our handler and close them. Use the
+    // prepared internal upgrade handler for HMR instead of the public
+    // getUpgradeHandler(), which does not handle Next 16 dev HMR correctly here.
+    app.didWebSocketSetup = true;
+    nextUpgradeHandler = app.upgradeHandler;
+};
 
 const matchWebsocketRoute = (pathname) => {
     for (const route of websocketRoutes) {
@@ -175,17 +189,6 @@ const matchWebsocketRoute = (pathname) => {
     }
     return null;
 };
-
-await app.prepare();
-await logDashboardConfig();
-
-// Route all websocket upgrades through one dispatcher. Next's custom-server
-// request handler normally auto-registers its own upgrade listener, but that
-// would also receive terminal sockets after our handler and close them. Use the
-// prepared internal upgrade handler for HMR instead of the public
-// getUpgradeHandler(), which does not handle Next 16 dev HMR correctly here.
-app.didWebSocketSetup = true;
-const nextUpgradeHandler = app.upgradeHandler;
 
 const server = createServer(async (request, response) => {
     const startedAt = process.hrtime.bigint();
@@ -653,6 +656,13 @@ server.on("upgrade", async (request, socket, head) => {
     });
 });
 
-server.listen(port, hostname, () => {
-    console.log(`> Ready on http://${hostname}:${port}`);
-});
+initializeServer()
+    .then(() => {
+        server.listen(port, hostname, () => {
+            console.log(`> Ready on http://${hostname}:${port}`);
+        });
+    })
+    .catch((error) => {
+        console.error(`[server] failed to start: ${error?.stack || error}`);
+        process.exit(1);
+    });

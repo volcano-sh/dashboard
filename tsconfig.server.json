@@ -3,9 +3,12 @@
     "compilerOptions": {
         "allowJs": false,
         "declaration": false,
-        "module": "esnext",
-        "moduleResolution": "bundler",
-        "noEmit": true,
+        "ignoreDeprecations": "6.0",
+        "incremental": false,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noEmit": false,
+        "outDir": "dist/server",
         "rootDir": ".",
         "target": "ES2022",
         "types": ["node"]
