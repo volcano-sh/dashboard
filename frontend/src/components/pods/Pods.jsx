@@ -7,6 +7,7 @@ import { fetchAllNamespaces } from "../utils";
 import PodsTable from "./PodsTable/PodsTable";
 import PodsPagination from "./PodsPagination";
 import PodDetailsDialog from "./PodDetailsDialog";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const Pods = () => {
     const [pods, setPods] = useState([]);
@@ -21,6 +22,7 @@ const Pods = () => {
     const [selectedPodYaml, setSelectedPodYaml] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
     const [searchText, setSearchText] = useState("");
+    const debouncedSearchText = useDebouncedValue(searchText, 200);
     const theme = useTheme();
     const [selectedPodName, setSelectedPodName] = useState("");
     const [pagination, setPagination] = useState({
@@ -37,7 +39,7 @@ const Pods = () => {
         try {
             const response = await axios.get(`/api/pods`, {
                 params: {
-                    search: searchText,
+                    search: debouncedSearchText,
                     namespace: filters.namespace,
                     status: filters.status,
                 },
@@ -56,7 +58,7 @@ const Pods = () => {
         } finally {
             setLoading(false);
         }
-    }, [searchText, filters]);
+    }, [debouncedSearchText, filters]);
 
     useEffect(() => {
         fetchPods();
@@ -77,14 +79,17 @@ const Pods = () => {
     const handleClearSearch = () => {
         setSearchText("");
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchPods();
     };
 
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
-        setSearchText("");
-        fetchPods();
-    }, [fetchPods]);
+    
+        if (searchText === "") {
+            fetchPods();
+        } else {
+            setSearchText("");
+        }
+    }, [searchText, fetchPods]);
 
     const fetchData = async () => {
         try {

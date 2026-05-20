@@ -7,6 +7,7 @@ import QueueTable from "./QueueTable/QueueTable";
 import QueuePagination from "./QueuePagination";
 import QueueYamlDialog from "./QueueYamlDialog";
 import TitleComponent from "../Titlecomponent";
+import {useDebouncedValue} from "../../hooks/useDebouncedValue";
 
 const Queues = () => {
     const [queues, setQueues] = useState([]);
@@ -24,6 +25,7 @@ const Queues = () => {
         field: null,
         direction: "asc",
     });
+    const debouncedSearchText = useDebouncedValue(searchText, 200);
 
     // 🟢 1. Fetch all queues
     const fetchQueues = useCallback(async () => {
@@ -34,7 +36,7 @@ const Queues = () => {
                 params: {
                     page: pagination.page,
                     limit: pagination.rowsPerPage,
-                    search: searchText,
+                    search: debouncedSearchText,
                     state: filters.status,
                 },
             });
@@ -52,7 +54,7 @@ const Queues = () => {
         } finally {
             setLoading(false);
         }
-    }, [pagination, searchText, filters]);
+    }, [pagination, debouncedSearchText, filters]);
 
     useEffect(() => {
         fetchQueues();
@@ -82,7 +84,7 @@ const Queues = () => {
 
     const handleSearch = useCallback((event) => {
         setSearchText(event.target.value);
-        setPagination((prev) => ({ ...prev, page: 1 }));
+        setPagination((prev) => prev.page === 1 ? prev : ({ ...prev, page: 1 }));
     }, []);
 
     const handleClearSearch = useCallback(() => {
@@ -93,8 +95,7 @@ const Queues = () => {
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
         setSearchText("");
-        fetchQueues();
-    }, [fetchQueues]);
+    }, []);
 
     const handleQueueClick = useCallback(async (queue) => {
         try {
