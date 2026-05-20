@@ -1,0 +1,365 @@
+import React, { useCallback, useMemo, useState } from "react";
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    InputAdornment,
+    LinearProgress,
+    Typography,
+    useTheme,
+} from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchPods, getApiErrorMessage } from "../../lib/client/dashboard-api";
+import PodsTable from "./PodsTable/PodsTable";
+import PodsPagination from "./PodsPagination";
+import PodDetailsPanel from "./PodDetailsPanel";
+import SchedulingTableFilters from "../scheduling/SchedulingTableFilters";
+
+const Pods = () => {
+    const [filters, setFilters] = useState({
+        status: "All",
+        namespace: "All",
+        podGroup: "All",
+        queue: "All",
+    });
+    const [searchText, setSearchText] = useState("");
+    const theme = useTheme();
+    const [selectedPod, setSelectedPod] = useState(null);
+    const [selectedTab, setSelectedTab] = useState("overview");
+    const [pagination, setPagination] = useState({
+        page: 1,
+        rowsPerPage: 10,
+    });
+    const [sortDirection, setSortDirection] = useState("desc");
+    const [anchorEl, setAnchorEl] = useState({
+        namespace: null,
+        podGroup: null,
+        queue: null,
+        status: null,
+    });
+    const [actionError, setActionError] = useState(null);
+    const queryClient = useQueryClient();
+
+    const podParams = {
+        search: searchText,
+        namespace: filters.namespace,
+        podGroup: filters.podGroup,
+        queue: filters.queue,
+        status: filters.status,
+        page: pagination.page,
+        limit: pagination.rowsPerPage,
+        sortBy: "metadata.creationTimestamp",
+        sortOrder: sortDirection,
+    };
+
+    const {
+        data: podsData,
+        error: podsError,
+        isFetching: podsFetching,
+        isLoading: podsLoading,
+    } = useQuery({
+        queryKey: [
+            "pods",
+            searchText,
+            filters.namespace,
+            filters.podGroup,
+            filters.queue,
+            filters.status,
+            pagination.page,
+            pagination.rowsPerPage,
+            sortDirection,
+        ],
+        queryFn: () => fetchPods(podParams),
+    });
+
+    const pods = useMemo(() => podsData?.items || [], [podsData]);
+    const allNamespaces = useMemo(
+        () => podsData?.facets?.namespaces || ["All"],
+        [podsData],
+    );
+    const allQueues = useMemo(
+        () => podsData?.facets?.queues || ["All"],
+        [podsData],
+    );
+    const allPodGroups = useMemo(
+        () => podsData?.facets?.podGroups || ["All"],
+        [podsData],
+    );
+    const totalPods = podsData?.totalCount || 0;
+    const loading = podsLoading || podsFetching;
+    const error = podsError
+        ? getApiErrorMessage(podsError, "Failed to fetch pods")
+        : actionError;
+
+    const handleSearch = useCallback((event) => {
+        setSearchText(event.target.value);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
+
+    const handleResetFilters = useCallback(() => {
+        setSearchText("");
+        setFilters({
+            status: "All",
+            namespace: "All",
+            podGroup: "All",
+            queue: "All",
+        });
+        setAnchorEl({
+            namespace: null,
+            podGroup: null,
+            queue: null,
+            status: null,
+        });
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
+
+    const handleRefresh = useCallback(() => {
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setSearchText("");
+        queryClient.invalidateQueries({ queryKey: ["pods"] });
+    }, [queryClient]);
+
+    const handlePodClick = useCallback((pod) => {
+        setActionError(null);
+        setSelectedPod(pod);
+        setSelectedTab("overview");
+    }, []);
+
+    const handleCloseDetails = useCallback(() => {
+        setSelectedPod(null);
+        setSelectedTab("overview");
+    }, []);
+
+    const handleFilterChange = useCallback((filterType, value) => {
+        setFilters((prev) => ({ ...prev, [filterType]: value }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
+
+    const handleHeaderFilterOpen = useCallback((filterType, event) => {
+        setAnchorEl((prev) => ({ ...prev, [filterType]: event.currentTarget }));
+    }, []);
+
+    const handleHeaderFilterSelect = useCallback(
+        (filterType, value) => {
+            handleFilterChange(filterType, value);
+            setAnchorEl((prev) => ({ ...prev, [filterType]: null }));
+        },
+        [handleFilterChange],
+    );
+
+    const uniqueStatuses = useMemo(
+        () => [
+            "All",
+            ...new Set(
+                pods
+                    .map((pod) => pod?.summary?.status || pod?.status?.phase)
+                    .filter(Boolean),
+            ),
+        ],
+        [pods],
+    );
+
+    const filterFields = useMemo(
+        () => [
+            {
+                key: "namespace",
+                label: "Namespace",
+                onChange: (value) => handleFilterChange("namespace", value),
+                options: allNamespaces,
+                type: "select",
+                value: filters.namespace,
+            },
+            {
+                key: "queue",
+                label: "Queue",
+                onChange: (value) => handleFilterChange("queue", value),
+                options: allQueues,
+                type: "select",
+                value: filters.queue,
+            },
+            {
+                key: "podGroup",
+                label: "PodGroup",
+                onChange: (value) => handleFilterChange("podGroup", value),
+                options: allPodGroups,
+                type: "select",
+                value: filters.podGroup,
+            },
+            {
+                key: "search",
+                label: "Search",
+                onChange: (value) => handleSearch({ target: { value } }),
+                placeholder: "Search name, label, queue...",
+                sx: {
+                    flex: { xs: "1 1 100%", lg: "0 0 320px" },
+                    minWidth: { xs: "100%", lg: 320 },
+                },
+                textFieldProps: {
+                    InputProps: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                        ),
+                    },
+                },
+                type: "text",
+                value: searchText,
+            },
+        ],
+        [
+            allNamespaces,
+            allPodGroups,
+            allQueues,
+            filters.namespace,
+            filters.podGroup,
+            filters.queue,
+            handleFilterChange,
+            handleSearch,
+            searchText,
+        ],
+    );
+
+    const handlePaginationChange = useCallback((newPage, newRowsPerPage) => {
+        setPagination((prev) => ({
+            ...prev,
+            page: newPage || prev.page,
+            rowsPerPage: newRowsPerPage || prev.rowsPerPage,
+        }));
+    }, []);
+
+    const toggleSortDirection = useCallback(() => {
+        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    }, []);
+
+    return (
+        <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", p: 3 }}>
+            <Box sx={{ mb: 3 }}>
+                <Typography
+                    component="h1"
+                    sx={{ fontSize: 24, fontWeight: 700 }}
+                >
+                    Pods
+                </Typography>
+            </Box>
+            {error && (
+                <Card
+                    sx={{
+                        border: "1px solid #f5c2c7",
+                        boxShadow: "none",
+                        mb: 2,
+                    }}
+                >
+                    <CardContent sx={{ py: 1.5 }}>
+                        <Typography
+                            color={theme.palette.error.main}
+                            sx={{ fontSize: 14 }}
+                        >
+                            {error}
+                        </Typography>
+                    </CardContent>
+                </Card>
+            )}
+            <Box
+                sx={{
+                    alignItems: { xs: "stretch", md: "flex-start" },
+                    display: "flex",
+                    flexDirection: { xs: "column", md: "row" },
+                    gap: 1.5,
+                    justifyContent: "space-between",
+                    mb: 2,
+                }}
+            >
+                <Box sx={{ flex: 1 }}>
+                    <SchedulingTableFilters fields={filterFields} />
+                </Box>
+                <Box>
+                    <Button
+                        onClick={handleResetFilters}
+                        sx={{ textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Reset
+                    </Button>
+                    <Button
+                        disabled={loading}
+                        onClick={handleRefresh}
+                        startIcon={<RefreshIcon fontSize="small" />}
+                        sx={{ ml: 1.5, textTransform: "none" }}
+                        variant="outlined"
+                    >
+                        Refresh
+                    </Button>
+                </Box>
+            </Box>
+            {loading && <LinearProgress sx={{ mb: 2 }} />}
+            <Box>
+                <PodsTable
+                    allNamespaces={allNamespaces}
+                    allPodGroups={allPodGroups}
+                    allQueues={allQueues}
+                    anchorEl={anchorEl}
+                    filters={filters}
+                    onFilterOpen={handleHeaderFilterOpen}
+                    onFilterSelect={handleHeaderFilterSelect}
+                    pods={pods}
+                    selectedPod={selectedPod}
+                    sortDirection={sortDirection}
+                    uniqueStatuses={uniqueStatuses}
+                    onSortDirectionToggle={toggleSortDirection}
+                    onPodClick={handlePodClick}
+                />
+                <PodsPagination
+                    totalPods={totalPods}
+                    pagination={pagination}
+                    onPaginationChange={handlePaginationChange}
+                />
+            </Box>
+            {selectedPod && (
+                <>
+                    <Box
+                        aria-hidden="true"
+                        sx={{
+                            bgcolor: "rgba(17, 24, 39, 0.26)",
+                            bottom: 0,
+                            left: 0,
+                            pointerEvents: "none",
+                            position: "fixed",
+                            right: 0,
+                            top: 0,
+                            zIndex: 1290,
+                        }}
+                    />
+                    <Box
+                        sx={{
+                            bottom: 0,
+                            position: "fixed",
+                            right: 0,
+                            top: 0,
+                            width: {
+                                xs: "calc(100vw - 56px)",
+                                sm: "calc(100vw - 220px)",
+                                lg: 1180,
+                            },
+                            zIndex: 1300,
+                        }}
+                    >
+                        <PodDetailsPanel
+                            elevated
+                            onClose={handleCloseDetails}
+                            selectedPod={selectedPod}
+                            selectedTab={selectedTab}
+                            setSelectedTab={setSelectedTab}
+                        />
+                    </Box>
+                </>
+            )}
+        </Box>
+    );
+};
+
+export default Pods;

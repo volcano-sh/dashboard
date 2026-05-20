@@ -20,20 +20,20 @@
 ### 4. User Interface Layout
 
 - Adopt a two-column design:
-  - Left side for navigation bar
-  - Right side for content display area
+    - Left side for navigation bar
+    - Right side for content display area
 - Left navigation bar includes four main functional options:
-  1. Dashboard
-  2. Queue
-  3. Job
-  4. Node
+    1. Dashboard
+    2. Queue
+    3. Job
+    4. Node
 - Right content area dynamically displays corresponding resource information based on user selection
 
 ### 5. Main Functional Modules
 
-| Module | Functionality Description |
-|--------|---------------------------|
-| Dashboard | Provides cluster resource overview |
-| Queue | Displays and manages Volcano queue resources |
-| Job | Shows all Volcano jobs and their statuses (e.g., Running, Failed, Pending, Completed, etc.) |
-| Node | Displays cluster node information and resource usage |
+| Module    | Functionality Description                                                                   |
+| --------- | ------------------------------------------------------------------------------------------- |
+| Dashboard | Provides cluster resource overview                                                          |
+| Queue     | Displays and manages Volcano queue resources                                                |
+| Job       | Shows all Volcano jobs and their statuses (e.g., Running, Failed, Pending, Completed, etc.) |
+| Node      | Displays cluster node information and resource usage                                        |

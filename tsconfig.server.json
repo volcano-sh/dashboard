@@ -1,0 +1,23 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "allowJs": false,
+        "declaration": false,
+        "ignoreDeprecations": "6.0",
+        "incremental": false,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noEmit": false,
+        "outDir": "dist/server",
+        "rootDir": ".",
+        "target": "ES2022",
+        "types": ["node"]
+    },
+    "include": [
+        "server.ts",
+        "lib/server/auth.ts",
+        "lib/server/config.ts",
+        "lib/server/kubernetes.ts"
+    ],
+    "exclude": ["node_modules"]
+}

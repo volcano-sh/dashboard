@@ -1,0 +1,129 @@
+import Layout from "../components/Layout";
+import { MemoryRouter } from "react-router-dom";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { vi } from "vitest";
+
+const menuItems = [
+    { text: "Overview", path: "/dashboard" },
+    { text: "Queues", path: "/scheduling/queues" },
+    { text: "Jobs", path: "/scheduling/jobs" },
+    { text: "CronJob", path: "/scheduling/cronjobs" },
+    { text: "Pod Groups", path: "/scheduling/podgroups" },
+    { text: "Pods", path: "/workload/pods" },
+    { text: "Configuration", path: "/system/configuration" },
+    { text: "Cluster Information", path: "/system/cluster-information" },
+    { text: "Documentation", path: "/documentation" },
+];
+
+describe("Layout", () => {
+    it("should render the layout", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        const heading = screen.getByText(/volcano dashboard/i);
+        expect(heading).toBeInTheDocument();
+    });
+
+    it("should toggle the drawer when clicking the menu button", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        const menuButton = screen.getByRole("button", {
+            name: /toggle drawer/i,
+        });
+
+        expect(menuButton).toBeInTheDocument();
+
+        const drawer = screen.getByTestId("sidebar-drawer");
+
+        expect(drawer).toHaveStyle("width: 280px");
+
+        fireEvent.click(menuButton);
+
+        expect(drawer).toHaveStyle("width: 60px");
+    });
+
+    it("should render clickable navigation items", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        const navigationItems = screen.getAllByRole("link");
+
+        expect(navigationItems).toHaveLength(9);
+
+        navigationItems.forEach((item, index) => {
+            const { text, path } = menuItems[index];
+            expect(item).toBeInTheDocument();
+            expect(item).toHaveAttribute("href", path);
+            expect(item).toHaveTextContent(new RegExp(`^${text}$`, "i"));
+        });
+    });
+
+    it("should hide observability navigation placeholders", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        ["Observability", "Events", "Metrics"].forEach((text) => {
+            expect(screen.queryByText(text)).not.toBeInTheDocument();
+        });
+    });
+
+    it("should expand the admin menu", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /toggle admin menu/i }),
+        );
+
+        expect(screen.getByText(/admin@example.com/i)).toBeInTheDocument();
+        expect(screen.getByText(/cluster administrator/i)).toBeInTheDocument();
+        expect(screen.getByText(/logout/i)).toBeInTheDocument();
+    });
+
+    it("should call logout from the admin menu", () => {
+        const onLogout = vi.fn();
+
+        render(
+            <MemoryRouter>
+                <Layout onLogout={onLogout} />
+            </MemoryRouter>,
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /toggle admin menu/i }),
+        );
+        fireEvent.click(screen.getByRole("button", { name: /logout/i }));
+
+        expect(onLogout).toHaveBeenCalledTimes(1);
+    });
+
+    it("should render logo", () => {
+        render(
+            <MemoryRouter>
+                <Layout />
+            </MemoryRouter>,
+        );
+
+        const logo = screen.getByAltText(/volcano logo/i);
+
+        expect(logo).toBeInTheDocument();
+
+        expect(logo).toHaveAttribute("src", "/volcano-icon-color.svg");
+    });
+});

@@ -1,0 +1,111 @@
+apiVersion: batch.volcano.sh/v1alpha1
+kind: CronJob
+metadata:
+    name: demo-cronjob-prod-cleanup
+    namespace: volcano-demo
+    labels:
+        demo.volcano.sh/sample: "true"
+        app: demo-cronjob-prod-cleanup
+spec:
+    schedule: "*/15 * * * *"
+    concurrencyPolicy: Forbid
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 1
+    jobTemplate:
+        spec:
+            minAvailable: 1
+            queue: demo-prod-team-b
+            schedulerName: volcano
+            maxRetry: 1
+            tasks:
+                - name: worker
+                  replicas: 1
+                  template:
+                      spec:
+                          restartPolicy: Never
+                          containers:
+                              - name: worker
+                                image: busybox:1.36.1
+                                command:
+                                    - sh
+                                    - -c
+                                    - echo "demo-cronjob-prod-cleanup running"; sleep 30
+                                resources:
+                                    requests:
+                                        cpu: 50m
+                                        memory: 64Mi
+---
+apiVersion: batch.volcano.sh/v1alpha1
+kind: CronJob
+metadata:
+    name: demo-cronjob-research-refresh
+    namespace: volcano-demo
+    labels:
+        demo.volcano.sh/sample: "true"
+        team: ai
+spec:
+    schedule: "0 */2 * * *"
+    concurrencyPolicy: Replace
+    successfulJobsHistoryLimit: 2
+    failedJobsHistoryLimit: 2
+    jobTemplate:
+        spec:
+            minAvailable: 1
+            queue: demo-research-ml
+            schedulerName: volcano
+            maxRetry: 1
+            tasks:
+                - name: trainer
+                  replicas: 1
+                  template:
+                      spec:
+                          restartPolicy: Never
+                          containers:
+                              - name: trainer
+                                image: busybox:1.36.1
+                                command:
+                                    - sh
+                                    - -c
+                                    - echo "demo-cronjob-research-refresh running"; sleep 45
+                                resources:
+                                    requests:
+                                        cpu: 100m
+                                        memory: 96Mi
+---
+apiVersion: batch.volcano.sh/v1alpha1
+kind: CronJob
+metadata:
+    name: demo-cronjob-dev-report
+    namespace: volcano-demo-ops
+    labels:
+        demo.volcano.sh/sample: "true"
+        app: demo-cronjob-dev-report
+spec:
+    schedule: "30 */4 * * *"
+    concurrencyPolicy: Allow
+    suspend: true
+    successfulJobsHistoryLimit: 1
+    failedJobsHistoryLimit: 1
+    jobTemplate:
+        spec:
+            minAvailable: 1
+            queue: demo-dev
+            schedulerName: volcano
+            maxRetry: 1
+            tasks:
+                - name: reporter
+                  replicas: 1
+                  template:
+                      spec:
+                          restartPolicy: Never
+                          containers:
+                              - name: reporter
+                                image: busybox:1.36.1
+                                command:
+                                    - sh
+                                    - -c
+                                    - echo "demo-cronjob-dev-report suspended sample"; sleep 20
+                                resources:
+                                    requests:
+                                        cpu: 50m
+                                        memory: 64Mi

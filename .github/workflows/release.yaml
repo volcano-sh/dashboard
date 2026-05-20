@@ -1,4 +1,5 @@
 name: Image Release
+
 on:
   workflow_dispatch:
   push:
@@ -9,6 +10,11 @@ on:
 
 permissions:
   contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   docker-release:
@@ -20,38 +26,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine image tag
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "TAG=latest" >> $GITHUB_ENV
-          else
-            echo "TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          fi
-
-      - name: Login to DockerHub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push frontend image
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: Build and push dashboard image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deployment/build/frontend/Dockerfile
+          file: ./Dockerfile
           push: true
-          tags: volcanosh/vc-dashboard-frontend:${{ env.TAG }}
-          platforms: linux/amd64,linux/arm64
-
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./deployment/build/backend/Dockerfile
-          push: true
-          tags: volcanosh/vc-dashboard-backend:${{ env.TAG }}
-          platforms: linux/amd64,linux/arm64
-
-      - name: Logout from Docker Hub
-        if: always()
-        run: docker logout
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64, linux/arm64

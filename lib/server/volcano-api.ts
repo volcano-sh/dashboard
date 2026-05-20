@@ -1,0 +1,1336 @@
+import { getKubernetesClients, yamlResponse } from "./kubernetes";
+import {
+    apiError,
+    filterBySearch,
+    json,
+    labelEntries,
+    paginate,
+    queryValue,
+    sortItems,
+    text,
+    toInt,
+} from "./api-utils";
+import {
+    cronJobStatus,
+    isQueueOwnedPod,
+    jobPhase,
+    podGroupName,
+    podQueueName,
+    withCronJobSummary,
+    withJobSummary,
+    withPodGroupSummary,
+    withPodSummary,
+    withQueueSummary,
+} from "./summary-mappers";
+import { schedulerConfigJson, schedulerConfigYaml } from "./scheduler-config";
+import {
+    fetchQueuePodGroupMetrics,
+    fetchQueueSchedulerMetrics,
+    getQueuePodGroupCounts,
+    getQueueSchedulerMetrics,
+    mergeQueueMetrics,
+} from "./queue-metrics";
+
+const getApis = () => {
+    const { k8sApi, k8sCoreApi } = getKubernetesClients();
+    return { k8sApi, k8sCoreApi };
+};
+
+const validateManifestIdentity = (
+    manifest,
+    { name, namespace = null, requireNamespace = false },
+) => {
+    if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
+        return json({ error: "Invalid Kubernetes manifest" }, 400);
+    }
+
+    if (manifest?.metadata?.name !== name) {
+        return json(
+            {
+                error: "Manifest name mismatch",
+                message: `metadata.name must match path name "${name}"`,
+            },
+            400,
+        );
+    }
+
+    if (requireNamespace && manifest?.metadata?.namespace !== namespace) {
+        return json(
+            {
+                error: "Manifest namespace mismatch",
+                message: `metadata.namespace must match path namespace "${namespace}"`,
+            },
+            400,
+        );
+    }
+
+    return null;
+};
+
+const normalizeKubernetesEvents = (items) =>
+    items
+        .map((event) => ({
+            count: event?.count ?? 1,
+            firstTimestamp:
+                event?.firstTimestamp ||
+                event?.eventTime ||
+                event?.metadata?.creationTimestamp ||
+                "",
+            lastTimestamp:
+                event?.lastTimestamp ||
+                event?.eventTime ||
+                event?.metadata?.creationTimestamp ||
+                "",
+            message: event?.message || "-",
+            name: event?.metadata?.name || "",
+            reason: event?.reason || "-",
+            type: event?.type || "Normal",
+            uid: event?.metadata?.uid || event?.metadata?.name || "",
+        }))
+        .sort(
+            (a, b) =>
+                new Date(b.lastTimestamp || 0).getTime() -
+                new Date(a.lastTimestamp || 0).getTime(),
+        );
+
+const eventListItems = (response) =>
+    response?.items || response?.body?.items || response?.data?.items || [];
+
+const listResourceEvents = async ({ kind, name, namespace = null }) => {
+    const { k8sCoreApi } = getApis();
+    const fieldSelector = `involvedObject.kind=${kind},involvedObject.name=${name}`;
+    const response = namespace
+        ? await k8sCoreApi.listNamespacedEvent({
+              namespace,
+              fieldSelector,
+          })
+        : await k8sCoreApi.listEventForAllNamespaces({
+              fieldSelector,
+          });
+    const normalized = normalizeKubernetesEvents(eventListItems(response));
+
+    return json({
+        items: normalized,
+        totalCount: normalized.length,
+    });
+};
+
+const queryOptions = (request) => {
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.has("page")
+        ? toInt(queryValue(searchParams, "page"), 1)
+        : null;
+    const limit = searchParams.has("limit")
+        ? toInt(queryValue(searchParams, "limit"), 10)
+        : null;
+    return {
+        searchParams,
+        page,
+        limit,
+        searchTerm: queryValue(searchParams, "search"),
+        sortBy: queryValue(searchParams, "sortBy"),
+        sortOrder: queryValue(searchParams, "sortOrder", "asc"),
+    };
+};
+
+const listResponse = (items, options) => {
+    const sorted = sortItems(items, options.sortBy, options.sortOrder);
+    return json(paginate(sorted, options.page, options.limit));
+};
+
+const listResponseWithFacets = (items, options, facets) => {
+    const sorted = sortItems(items, options.sortBy, options.sortOrder);
+    return json({
+        ...paginate(sorted, options.page, options.limit),
+        facets,
+    });
+};
+
+const inaccessiblePodError = () =>
+    json(
+        {
+            error: "Pod not found",
+            message:
+                "Pod is not associated with a Volcano queue or is not available.",
+        },
+        404,
+    );
+
+const readVisiblePod = async (k8sCoreApi, namespace, name, fallback) => {
+    const pod = await k8sCoreApi.readNamespacedPod({
+        name,
+        namespace,
+    });
+
+    if (!isQueueOwnedPod(pod)) {
+        throw Object.assign(new Error(fallback), {
+            dashboardResponse: inaccessiblePodError(),
+        });
+    }
+
+    return pod;
+};
+
+const facetValues = (items, getValue) => [
+    "All",
+    ...new Set(items.map(getValue).filter(Boolean).sort()),
+];
+
+const namespaceFacets = (items) => ({
+    namespaces: facetValues(items, (item) => item.metadata?.namespace),
+});
+
+const podsFacets = (items) => ({
+    namespaces: facetValues(items, (pod) => pod.metadata?.namespace),
+    queues: facetValues(items, podQueueName),
+    podGroups: facetValues(items, podGroupName),
+});
+
+const podsListResponse = (items, options, facetItems = items) => {
+    const facets = podsFacets(facetItems);
+    const sorted = sortItems(items, options.sortBy, options.sortOrder);
+    return json({
+        ...paginate(sorted, options.page, options.limit),
+        facets,
+    });
+};
+
+export async function listJobs(request) {
+    try {
+        const { k8sApi } = getApis();
+        const options = queryOptions(request);
+        const { searchParams, searchTerm } = options;
+        const namespace = queryValue(searchParams, "namespace");
+        const queueFilter = queryValue(searchParams, "queue");
+        const statusFilter = queryValue(searchParams, "status");
+        const response =
+            namespace === "" || namespace === "All"
+                ? await k8sApi.listClusterCustomObject({
+                      group: "batch.volcano.sh",
+                      version: "v1alpha1",
+                      plural: "jobs",
+                      pretty: true,
+                  })
+                : await k8sApi.listNamespacedCustomObject({
+                      group: "batch.volcano.sh",
+                      version: "v1alpha1",
+                      namespace,
+                      plural: "jobs",
+                      pretty: true,
+                  });
+
+        const facetItems = response.items || [];
+        let items = facetItems;
+        items = filterBySearch(items, searchTerm, (job) => [
+            job.metadata?.name,
+            job.metadata?.namespace,
+            job.spec?.queue,
+            ...labelEntries(job.metadata?.labels),
+        ]);
+
+        if (queueFilter && queueFilter !== "All") {
+            items = items.filter((job) => job.spec?.queue === queueFilter);
+        }
+        if (statusFilter && statusFilter !== "All") {
+            items = items.filter((job) => jobPhase(job) === statusFilter);
+        }
+        return listResponseWithFacets(
+            items.map(withJobSummary),
+            options,
+            namespaceFacets(facetItems),
+        );
+    } catch (error) {
+        return apiError(error, "Failed to fetch jobs");
+    }
+}
+
+export async function getJob(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+        });
+        return json(withJobSummary(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch job");
+    }
+}
+
+export async function getJobYaml(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+        });
+        return text(yamlResponse(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch job YAML");
+    }
+}
+
+export async function getJobEvents(namespace, name) {
+    try {
+        return await listResourceEvents({
+            kind: "Job",
+            name,
+            namespace,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to fetch job events");
+    }
+}
+
+export async function createJob(request) {
+    try {
+        const { k8sApi } = getApis();
+        const jobManifest = await request.json();
+        if (!jobManifest?.metadata?.name || !jobManifest?.spec) {
+            return json({ error: "Invalid job manifest" }, 400);
+        }
+
+        const namespace = jobManifest.metadata.namespace || "default";
+        const response = await k8sApi.createNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            body: jobManifest,
+        });
+
+        return json(
+            {
+                message: "Job created successfully",
+                data: response.body,
+            },
+            201,
+        );
+    } catch (error) {
+        return apiError(error, "Failed to create job");
+    }
+}
+
+export async function patchJob(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const patchData = await request.json();
+        const response = await k8sApi.patchNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+            body: patchData,
+            options: {
+                headers: { "Content-Type": "application/merge-patch+json" },
+            },
+        });
+
+        return json({
+            message: "Job updated successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to update job");
+    }
+}
+
+export async function deleteJob(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.deleteNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return json({
+            message: "Job deleted successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to delete job");
+    }
+}
+
+export async function updateJob(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const manifest = await request.json();
+        const validationError = validateManifestIdentity(manifest, {
+            name,
+            namespace,
+            requireNamespace: true,
+        });
+        if (validationError) return validationError;
+
+        const response = await k8sApi.replaceNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+            body: manifest,
+        });
+
+        return json({
+            message: "Job replaced successfully",
+            data: response?.body || response,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to replace job");
+    }
+}
+
+export async function listCronJobs(request) {
+    try {
+        const { k8sApi } = getApis();
+        const options = queryOptions(request);
+        const { searchParams, searchTerm } = options;
+        const namespace = queryValue(searchParams, "namespace");
+        const queueFilter = queryValue(searchParams, "queue");
+        const statusFilter = queryValue(searchParams, "status");
+        const response =
+            namespace === "" || namespace === "All"
+                ? await k8sApi.listClusterCustomObject({
+                      group: "batch.volcano.sh",
+                      version: "v1alpha1",
+                      plural: "cronjobs",
+                  })
+                : await k8sApi.listNamespacedCustomObject({
+                      group: "batch.volcano.sh",
+                      version: "v1alpha1",
+                      namespace,
+                      plural: "cronjobs",
+                  });
+
+        const facetItems =
+            response?.items ||
+            response?.body?.items ||
+            response?.data?.items ||
+            [];
+        let items = facetItems;
+
+        items = filterBySearch(items, searchTerm, (cronJob) => {
+            const summary = withCronJobSummary(cronJob).summary;
+            return [
+                summary.name,
+                summary.namespace,
+                summary.queue,
+                summary.schedule,
+                summary.status,
+                ...labelEntries(cronJob.metadata?.labels),
+            ];
+        });
+
+        if (queueFilter && queueFilter !== "All") {
+            items = items.filter(
+                (cronJob) =>
+                    withCronJobSummary(cronJob).summary.queue === queueFilter,
+            );
+        }
+        if (statusFilter && statusFilter !== "All") {
+            items = items.filter(
+                (cronJob) => cronJobStatus(cronJob) === statusFilter,
+            );
+        }
+
+        return listResponseWithFacets(
+            items.map(withCronJobSummary),
+            options,
+            namespaceFacets(facetItems),
+        );
+    } catch (error) {
+        return apiError(error, "Failed to fetch cronjobs");
+    }
+}
+
+export async function getCronJob(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "cronjobs",
+            name,
+        });
+        return json(withCronJobSummary(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch cronjob");
+    }
+}
+
+export async function getCronJobYaml(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "cronjobs",
+            name,
+        });
+        return text(yamlResponse(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch cronjob YAML");
+    }
+}
+
+export async function getCronJobEvents(namespace, name) {
+    try {
+        return await listResourceEvents({
+            kind: "CronJob",
+            name,
+            namespace,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to fetch cronjob events");
+    }
+}
+
+export async function createCronJob(request) {
+    try {
+        const { k8sApi } = getApis();
+        const cronJobManifest = await request.json();
+        if (!cronJobManifest?.metadata?.name || !cronJobManifest?.spec) {
+            return json({ error: "Invalid cronjob manifest" }, 400);
+        }
+
+        const namespace = cronJobManifest.metadata.namespace || "default";
+        const response = await k8sApi.createNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "cronjobs",
+            body: cronJobManifest,
+        });
+
+        return json(
+            {
+                message: "CronJob created successfully",
+                data: response?.body || response,
+            },
+            201,
+        );
+    } catch (error) {
+        return apiError(error, "Failed to create cronjob");
+    }
+}
+
+export async function deleteCronJob(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.deleteNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "cronjobs",
+            name,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return json({
+            message: "CronJob deleted successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to delete cronjob");
+    }
+}
+
+export async function updateCronJob(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const manifest = await request.json();
+        const validationError = validateManifestIdentity(manifest, {
+            name,
+            namespace,
+            requireNamespace: true,
+        });
+        if (validationError) return validationError;
+
+        const response = await k8sApi.replaceNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "cronjobs",
+            name,
+            body: manifest,
+        });
+
+        return json({
+            message: "CronJob replaced successfully",
+            data: response?.body || response,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to replace cronjob");
+    }
+}
+
+export async function listPodGroups(request) {
+    try {
+        const { k8sApi } = getApis();
+        const options = queryOptions(request);
+        const { searchParams, searchTerm } = options;
+        const namespace = queryValue(searchParams, "namespace");
+        const queueFilter = queryValue(searchParams, "queue");
+        const statusFilter = queryValue(searchParams, "status");
+        const response =
+            namespace === "" || namespace === "All"
+                ? await k8sApi.listClusterCustomObject({
+                      group: "scheduling.volcano.sh",
+                      version: "v1beta1",
+                      plural: "podgroups",
+                  })
+                : await k8sApi.listNamespacedCustomObject({
+                      group: "scheduling.volcano.sh",
+                      version: "v1beta1",
+                      namespace,
+                      plural: "podgroups",
+                  });
+
+        const facetItems = response.items || [];
+        let items = facetItems;
+        items = filterBySearch(items, searchTerm, (podGroup) => [
+            podGroup.metadata?.name,
+            podGroup.metadata?.namespace,
+            podGroup.spec?.queue,
+            ...labelEntries(podGroup.metadata?.labels),
+        ]);
+
+        if (statusFilter && statusFilter !== "All") {
+            items = items.filter((pg) => pg.status?.phase === statusFilter);
+        }
+        if (queueFilter && queueFilter !== "All") {
+            items = items.filter((pg) => pg.spec?.queue === queueFilter);
+        }
+        return listResponseWithFacets(
+            items.map(withPodGroupSummary),
+            options,
+            namespaceFacets(facetItems),
+        );
+    } catch (error) {
+        return apiError(error, "Failed to fetch podgroups");
+    }
+}
+
+export async function getPodGroup(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            name,
+        });
+        return json(withPodGroupSummary(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch podgroup");
+    }
+}
+
+export async function getPodGroupYaml(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            name,
+        });
+        return text(yamlResponse(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch podgroup YAML");
+    }
+}
+
+export async function getPodGroupEvents(namespace, name) {
+    try {
+        return await listResourceEvents({
+            kind: "PodGroup",
+            name,
+            namespace,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to fetch podgroup events");
+    }
+}
+
+export async function createPodGroup(request) {
+    try {
+        const { k8sApi } = getApis();
+        const podGroupManifest = await request.json();
+        if (!podGroupManifest?.metadata?.name || !podGroupManifest?.spec) {
+            return json({ error: "Invalid podgroup manifest" }, 400);
+        }
+
+        const namespace = podGroupManifest.metadata.namespace || "default";
+        const response = await k8sApi.createNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            body: podGroupManifest,
+        });
+
+        return json(
+            {
+                message: "PodGroup created successfully",
+                data: response.body,
+            },
+            201,
+        );
+    } catch (error) {
+        return apiError(error, "Failed to create podgroup");
+    }
+}
+
+export async function patchPodGroup(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const patchData = await request.json();
+        const response = await k8sApi.patchNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            name,
+            body: patchData,
+            options: {
+                headers: { "Content-Type": "application/merge-patch+json" },
+            },
+        });
+
+        return json({
+            message: "PodGroup updated successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to update podgroup");
+    }
+}
+
+export async function updatePodGroup(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const body = await request.json();
+        const validationError = validateManifestIdentity(body, {
+            name,
+            namespace,
+            requireNamespace: true,
+        });
+        if (validationError) return validationError;
+
+        const response = await k8sApi.replaceNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            name,
+            body,
+        });
+
+        return json({
+            message: "PodGroup replaced successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to replace podgroup");
+    }
+}
+
+export async function deletePodGroup(namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.deleteNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            namespace,
+            plural: "podgroups",
+            name,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return json({
+            message: "PodGroup deleted successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to delete podgroup");
+    }
+}
+
+export async function listQueues(request) {
+    try {
+        const { k8sApi } = getApis();
+        const options = queryOptions(request);
+        const { searchParams, searchTerm } = options;
+        const stateFilter =
+            queryValue(searchParams, "state") ||
+            queryValue(searchParams, "status");
+        const queueFilter = queryValue(searchParams, "queue");
+        const response = await k8sApi.listClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+        });
+
+        let items = response.items || [];
+        items = filterBySearch(items, searchTerm, (queue) => [
+            queue.metadata?.name,
+            queue.spec?.parent,
+            queue.status?.state,
+            ...labelEntries(queue.metadata?.labels),
+        ]);
+        if (stateFilter && stateFilter !== "All") {
+            items = items.filter(
+                (queue) =>
+                    queue.status?.state === stateFilter ||
+                    (queue.status?.state === "Open" &&
+                        stateFilter === "Active"),
+            );
+        }
+        if (queueFilter && queueFilter !== "All") {
+            items = items.filter(
+                (queue) =>
+                    queue.metadata?.name === queueFilter ||
+                    queue.spec?.parent === queueFilter,
+            );
+        }
+        const [queueMetrics, podGroupMetrics] = await Promise.all([
+            fetchQueueSchedulerMetrics(),
+            fetchQueuePodGroupMetrics(),
+        ]);
+        return listResponse(
+            items.map((queue) =>
+                withQueueSummary(
+                    queue,
+                    mergeQueueMetrics(
+                        getQueueSchedulerMetrics(
+                            queueMetrics.metrics,
+                            queue.metadata?.name,
+                        ),
+                        getQueuePodGroupCounts(
+                            podGroupMetrics.counts,
+                            queue.metadata?.name,
+                        ),
+                    ),
+                ),
+            ),
+            options,
+        );
+    } catch (error) {
+        return apiError(error, "Failed to fetch queues");
+    }
+}
+
+export async function getQueue(name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+        return json(withQueueSummary(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch queue details");
+    }
+}
+
+export async function getQueueYaml(name) {
+    try {
+        const { k8sApi } = getApis();
+        const response = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+        return text(yamlResponse(response));
+    } catch (error) {
+        return apiError(error, "Failed to fetch queue YAML");
+    }
+}
+
+export async function getQueueEvents(name) {
+    try {
+        return await listResourceEvents({
+            kind: "Queue",
+            name,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to fetch queue events");
+    }
+}
+
+export async function updateQueue(request, name) {
+    try {
+        const { k8sApi } = getApis();
+        const updatedBody = await request.json();
+        const validationError = validateManifestIdentity(updatedBody, {
+            name,
+            requireNamespace: false,
+        });
+        if (validationError) return validationError;
+
+        const response = await k8sApi.replaceClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+            body: updatedBody,
+        });
+
+        return json({
+            message: `Successfully replaced queue ${name}`,
+            data: response?.body || response,
+        });
+    } catch (error) {
+        return apiError(error, `Failed to replace queue ${name}`);
+    }
+}
+
+export async function patchQueue(request, name) {
+    try {
+        const { k8sApi } = getApis();
+        const updatedBody = await request.json();
+        if (!updatedBody.spec || Object.keys(updatedBody.spec).length === 0) {
+            return json(
+                {
+                    error: "Bad Request",
+                    details: "spec object is required and cannot be empty",
+                },
+                400,
+            );
+        }
+
+        await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+
+        const numericFields = new Set(["weight"]);
+        const patchOperations = [];
+        Object.entries(updatedBody.spec).forEach(([key, value]) => {
+            let patchValue = value;
+            if (numericFields.has(key) && typeof patchValue === "string") {
+                const parsed = Number.parseInt(patchValue, 10);
+                if (!Number.isNaN(parsed)) {
+                    patchValue = parsed;
+                }
+            }
+            patchOperations.push({
+                op: "replace",
+                path: `/spec/${key}`,
+                value: patchValue,
+            });
+        });
+
+        const response = await k8sApi.patchClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+            body: patchOperations,
+            options: {
+                headers: {
+                    "Content-Type": "application/json-patch+json",
+                },
+            },
+        });
+
+        const updatedQueue = await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name,
+        });
+
+        return json({
+            message: `Successfully updated queue ${name}`,
+            patchResponse: response.body,
+            updatedQueue: updatedQueue.body,
+        });
+    } catch (error) {
+        return apiError(error, `Failed to update queue ${name}`);
+    }
+}
+
+export async function createQueue(request) {
+    try {
+        const { k8sApi } = getApis();
+        const queueManifest = await request.json();
+        if (!queueManifest?.metadata?.name || !queueManifest?.spec) {
+            return json({ error: "Invalid queue manifest" }, 400);
+        }
+        const customAnnotations = queueManifest.annotations || {};
+        queueManifest.metadata.annotations = {
+            ...(queueManifest.metadata.annotations || {}),
+            ...customAnnotations,
+        };
+
+        const response = await k8sApi.createClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            body: queueManifest,
+        });
+
+        return json(
+            { message: "Queue created successfully", data: response.body },
+            201,
+        );
+    } catch (error) {
+        return apiError(error, "Failed to create queue");
+    }
+}
+
+export async function deleteQueue(name) {
+    try {
+        const { k8sApi } = getApis();
+        await k8sApi.getClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: name.toLowerCase(),
+        });
+
+        const { body } = await k8sApi.deleteClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "queues",
+            name: name.toLowerCase(),
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return json({ message: "Queue deleted successfully", data: body });
+    } catch (error) {
+        return apiError(error, "Failed to delete queue");
+    }
+}
+
+export async function listPods(request) {
+    try {
+        const { k8sCoreApi } = getApis();
+        const options = queryOptions(request);
+        const { searchParams, searchTerm } = options;
+        const namespace = queryValue(searchParams, "namespace");
+        const queueFilter = queryValue(searchParams, "queue");
+        const podGroupFilter = queryValue(searchParams, "podGroup");
+        const statusFilter = queryValue(searchParams, "status");
+        const response =
+            namespace === "" || namespace === "All"
+                ? await k8sCoreApi.listPodForAllNamespaces()
+                : await k8sCoreApi.listNamespacedPod({ namespace });
+
+        const facetItems = (response.items || [])
+            .filter(isQueueOwnedPod)
+            .map(withPodSummary);
+        let items = facetItems;
+        items = filterBySearch(items, searchTerm, (pod) => [
+            pod.metadata?.name,
+            pod.metadata?.namespace,
+            pod.status?.phase,
+            pod.spec?.nodeName,
+            podQueueName(pod),
+            podGroupName(pod),
+            ...labelEntries(pod.metadata?.labels),
+        ]);
+        if (statusFilter && statusFilter !== "All") {
+            items = items.filter((pod) => pod.status?.phase === statusFilter);
+        }
+        if (queueFilter && queueFilter !== "All") {
+            items = items.filter((pod) => podQueueName(pod) === queueFilter);
+        }
+        if (podGroupFilter && podGroupFilter !== "All") {
+            items = items.filter((pod) => podGroupName(pod) === podGroupFilter);
+        }
+        return podsListResponse(
+            items,
+            {
+                ...options,
+                sortBy: options.sortBy || "metadata.creationTimestamp",
+                sortOrder: options.sortBy ? options.sortOrder : "desc",
+            },
+            facetItems,
+        );
+    } catch (error) {
+        return apiError(error, "Failed to fetch pods");
+    }
+}
+
+export async function getPod(namespace, name) {
+    try {
+        const { k8sCoreApi } = getApis();
+        const response = await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to fetch pod",
+        );
+        return json(withPodSummary(response));
+    } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
+        return apiError(error, "Failed to fetch pod");
+    }
+}
+
+export async function getPodYaml(namespace, name) {
+    try {
+        const { k8sCoreApi } = getApis();
+        const response = await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to fetch pod YAML",
+        );
+        return text(yamlResponse(response));
+    } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
+        return apiError(error, "Failed to fetch pod YAML");
+    }
+}
+
+export async function getPodLogs(request, namespace, name) {
+    try {
+        const { k8sCoreApi } = getApis();
+        await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to fetch pod logs",
+        );
+        const { searchParams } = new URL(request.url);
+        const container = queryValue(searchParams, "container") || undefined;
+        const previous = queryValue(searchParams, "previous") === "true";
+        const tailLines = toInt(queryValue(searchParams, "tailLines"), 200);
+        const response = await k8sCoreApi.readNamespacedPodLog({
+            name,
+            namespace,
+            container,
+            previous,
+            tailLines,
+            timestamps: true,
+        });
+
+        return text(
+            typeof response === "string"
+                ? response
+                : response?.body || response?.data || "",
+            200,
+            "text/plain",
+        );
+    } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
+        return apiError(error, "Failed to fetch pod logs");
+    }
+}
+
+export async function getPodEvents(namespace, name) {
+    try {
+        const { k8sCoreApi } = getApis();
+        await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to fetch pod events",
+        );
+        return await listResourceEvents({
+            kind: "Pod",
+            name,
+            namespace,
+        });
+    } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
+        return apiError(error, "Failed to fetch pod events");
+    }
+}
+
+export async function deletePod(namespace, name) {
+    try {
+        const { k8sCoreApi } = getApis();
+        await readVisiblePod(
+            k8sCoreApi,
+            namespace,
+            name,
+            "Failed to delete pod",
+        );
+        const response = await k8sCoreApi.deleteNamespacedPod({
+            namespace,
+            name,
+            body: { propagationPolicy: "Foreground" },
+        });
+
+        return json({
+            message: "Pod deleted successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        if (error?.dashboardResponse) return error.dashboardResponse;
+        return apiError(error, "Failed to delete pod");
+    }
+}
+
+export async function patchNamespacedQueue(request, namespace, name) {
+    try {
+        const { k8sApi } = getApis();
+        const patchData = await request.json();
+        const response = await k8sApi.patchNamespacedCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "queues",
+            name,
+            body: patchData,
+            options: {
+                headers: { "Content-Type": "application/merge-patch+json" },
+            },
+        });
+        return json({
+            message: "Queue updated successfully",
+            data: response.body,
+        });
+    } catch (error) {
+        return apiError(error, "Failed to update queue");
+    }
+}
+
+export async function handleApiRequest(request, pathSegments) {
+    const method = request.method.toUpperCase();
+    const [resource, ...rest] = pathSegments;
+
+    if (!resource) {
+        return json({ error: "Not Found" }, 404);
+    }
+
+    if (resource === "jobs" && rest.length === 0) {
+        if (method === "GET") return listJobs(request);
+        if (method === "POST") return createJob(request);
+    }
+    if (resource === "jobs" && rest.length === 2) {
+        const [namespace, name] = rest;
+        if (method === "GET") return getJob(namespace, name);
+        if (method === "PATCH") return patchJob(request, namespace, name);
+        if (method === "PUT") return updateJob(request, namespace, name);
+        if (method === "DELETE") return deleteJob(namespace, name);
+    }
+    if (resource === "jobs" && rest.length === 3 && rest[2] === "yaml") {
+        return getJobYaml(rest[0], rest[1]);
+    }
+    if (resource === "jobs" && rest.length === 3 && rest[2] === "events") {
+        return getJobEvents(rest[0], rest[1]);
+    }
+    if (resource === "podgroups" && rest.length === 0) {
+        if (method === "GET") return listPodGroups(request);
+        if (method === "POST") return createPodGroup(request);
+    }
+    if (resource === "podgroups" && rest.length === 2) {
+        if (method === "GET") return getPodGroup(rest[0], rest[1]);
+        if (method === "PATCH") return patchPodGroup(request, rest[0], rest[1]);
+        if (method === "PUT") return updatePodGroup(request, rest[0], rest[1]);
+        if (method === "DELETE") return deletePodGroup(rest[0], rest[1]);
+    }
+    if (
+        resource === "podgroups" &&
+        rest.length === 3 &&
+        rest[2] === "yaml" &&
+        method === "GET"
+    ) {
+        return getPodGroupYaml(rest[0], rest[1]);
+    }
+    if (
+        resource === "podgroups" &&
+        rest.length === 3 &&
+        rest[2] === "events" &&
+        method === "GET"
+    ) {
+        return getPodGroupEvents(rest[0], rest[1]);
+    }
+
+    if (resource === "queues" && rest.length === 0) {
+        if (method === "GET") return listQueues(request);
+        if (method === "POST") return createQueue(request);
+    }
+    if (resource === "queues" && rest.length === 1) {
+        if (method === "GET") return getQueue(rest[0]);
+        if (method === "PUT") return updateQueue(request, rest[0]);
+        if (method === "PATCH") return patchQueue(request, rest[0]);
+        if (method === "DELETE") return deleteQueue(rest[0]);
+    }
+    if (resource === "queues" && rest.length === 2 && rest[1] === "yaml") {
+        return getQueueYaml(rest[0]);
+    }
+    if (resource === "queues" && rest.length === 2 && rest[1] === "events") {
+        return getQueueEvents(rest[0]);
+    }
+    if (resource === "queues" && rest.length === 2 && method === "PATCH") {
+        return patchNamespacedQueue(request, rest[0], rest[1]);
+    }
+    if (resource === "cronjobs" && rest.length === 0) {
+        if (method === "GET") return listCronJobs(request);
+        if (method === "POST") return createCronJob(request);
+    }
+    if (resource === "cronjobs" && rest.length === 2) {
+        if (method === "GET") return getCronJob(rest[0], rest[1]);
+        if (method === "PUT") return updateCronJob(request, rest[0], rest[1]);
+        if (method === "DELETE") return deleteCronJob(rest[0], rest[1]);
+    }
+    if (
+        resource === "cronjobs" &&
+        rest.length === 3 &&
+        rest[2] === "yaml" &&
+        method === "GET"
+    ) {
+        return getCronJobYaml(rest[0], rest[1]);
+    }
+    if (
+        resource === "cronjobs" &&
+        rest.length === 3 &&
+        rest[2] === "events" &&
+        method === "GET"
+    ) {
+        return getCronJobEvents(rest[0], rest[1]);
+    }
+
+    if (resource === "pods" && rest.length === 0) {
+        if (method === "GET") return listPods(request);
+    }
+    if (resource === "pods" && rest.length === 2) {
+        if (method === "GET") return getPod(rest[0], rest[1]);
+        if (method === "DELETE") return deletePod(rest[0], rest[1]);
+    }
+    if (resource === "pods" && rest.length === 3 && rest[2] === "yaml") {
+        return getPodYaml(rest[0], rest[1]);
+    }
+    if (resource === "pods" && rest.length === 3 && rest[2] === "events") {
+        return getPodEvents(rest[0], rest[1]);
+    }
+    if (resource === "scheduler" && rest[0] === "config") {
+        const { k8sCoreApi } = getApis();
+        if (rest.length === 1 && method === "GET") {
+            return schedulerConfigJson(k8sCoreApi);
+        }
+        if (rest.length === 2 && rest[1] === "yaml" && method === "GET") {
+            return schedulerConfigYaml(k8sCoreApi);
+        }
+    }
+
+    return json({ error: "Not Found" }, 404);
+}

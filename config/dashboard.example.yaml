@@ -1,0 +1,79 @@
+# Volcano Dashboard unified backend configuration.
+#
+# Use this file for local development:
+#   DASHBOARD_CONFIG_FILE=config/dashboard.example.yaml npm run dev
+#
+# For Helm deployments, create a Secret from a customized copy:
+#   kubectl create secret generic volcano-dashboard-config \
+#     --namespace volcano-system \
+#     --from-file=dashboard.yaml=./dashboard.yaml
+
+schedulerConfig:
+    namespace: volcano-system
+    name: volcano-scheduler-configmap
+    key: ""
+    # Optional. Use a full metrics endpoint URL for Volcano controller metrics.
+    # Local development example:
+    #   kubectl -n volcano-system port-forward svc/volcano-controllers-service 18081:8081
+    #   ControllersMetricEndpoint: http://127.0.0.1:18081/metrics
+    # Cluster deployment example:
+    #   ControllersMetricEndpoint: http://volcano-controllers-service.volcano-system.svc:8081/metrics
+    ControllersMetricEndpoint: "http://127.0.0.1:18081/metrics"
+    # Optional. Use a full metrics endpoint URL for Volcano scheduler metrics.
+    # Local development example:
+    #   kubectl -n volcano-system port-forward svc/volcano-scheduler 18080:8080
+    #   SchedulerMetricEndpoint: http://127.0.0.1:18080/metrics
+    # Cluster deployment example:
+    #   SchedulerMetricEndpoint: http://volcano-scheduler.volcano-system.svc:8080/metrics
+    SchedulerMetricEndpoint: "http://127.0.0.1:18080/metrics"
+
+access:
+    # Global access ceiling. Supported values: read-write, read-only.
+    # If this is read-only, no local user or SSO group can be elevated to read-write.
+    mode: read-only
+
+auth:
+    # Set enabled: false only for anonymous read-only dashboards.
+    # Anonymous read-write is rejected by configuration validation.
+    enabled: true
+    # local, local-sso 2 option
+    mode: local-sso
+    jwt:
+        issuer: volcano-dashboard
+        secret: secure-salt-value-123
+        expiresIn: 8h
+        rememberExpiresIn: 30d
+
+    # Default development account is admin/admin.
+    # password_hash must be bcrypt.
+    users:
+        - username: admin
+          display_name: Administrator
+          password_hash: "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO."
+          access_mode: read-write
+        # Users without access_mode default to read-only.
+        # - username: viewer
+        #   display_name: Viewer
+        #   password_hash: "$2b$12$..."
+
+    sso:
+        provider_name: Keycloak
+        issuer_url: http://localhost:8080/realms/adak8s
+        client_id: squidflow-backend
+        client_secret: qiesogMQypSjhmxaYelevxlhJWkr0H3O
+        redirect_uri: http://localhost:3000/sso/callback
+        # Optional. If set, SSO users are redirected here after dashboard logout.
+        # {{token}} / {{idToken}} is the OIDC ID token.
+        # {{logoutRedirectURL}} resolves to <dashboard origin>/login.
+        logout_url: >-
+            http://localhost:8080/realms/adak8s/protocol/openid-connect/logout?id_token_hint={{token}}&post_logout_redirect_uri={{logoutRedirectURL}}
+        scopes: [ "openid", "profile", "email", "offline_access" ]
+        jwks_cache_ttl: 10m
+
+        # SSO users without a matching group mapping default to read-only.
+        # match is exact for this iteration.
+        group_mappings:
+            - match: adak8s-admins
+              access_mode: read-write
+            - match: adak8s-viewers
+              access_mode: read-only

@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: Pod
+metadata:
+    name: demo-serving-0
+    namespace: volcano-demo
+    labels:
+        app: demo-serving
+        demo.volcano.sh/sample: "true"
+    annotations:
+        scheduling.volcano.sh/group-name: demo-serving
+        scheduling.volcano.sh/queue-name: demo-prod
+spec:
+    schedulerName: volcano
+    containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+              requests:
+                  cpu: 50m
+                  memory: 32Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+    name: demo-serving-1
+    namespace: volcano-demo
+    labels:
+        app: demo-serving
+        demo.volcano.sh/sample: "true"
+    annotations:
+        scheduling.volcano.sh/group-name: demo-serving
+        scheduling.volcano.sh/queue-name: demo-prod
+spec:
+    schedulerName: volcano
+    containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+              requests:
+                  cpu: 50m
+                  memory: 32Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+    name: demo-pending-0
+    namespace: volcano-demo
+    labels:
+        app: demo-pending
+        demo.volcano.sh/sample: "true"
+    annotations:
+        scheduling.volcano.sh/group-name: demo-pending
+        scheduling.volcano.sh/queue-name: demo-research-ml
+spec:
+    schedulerName: volcano
+    nodeSelector:
+        kubernetes.io/hostname: demo-unreachable-node
+    containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+              requests:
+                  cpu: 50m
+                  memory: 32Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+    name: demo-pending-1
+    namespace: volcano-demo
+    labels:
+        app: demo-pending
+        demo.volcano.sh/sample: "true"
+    annotations:
+        scheduling.volcano.sh/group-name: demo-pending
+        scheduling.volcano.sh/queue-name: demo-research-ml
+spec:
+    schedulerName: volcano
+    nodeSelector:
+        kubernetes.io/hostname: demo-unreachable-node
+    containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+              requests:
+                  cpu: 50m
+                  memory: 32Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+    name: demo-ops-agent
+    namespace: volcano-demo-ops
+    labels:
+        app: demo-ops-agent
+        demo.volcano.sh/sample: "true"
+    annotations:
+        scheduling.volcano.sh/group-name: demo-ops-maintenance
+        scheduling.volcano.sh/queue-name: demo-dev
+spec:
+    schedulerName: volcano
+    containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+              requests:
+                  cpu: 25m
+                  memory: 16Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+    name: demo-failed-task
+    namespace: volcano-demo-ops
+    labels:
+        app: demo-failed-task
+        demo.volcano.sh/sample: "true"
+    annotations:
+        scheduling.volcano.sh/queue-name: demo-dev
+spec:
+    schedulerName: volcano
+    restartPolicy: Never
+    containers:
+        - name: task
+          image: busybox:1.36.1
+          command:
+              - sh
+              - -c
+              - echo "intentional failure for dashboard sample"; exit 1
+          resources:
+              requests:
+                  cpu: 25m
+                  memory: 16Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+    name: demo-succeeded-task
+    namespace: volcano-demo-ops
+    labels:
+        app: demo-succeeded-task
+        demo.volcano.sh/sample: "true"
+    annotations:
+        scheduling.volcano.sh/queue-name: demo-dev
+spec:
+    schedulerName: volcano
+    restartPolicy: Never
+    containers:
+        - name: task
+          image: busybox:1.36.1
+          command:
+              - sh
+              - -c
+              - echo "completed successfully for dashboard sample"; exit 0
+          resources:
+              requests:
+                  cpu: 25m
+                  memory: 16Mi

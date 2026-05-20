@@ -1,0 +1,6 @@
+apiVersion: v2
+name: volcano-dashboard
+description: A Helm chart for Volcano Dashboard
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

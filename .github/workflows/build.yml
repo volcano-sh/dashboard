@@ -1,96 +1,54 @@
-name: Build and Deploy
+name: Build
 
 on:
-  push:
-    branches: '*'
+    push:
+        branches: ["*"]
+    pull_request:
+        branches: ["*"]
 
 jobs:
-  frontend-build:
-    name: Frontend Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      
-      - name: Install Dependencies
-        working-directory: frontend
-        run: npm ci
-      
-      - name: Build Frontend
-        working-directory: frontend
-        run: npm run build
-      
-      - name: ✅ Frontend Build Successful
-        if: success()
-        run: echo "Frontend build successful ✅"
-      
-      - name: Start Frontend Server
-        working-directory: frontend
-        run: |
-          echo "Starting Frontend Server..."
-          npm run dev &
-          sleep 5
-          echo "Frontend server started"
-      
-      - name: ✅ Frontend Server Started
-        if: success()
-        run: echo "Frontend server started successfully ✅"
+    app-build:
+        name: Next.js Build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-  backend-build:
-    name: Backend Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      
-      - name: Install Dependencies
-        working-directory: backend
-        run: npm ci
-      
-      - name: ✅ Dependencies Installed
-        if: success()
-        run: echo "Backend dependencies installed successfully ✅"
-      
-      - name: Build Backend
-        working-directory: backend
-        run: npm run build
-      
-      - name: ✅ Backend Build Successful
-        if: success()
-        run: echo "Backend build successful ✅"
-      
-      - name: Start Backend Server
-        working-directory: backend
-        run: |
-          echo "Starting Backend Server..."
-          npm run dev &
-          sleep 5
-          echo "Backend server started"
-      
-      - name: ✅ Backend Server Started
-        if: success()
-        run: echo "Backend server started successfully ✅"
-  
-  docker-build:
-    name: Docker Image Build
-    runs-on: ubuntu-latest
-    needs: [frontend-build, backend-build]
-    steps:
-      - uses: actions/checkout@v4
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
 
-      - name: Build Frontend Docker Image
-        run: docker build -t frontend:dev . -f deployment/build/frontend/Dockerfile
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Build Backend Docker Image
-        run: docker build -t backend:dev . -f deployment/build/backend/Dockerfile
+            - name: Build application
+              run: npm run build
 
-      - name: ✅ Docker Build Successful
-        run: echo "Docker images built successfully ✅"
+    helm-build:
+        name: Helm Chart
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Helm
+              uses: azure/setup-helm@v4
+
+            - name: Lint Helm chart
+              run: helm lint helm/volcano-dashboard
+
+            - name: Render Helm chart
+              run: helm template volcano-dashboard helm/volcano-dashboard --namespace volcano-system
+
+    docker-build:
+        name: Docker Image
+        runs-on: ubuntu-latest
+        needs: [app-build, helm-build]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Build Docker image
+              run: npm run build:image

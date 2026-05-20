@@ -1,8 +1,8 @@
-.github/
+.next
+coverage
+dist
 node_modules
-frontend/node_modules
-backend/node_modules
-backend/dist
-deployment/
-docs/
-*.md
+out
+Dockerfile
+helm/**/templates/*.yaml
+helm/**/templates/*.tpl

@@ -1,0 +1,15 @@
+.git
+.github
+.husky
+.next
+coverage
+dist
+docs
+node_modules
+npm-debug.log*
+out
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example

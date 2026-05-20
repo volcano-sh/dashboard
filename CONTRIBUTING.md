@@ -82,16 +82,24 @@ You can build the volcano dashboard images locally. Please use the following com
 Build images.
 
 ```bash
-// build frontend image.
-docker build -t frontend:dev . -f deployment/build/frontend/Dockerfile
-// build backend image.
-docker build -t backend:dev . -f deployment/build/backend/Dockerfile
+npm run build:image
 ```
 
-After that you can replace the images in `volcano-dashboard.yaml` to verify the result.
+Validate chart rendering.
 
 ```bash
-kubectl apply -f deployment/volcano-dashboard.yaml
+helm template volcano-dashboard helm/volcano-dashboard --namespace volcano-system
+```
+
+After that you can override the chart image values to verify the result.
+
+```bash
+helm upgrade --install volcano-dashboard ./helm/volcano-dashboard \
+  --namespace volcano-system \
+  --create-namespace \
+  --set image.repository=volcano-dashboard \
+  --set image.tag=dev \
+  --set image.pullPolicy=IfNotPresent
 ```
 
 ## Code Style and Standards
@@ -145,6 +153,7 @@ git push origin <your-branch>
 4. Create a pull request
 
 Submit a pull request to the [volcano-sh/dashboard](https://github.com/volcano-sh/dashboard) repository. The PR should:
+
 - Have a clear and descriptive title
 - Include a detailed description of the changes
 - Reference any related issues

@@ -1,0 +1,141 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: volcano-system
+
+image:
+    repository: volcanosh/volcano-dashboard
+    pullPolicy: Always
+    tag: latest
+
+imagePullSecrets: []
+
+serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+rbac:
+    create: true
+
+config:
+    existingSecret: ""
+    secretKey: dashboard.yaml
+    data:
+        schedulerConfig:
+            namespace: volcano-system
+            name: volcano-scheduler-configmap
+            key: ""
+            ControllersMetricEndpoint: http://volcano-controllers-service.volcano-system.svc:8081/metrics
+            SchedulerMetricEndpoint: http://volcano-scheduler-service.volcano-system.svc:8080/metrics
+        access:
+            mode: read-only
+        auth:
+            enabled: true
+            mode: local
+            jwt:
+                issuer: volcano-dashboard
+                secret: volcano-dashboard-dev-secret
+                expiresIn: 8h
+                rememberExpiresIn: 30d
+            users:
+                - username: admin
+                  display_name: Administrator
+                  password_hash: "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO."
+                  access_mode: read-write
+
+externalSecret:
+    enabled: false
+    apiVersion: external-secrets.io/v1
+    name: ""
+    refreshInterval: 1h
+    secretStoreRef:
+        name: ""
+        kind: ClusterSecretStore
+    # Optional remote references used by the ExternalSecret template.
+    # Example local-sso config where only auth.sso.client_secret comes from
+    # External Secrets:
+    # config:
+    #   data:
+    #     auth:
+    #       enabled: true
+    #       mode: local-sso
+    #       jwt:
+    #         issuer: volcano-dashboard
+    #         secret: volcano-dashboard-dev-secret
+    #         expiresIn: 8h
+    #         rememberExpiresIn: 30d
+    #       users:
+    #         - username: admin
+    #           display_name: Administrator
+    #           password_hash: "$2b$12$LPJUlguhAzbmjP3CrGaPhuLUkBbi8GFKrIOGLBxJJgL2zSn00qoO."
+    #           access_mode: read-write
+    #       sso:
+    #         provider_name: Keycloak
+    #         issuer_url: http://localhost:8080/realms/adak8s
+    #         client_id: squidflow-backend
+    #         client_secret: "{{ .ssoClientSecret }}"
+    #         redirect_uri: http://localhost:3000/sso/callback
+    #         logout_url: "http://localhost:8080/realms/adak8s/protocol/openid-connect/logout?id_token_hint={{token}}&post_logout_redirect_uri={{logoutRedirectURL}}"
+    #         scopes: [ "openid", "profile", "email", "groups" ]
+    #         jwks_cache_ttl: 10m
+    #         group_mappings:
+    #           - match: adak8s-admins
+    #             access_mode: read-write
+    #           - match: adak8s-viewers
+    #             access_mode: read-only
+    # externalSecret:
+    #   enabled: true
+    #   secretStoreRef:
+    #     name: volcano-dashboard-secrets
+    #     kind: ClusterSecretStore
+    #   data:
+    #     - secretKey: ssoClientSecret
+    #       remoteRef:
+    #         key: volcano-dashboard/keycloak
+    #         property: client_secret
+    data: []
+    targetSecretName: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    seccompProfile:
+        type: RuntimeDefault
+
+securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+        drop:
+            - ALL
+
+service:
+    type: ClusterIP
+    port: 80
+    targetPort: http
+
+containerPort: 3000
+
+livenessProbe:
+    httpGet:
+        path: /
+        port: http
+    initialDelaySeconds: 20
+    periodSeconds: 20
+
+readinessProbe:
+    httpGet:
+        path: /
+        port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

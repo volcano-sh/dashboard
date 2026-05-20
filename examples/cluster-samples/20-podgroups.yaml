@@ -1,0 +1,32 @@
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+    name: demo-serving
+    namespace: volcano-demo
+    labels:
+        demo.volcano.sh/sample: "true"
+spec:
+    minMember: 2
+    queue: demo-prod
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+    name: demo-pending
+    namespace: volcano-demo
+    labels:
+        demo.volcano.sh/sample: "true"
+spec:
+    minMember: 2
+    queue: demo-research-ml
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+    name: demo-ops-maintenance
+    namespace: volcano-demo-ops
+    labels:
+        demo.volcano.sh/sample: "true"
+spec:
+    minMember: 1
+    queue: demo-dev

@@ -1,0 +1,221 @@
+# Queue resource usage scenarios for validating the dashboard resource bars.
+#
+# The spec fields are normal Volcano Queue configuration. The status fields are
+# included so API fixtures or clusters that preserve applied status can render
+# deterministic usage states in the Queues page. In a live Volcano cluster, the
+# controller may overwrite status based on real workload allocations.
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+    name: demo-usage-root
+    labels:
+        demo.volcano.sh/sample: "true"
+        demo.volcano.sh/purpose: resource-usage
+        demo.volcano.sh/usage-scenario: root
+spec:
+    weight: 10
+    reclaimable: true
+    capability:
+        cpu: "128"
+        memory: "2Ti"
+        nvidia.com/gpu: "16"
+    deserved:
+        cpu: "64"
+        memory: "1Ti"
+        nvidia.com/gpu: "8"
+    guarantee:
+        resource:
+            cpu: "32"
+            memory: "384Gi"
+            nvidia.com/gpu: "6"
+status:
+    state: Open
+    allocated:
+        cpu: "40"
+        memory: "512Gi"
+        nvidia.com/gpu: "5"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+    name: demo-usage-idle
+    labels:
+        demo.volcano.sh/sample: "true"
+        demo.volcano.sh/purpose: resource-usage
+        demo.volcano.sh/usage-scenario: idle
+spec:
+    parent: demo-usage-root
+    weight: 1
+    reclaimable: true
+    capability:
+        cpu: "8"
+        memory: "32Gi"
+        nvidia.com/gpu: "1"
+    deserved:
+        cpu: "4"
+        memory: "16Gi"
+        nvidia.com/gpu: "1"
+    guarantee:
+        resource:
+            cpu: "2"
+            memory: "8Gi"
+status:
+    state: Open
+    allocated:
+        cpu: "0"
+        memory: "0"
+        nvidia.com/gpu: "0"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+    name: demo-usage-healthy
+    labels:
+        demo.volcano.sh/sample: "true"
+        demo.volcano.sh/purpose: resource-usage
+        demo.volcano.sh/usage-scenario: healthy
+spec:
+    parent: demo-usage-root
+    weight: 2
+    reclaimable: true
+    capability:
+        cpu: "16"
+        memory: "64Gi"
+        nvidia.com/gpu: "2"
+    deserved:
+        cpu: "8"
+        memory: "32Gi"
+        nvidia.com/gpu: "1"
+    guarantee:
+        resource:
+            cpu: "4"
+            memory: "16Gi"
+status:
+    state: Open
+    allocated:
+        cpu: "6"
+        memory: "24Gi"
+        nvidia.com/gpu: "1"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+    name: demo-usage-underused
+    labels:
+        demo.volcano.sh/sample: "true"
+        demo.volcano.sh/purpose: resource-usage
+        demo.volcano.sh/usage-scenario: underused
+spec:
+    parent: demo-usage-root
+    weight: 2
+    reclaimable: true
+    capability:
+        cpu: "20"
+        memory: "80Gi"
+        nvidia.com/gpu: "2"
+    deserved:
+        cpu: "10"
+        memory: "40Gi"
+        nvidia.com/gpu: "1"
+    guarantee:
+        resource:
+            cpu: "4"
+            memory: "16Gi"
+status:
+    state: Open
+    allocated:
+        cpu: "4"
+        memory: "16Gi"
+        nvidia.com/gpu: "0"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+    name: demo-usage-hot
+    labels:
+        demo.volcano.sh/sample: "true"
+        demo.volcano.sh/purpose: resource-usage
+        demo.volcano.sh/usage-scenario: hot
+spec:
+    parent: demo-usage-root
+    weight: 2
+    reclaimable: true
+    capability:
+        cpu: "12"
+        memory: "48Gi"
+        nvidia.com/gpu: "1"
+    deserved:
+        cpu: "8"
+        memory: "32Gi"
+        nvidia.com/gpu: "1"
+    guarantee:
+        resource:
+            cpu: "4"
+            memory: "16Gi"
+status:
+    state: Open
+    allocated:
+        cpu: "14"
+        memory: "56Gi"
+        nvidia.com/gpu: "1"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+    name: demo-usage-memory-units
+    labels:
+        demo.volcano.sh/sample: "true"
+        demo.volcano.sh/purpose: resource-usage
+        demo.volcano.sh/usage-scenario: memory-units
+spec:
+    parent: demo-usage-root
+    weight: 1
+    reclaimable: true
+    capability:
+        cpu: "4000m"
+        memory: "1Ti"
+    deserved:
+        cpu: "2000m"
+        memory: "512Gi"
+    guarantee:
+        resource:
+            cpu: "1000m"
+            memory: "262144Mi"
+status:
+    state: Open
+    allocated:
+        cpu: "1500m"
+        memory: "262144Mi"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+    name: demo-usage-gpu
+    labels:
+        demo.volcano.sh/sample: "true"
+        demo.volcano.sh/purpose: resource-usage
+        demo.volcano.sh/usage-scenario: gpu
+spec:
+    parent: demo-usage-root
+    weight: 1
+    reclaimable: true
+    capability:
+        cpu: "24"
+        memory: "96Gi"
+        nvidia.com/gpu: "8"
+    deserved:
+        cpu: "12"
+        memory: "48Gi"
+        nvidia.com/gpu: "4"
+    guarantee:
+        resource:
+            cpu: "6"
+            memory: "24Gi"
+            nvidia.com/gpu: "2"
+status:
+    state: Open
+    allocated:
+        cpu: "9"
+        memory: "36Gi"
+        nvidia.com/gpu: "3"

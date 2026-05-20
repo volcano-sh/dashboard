@@ -2,27 +2,22 @@
     "name": "volcano-dashboard",
     "version": "0.1.0",
     "private": true,
-    "workspaces": [
-        "frontend",
-        "backend"
-    ],
+    "type": "module",
     "scripts": {
-        "backend": "npm run dev -w backend",
-        "frontend": "npm run dev -w frontend",
-        "dev": "concurrently -n server,client \"npm run backend\" \"npm run frontend\"",
+        "dev": "tsx server.ts",
+        "build": "next build && npm run build:server",
+        "build:server": "tsc -p tsconfig.server.json && node -e \"require('fs').writeFileSync('dist/server/package.json', '{\\\"type\\\":\\\"commonjs\\\"}\\n')\"",
+        "build:image": "docker build -t volcano-dashboard:dev .",
+        "routes:audit": "node scripts/audit-api-routes.ts",
+        "start": "tsx server.ts",
+        "lint": "eslint .",
+        "test": "vitest --run",
+        "test:watch": "vitest",
         "format": "prettier --write .",
-        "format:check": "prettier --check .",
-        "test:frontend": "npm run test -w frontend",
-        "test:backend": "npm run test -w backend"
+        "format:check": "prettier --check ."
     },
     "lint-staged": {
         "**/*.{js,jsx,ts,tsx,json,md}": "prettier --write"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
     },
     "browserslist": {
         "production": [
@@ -37,23 +32,55 @@
         ]
     },
     "devDependencies": {
+        "@eslint/js": "^9.39.1",
+        "@playwright/test": "^1.56.1",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.0",
+        "@testing-library/user-event": "^14.6.1",
+        "@types/js-yaml": "^4.0.9",
+        "@types/node": "^25.6.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@types/ws": "^8.18.1",
+        "@vitejs/plugin-react": "^5.1.0",
         "caniuse-lite": "^1.0.30001762",
-        "concurrently": "^9.1.2",
+        "eslint": "^9.39.1",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^7.0.1",
+        "eslint-plugin-react-refresh": "^0.4.24",
+        "eslint-plugin-vitest": "^0.5.4",
+        "globals": "^16.4.0",
         "husky": "^9.1.7",
+        "jiti": "^2.6.1",
+        "jsdom": "^26.1.0",
         "lint-staged": "^15.4.3",
         "prettier": "^3.5.3",
+        "tsx": "^4.21.0",
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.59.1",
         "vitest": "^3.0.8"
     },
     "dependencies": {
-        "@fortawesome/free-solid-svg-icons": "^6.7.2",
-        "@fortawesome/react-fontawesome": "github:fortawesome/react-fontawesome",
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
         "@kubernetes/client-node": "^1.2.0",
         "@monaco-editor/react": "^4.7.0",
-        "@mui/icons-material": "^6.4.8",
-        "@mui/material": "^6.4.8",
-        "bootstrap": "^5.3.3",
-        "fortawesome": "^0.0.1-security",
-        "lucide-react": "^0.511.0",
-        "react-bootstrap": "^2.10.9"
+        "@mui/icons-material": "^6.5.0",
+        "@mui/material": "^6.5.0",
+        "@mui/material-nextjs": "^9.0.0",
+        "@tanstack/react-query": "^5.99.2",
+        "@xterm/addon-fit": "^0.11.0",
+        "@xterm/xterm": "^6.0.0",
+        "axios": "^1.15.2",
+        "bcryptjs": "^3.0.3",
+        "chart.js": "^4.5.1",
+        "js-yaml": "^4.1.1",
+        "lodash": "^4.18.1",
+        "next": "^16.2.4",
+        "react": "^19.2.5",
+        "react-chartjs-2": "^5.3.1",
+        "react-dom": "^19.2.5",
+        "react-router-dom": "^7.9.4",
+        "ws": "^8.20.0"
     }
 }
