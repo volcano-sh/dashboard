@@ -83,8 +83,13 @@ const Pods = () => {
 
     const handleRefresh = useCallback(() => {
         setPagination((prev) => ({ ...prev, page: 1 }));
-        setSearchText("");
-    }, []);
+    
+        if (searchText === "") {
+            fetchPods();
+        } else {
+            setSearchText("");
+        }
+    }, [searchText, fetchPods]);
 
     const fetchData = async () => {
         try {

@@ -25,7 +25,7 @@ const Queues = () => {
         field: null,
         direction: "asc",
     });
-    const debouncedSearchText = useDebouncedValue(searchText, 200)
+    const debouncedSearchText = useDebouncedValue(searchText, 200);
 
     // 🟢 1. Fetch all queues
     const fetchQueues = useCallback(async () => {
