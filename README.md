@@ -2,7 +2,13 @@
 
 ## Overview
 
-The volcano dashboard provides a basic dashboard that can be easily deployed in your kubernetes cluster to show the status of resources including volcano jobs, queues, pods, etc.
+The volcano dashboard provides a dashboard that can be deployed in your
+Kubernetes cluster to inspect Volcano workloads and scheduling state. It shows
+Volcano Jobs, CronJobs, PodGroups, Queues, and queue-owned Pods, including queue
+hierarchy, scheduler resource allocation, read-only/read-write access modes,
+and local or OIDC SSO authentication. The Pods view is scoped to Volcano
+queue-owned Pods and derives namespace, queue, and PodGroup filters from visible
+workloads, avoiding a broad namespace list in the UI.
 
 <img src="docs/images/demo.gif" alt="volcano dashboard" style="zoom:50%;" />
 
@@ -73,11 +79,19 @@ auth:
 ```
 
 `access.mode` controls authorization and `auth.enabled` controls whether users
-must log in. To expose a read-only dashboard without login, combine
-`access.mode: read-only` with `auth.enabled: false`.
-For authenticated dashboards, local users and SSO group mappings without an
-explicit access mode default to read-only. The global `access.mode` is always
-the ceiling, so `access.mode: read-only` prevents every user from writing.
+must log in. The dashboard supports both read-only and read-write deployments:
+
+- `read-only`: users can inspect resources, but create, update, delete, logs
+  streaming, and terminal actions are disabled in the UI and blocked by the API.
+- `read-write`: authenticated users with effective read-write access can create,
+  update, and delete supported Volcano resources and use Pod logs/terminal
+  actions.
+
+To expose a read-only dashboard without login, combine `access.mode: read-only`
+with `auth.enabled: false`. For authenticated dashboards, local users and SSO
+group mappings without an explicit access mode default to read-only. The global
+`access.mode` is always the ceiling, so `access.mode: read-only` prevents every
+user from writing.
 
 ```yaml
 access:
