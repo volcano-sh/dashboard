@@ -304,6 +304,7 @@ export default function JobsManagement() {
               data={jobs || []}
               onRowClick={handleJobClick}
               disablePagination={true}
+              searchPlaceholder="Filter Jobs ..."
             />
           </div>
 
