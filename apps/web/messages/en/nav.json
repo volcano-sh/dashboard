@@ -1,0 +1,12 @@
+{
+  "brand": "Volcano",
+  "logoAlt": "Volcano Logo",
+  "languageSwitcher": "Change language",
+  "items": {
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "queues": "Queues",
+    "pods": "Pods",
+    "podgroups": "PodGroups"
+  }
+}

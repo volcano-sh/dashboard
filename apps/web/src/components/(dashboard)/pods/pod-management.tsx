@@ -15,10 +15,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import { useCallback, useEffect, useState } from "react"
 import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
-import { createColumns } from "./columns"
+import { ServerPagination } from "../server-pagination"
+import { usePodColumns } from "./columns"
 import { CreatePodDialog } from "./pod-create-dialog"
 import { PodEditDialog } from "./pod-edit-dialog"
 
@@ -34,6 +36,9 @@ export type PodStatus = {
 }
 
 export default function PodManagement() {
+    const t = useTranslations("pods")
+    const tc = useTranslations("common")
+    const format = useFormatter()
     const [pods, setPods] = useState<PodStatus[]>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -61,7 +66,7 @@ export default function PodManagement() {
             keepPreviousData: true,
             onError: (err) => {
                 console.error("Error fetching pods:", err);
-                setError(`Pods API error: ${err.message}`);
+                setError(t("errors.api", { message: err.message }));
             },
         }
     )
@@ -76,7 +81,7 @@ export default function PodManagement() {
             enabled: false,
             onError: (err) => {
                 console.error("Error fetching pod YAML:", err);
-                setError(`Pod YAML API error: ${err.message}`);
+                setError(t("errors.yamlApi", { message: err.message }));
             },
         },
     );
@@ -104,7 +109,7 @@ export default function PodManagement() {
             console.log(`Pod "${deletedPodName}" deleted successfully`)
         },
         onError: (error) => {
-            setError(`Failed to delete pod: ${error.message}`)
+            setError(t("errors.delete", { message: error.message }))
             setShowDeleteConfirm(false)
         }
     })
@@ -119,13 +124,13 @@ export default function PodManagement() {
             });
 
             if (!yaml) {
-                setError("No YAML configuration available for this pod");
+                setError(t("errors.noYaml"));
             }
 
             setPodToEdit({ ...pod, yaml: yaml || pod.yaml || "" });
             setShowEditPodModal(true);
         } catch (err) {
-            setError("Failed to fetch pod YAML for editing");
+            setError(t("errors.fetchYamlEdit"));
             console.error(err)
         }
     }, [utils])
@@ -148,7 +153,7 @@ export default function PodManagement() {
         }
     }, [podToDelete, deletePod])
 
-    const columns = createColumns({
+    const columns = usePodColumns({
         availableNamespaces,
         availableStatuses,
         onEdit: handleEdit,
@@ -193,7 +198,7 @@ export default function PodManagement() {
         try {
             await podsQuery.refetch();
         } catch (err) {
-            setError("Failed to refresh pods")
+            setError(t("errors.refresh"))
             console.error(err)
         } finally {
             setLoading(false)
@@ -209,7 +214,7 @@ export default function PodManagement() {
             setSelectedPod({ ...pod, yaml });
             setShowPodDetails(true);
         } catch (err) {
-            setError("Failed to fetch pod YAML");
+            setError(t("errors.fetchYaml"));
             console.error(err)
         }
     }, [podYamlQuery])
@@ -255,19 +260,19 @@ export default function PodManagement() {
     return (
         <div className="container mx-auto p-4 mt-4">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Pod Management</h1>
+                <h1 className="text-2xl font-bold">{t("title")}</h1>
                 <div className="flex items-center">
                     <Button
                         onClick={handleRefresh}
                         disabled={loading || isRefreshing}
-                        className="flex items-center gap-2 mr-4"
+                        className="flex items-center gap-2 me-4"
                     >
                         <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-                        Refresh
+                        {tc("actions.refresh")}
                     </Button>
                     <Button onClick={handlePodCreate} className="flex items-center gap-2">
                         <Plus className="h-4 w-4" />
-                        Create Pod
+                        {t("createPod")}
                     </Button>
                 </div>
             </div>
@@ -296,6 +301,7 @@ export default function PodManagement() {
                             data={pods || []}
                             onRowClick={handlePodClick}
                             disablePagination={true}
+                            filterPlaceholder={t("filterPlaceholder")}
                         />
                     </div>
 
@@ -315,7 +321,7 @@ export default function PodManagement() {
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            Pod Details: {selectedPod?.name}
+                            {t("details.title", { name: selectedPod?.name ?? "" })}
                             {selectedPod && (
                                 <Badge className={getStatusColor(selectedPod.status)}>
                                     {selectedPod.status}
@@ -328,27 +334,27 @@ export default function PodManagement() {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                                 <div>
-                                    <span className="font-semibold">Name:</span> {selectedPod.name}
+                                    <span className="font-semibold">{tc("details.name")}</span> {selectedPod.name}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Namespace:</span> {selectedPod.namespace}
+                                    <span className="font-semibold">{tc("details.namespace")}</span> {selectedPod.namespace}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Created:</span> {selectedPod.createdAt.toLocaleString()}
+                                    <span className="font-semibold">{tc("details.created")}</span>{" "}{format.dateTime(selectedPod.createdAt, { dateStyle: "medium", timeStyle: "short" })}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Age:</span> {selectedPod.age}
+                                    <span className="font-semibold">{t("table.age")}:</span> {selectedPod.age}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Status:</span>
-                                    <Badge className={`ml-2 ${getStatusColor(selectedPod.status)}`}>
+                                    <span className="font-semibold">{tc("details.state")}</span>
+                                    <Badge className={`ms-2 ${getStatusColor(selectedPod.status)}`}>
                                         {selectedPod.status}
                                     </Badge>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="font-semibold mb-2">YAML Configuration</h3>
+                                <h3 className="font-semibold mb-2">{tc("details.yamlConfiguration")}</h3>
                                 <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
                                     <code>{selectedPod.yaml}</code>
                                 </pre>
@@ -374,11 +380,11 @@ export default function PodManagement() {
             }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete Pod</DialogTitle>
+                        <DialogTitle>{t("delete.title")}</DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
-                        <p>Are you sure you want to delete the pod <strong>{podToDelete?.name}</strong> in namespace <strong>{podToDelete?.namespace}</strong>?</p>
-                        <p className="mt-2 text-sm text-gray-500">This action cannot be undone.</p>
+                        <p>{t("delete.message", { name: podToDelete?.name ?? "", namespace: podToDelete?.namespace ?? "" })}</p>
+                        <p className="mt-2 text-sm text-gray-500">{tc("deleteConfirm.cannotUndo")}</p>
                     </div>
                     <div className="flex justify-end gap-2">
                         <Button
@@ -386,7 +392,7 @@ export default function PodManagement() {
                             onClick={() => setShowDeleteConfirm(false)}
                             disabled={isDeleting}
                         >
-                            Cancel
+                            {tc("actions.cancel")}
                         </Button>
                         <Button
                             variant="destructive"
@@ -395,11 +401,11 @@ export default function PodManagement() {
                         >
                             {isDeleting ? (
                                 <>
-                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                                    Deleting...
+                                    <RefreshCw className="w-4 h-4 me-2 animate-spin" />
+                                    {tc("actions.deleting")}
                                 </>
                             ) : (
-                                "Delete"
+                                tc("actions.delete")
                             )}
                         </Button>
                     </div>

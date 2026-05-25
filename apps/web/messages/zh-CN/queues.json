@@ -1,0 +1,64 @@
+{
+  "title": "队列管理",
+  "createQueue": "创建队列",
+  "filterPlaceholder": "筛选队列...",
+  "table": {
+    "name": "名称",
+    "parent": "父队列",
+    "creationTime": "创建时间",
+    "state": "状态",
+    "actions": "操作"
+  },
+  "details": {
+    "title": "队列详情：{name}"
+  },
+  "delete": {
+    "title": "删除队列",
+    "message": "确定要删除队列 {name} 吗？",
+    "rootQueueTooltip": "根队列无法删除",
+    "deleteTooltip": "删除队列"
+  },
+  "errors": {
+    "api": "队列 API 错误：{message}",
+    "yamlApi": "队列 YAML API 错误：{message}",
+    "refresh": "刷新队列失败",
+    "fetchYaml": "获取队列 YAML 失败",
+    "fetchYamlEdit": "获取队列 YAML 用于编辑失败",
+    "noYaml": "此队列没有可用的 YAML 配置",
+    "delete": "删除队列失败：{message}",
+    "rootQueue": "根队列是系统队列，无法删除。"
+  },
+  "create": {
+    "title": "创建队列",
+    "formTab": "表单",
+    "yamlTab": "YAML",
+    "queueName": "队列名称",
+    "weight": "权重",
+    "priority": "优先级",
+    "reclaimable": "可回收",
+    "guaranteeTitle": "保证资源（可选）",
+    "guaranteeHelper": "映射到 spec.guarantee.resource（cpu / memory）。",
+    "capabilityTitle": "能力资源（可选）",
+    "capabilityHelper": "映射到 spec.capability。",
+    "deservedTitle": "应得资源（可选）",
+    "deservedHelper": "映射到 spec.deserved（capacity 插件）。",
+    "cpu": "CPU",
+    "memory": "内存",
+    "yamlLabel": "队列 YAML 配置",
+    "yamlPlaceholder": "请输入队列 YAML 配置...",
+    "success": "队列创建成功！",
+    "failed": "创建队列失败",
+    "parseFormFailed": "无法将 YAML 解析到表单",
+    "button": "创建",
+    "nameRequired": "队列名称为必填项",
+    "weightInvalid": "权重必须为非负整数"
+  },
+  "edit": {
+    "title": "编辑队列：{name}",
+    "description": "下方显示当前队列配置。修改后点击更新以应用更改。",
+    "success": "队列更新成功！",
+    "failed": "更新队列失败",
+    "button": "更新队列",
+    "yamlPlaceholder": "请输入队列 YAML 配置..."
+  }
+}

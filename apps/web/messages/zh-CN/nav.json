@@ -1,0 +1,12 @@
+{
+  "brand": "Volcano",
+  "logoAlt": "Volcano 标志",
+  "languageSwitcher": "切换语言",
+  "items": {
+    "dashboard": "仪表盘",
+    "jobs": "作业",
+    "queues": "队列",
+    "pods": "Pod",
+    "podgroups": "Pod 组"
+  }
+}

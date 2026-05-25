@@ -19,6 +19,7 @@ import {
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Edit, Filter, Trash2 } from 'lucide-react'
 import { isProtectedQueue, protectedQueueDeleteMessage } from "@/lib/queue-constants"
+import { useFormatter, useTranslations } from "next-intl"
 import { QueueStatus } from "./queue-management"
 
 interface CreateColumnsOptions {
@@ -26,30 +27,31 @@ interface CreateColumnsOptions {
     onDelete?: (queue: QueueStatus) => void
 }
 
-export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): ColumnDef<QueueStatus>[] => [
+export const createColumns = ({
+    onEdit,
+    onDelete,
+    t,
+    tc,
+    formatDateTime,
+}: CreateColumnsOptions & {
+    t: ReturnType<typeof useTranslations<"queues">>
+    tc: ReturnType<typeof useTranslations<"common">>
+    formatDateTime: (date: Date) => string
+}): ColumnDef<QueueStatus>[] => [
     {
         accessorKey: "name",
-        header: () => (
-            <span>Name</span>
-        ),
+        header: () => <span>{t("table.name")}</span>,
     },
     {
         accessorKey: "parent",
-        header: () => (
-            <span>
-                Parent
-            </span>
-
-        ),
+        header: () => <span>{t("table.parent")}</span>,
         cell: ({ row }) => {
-            const parent = row.getValue("parent") as string;
+            const parent = row.getValue("parent") as string
             return (
-                <Badge
-                    className="bg-blue-100 text-blue-800 hover:bg-blue-100/60"
-                >
+                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100/60">
                     {parent}
                 </Badge>
-            );
+            )
         },
     },
     {
@@ -59,32 +61,37 @@ export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): Colum
                 variant="ghost"
                 onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
-                Creation Time
-                <ArrowUpDown className="ml-2 h-4 w-4" />
+                {t("table.creationTime")}
+                <ArrowUpDown className="ms-2 h-4 w-4" />
             </Button>
         ),
         cell: ({ row }) => {
             const createdAt = row.getValue("createdAt") as Date
-            return new Intl.DateTimeFormat("en-US", {
-                dateStyle: "medium",
-                timeStyle: "short",
-            }).format(createdAt)
+            return formatDateTime(createdAt)
         },
     },
     {
         accessorKey: "state",
         header: ({ column }) => (
             <div className="flex items-center">
-                State
+                {t("table.state")}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="ml-2 h-8 p-1">
+                        <Button variant="ghost" size="sm" className="ms-2 h-8 p-1">
                             <Filter className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                        <DropdownMenuLabel>Filter by State</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t("table.state")}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        <DropdownMenuCheckboxItem
+                            checked={!column.getFilterValue()}
+                            onCheckedChange={(checked) => {
+                                if (checked) column.setFilterValue(undefined)
+                            }}
+                        >
+                            {tc("actions.all")}
+                        </DropdownMenuCheckboxItem>
                         {["open", "closed", "maintenance"].map((state) => (
                             <DropdownMenuCheckboxItem
                                 key={state}
@@ -124,7 +131,7 @@ export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): Colum
     },
     {
         id: "actions",
-        header: "Actions",
+        header: t("table.actions"),
         cell: ({ row }) => {
             const queue = row.original
             const isDeleteDisabled = isProtectedQueue(queue.name)
@@ -148,7 +155,7 @@ export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): Colum
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Edit queue</p>
+                                    <p>{t("edit.button")}</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
@@ -190,4 +197,18 @@ export const createColumns = ({ onEdit, onDelete }: CreateColumnsOptions): Colum
     },
 ]
 
-export const columns = createColumns({}) 
+export function useQueueColumns(options: CreateColumnsOptions) {
+    const t = useTranslations("queues")
+    const tc = useTranslations("common")
+    const format = useFormatter()
+
+    const formatDateTime = (date: Date) =>
+        format.dateTime(date, { dateStyle: "medium", timeStyle: "short" })
+
+    return createColumns({
+        ...options,
+        t,
+        tc,
+        formatDateTime,
+    })
+}

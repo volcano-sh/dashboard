@@ -1,0 +1,48 @@
+{
+  "title": "Jobs Status",
+  "createJob": "Create Job",
+  "filterPlaceholder": "Filter jobs...",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "queue": "Queue",
+    "creationTime": "Creation Time",
+    "status": "Status",
+    "actions": "Actions",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByQueue": "Filter by Queue",
+    "filterByStatus": "Filter by Status"
+  },
+  "details": {
+    "title": "Job Details: {name}"
+  },
+  "delete": {
+    "title": "Delete Job",
+    "message": "Are you sure you want to delete the job {name} in namespace {namespace}?"
+  },
+  "errors": {
+    "api": "Jobs API error: {message}",
+    "yamlApi": "Job YAML API error: {message}",
+    "refresh": "Failed to refresh jobs",
+    "fetchYaml": "Failed to fetch job YAML",
+    "fetchYamlEdit": "Failed to fetch job YAML for editing",
+    "noYaml": "No YAML configuration available for this job",
+    "delete": "Failed to delete job: {message}"
+  },
+  "create": {
+    "title": "Create Volcano Job",
+    "description": "Enter your job configuration in YAML format below.",
+    "yamlLabel": "Job YAML Configuration",
+    "yamlPlaceholder": "Enter your job YAML configuration...",
+    "success": "Job created successfully!",
+    "failed": "Failed to create job",
+    "button": "Create Job"
+  },
+  "edit": {
+    "title": "Edit Job: {name}",
+    "description": "The current job configuration is shown below. Make your changes and click Update to apply them.",
+    "success": "Job updated successfully!",
+    "failed": "Failed to update job",
+    "button": "Update Job"
+  }
+}

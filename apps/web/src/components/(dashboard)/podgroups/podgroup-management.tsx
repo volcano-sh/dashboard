@@ -21,12 +21,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { trpc } from "@volcano/trpc/react"
+import { useFormatter, useTranslations } from "next-intl"
 import { RefreshCw, Search, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
 import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
-import { createColumns } from "./columns"
+import { ServerPagination } from "../server-pagination"
+import { usePodGroupColumns } from "./columns"
 
 export type PodGroupStatus = {
     name: string;
@@ -39,6 +41,9 @@ export type PodGroupStatus = {
 }
 
 export default function PodGroupManagement() {
+    const t = useTranslations("podgroups")
+    const tc = useTranslations("common")
+    const format = useFormatter()
     const [podGroups, setPodGroups] = useState<PodGroupStatus[]>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -65,7 +70,7 @@ export default function PodGroupManagement() {
             keepPreviousData: true,
             onError: (err) => {
                 console.error("Error fetching podgroups:", err);
-                setError(`PodGroups API error: ${err.message}`);
+                setError(t("errors.api", { message: err.message }));
             },
         }
     )
@@ -79,7 +84,7 @@ export default function PodGroupManagement() {
             enabled: false,
             onError: (err) => {
                 console.error("Error fetching podgroup YAML:", err);
-                setError(`PodGroup YAML API error: ${err.message}`);
+                setError(t("errors.yamlApi", { message: err.message }));
             },
         },
     );
@@ -92,7 +97,7 @@ export default function PodGroupManagement() {
         Array.from(new Set(podGroups.map(pg => pg.status).filter(Boolean))).sort()
         : [];
 
-    const columns = createColumns({
+    const columns = usePodGroupColumns({
         availableNamespaces,
         availableStatuses,
     });
@@ -133,7 +138,7 @@ export default function PodGroupManagement() {
         try {
             await podGroupsQuery.refetch();
         } catch (err) {
-            setError("Failed to refresh podgroups")
+            setError(t("errors.refresh"))
             console.error(err)
         } finally {
             setLoading(false)
@@ -149,7 +154,7 @@ export default function PodGroupManagement() {
             setSelectedPodGroup({ ...podGroup, yaml });
             setShowPodGroupDetails(true);
         } catch (err) {
-            setError("Failed to fetch podgroup YAML");
+            setError(t("errors.fetchYaml"));
             console.error(err)
         }
     }, [podGroupYamlQuery])
@@ -191,7 +196,7 @@ export default function PodGroupManagement() {
     return (
         <div className="container mx-auto p-4 mt-4">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">PodGroup Management</h1>
+                <h1 className="text-2xl font-bold">{t("title")}</h1>
                 <div className="flex items-center gap-2">
                     <Button
                         onClick={handleRefresh}
@@ -199,7 +204,7 @@ export default function PodGroupManagement() {
                         className="flex items-center gap-2"
                     >
                         <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-                        Refresh
+                        {tc("actions.refresh")}
                     </Button>
                 </div>
             </div>
@@ -207,21 +212,21 @@ export default function PodGroupManagement() {
             {/* Search and Filters */}
             <div className="flex items-center gap-4 mb-4">
                 <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                        placeholder="Search podgroups..."
+                        placeholder={t("searchPlaceholder")}
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
                             setPagination({ ...pagination, page: 1 });
                         }}
-                        className="pl-10"
+                        className="ps-10"
                     />
                     {searchTerm && (
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                            className="absolute end-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
                             onClick={() => {
                                 setSearchTerm("");
                                 setPagination({ ...pagination, page: 1 });
@@ -239,10 +244,10 @@ export default function PodGroupManagement() {
                     }}
                 >
                     <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Namespace" />
+                        <SelectValue placeholder={t("namespacePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="All">All Namespaces</SelectItem>
+                        <SelectItem value="All">{t("allNamespaces")}</SelectItem>
                         {availableNamespaces.map((ns) => (
                             <SelectItem key={ns} value={ns}>{ns}</SelectItem>
                         ))}
@@ -256,10 +261,10 @@ export default function PodGroupManagement() {
                     }}
                 >
                     <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Status" />
+                        <SelectValue placeholder={t("statusPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="All">All Statuses</SelectItem>
+                        <SelectItem value="All">{t("allStatuses")}</SelectItem>
                         {availableStatuses.map((status) => (
                             <SelectItem key={status} value={status}>{status}</SelectItem>
                         ))}
@@ -291,6 +296,7 @@ export default function PodGroupManagement() {
                             data={podGroups || []}
                             onRowClick={handlePodGroupClick}
                             disablePagination={true}
+                            filterPlaceholder={t("filterPlaceholder")}
                         />
                     </div>
 
@@ -310,7 +316,7 @@ export default function PodGroupManagement() {
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            PodGroup Details: {selectedPodGroup?.name}
+                            {t("details.title", { name: selectedPodGroup?.name ?? "" })}
                             {selectedPodGroup && (
                                 <Badge className={getStatusColor(selectedPodGroup.status)}>
                                     {selectedPodGroup.status}
@@ -323,30 +329,30 @@ export default function PodGroupManagement() {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                                 <div>
-                                    <span className="font-semibold">Name:</span> {selectedPodGroup.name}
+                                    <span className="font-semibold">{tc("details.name")}</span> {selectedPodGroup.name}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Namespace:</span> {selectedPodGroup.namespace}
+                                    <span className="font-semibold">{tc("details.namespace")}</span> {selectedPodGroup.namespace}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Queue:</span> {selectedPodGroup.queue || "N/A"}
+                                    <span className="font-semibold">{tc("details.queue")}</span> {selectedPodGroup.queue || tc("notAvailable")}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Min Member:</span> {selectedPodGroup.minMember || "N/A"}
+                                    <span className="font-semibold">{t("details.minMember")}</span> {selectedPodGroup.minMember ?? tc("notAvailable")}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Created:</span> {selectedPodGroup.createdAt.toLocaleString()}
+                                    <span className="font-semibold">{tc("details.created")}</span>{" "}{format.dateTime(selectedPodGroup.createdAt, { dateStyle: "medium", timeStyle: "short" })}
                                 </div>
                                 <div>
-                                    <span className="font-semibold">Status:</span>
-                                    <Badge className={`ml-2 ${getStatusColor(selectedPodGroup.status)}`}>
+                                    <span className="font-semibold">{tc("details.state")}</span>
+                                    <Badge className={`ms-2 ${getStatusColor(selectedPodGroup.status)}`}>
                                         {selectedPodGroup.status}
                                     </Badge>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="font-semibold mb-2">YAML Configuration</h3>
+                                <h3 className="font-semibold mb-2">{tc("details.yamlConfiguration")}</h3>
                                 <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
                                     <code>{selectedPodGroup.yaml}</code>
                                 </pre>
