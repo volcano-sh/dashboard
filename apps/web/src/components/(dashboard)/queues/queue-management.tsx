@@ -151,16 +151,7 @@ export default function QueueManagement() {
         onDelete: handleDelete
     })
 
-    const queueYamlQuery = trpc.queueRouter.getQueueYaml.useQuery(
-        { name: selectedQueue?.name || "" },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching queue YAML:", err);
-                setError(`Queue YAML API error: ${err.message}`);
-            },
-        },
-    );
+
 
     useEffect(() => {
         if (queuesQuery.data) {
@@ -202,15 +193,16 @@ export default function QueueManagement() {
         setError(null);
 
         try {
-            const response = await queueYamlQuery.refetch();
-            const yaml = response.data || queue.yaml || "";
-            setSelectedQueue({ ...queue, yaml });
+            const yaml = await utils.queueRouter.getQueueYaml.fetch({
+                name: queue.name
+            });
+            setSelectedQueue({ ...queue, yaml: yaml || "" });
             setShowQueueDetails(true);
         } catch (err) {
             setError("Failed to fetch queue YAML");
             console.error(err)
         }
-    }, [queueYamlQuery])
+    }, [utils])
 
     const handleCreateQueue = () => {
         setShowCreateQueueModal(true)
