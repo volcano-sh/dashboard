@@ -34,22 +34,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push frontend image
+      - name: Build and push image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deployment/build/frontend/Dockerfile
+          file: ./deployment/Dockerfile
           push: true
-          tags: volcanosh/vc-dashboard-frontend:${{ env.TAG }}
-          platforms: linux/amd64,linux/arm64
-
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./deployment/build/backend/Dockerfile
-          push: true
-          tags: volcanosh/vc-dashboard-backend:${{ env.TAG }}
+          tags: volcanosh/vc-dashboard:${{ env.TAG }}
           platforms: linux/amd64,linux/arm64
 
       - name: Logout from Docker Hub

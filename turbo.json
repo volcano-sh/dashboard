@@ -1,0 +1,57 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY",
+        "K8S_SERVER"
+      ]
+    },
+    "lint": {
+      "dependsOn": [
+        "^lint"
+      ],
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY",
+        "K8S_SERVER"
+      ]
+    },
+    "check-types": {
+      "dependsOn": [
+        "^check-types"
+      ],
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY",
+        "K8S_SERVER"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY",
+        "K8S_SERVER"
+      ]
+    }
+  }
+}
