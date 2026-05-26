@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import axios from "axios";
+import { escape } from "lodash";
 import TitleComponent from "../Titlecomponent";
 import { fetchAllNamespaces, fetchAllQueues } from "../utils";
 import JobTable from "./JobTable/JobTable";
@@ -104,9 +105,9 @@ const Jobs = () => {
                     if (keyMatch) {
                         const [, indent, key] = keyMatch;
                         const value = line.slice(keyMatch[0].length);
-                        return `${indent}<span class="yaml-key">${key}</span>:${value}`;
+                        return `${indent}<span class="yaml-key">${escape(key)}</span>:${escape(value)}`;
                     }
-                    return line;
+                    return escape(line);
                 })
                 .join("\n");
 
