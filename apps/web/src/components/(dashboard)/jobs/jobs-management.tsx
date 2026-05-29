@@ -62,19 +62,7 @@ export default function JobsManagement() {
     }
   )
 
-  const jobYamlQuery = trpc.jobsRouter.getJobYaml.useQuery(
-    {
-      namespace: selectedJob?.namespace || "",
-      name: selectedJob?.name || "",
-    },
-    {
-      enabled: false,
-      onError: (err) => {
-        console.error("Error fetching job YAML:", err);
-        setError(`Job YAML API error: ${err.message}`);
-      },
-    },
-  );
+
 
   const availableNamespaces = jobs ?
     Array.from(new Set(jobs.map(job => job.namespace).filter(Boolean))).sort()
@@ -210,15 +198,17 @@ export default function JobsManagement() {
     setError(null);
 
     try {
-      const response = await jobYamlQuery.refetch();
-      const yaml = response.data || job.yaml || "";
-      setSelectedJob({ ...job, yaml });
+      const yaml = await utils.jobsRouter.getJobYaml.fetch({
+        namespace: job.namespace,
+        name: job.name
+      });
+      setSelectedJob({ ...job, yaml: yaml || "" });
       setShowJobDetails(true);
     } catch (err) {
       setError("Failed to fetch job YAML");
       console.error(err)
     }
-  }, [jobYamlQuery]);
+  }, [utils]);
 
   const handleJobCreate = () => {
     setShowCreateJobModal(true)
