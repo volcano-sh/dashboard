@@ -152,14 +152,14 @@ export const createColumns = ({
                     <Badge
                         className={
                             status === "running"
-                                ? "bg-green-100 text-green-800"
+                                ? "bg-green-100 text-green-800 hover:bg-green-100/60"
                                 : status === "pending"
-                                    ? "bg-yellow-100 text-yellow-800"
+                                    ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100/60"
                                     : status === "failed"
-                                        ? "bg-red-100 text-red-800"
+                                        ? "bg-red-100 text-red-800 hover:bg-red-100/60"
                                         : status === "succeeded"
-                                            ? "bg-blue-100 text-blue-800"
-                                            : "bg-gray-100 text-gray-800"
+                                            ? "bg-blue-100 text-blue-800 hover:bg-blue-100/60"
+                                            : "bg-gray-100 text-gray-800 hover:bg-gray-100/60"
                         }
                     >
                         {status}
@@ -230,4 +230,4 @@ export const createColumns = ({
         },
     ]
 
-export const columns = createColumns({ availableNamespaces: [], availableStatuses: [] }) 
+export const columns = createColumns({ availableNamespaces: [], availableStatuses: [] })

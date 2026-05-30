@@ -212,14 +212,14 @@ export const fetchPodGroups = async (
 ): Promise<PaginatedResponse<unknown>> => {
     const namespace = filters.namespace?.trim() ?? "";
     const search = filters.search?.trim().toLowerCase() ?? "";
-    const status = filters.status?.trim() ?? "";
+    const status = filters.status?.trim().toLowerCase() ?? "";
 
     const matchesFilters = (pg: PodGroupLike) => {
         if (pg.metadata?.deletionTimestamp) return false;
         if (search && !String(pg.metadata?.name ?? "").toLowerCase().includes(search)) {
             return false;
         }
-        if (status && status !== "All" && pg.status?.phase !== status) {
+        if (status && status !== "all" && pg.status?.phase?.toLowerCase() !== status) {
             return false;
         }
         return true;
