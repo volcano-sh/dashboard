@@ -27,6 +27,7 @@ import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
 import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
+import { YamlViewer } from "@/components/ui/yaml-viewer"
 
 export type PodGroupStatus = {
     name: string;
@@ -347,9 +348,7 @@ export default function PodGroupManagement() {
 
                             <div>
                                 <h3 className="font-semibold mb-2">YAML Configuration</h3>
-                                <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
-                                    <code>{selectedPodGroup.yaml}</code>
-                                </pre>
+                                <YamlViewer yaml={selectedPodGroup.yaml} />
                             </div>
                         </div>
                     )}

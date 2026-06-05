@@ -21,6 +21,7 @@ import { createColumns } from "./columns"
 import { isProtectedQueue, protectedQueueDeleteMessage } from "@/lib/queue-constants"
 import { CreateQueueDialog } from "./create-queue-dialog"
 import { QueueEditDialog } from "./queue-edit-dialog"
+import { YamlViewer } from "@/components/ui/yaml-viewer"
 
 export type QueueStatus = {
     name: string;
@@ -337,9 +338,7 @@ export default function QueueManagement() {
 
                             <div>
                                 <h3 className="font-semibold mb-2">YAML Configuration</h3>
-                                <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
-                                    <code>{selectedQueue.yaml}</code>
-                                </pre>
+                                <YamlViewer yaml={selectedQueue.yaml} />
                             </div>
                         </div>
                     )}
