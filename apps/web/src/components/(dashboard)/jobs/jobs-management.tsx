@@ -19,6 +19,7 @@ import { DataTable } from "../data-table"
 import { createColumns } from "./columns"
 import { CreateJobDialog } from "./create-job-dialog"
 import { JobEditDialog } from "./job-edit-dialog"
+import { YamlViewer } from "@/components/ui/yaml-viewer"
 
 export type JobStatus = {
   name: string;
@@ -354,9 +355,7 @@ export default function JobsManagement() {
               {/* YAML Configuration */}
               <div>
                 <h3 className="font-semibold mb-2">YAML Configuration</h3>
-                <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
-                  <code>{selectedJob.yaml}</code>
-                </pre>
+                <YamlViewer yaml={selectedJob.yaml} />
               </div>
             </div>
           )}
