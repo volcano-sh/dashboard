@@ -43,6 +43,8 @@ export default function JobsManagement() {
 
   const utils = trpc.useUtils()
 
+  const [namespaceFilter, setNamespaceFilter] = useState<string | undefined>()
+
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 10,
@@ -52,6 +54,7 @@ export default function JobsManagement() {
     {
       page: pagination.page,
       pageSize: pagination.pageSize,
+      namespace: namespaceFilter,
     },
     {
       keepPreviousData: true,
@@ -160,7 +163,11 @@ export default function JobsManagement() {
     availableQueues,
     availableStatuses,
     onEdit: handleEdit,
-    onDelete: handleDelete
+    onDelete: handleDelete,
+    onNamespaceChange: (ns) => {
+      setNamespaceFilter(ns)
+      setPagination(prev => ({ ...prev, page: 1 }))
+    },
   });
 
   // Use tRPC query results to update state
