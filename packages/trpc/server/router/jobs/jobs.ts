@@ -17,13 +17,15 @@ export const jobsRouter = router({
         const {
             page = 1,
             pageSize = 10,
+            namespace,
         } = input;
         console.log("Fetching jobs with params:", {
             page,
             pageSize,
+            namespace,
         });
 
-        return fetchJobs(page, pageSize);
+        return fetchJobs(page, pageSize, { namespace });
     }),
     getJob: procedure.input(getJobInputSchema).query(async ({ input }) => {
         const { namespace, name } = input;

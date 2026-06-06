@@ -108,11 +108,26 @@ function extractListMeta(response: {
 export const fetchJobs = async (
     page: number,
     pageSize: number,
+    filters?: { namespace?: string },
 ): Promise<PaginatedResponse<unknown>> => {
+    const namespace = filters?.namespace?.trim() ?? "";
+
     return fetchPaginatedK8sList(
         page,
         pageSize,
         async (limit, continueToken) => {
+            if (namespace && namespace !== "All") {
+                const response = await k8sApi.listNamespacedCustomObject({
+                    group: "batch.volcano.sh",
+                    version: "v1alpha1",
+                    namespace,
+                    plural: "jobs",
+                    limit,
+                    ...(continueToken && { continue: continueToken }),
+                });
+                return extractListMeta(response);
+            }
+
             const response = await k8sApi.listClusterCustomObject({
                 group: "batch.volcano.sh",
                 version: "v1alpha1",

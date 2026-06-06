@@ -20,6 +20,7 @@ interface CreateColumnsOptions {
   availableStatuses: string[]
   onEdit?: (job: JobStatus) => void
   onDelete?: (job: JobStatus) => void
+  onNamespaceChange?: (namespace: string | undefined) => void
 }
 
 export const createColumns = ({
@@ -27,7 +28,8 @@ export const createColumns = ({
   availableQueues,
   availableStatuses,
   onEdit,
-  onDelete
+  onDelete,
+  onNamespaceChange,
 }: CreateColumnsOptions): ColumnDef<JobStatus>[] => [
     {
       accessorKey: "name",
@@ -58,7 +60,10 @@ export const createColumns = ({
               <DropdownMenuCheckboxItem
                 checked={!column.getFilterValue()}
                 onCheckedChange={(checked) => {
-                  if (checked) column.setFilterValue(undefined)
+                  if (checked) {
+                    column.setFilterValue(undefined)
+                    onNamespaceChange?.(undefined)
+                  }
                 }}
               >
                 All
@@ -68,7 +73,9 @@ export const createColumns = ({
                   key={namespace}
                   checked={column.getFilterValue() === namespace}
                   onCheckedChange={(checked) => {
-                    column.setFilterValue(checked ? namespace : undefined)
+                    const newFilter = checked ? namespace : undefined
+                    column.setFilterValue(newFilter)
+                    onNamespaceChange?.(newFilter)
                   }}
                 >
                   {namespace}
