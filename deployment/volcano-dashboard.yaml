@@ -93,6 +93,10 @@ rules:
       - get
       - list
       - watch
+      - create
+      - delete
+      - update
+      - patch
   # Namespaces
   - apiGroups:
       - ""
