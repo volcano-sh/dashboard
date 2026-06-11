@@ -21,7 +21,7 @@ Before installing the volcano dashboard, please ensure you have:
 
 ### Install from the published manifest
 
-This deploys the default image (`volcanosh/volcano-dashboard:latest`) from the manifest.
+This deploys the default image (`volcanosh/vc-dashboard:latest`) from the manifest.
 
 1. Create the `volcano-system` namespace (if it does not exist):
 

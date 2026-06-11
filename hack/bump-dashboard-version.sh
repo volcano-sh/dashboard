@@ -26,8 +26,7 @@
 #                                                    # deployment/volcano-dashboard.yaml
 #
 # Replaces the tag part of any image reference matching:
-#   volcanosh/volcano-dashboard...:<tag>
-# so names like volcanosh/volcano-dashboard-frontend:... are included.
+#   volcanosh/vc-dashboard...:<tag>
 
 set -o errexit
 set -o nounset
@@ -42,7 +41,7 @@ DRY_RUN=${DRY_RUN:-}
 if [[ "$#" -ne 1 ]]; then
   echo "usage: ${0} <new-tag>"
   echo ""
-  echo "  Bumps volcanosh/volcano-dashboard* image tags in dashboard deployment YAML."
+  echo "  Bumps volcanosh/vc-dashboard image tags in dashboard deployment YAML."
   echo "  Example:"
   echo "    ${0} v1.2.0"
   echo ""
@@ -83,13 +82,13 @@ fi
 
 replace_tags_in_file() {
   local f="$1"
-  # Match image name volcanosh/volcano-dashboard with optional suffix, then :tag
-  sed -i.bak "s|\(volcanosh/volcano-dashboard[^[:space:]]*:\)[^[:space:]]*|\1${NEW_TAG}|g" "${f}"
+  # Match image name volcanosh/vc-dashboard, then :tag
+  sed -i.bak "s|\(volcanosh/vc-dashboard:\)[^[:space:]]*|\1${NEW_TAG}|g" "${f}"
   rm -f "${f}.bak"
 }
 
 if [[ -n "${DRY_RUN}" ]]; then
-  echo "DRY_RUN: would set all volcanosh/volcano-dashboard* image tags to ${NEW_TAG} in:"
+  echo "DRY_RUN: would set all volcanosh/vc-dashboard image tags to ${NEW_TAG} in:"
   printf '  %s\n' "${existing_files[@]}"
   for f in "${existing_files[@]}"; do
     echo ""
