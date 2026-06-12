@@ -31,6 +31,7 @@ export type PodStatus = {
     status: string;
     age: string;
     yaml?: string;
+    logs?: string;
 }
 
 export default function PodManagement() {
@@ -77,6 +78,20 @@ export default function PodManagement() {
             onError: (err) => {
                 console.error("Error fetching pod YAML:", err);
                 setError(`Pod YAML API error: ${err.message}`);
+            },
+        },
+    );
+
+    const podLogsQuery = trpc.podRouter.getPodLogs.useQuery(
+        {
+            namespace: selectedPod?.namespace || "",
+            name: selectedPod?.name || ""
+        },
+        {
+            enabled: false,
+            onError: (err) => {
+                console.error("Error fetching pod logs:", err);
+                setError(`Pod Logs API error: ${err.message}`);
             },
         },
     );
@@ -204,15 +219,42 @@ export default function PodManagement() {
         setError(null);
 
         try {
-            const response = await podYamlQuery.refetch();
-            const yaml = response.data || pod.yaml || "";
-            setSelectedPod({ ...pod, yaml });
+            const [yamlResponse, logsResponse] = await Promise.all([
+                podYamlQuery.refetch(),
+                podLogsQuery.refetch()
+            ]);
+            const yaml = yamlResponse.data || pod.yaml || "";
+            // Ensure logs is a string
+            let logsText = "";
+            if (typeof logsResponse.data === 'string') {
+                logsText = logsResponse.data;
+            } else if (logsResponse.data && typeof logsResponse.data === 'object') {
+                logsText = JSON.stringify(logsResponse.data, null, 2);
+            } else {
+                logsText = pod.logs || "No logs available.";
+            }
+
+            setSelectedPod({ ...pod, yaml, logs: logsText });
             setShowPodDetails(true);
         } catch (err) {
-            setError("Failed to fetch pod YAML");
+            setError("Failed to fetch pod details");
             console.error(err)
         }
-    }, [podYamlQuery])
+    }, [podYamlQuery, podLogsQuery])
+
+    const handleDownloadLogs = () => {
+        if (!selectedPod || !selectedPod.logs) return;
+        
+        const blob = new Blob([selectedPod.logs], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${selectedPod.name}.log`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
 
     const handlePodCreate = () => {
         setShowCreatePodModal(true)
@@ -321,6 +363,16 @@ export default function PodManagement() {
                                     {selectedPod.status}
                                 </Badge>
                             )}
+                            {selectedPod && selectedPod.logs && (
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="ml-auto flex items-center gap-2"
+                                    onClick={handleDownloadLogs}
+                                >
+                                    Download Logs
+                                </Button>
+                            )}
                         </DialogTitle>
                     </DialogHeader>
 
@@ -347,11 +399,19 @@ export default function PodManagement() {
                                 </div>
                             </div>
 
-                            <div>
-                                <h3 className="font-semibold mb-2">YAML Configuration</h3>
-                                <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
-                                    <code>{selectedPod.yaml}</code>
-                                </pre>
+                            <div className="flex flex-col gap-6">
+                                <div>
+                                    <h3 className="font-semibold mb-2">YAML Configuration</h3>
+                                    <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm max-h-96">
+                                        <code>{selectedPod.yaml}</code>
+                                    </pre>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold mb-2">Logs</h3>
+                                    <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm max-h-96 whitespace-pre-wrap">
+                                        <code>{selectedPod.logs}</code>
+                                    </pre>
+                                </div>
                             </div>
                         </div>
                     )}
