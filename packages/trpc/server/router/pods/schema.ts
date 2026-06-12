@@ -9,6 +9,11 @@ export const getPodYamlInputSchema = z.object({
     name: z.string(),
 });
 
+export const getPodLogsInputSchema = z.object({
+    namespace: z.string(),
+    name: z.string(),
+});
+
 export const createPodInputSchema = z.object({
     podManifest: z.object({
         apiVersion: z.string(),

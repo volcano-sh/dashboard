@@ -2,7 +2,7 @@ import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
 import { k8sCoreApi } from "../../utils/k8s";
 import { fetchPods } from "../helpers";
-import { createPodInputSchema, deletePodInputSchema, getPodsInputSchema, getPodYamlInputSchema, updatePodInputSchema } from "./schema";
+import { createPodInputSchema, deletePodInputSchema, getPodsInputSchema, getPodYamlInputSchema, getPodLogsInputSchema, updatePodInputSchema } from "./schema";
 
 export const podRouter = router({
     getPods: procedure.input(getPodsInputSchema).query(async ({ input }) => {
@@ -34,6 +34,24 @@ export const podRouter = router({
             });
 
             return formattedYaml;
+        }),
+    getPodLogs: procedure
+        .input(getPodLogsInputSchema)
+        .query(async ({ input }) => {
+            const { namespace, name } = input;
+            try {
+                const response = await k8sCoreApi.readNamespacedPodLog({
+                    name,
+                    namespace,
+                });
+                return response;
+            } catch (error: any) {
+                if (error.response && error.response.statusCode === 404) {
+                    return "Logs not found for this pod.";
+                }
+                console.error("Error fetching pod logs:", error);
+                return "Failed to fetch pod logs.";
+            }
         }),
     getAllPods: procedure.query(async () => {
         const response = await k8sCoreApi.listNamespacedPod({
