@@ -1,9 +1,11 @@
 'use client'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@volcano/trpc/react";
-import { Loader2Icon, RocketIcon } from "lucide-react";
+import { Loader2Icon, RefreshCw, RocketIcon } from "lucide-react";
+import { useState } from "react";
 import QueueResourcesBarChart from "./bar-chart";
 import JobStatusPieChart from "./pie-chart";
 
@@ -66,10 +68,24 @@ const DashboardSkeleton = () => {
   );
 };
 
+/** Polling interval in milliseconds when auto-refresh is enabled. */
+const REFRESH_INTERVAL_MS = 30_000;
+
 export const DashboardUtils = () => {
-  const { data: summary, isLoading: summaryLoading } = trpc.dashboardRouter.getSummary.useQuery();
-  const { data: jobStatusMetrics, isLoading: jobStatusLoading } = trpc.dashboardRouter.getJobStatusMetrics.useQuery();
-  const { data: queueMetrics, isLoading: queueMetricsLoading } = trpc.dashboardRouter.getQueueMetrics.useQuery();
+  const [autoRefresh, setAutoRefresh] = useState(false);
+
+  const { data: summary, isLoading: summaryLoading } =
+    trpc.dashboardRouter.getSummary.useQuery(undefined, {
+      refetchInterval: autoRefresh ? REFRESH_INTERVAL_MS : false,
+    });
+  const { data: jobStatusMetrics, isLoading: jobStatusLoading } =
+    trpc.dashboardRouter.getJobStatusMetrics.useQuery(undefined, {
+      refetchInterval: autoRefresh ? REFRESH_INTERVAL_MS : false,
+    });
+  const { data: queueMetrics, isLoading: queueMetricsLoading } =
+    trpc.dashboardRouter.getQueueMetrics.useQuery(undefined, {
+      refetchInterval: autoRefresh ? REFRESH_INTERVAL_MS : false,
+    });
 
   const isLoading = summaryLoading || jobStatusLoading || queueMetricsLoading;
 
@@ -135,6 +151,24 @@ export const DashboardUtils = () => {
             {alertInfo.description}
           </AlertDescription>
         </Alert>
+
+        <Button
+          id="dashboard-auto-refresh-toggle"
+          variant="outline"
+          size="sm"
+          onClick={() => setAutoRefresh((prev) => !prev)}
+          className="flex items-center gap-2 ml-4 shrink-0"
+          aria-pressed={autoRefresh}
+          title={autoRefresh ? "Disable auto-refresh" : "Enable auto-refresh (every 30s)"}
+        >
+          <RefreshCw
+            className={`h-4 w-4 transition-transform ${
+              autoRefresh ? "animate-spin" : ""
+            }`}
+            aria-hidden="true"
+          />
+          <span>Auto-Refresh: {autoRefresh ? "On" : "Off"}</span>
+        </Button>
       </div>
       <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt-4">
         {Object?.entries(categories).map(([title, value], index) => (
