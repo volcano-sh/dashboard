@@ -82,8 +82,8 @@ fi
 
 replace_tags_in_file() {
   local f="$1"
-  # Match image name volcanosh/vc-dashboard, then :tag
-  sed -i.bak "s|\(volcanosh/vc-dashboard:\)[^[:space:]]*|\1${NEW_TAG}|g" "${f}"
+  # Match image name volcanosh/vc-dashboard with optional suffix, then :tag
+  sed -i.bak "s|\(volcanosh/vc-dashboard[^[:space:]:]*:\)[^[:space:]]*|\1${NEW_TAG}|g" "${f}"
   rm -f "${f}.bak"
 }
 
