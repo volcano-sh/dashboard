@@ -45,12 +45,9 @@ RUN adduser --system --uid 1001 nextjs
 RUN mkdir -p apps/web/.next/cache && \
     chown nextjs:nodejs apps/web/.next/cache
 
-# Copy the entire standalone output to root
+# Monorepo standalone layout: server.js and static assets live under apps/web/.
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
-
-# The public directory is often handled by the standalone output.
-# If it's missing, this COPY command will fail. It's removed.
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
 USER nextjs
 
@@ -58,5 +55,4 @@ EXPOSE 8080
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
-# The standalone output places server.js in the root
-CMD ["node", "server.js"]
+CMD ["node", "apps/web/server.js"]

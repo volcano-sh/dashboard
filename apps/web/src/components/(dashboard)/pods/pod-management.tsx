@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { useDemoMode } from "@/hooks/use-demo-mode"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
@@ -34,6 +35,7 @@ export type PodStatus = {
 }
 
 export default function PodManagement() {
+    const isDemoMode = useDemoMode()
     const [pods, setPods] = useState<PodStatus[]>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -151,8 +153,8 @@ export default function PodManagement() {
     const columns = createColumns({
         availableNamespaces,
         availableStatuses,
-        onEdit: handleEdit,
-        onDelete: handleDelete
+        onEdit: isDemoMode ? undefined : handleEdit,
+        onDelete: isDemoMode ? undefined : handleDelete
     });
 
     useEffect(() => {
@@ -265,10 +267,12 @@ export default function PodManagement() {
                         <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
                         Refresh
                     </Button>
-                    <Button onClick={handlePodCreate} className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create Pod
-                    </Button>
+                    {!isDemoMode && (
+                        <Button onClick={handlePodCreate} className="flex items-center gap-2">
+                            <Plus className="h-4 w-4" />
+                            Create Pod
+                        </Button>
+                    )}
                 </div>
             </div>
 

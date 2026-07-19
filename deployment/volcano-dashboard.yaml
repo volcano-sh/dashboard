@@ -42,7 +42,7 @@ spec:
               drop:
               - ALL
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 1001
 ---
 # Volcano Dashboard ServiceAccount
 apiVersion: v1

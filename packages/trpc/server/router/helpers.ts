@@ -1,4 +1,6 @@
 import { k8sApi, k8sCoreApi } from "../utils/k8s";
+import { isDemoMode } from "../utils/demo";
+import * as demoHandlers from "../demo/handlers";
 import { buildPaginatedResponse, type PaginatedResponse } from "./pagination";
 
 const LIST_CHUNK_LIMIT = 250;
@@ -109,6 +111,9 @@ export const fetchJobs = async (
     page: number,
     pageSize: number,
 ): Promise<PaginatedResponse<unknown>> => {
+    if (isDemoMode()) {
+        return demoHandlers.getDemoJobs(page, pageSize);
+    }
     return fetchPaginatedK8sList(
         page,
         pageSize,
@@ -157,6 +162,9 @@ export const fetchQueues = async (
     page: number,
     pageSize: number,
 ): Promise<PaginatedResponse<unknown>> => {
+    if (isDemoMode()) {
+        return demoHandlers.getDemoQueues(page, pageSize);
+    }
     return fetchPaginatedK8sList(
         page,
         pageSize,
@@ -179,6 +187,9 @@ export const fetchPods = async (
     page: number,
     pageSize: number,
 ): Promise<PaginatedResponse<unknown>> => {
+    if (isDemoMode()) {
+        return demoHandlers.getDemoPods(page, pageSize);
+    }
     return fetchPaginatedK8sList(
         page,
         pageSize,
@@ -210,6 +221,9 @@ export const fetchPodGroups = async (
         status?: string;
     } = {},
 ): Promise<PaginatedResponse<unknown>> => {
+    if (isDemoMode()) {
+        return demoHandlers.getDemoPodGroups(page, pageSize, filters);
+    }
     const namespace = filters.namespace?.trim() ?? "";
     const search = filters.search?.trim().toLowerCase() ?? "";
     const status = filters.status?.trim() ?? "";

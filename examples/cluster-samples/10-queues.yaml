@@ -1,0 +1,62 @@
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: demo-root
+  labels:
+    demo.volcano.sh/sample: "true"
+spec:
+  weight: 1
+  reclaimable: false
+  capability:
+    cpu: "8"
+    memory: 16Gi
+status:
+  state: Open
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: demo-prod
+  labels:
+    demo.volcano.sh/sample: "true"
+spec:
+  parent: demo-root
+  weight: 2
+  reclaimable: true
+  capability:
+    cpu: "4"
+    memory: 8Gi
+status:
+  state: Open
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: demo-dev
+  labels:
+    demo.volcano.sh/sample: "true"
+spec:
+  parent: demo-root
+  weight: 1
+  reclaimable: true
+  capability:
+    cpu: "2"
+    memory: 4Gi
+status:
+  state: Open
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: demo-research
+  labels:
+    demo.volcano.sh/sample: "true"
+spec:
+  parent: demo-root
+  weight: 1
+  reclaimable: true
+  capability:
+    cpu: "2"
+    memory: 4Gi
+status:
+  state: Open

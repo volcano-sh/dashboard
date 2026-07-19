@@ -1,5 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
+import * as demoHandlers from "../../demo/handlers";
+import { isDemoMode } from "../../utils/demo";
 import { k8sApi } from "../../utils/k8s";
 import { fetchPodGroups } from "../helpers";
 import { getPodGroupsInputSchema, getPodGroupInputSchema, getPodGroupYamlInputSchema } from "./schema";
@@ -14,10 +16,21 @@ export const podgroupsRouter = router({
             pageSize = 10,
         } = input;
 
+        if (isDemoMode()) {
+            return demoHandlers.getDemoPodGroups(page, pageSize, {
+                namespace,
+                search,
+                status,
+            });
+        }
+
         return fetchPodGroups(page, pageSize, { namespace, search, status });
     }),
 
     getPodGroup: procedure.input(getPodGroupInputSchema).query(async ({ input }) => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoPodGroup(input.namespace, input.name);
+        }
         const { namespace, name } = input;
         const response = await k8sApi.getNamespacedCustomObject({
             group: "scheduling.volcano.sh",
@@ -32,6 +45,12 @@ export const podgroupsRouter = router({
     getPodGroupYaml: procedure
         .input(getPodGroupYamlInputSchema)
         .query(async ({ input }) => {
+            if (isDemoMode()) {
+                return demoHandlers.getDemoPodGroupYaml(
+                    input.namespace,
+                    input.name,
+                );
+            }
             const { namespace, name } = input;
             const response = await k8sApi.getNamespacedCustomObject({
                 group: "scheduling.volcano.sh",

@@ -1,5 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
+import * as demoHandlers from "../../demo/handlers";
+import { assertDemoWritable, isDemoMode } from "../../utils/demo";
 import { k8sCoreApi } from "../../utils/k8s";
 import { fetchPods } from "../helpers";
 import { createPodInputSchema, deletePodInputSchema, getPodsInputSchema, getPodYamlInputSchema, updatePodInputSchema } from "./schema";
@@ -10,6 +12,9 @@ export const podRouter = router({
             page = 1,
             pageSize = 10,
         } = input;
+        if (isDemoMode()) {
+            return demoHandlers.getDemoPods(page, pageSize);
+        }
         console.log("Fetching pods with params:", {
             page,
             pageSize,
@@ -20,6 +25,9 @@ export const podRouter = router({
     getPodYaml: procedure
         .input(getPodYamlInputSchema)
         .query(async ({ input }) => {
+            if (isDemoMode()) {
+                return demoHandlers.getDemoPodYaml(input.namespace, input.name);
+            }
             const { namespace, name } = input;
             const response = await k8sCoreApi.readNamespacedPod({
                 name,
@@ -36,6 +44,9 @@ export const podRouter = router({
             return formattedYaml;
         }),
     getAllPods: procedure.query(async () => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoAllPods();
+        }
         const response = await k8sCoreApi.listNamespacedPod({
             namespace: "default",
         });
@@ -45,6 +56,7 @@ export const podRouter = router({
         };
     }),
     createPod: procedure.input(createPodInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { podManifest } = input;
 
         const response = await k8sCoreApi.createNamespacedPod({
@@ -58,6 +70,7 @@ export const podRouter = router({
         };
     }),
     updatePod: procedure.input(updatePodInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { namespace, name, patchData } = input;
 
         // First, get the current pod to preserve metadata like resourceVersion
@@ -123,6 +136,7 @@ export const podRouter = router({
         };
     }),
     deletePod: procedure.input(deletePodInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { namespace, name } = input;
 
         const response = await k8sCoreApi.deleteNamespacedPod({

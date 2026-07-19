@@ -1,5 +1,7 @@
 
 import { procedure, router } from "../../trpc";
+import * as demoHandlers from "../../demo/handlers";
+import { isDemoMode } from "../../utils/demo";
 import { k8sApi, k8sCoreApi } from "../../utils/k8s";
 
 // Helper function to get summary statistics
@@ -129,14 +131,23 @@ const getQueueResourcesMetrics = async () => {
 
 export const dashboardRouter = router({
     getSummary: procedure.query(async () => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoSummary();
+        }
         const summary = await getSummary();
         return summary;
     }),
     getJobStatusMetrics: procedure.query(async () => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoJobStatusMetrics();
+        }
         const jobStatusMetrics = await getJobStatusMetrics();
         return jobStatusMetrics;
     }),
     getQueueMetrics: procedure.query(async () => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoQueueMetrics();
+        }
         const queueResourcesMetrics = await getQueueResourcesMetrics();
         return queueResourcesMetrics;
     }),

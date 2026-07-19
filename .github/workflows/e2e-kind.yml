@@ -1,0 +1,119 @@
+name: E2E Kind
+
+on:
+    pull_request:
+        branches: [main]
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+    pull-requests: write
+
+jobs:
+    e2e-kind:
+        name: Dashboard on Kind
+        runs-on: ubuntu-24.04
+        timeout-minutes: 45
+        steps:
+            - name: Free disk space
+              uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+              with:
+                  tool-cache: false
+                  android: true
+                  dotnet: true
+                  haskell: true
+                  large-packages: true
+                  docker-images: true
+                  swap-storage: true
+
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install Kind and kubectl
+              run: |
+                  go install sigs.k8s.io/kind@v0.31.0
+                  curl -LO https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl
+                  sudo install kubectl /usr/local/bin/kubectl
+                  echo "${HOME}/go/bin" >> "${GITHUB_PATH}"
+
+            - name: Run dashboard Kind smoke test
+              run: bash hack/run-e2e-kind.sh
+
+    netlify-build:
+        name: Netlify Build Check
+        runs-on: ubuntu-latest
+        env:
+            DASHBOARD_DEMO_MODE: "true"
+            NEXT_PUBLIC_DASHBOARD_DEMO_MODE: "true"
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Verify Netlify build command
+              run: npm run build
+
+            - name: Publish Netlify deploy preview
+              id: netlify_deploy
+              if: github.event_name == 'pull_request' && vars.ENABLE_NETLIFY_PREVIEW == 'true'
+              env:
+                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+                  NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+              run: |
+                  DEPLOY_URL="$(npx --yes netlify-cli@23.9.1 deploy \
+                    --build \
+                    --context deploy-preview \
+                    --message "PR #${{ github.event.pull_request.number }}" \
+                    --json | node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0,'utf8')); process.stdout.write(data.deploy_url || data.url || '')")"
+                  echo "deploy_url=${DEPLOY_URL}" >> "${GITHUB_OUTPUT}"
+
+            - name: Comment on pull request
+              if: github.event_name == 'pull_request' && steps.netlify_deploy.outputs.deploy_url != ''
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const deployUrl = '${{ steps.netlify_deploy.outputs.deploy_url }}';
+                      const body = [
+                          '## Dashboard preview',
+                          '',
+                          `- **Netlify UI preview (demo data):** ${deployUrl}`,
+                          '- **Kind integration:** see the "Dashboard on Kind" check on this PR for real cluster validation.',
+                          '',
+                          'The Netlify preview uses read-only demo fixtures. The Kind job deploys the dashboard against a real Volcano cluster with sample workloads.',
+                      ].join('\n');
+
+                      const { data: comments } = await github.rest.issues.listComments({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: context.issue.number,
+                      });
+
+                      const existing = comments.find((comment) =>
+                          comment.user?.type === 'Bot' &&
+                          comment.body?.includes('## Dashboard preview')
+                      );
+
+                      if (existing) {
+                          await github.rest.issues.updateComment({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              comment_id: existing.id,
+                              body,
+                          });
+                      } else {
+                          await github.rest.issues.createComment({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: context.issue.number,
+                              body,
+                          });
+                      }

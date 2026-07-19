@@ -1,5 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
+import * as demoHandlers from "../../demo/handlers";
+import { assertDemoWritable, isDemoMode } from "../../utils/demo";
 import { formatK8sApiError } from "../../utils/k8s-errors";
 import { validateJobManifest } from "../../utils/job-validation";
 import { k8sApi } from "../../utils/k8s";
@@ -18,6 +20,9 @@ export const jobsRouter = router({
             page = 1,
             pageSize = 10,
         } = input;
+        if (isDemoMode()) {
+            return demoHandlers.getDemoJobs(page, pageSize);
+        }
         console.log("Fetching jobs with params:", {
             page,
             pageSize,
@@ -26,6 +31,9 @@ export const jobsRouter = router({
         return fetchJobs(page, pageSize);
     }),
     getJob: procedure.input(getJobInputSchema).query(async ({ input }) => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoJob(input.namespace, input.name);
+        }
         const { namespace, name } = input;
         const response = await k8sApi.getNamespacedCustomObject({
             group: "batch.volcano.sh",
@@ -37,6 +45,9 @@ export const jobsRouter = router({
         return response;
     }),
     getJobYaml: procedure.input(getJobInputSchema).query(async ({ input }) => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoJobYaml(input.namespace, input.name);
+        }
         const { namespace, name } = input;
         const response = await k8sApi.getNamespacedCustomObject({
             group: "batch.volcano.sh",
@@ -56,6 +67,9 @@ export const jobsRouter = router({
         return formattedYaml;
     }),
     getAllJobs: procedure.query(async () => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoAllJobs();
+        }
         const response = await k8sApi.listClusterCustomObject({
             group: "batch.volcano.sh",
             version: "v1alpha1",
@@ -81,6 +95,7 @@ export const jobsRouter = router({
         };
     }),
     createJob: procedure.input(createJobInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { jobManifest } = input;
 
         if (!jobManifest.metadata.name || !jobManifest.spec) {
@@ -112,6 +127,7 @@ export const jobsRouter = router({
         }
     }),
     updateJob: procedure.input(updateJobInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { namespace, name, patchData } = input;
 
         const currentJob = await k8sApi.getNamespacedCustomObject({
@@ -149,6 +165,7 @@ export const jobsRouter = router({
         };
     }),
     deleteJob: procedure.input(deleteJobInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { namespace, name } = input;
 
         const response = await k8sApi.deleteNamespacedCustomObject({

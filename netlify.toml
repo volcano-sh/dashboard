@@ -1,0 +1,15 @@
+# Netlify build settings for the Volcano dashboard monorepo.
+# The dashboard needs a Kubernetes API at runtime, so full interactive previews
+# are validated in GitHub Actions with a Kind cluster (see hack/run-e2e-kind.sh).
+# Netlify is used here to verify production builds and optional deploy previews.
+
+[build]
+  command = "npm ci && npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+  DASHBOARD_DEMO_MODE = "true"
+  NEXT_PUBLIC_DASHBOARD_DEMO_MODE = "true"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

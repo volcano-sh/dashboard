@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { useDemoMode } from "@/hooks/use-demo-mode"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
@@ -30,6 +31,7 @@ export type JobStatus = {
 }
 
 export default function JobsManagement() {
+  const isDemoMode = useDemoMode()
   const [jobs, setJobs] = useState<JobStatus[]>()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -159,8 +161,8 @@ export default function JobsManagement() {
     availableNamespaces,
     availableQueues,
     availableStatuses,
-    onEdit: handleEdit,
-    onDelete: handleDelete
+    onEdit: isDemoMode ? undefined : handleEdit,
+    onDelete: isDemoMode ? undefined : handleDelete
   });
 
   // Use tRPC query results to update state
@@ -271,10 +273,12 @@ export default function JobsManagement() {
             <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button onClick={handleJobCreate} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Job
-          </Button>
+          {!isDemoMode && (
+            <Button onClick={handleJobCreate} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create Job
+            </Button>
+          )}
         </div>
       </div>
 

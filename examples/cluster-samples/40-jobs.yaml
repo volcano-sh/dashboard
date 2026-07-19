@@ -1,0 +1,71 @@
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: demo-job-prod
+  namespace: volcano-demo
+  labels:
+    demo.volcano.sh/sample: "true"
+spec:
+  minAvailable: 1
+  queue: demo-prod
+  tasks:
+    - replicas: 1
+      name: task
+      template:
+        spec:
+          containers:
+            - name: main
+              image: busybox:1.36
+              command: ["sh", "-c", "echo demo-job-prod; sleep 86400"]
+          restartPolicy: Never
+status:
+  state:
+    phase: Running
+---
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: demo-job-dev
+  namespace: volcano-demo-ops
+  labels:
+    demo.volcano.sh/sample: "true"
+spec:
+  minAvailable: 1
+  queue: demo-dev
+  tasks:
+    - replicas: 1
+      name: task
+      template:
+        spec:
+          containers:
+            - name: main
+              image: busybox:1.36
+              command: ["sh", "-c", "echo demo-job-dev; sleep 86400"]
+          restartPolicy: Never
+status:
+  state:
+    phase: Running
+---
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: demo-job-completed
+  namespace: volcano-demo
+  labels:
+    demo.volcano.sh/sample: "true"
+spec:
+  minAvailable: 1
+  queue: demo-research
+  tasks:
+    - replicas: 1
+      name: task
+      template:
+        spec:
+          containers:
+            - name: main
+              image: busybox:1.36
+              command: ["sh", "-c", "echo done"]
+          restartPolicy: Never
+status:
+  state:
+    phase: Completed

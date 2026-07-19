@@ -1,5 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
+import * as demoHandlers from "../../demo/handlers";
+import { assertDemoWritable, isDemoMode } from "../../utils/demo";
 import { formatK8sApiError } from "../../utils/k8s-errors";
 import { k8sApi } from "../../utils/k8s";
 import { isProtectedQueue, protectedQueueDeleteMessage } from "../../utils/queue-constants";
@@ -15,6 +17,9 @@ import {
 
 export const queueRouter = router({
     getQueue: procedure.input(getQueueInputSchema).query(async ({ input }) => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoQueue(input.name);
+        }
         const { name } = input;
         const response = await k8sApi.getClusterCustomObject({
             group: "scheduling.volcano.sh",
@@ -27,6 +32,9 @@ export const queueRouter = router({
     getQueueYaml: procedure
         .input(getQueueInputSchema)
         .query(async ({ input }) => {
+            if (isDemoMode()) {
+                return demoHandlers.getDemoQueueYaml(input.name);
+            }
             const { name } = input;
             const response = await k8sApi.getClusterCustomObject({
                 group: "scheduling.volcano.sh",
@@ -48,6 +56,9 @@ export const queueRouter = router({
         .input(getQueuesInputSchema)
         .query(async ({ input }) => {
             const { page = 1, pageSize = 10 } = input;
+            if (isDemoMode()) {
+                return demoHandlers.getDemoQueues(page, pageSize);
+            }
             console.log("Fetching queues with params:", {
                 page,
                 pageSize,
@@ -56,6 +67,9 @@ export const queueRouter = router({
             return fetchQueues(page, pageSize);
         }),
     getAllQueues: procedure.query(async () => {
+        if (isDemoMode()) {
+            return demoHandlers.getDemoAllQueues();
+        }
         const response = await k8sApi.listClusterCustomObject({
             group: "scheduling.volcano.sh",
             version: "v1beta1",
@@ -67,6 +81,7 @@ export const queueRouter = router({
         };
     }),
     createQueue: procedure.input(createQueueInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { queueManifest } = input;
 
         if (!queueManifest.metadata.name || !queueManifest.spec) {
@@ -97,6 +112,7 @@ export const queueRouter = router({
         }
     }),
     updateQueue: procedure.input(updateQueueInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { name, updatedBody } = input;
 
         if (!updatedBody.spec || Object.keys(updatedBody.spec).length === 0) {
@@ -172,6 +188,7 @@ export const queueRouter = router({
         }
     }),
     deleteQueue: procedure.input(deleteQueueInputSchema).mutation(async ({ input }) => {
+        assertDemoWritable();
         const { name } = input;
         const queueName = name.toLowerCase();
 

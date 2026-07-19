@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { useDemoMode } from "@/hooks/use-demo-mode"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { ListPagination } from "../list-pagination"
@@ -31,6 +32,7 @@ export type QueueStatus = {
 }
 
 export default function QueueManagement() {
+    const isDemoMode = useDemoMode()
     const [queues, setQueues] = useState<QueueStatus[]>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -147,8 +149,8 @@ export default function QueueManagement() {
     }, [queueToDelete, deleteQueue])
 
     const columns = createColumns({
-        onEdit: handleEdit,
-        onDelete: handleDelete
+        onEdit: isDemoMode ? undefined : handleEdit,
+        onDelete: isDemoMode ? undefined : handleDelete
     })
 
     const queueYamlQuery = trpc.queueRouter.getQueueYaml.useQuery(
@@ -259,10 +261,12 @@ export default function QueueManagement() {
                         <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
                         Refresh
                     </Button>
-                    <Button onClick={handleCreateQueue} className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create Queue
-                    </Button>
+                    {!isDemoMode && (
+                        <Button onClick={handleCreateQueue} className="flex items-center gap-2">
+                            <Plus className="h-4 w-4" />
+                            Create Queue
+                        </Button>
+                    )}
                 </div>
             </div>
 

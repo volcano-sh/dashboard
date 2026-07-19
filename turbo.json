@@ -18,7 +18,9 @@
         "PORT",
         "NODE_ENV",
         "K8S_SKIP_TLS_VERIFY",
-        "K8S_SERVER"
+        "K8S_SERVER",
+        "DASHBOARD_DEMO_MODE",
+        "NEXT_PUBLIC_DASHBOARD_DEMO_MODE"
       ]
     },
     "lint": {
@@ -29,7 +31,9 @@
         "PORT",
         "NODE_ENV",
         "K8S_SKIP_TLS_VERIFY",
-        "K8S_SERVER"
+        "K8S_SERVER",
+        "DASHBOARD_DEMO_MODE",
+        "NEXT_PUBLIC_DASHBOARD_DEMO_MODE"
       ]
     },
     "check-types": {
@@ -40,7 +44,9 @@
         "PORT",
         "NODE_ENV",
         "K8S_SKIP_TLS_VERIFY",
-        "K8S_SERVER"
+        "K8S_SERVER",
+        "DASHBOARD_DEMO_MODE",
+        "NEXT_PUBLIC_DASHBOARD_DEMO_MODE"
       ]
     },
     "dev": {
@@ -50,7 +56,9 @@
         "PORT",
         "NODE_ENV",
         "K8S_SKIP_TLS_VERIFY",
-        "K8S_SERVER"
+        "K8S_SERVER",
+        "DASHBOARD_DEMO_MODE",
+        "NEXT_PUBLIC_DASHBOARD_DEMO_MODE"
       ]
     }
   }
