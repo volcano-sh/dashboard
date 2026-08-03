@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { parseCpuToMillicores, parseMemoryToBytes } from "@/lib/queue-validation"
 import { Loader2Icon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -27,6 +28,26 @@ interface QueueResourcesBarChartProps {
 
 const CHART_HEIGHT_PX = 300
 
+const BYTES_PER_GIB = 1024 ** 3
+
+/** CPU quantity to cores. Unparsable values are charted as 0. */
+const toCores = (value: string | undefined): number => {
+  const millicores = parseCpuToMillicores(value ?? "")
+  return millicores === null ? 0 : millicores / 1000
+}
+
+/** Memory quantity to GiB, matching the "Memory (Gi)" axis label. */
+const toGibibytes = (value: string | undefined): number => {
+  const bytes = parseMemoryToBytes(value ?? "")
+  return bytes === null ? 0 : bytes / BYTES_PER_GIB
+}
+
+/** Pod counts are plain integers, not Kubernetes quantities. */
+const toPodCount = (value: string | undefined): number => {
+  const count = Number.parseFloat(String(value ?? "").trim())
+  return Number.isFinite(count) ? count : 0
+}
+
 const BarChartSkeleton = () => (
   <Card className="w-full">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -45,45 +66,22 @@ const BarChartSkeleton = () => (
 const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResourcesBarChartProps) => {
   const [selectedResource, setSelectedResource] = useState("")
 
-  const parseResourceValue = (value: string | number | undefined): number => {
-    if (value === undefined || value === null || value === "") return 0
-    const str = String(value).trim()
-    if (str === "0") return 0
-
-    if (str.endsWith("m")) {
-      return Number.parseFloat(str.slice(0, -1)) / 1000
-    }
-
-    if (/Gi$/i.test(str)) {
-      return Number.parseFloat(str)
-    }
-    if (/Mi$/i.test(str)) {
-      return Number.parseFloat(str) / 1024
-    }
-    if (/Ki$/i.test(str)) {
-      return Number.parseFloat(str) / (1024 * 1024)
-    }
-
-    const n = Number.parseFloat(str)
-    return Number.isFinite(n) ? n : 0
-  };
-
   // Transform API data to match the expected format
   const transformedData = useMemo(() => {
     return data.map(queue => ({
       metadata: { name: queue.name },
       status: {
         allocated: {
-          cpu: parseResourceValue(queue.cpu),
-          memory: parseResourceValue(queue.memory),
-          pods: parseResourceValue(queue.pods),
+          cpu: toCores(queue.cpu),
+          memory: toGibibytes(queue.memory),
+          pods: toPodCount(queue.pods),
         },
       },
       spec: {
         capability: {
-          cpu: parseResourceValue(queue.cpuCapability),
-          memory: parseResourceValue(queue.memoryCapability),
-          pods: parseResourceValue(queue.podsCapability),
+          cpu: toCores(queue.cpuCapability),
+          memory: toGibibytes(queue.memoryCapability),
+          pods: toPodCount(queue.podsCapability),
         },
       },
     }));
