@@ -2,16 +2,34 @@
 import { procedure, router } from "../../trpc";
 import { k8sApi, k8sCoreApi } from "../../utils/k8s";
 
+const JOBS_LIST_CACHE_TTL_MS = 5_000;
+let jobsListCache: { jobs: unknown[]; expiresAt: number } | null = null;
+
+// getSummary and getJobStatusMetrics both need the full list of Jobs, and the
+// dashboard home page loads both at once. Without this, opening the home page
+// lists every Job in the cluster twice for one page view. The cache only
+// needs to survive a single page load, so a few seconds is enough.
+const fetchAllJobs = async () => {
+    if (jobsListCache && Date.now() < jobsListCache.expiresAt) {
+        return jobsListCache.jobs;
+    }
+
+    const response = await k8sApi.listClusterCustomObject({
+        group: "batch.volcano.sh",
+        version: "v1alpha1",
+        plural: "jobs",
+    });
+    const jobs = response.items || [];
+
+    jobsListCache = { jobs, expiresAt: Date.now() + JOBS_LIST_CACHE_TTL_MS };
+    return jobs;
+};
+
 // Helper function to get summary statistics
 const getSummary = async () => {
     try {
         // Get all jobs
-        const jobsResponse = await k8sApi.listClusterCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            plural: "jobs",
-        });
-        const jobs = jobsResponse.items || [];
+        const jobs = await fetchAllJobs();
 
         // Get all pods
         const podsResponse = await k8sCoreApi.listPodForAllNamespaces();
@@ -55,12 +73,7 @@ const getSummary = async () => {
 // Helper function to get job status metrics for pie chart
 const getJobStatusMetrics = async () => {
     try {
-        const response = await k8sApi.listClusterCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            plural: "jobs",
-        });
-        const jobs = response.items || [];
+        const jobs = await fetchAllJobs();
 
         const statusCounts: { [key: string]: number } = {};
 
