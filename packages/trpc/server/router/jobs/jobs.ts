@@ -3,7 +3,7 @@ import { procedure, router } from "../../trpc";
 import { formatK8sApiError } from "../../utils/k8s-errors";
 import { validateJobManifest } from "../../utils/job-validation";
 import { k8sApi } from "../../utils/k8s";
-import { fetchJobs, getJobState } from "../helpers";
+import { fetchJobs, getJobState, invalidateTotalCount } from "../helpers";
 import {
     createJobInputSchema,
     deleteJobInputSchema,
@@ -103,6 +103,8 @@ export const jobsRouter = router({
                 body: jobManifest,
             });
 
+            invalidateTotalCount("jobs");
+
             return {
                 message: "Job created successfully",
                 data: response.body,
@@ -159,6 +161,8 @@ export const jobsRouter = router({
             name,
             body: { propagationPolicy: "Foreground" },
         });
+
+        invalidateTotalCount("jobs");
 
         return {
             message: "Job deleted successfully",

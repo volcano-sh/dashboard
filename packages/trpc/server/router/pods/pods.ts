@@ -1,7 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
 import { k8sCoreApi } from "../../utils/k8s";
-import { fetchPods } from "../helpers";
+import { fetchPods, invalidateTotalCount } from "../helpers";
 import { createPodInputSchema, deletePodInputSchema, getPodsInputSchema, getPodYamlInputSchema, updatePodInputSchema } from "./schema";
 
 export const podRouter = router({
@@ -51,6 +51,8 @@ export const podRouter = router({
             namespace: podManifest.metadata.namespace || "default",
             body: podManifest,
         });
+
+        invalidateTotalCount("pods");
 
         return {
             message: "Pod created successfully",
@@ -129,6 +131,8 @@ export const podRouter = router({
             name,
             namespace,
         });
+
+        invalidateTotalCount("pods");
 
         return {
             message: "Pod deleted successfully",
