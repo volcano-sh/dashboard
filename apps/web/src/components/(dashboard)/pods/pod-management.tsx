@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
@@ -232,23 +233,6 @@ export default function PodManagement() {
         }));
     }
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "running":
-                return "bg-green-100 text-green-800"
-            case "pending":
-                return "bg-yellow-100 text-yellow-800"
-            case "failed":
-                return "bg-red-100 text-red-800"
-            case "succeeded":
-                return "bg-blue-100 text-blue-800"
-            case "unknown":
-                return "bg-gray-100 text-gray-800"
-            default:
-                return "bg-gray-100 text-gray-800"
-        }
-    }
-
     const isLoading = podsQuery.isLoading
     const isRefreshing = podsQuery.isRefetching
 
@@ -317,7 +301,7 @@ export default function PodManagement() {
                         <DialogTitle className="flex items-center gap-2">
                             Pod Details: {selectedPod?.name}
                             {selectedPod && (
-                                <Badge className={getStatusColor(selectedPod.status)}>
+                                <Badge className={getStatusBadgeClass(selectedPod.status)}>
                                     {selectedPod.status}
                                 </Badge>
                             )}
@@ -341,7 +325,7 @@ export default function PodManagement() {
                                 </div>
                                 <div>
                                     <span className="font-semibold">Status:</span>
-                                    <Badge className={`ml-2 ${getStatusColor(selectedPod.status)}`}>
+                                    <Badge className={`ml-2 ${getStatusBadgeClass(selectedPod.status)}`}>
                                         {selectedPod.status}
                                     </Badge>
                                 </div>

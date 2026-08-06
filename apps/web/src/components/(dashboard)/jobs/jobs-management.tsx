@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
@@ -238,22 +239,6 @@ export default function JobsManagement() {
     }));
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "failed":
-      case "Terminated":
-        return "bg-red-100 text-red-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "running":
-        return "bg-blue-100 text-blue-800"
-      case "completed":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
   // Check if any query is loading
   const isLoading = jobsQuery.isLoading
   const isRefreshing = jobsQuery.isRefetching
@@ -326,7 +311,7 @@ export default function JobsManagement() {
             <DialogTitle className="flex items-center gap-2">
               Job Details: {selectedJob?.name}
               {selectedJob && (
-                <Badge className={getStatusColor(selectedJob.status)}>
+                <Badge className={getStatusBadgeClass(selectedJob.status)}>
                   {selectedJob.status}
                 </Badge>
               )}

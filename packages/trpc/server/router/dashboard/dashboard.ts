@@ -31,8 +31,14 @@ const getSummary = async () => {
         ).length;
 
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const completedJobs = jobs.filter((job: any) => {
+            const state = job.status?.state?.phase || job.status?.state || "Unknown";
+            return state === "Completed";
+        }).length;
+
         const completeRate = totalJobs > 0
-            ? `${Math.round(((totalJobs - activeJobs) / totalJobs) * 100)}%`
+            ? `${Math.round((completedJobs / totalJobs) * 100)}%`
             : "0%";
 
         return {
