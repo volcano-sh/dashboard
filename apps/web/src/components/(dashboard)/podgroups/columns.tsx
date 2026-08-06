@@ -10,6 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Filter } from 'lucide-react'
 import { useFormatter, useTranslations } from "next-intl"
@@ -169,19 +170,7 @@ export const createColumns = ({
             cell: ({ row }) => {
                 const status = row.getValue("status") as string
                 return (
-                    <Badge
-                        className={
-                            status === "Running" || status === "running"
-                                ? "bg-green-100 text-green-800"
-                                : status === "Pending" || status === "pending"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : status === "Failed" || status === "failed"
-                                        ? "bg-red-100 text-red-800"
-                                        : status === "Succeeded" || status === "succeeded"
-                                            ? "bg-blue-100 text-blue-800"
-                                            : "bg-gray-100 text-gray-800"
-                        }
-                    >
+                    <Badge className={getStatusBadgeClass(status)}>
                         {status}
                     </Badge>
                 )
