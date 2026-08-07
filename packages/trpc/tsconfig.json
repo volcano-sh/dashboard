@@ -1,5 +1,9 @@
 {
     "extends": "@volcano/typescript-config/react-library.json",
+    "include": [
+        "**/*.ts",
+        "**/*.tsx"
+    ],
     "exclude": [
         "dist",
         "build",
