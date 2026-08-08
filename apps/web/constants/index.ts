@@ -39,4 +39,10 @@ export const navItems: NavItem[] = [
         href: `/podgroups`,
         disable: false
     },
+    {
+        title: "Scheduler",
+        icon: "scheduler",
+        href: `/scheduler`,
+        disable: false
+    },
 ]

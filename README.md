@@ -2,9 +2,21 @@
 
 ## Overview
 
-The volcano dashboard provides a basic dashboard that can be easily deployed in your kubernetes cluster to show the status of resources including volcano jobs, queues, pods, etc.
+The volcano dashboard provides a basic dashboard that can be easily deployed in your kubernetes cluster to show the status of resources including volcano jobs, queues, pods, and scheduler configuration.
 
 <img src="docs/images/demo.gif" alt="volcano dashboard" style="zoom:50%;" />
+
+## Scheduler configuration
+
+The **Scheduler** page (`/scheduler`) provides a UI to read and write `volcano-scheduler-configmap`: reorder scheduling actions, edit plugin tiers and toggles, preview YAML diffs, and save via the Kubernetes API.
+
+See [docs/scheduler-config.md](docs/scheduler-config.md) for usage, RBAC, and environment variables.
+
+After upgrading to a build that includes this feature, re-apply the dashboard manifest so the ServiceAccount can patch the scheduler ConfigMap:
+
+```bash
+kubectl apply -f deployment/volcano-dashboard.yaml
+```
 
 ## Design
 

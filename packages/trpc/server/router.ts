@@ -5,6 +5,7 @@ import { jobsRouter } from "./router/jobs/jobs";
 import { podRouter } from "./router/pods/pods";
 import { podgroupsRouter } from "./router/podgroups/podgroups";
 import { queueRouter } from "./router/queues/queues";
+import { schedulerRouter } from "./router/scheduler/scheduler";
 import { router } from "./trpc";
 
 export const appRouter = router({
@@ -13,6 +14,7 @@ export const appRouter = router({
     podgroupsRouter,
     queueRouter,
     dashboardRouter,
+    schedulerRouter,
 });
 
 export type AppRouter = typeof appRouter;

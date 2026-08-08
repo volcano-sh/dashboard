@@ -133,6 +133,17 @@ rules:
       - get
       - list
       - watch
+  # Scheduler configuration
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - volcano-scheduler-configmap
+    verbs:
+      - get
+      - update
+      - patch
   - apiGroups:
       - scheduling.volcano.sh
     resources:

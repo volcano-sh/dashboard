@@ -62,6 +62,9 @@ The backend provides a tRPC API with the following main endpoints:
 - Jobs: Manage Volcano jobs
   - getJobs: Get paginated list of jobs with filtering options
   - getJobDetails: Get detailed information about a specific job
+- Scheduler: Manage volcano-scheduler-configmap
+  - getSchedulerConfig: Read and parse the scheduler policy YAML
+  - updateSchedulerConfig: Validate and patch the scheduler ConfigMap
 
 The API uses the official Kubernetes client (@kubernetes/client-node) to interact with the cluster. For more information on the Kubernetes client, refer to the [Kubernetes API Client documentation](docs/kubernetes_api_client.md).
 
