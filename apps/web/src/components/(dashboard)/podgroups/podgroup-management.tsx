@@ -49,6 +49,7 @@ export default function PodGroupManagement() {
     const [selectedPodGroup, setSelectedPodGroup] = useState<PodGroupStatus | null>(null)
     const [showPodGroupDetails, setShowPodGroupDetails] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
     const [namespaceFilter, setNamespaceFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
 
@@ -57,10 +58,19 @@ export default function PodGroupManagement() {
         pageSize: 10,
     })
 
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm)
+            setPagination((prev) => ({ ...prev, page: 1 }))
+        }, 200)
+
+        return () => window.clearTimeout(timer)
+    }, [searchTerm])
+
     const podGroupsQuery = trpc.podgroupsRouter.getPodGroups.useQuery(
         {
             namespace: namespaceFilter || "",
-            search: searchTerm || "",
+            search: debouncedSearchTerm || "",
             status: statusFilter || "",
             page: pagination.page,
             pageSize: pagination.pageSize,
@@ -135,6 +145,12 @@ export default function PodGroupManagement() {
         setError(null)
 
         try {
+            if (searchTerm !== debouncedSearchTerm) {
+                setDebouncedSearchTerm(searchTerm)
+                setPagination((prev) => ({ ...prev, page: 1 }))
+                return
+            }
+
             await podGroupsQuery.refetch();
         } catch (err) {
             setError(t("errors.refresh"))
@@ -142,7 +158,7 @@ export default function PodGroupManagement() {
         } finally {
             setLoading(false)
         }
-    }, [podGroupsQuery])
+    }, [podGroupsQuery, searchTerm, debouncedSearchTerm])
 
     const handlePodGroupClick = useCallback(async (podGroup: PodGroupStatus) => {
         setError(null);
@@ -217,7 +233,6 @@ export default function PodGroupManagement() {
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
-                            setPagination({ ...pagination, page: 1 });
                         }}
                         className="ps-10"
                     />
@@ -228,7 +243,8 @@ export default function PodGroupManagement() {
                             className="absolute end-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
                             onClick={() => {
                                 setSearchTerm("");
-                                setPagination({ ...pagination, page: 1 });
+                                setDebouncedSearchTerm("");
+                                setPagination((prev) => ({ ...prev, page: 1 }));
                             }}
                         >
                             <X className="h-4 w-4" />
@@ -363,4 +379,3 @@ export default function PodGroupManagement() {
         </div>
     )
 }
-
