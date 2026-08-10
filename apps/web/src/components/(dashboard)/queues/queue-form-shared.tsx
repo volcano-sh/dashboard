@@ -35,6 +35,7 @@ export function resourcePairToSpec(pair: ResourcePair): Record<string, string> |
   const out: Record<string, string> = {}
   if (pair.cpu.trim()) out.cpu = pair.cpu.trim()
   if (pair.memory.trim()) out.memory = pair.memory.trim()
+  if (pair.extra) Object.assign(out, pair.extra)
   return Object.keys(out).length > 0 ? out : null
 }
 
@@ -117,9 +118,15 @@ function stringifyScalar(v: unknown): string {
 export function extractResourcePair(obj: unknown): ResourcePair {
   if (!obj || typeof obj !== "object") return emptyResource()
   const o = obj as Record<string, unknown>
+  const extra: Record<string, string> = {}
+  for (const [key, value] of Object.entries(o)) {
+    if (key === "cpu" || key === "memory") continue
+    extra[key] = stringifyScalar(value)
+  }
   return {
     cpu: stringifyScalar(o.cpu),
-    memory: stringifyScalar(o.memory)
+    memory: stringifyScalar(o.memory),
+    ...(Object.keys(extra).length > 0 ? { extra } : {})
   }
 }
 
