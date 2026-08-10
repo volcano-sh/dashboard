@@ -4,7 +4,7 @@ import { formatK8sApiError } from "../../utils/k8s-errors";
 import { k8sApi } from "../../utils/k8s";
 import { isProtectedQueue, protectedQueueDeleteMessage } from "../../utils/queue-constants";
 import { validateQueueManifestSpec } from "../../utils/queue-validation";
-import { fetchQueues } from "../helpers";
+import { fetchQueues, invalidateTotalCount } from "../helpers";
 import {
     createQueueInputSchema,
     deleteQueueInputSchema,
@@ -87,6 +87,8 @@ export const queueRouter = router({
                 plural: "queues",
                 body: queueManifest,
             });
+
+            invalidateTotalCount("queues");
 
             return {
                 message: "Queue created successfully",
@@ -193,6 +195,8 @@ export const queueRouter = router({
             name: queueName,
             body: { propagationPolicy: "Foreground" },
         });
+
+        invalidateTotalCount("queues");
 
         return {
             message: "Queue deleted successfully",
