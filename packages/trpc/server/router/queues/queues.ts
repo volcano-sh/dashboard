@@ -5,6 +5,7 @@ import { k8sApi } from "../../utils/k8s";
 import { isProtectedQueue, protectedQueueDeleteMessage } from "../../utils/queue-constants";
 import { validateQueueManifestSpec } from "../../utils/queue-validation";
 import { fetchQueues } from "../helpers";
+import { auditService } from "../../services/audit";
 import {
     createQueueInputSchema,
     deleteQueueInputSchema,
@@ -88,6 +89,14 @@ export const queueRouter = router({
                 body: queueManifest,
             });
 
+            auditService.recordEvent({
+                action: "CREATE",
+                resourceType: "Queue",
+                resourceName: queueManifest.metadata.name,
+                namespace: queueManifest.metadata.annotations?.namespace || "default",
+                newState: queueManifest,
+            });
+
             return {
                 message: "Queue created successfully",
                 data: response.body,
@@ -162,6 +171,13 @@ export const queueRouter = router({
                 name: name,
             });
 
+            auditService.recordEvent({
+                action: "UPDATE",
+                resourceType: "Queue",
+                resourceName: name,
+                newState: updatedQueue.body,
+            });
+
             return {
                 message: `Successfully updated queue ${name}`,
                 patchResponse: response.body,
@@ -192,6 +208,12 @@ export const queueRouter = router({
             plural: "queues",
             name: queueName,
             body: { propagationPolicy: "Foreground" },
+        });
+
+        auditService.recordEvent({
+            action: "DELETE",
+            resourceType: "Queue",
+            resourceName: queueName,
         });
 
         return {

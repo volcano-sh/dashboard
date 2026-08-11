@@ -1,0 +1,32 @@
+{
+  "title": "Activity History",
+  "subtitle": "View history of create, update, and delete operations performed through the dashboard.",
+  "columns": {
+    "timestamp": "Time",
+    "user": "User",
+    "action": "Action",
+    "resourceType": "Resource Type",
+    "resourceName": "Resource Name",
+    "namespace": "Namespace"
+  },
+  "actions": {
+    "CREATE": "Create",
+    "UPDATE": "Update",
+    "DELETE": "Delete",
+    "STATUS_CHANGE": "Status Change"
+  },
+  "filters": {
+    "allTypes": "All Resource Types",
+    "searchPlaceholder": "Search by resource name, user or namespace...",
+    "resourceTypes": {
+      "Job": "Job",
+      "Queue": "Queue",
+      "Pod": "Pod",
+      "PodGroup": "PodGroup"
+    }
+  },
+  "emptyState": {
+    "noRecords": "No audit records found",
+    "description": "Operations triggered via the dashboard will appear here."
+  }
+}

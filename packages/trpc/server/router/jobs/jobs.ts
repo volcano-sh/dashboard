@@ -4,6 +4,7 @@ import { formatK8sApiError } from "../../utils/k8s-errors";
 import { validateJobManifest } from "../../utils/job-validation";
 import { k8sApi } from "../../utils/k8s";
 import { fetchJobs, getJobState } from "../helpers";
+import { auditService } from "../../services/audit";
 import {
     createJobInputSchema,
     deleteJobInputSchema,
@@ -103,6 +104,14 @@ export const jobsRouter = router({
                 body: jobManifest,
             });
 
+            auditService.recordEvent({
+                action: "CREATE",
+                resourceType: "Job",
+                resourceName: jobManifest.metadata.name,
+                namespace,
+                newState: jobManifest,
+            });
+
             return {
                 message: "Job created successfully",
                 data: response.body,
@@ -143,6 +152,15 @@ export const jobsRouter = router({
             body: updatedJob,
         });
 
+        auditService.recordEvent({
+            action: "UPDATE",
+            resourceType: "Job",
+            resourceName: name,
+            namespace,
+            previousState: currentJob,
+            newState: response.body,
+        });
+
         return {
             message: "Job updated successfully",
             data: response.body,
@@ -158,6 +176,13 @@ export const jobsRouter = router({
             plural: "jobs",
             name,
             body: { propagationPolicy: "Foreground" },
+        });
+
+        auditService.recordEvent({
+            action: "DELETE",
+            resourceType: "Job",
+            resourceName: name,
+            namespace,
         });
 
         return {
