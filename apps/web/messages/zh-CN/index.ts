@@ -5,6 +5,7 @@ import jobs from "./jobs.json";
 import queues from "./queues.json";
 import pods from "./pods.json";
 import podgroups from "./podgroups.json";
+import audit from "./audit.json";
 
 const messages = {
   common,
@@ -14,6 +15,7 @@ const messages = {
   queues,
   pods,
   podgroups,
+  audit,
 };
 
 export default messages;

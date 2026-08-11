@@ -1,5 +1,6 @@
 
 
+import { auditRouter } from "./router/audit/audit";
 import { dashboardRouter } from "./router/dashboard/dashboard";
 import { jobsRouter } from "./router/jobs/jobs";
 import { podRouter } from "./router/pods/pods";
@@ -13,6 +14,7 @@ export const appRouter = router({
     podgroupsRouter,
     queueRouter,
     dashboardRouter,
+    auditRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -2,6 +2,7 @@ import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
 import { k8sCoreApi } from "../../utils/k8s";
 import { fetchPods } from "../helpers";
+import { auditService } from "../../services/audit";
 import { createPodInputSchema, deletePodInputSchema, getPodsInputSchema, getPodYamlInputSchema, updatePodInputSchema } from "./schema";
 
 export const podRouter = router({
@@ -46,10 +47,19 @@ export const podRouter = router({
     }),
     createPod: procedure.input(createPodInputSchema).mutation(async ({ input }) => {
         const { podManifest } = input;
+        const namespace = podManifest.metadata.namespace || "default";
 
         const response = await k8sCoreApi.createNamespacedPod({
-            namespace: podManifest.metadata.namespace || "default",
+            namespace,
             body: podManifest,
+        });
+
+        auditService.recordEvent({
+            action: "CREATE",
+            resourceType: "Pod",
+            resourceName: podManifest.metadata.name,
+            namespace,
+            newState: podManifest,
         });
 
         return {
@@ -117,6 +127,15 @@ export const podRouter = router({
             body: updatedPod,
         });
 
+        auditService.recordEvent({
+            action: "UPDATE",
+            resourceType: "Pod",
+            resourceName: name,
+            namespace,
+            previousState: currentPod,
+            newState: response,
+        });
+
         return {
             message: "Pod updated successfully",
             data: response,
@@ -127,6 +146,13 @@ export const podRouter = router({
 
         const response = await k8sCoreApi.deleteNamespacedPod({
             name,
+            namespace,
+        });
+
+        auditService.recordEvent({
+            action: "DELETE",
+            resourceType: "Pod",
+            resourceName: name,
             namespace,
         });
 

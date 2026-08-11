@@ -1,0 +1,32 @@
+{
+  "title": "活动历史",
+  "subtitle": "查看通过仪表盘执行的创建、更新和删除操作记录。",
+  "columns": {
+    "timestamp": "时间",
+    "user": "用户",
+    "action": "操作",
+    "resourceType": "资源类型",
+    "resourceName": "资源名称",
+    "namespace": "命名空间"
+  },
+  "actions": {
+    "CREATE": "创建",
+    "UPDATE": "更新",
+    "DELETE": "删除",
+    "STATUS_CHANGE": "状态变更"
+  },
+  "filters": {
+    "allTypes": "所有资源类型",
+    "searchPlaceholder": "按资源名称、用户或命名空间搜索...",
+    "resourceTypes": {
+      "Job": "作业 (Job)",
+      "Queue": "队列 (Queue)",
+      "Pod": "Pod",
+      "PodGroup": "Pod 组 (PodGroup)"
+    }
+  },
+  "emptyState": {
+    "noRecords": "未找到审计记录",
+    "description": "通过仪表盘触发的操作记录将显示在这里。"
+  }
+}
