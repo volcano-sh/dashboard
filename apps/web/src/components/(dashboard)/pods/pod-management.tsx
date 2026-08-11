@@ -294,6 +294,8 @@ export default function PodManagement() {
                             onRowClick={handlePodClick}
                             disablePagination={true}
                             filterPlaceholder={t("filterPlaceholder")}
+                            storageKey="pods"
+                            searchPlaceholder="Search pods..."
                         />
                     </div>
 
