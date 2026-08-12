@@ -1,0 +1,13 @@
+{
+  "title": "活动记录",
+  "searchPlaceholder": "搜索活动...",
+  "noData": "未找到活动",
+  "columns": {
+    "time": "时间",
+    "resource": "资源",
+    "name": "名称",
+    "action": "操作",
+    "user": "用户",
+    "details": "详情"
+  }
+}

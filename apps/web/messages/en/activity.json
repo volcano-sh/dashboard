@@ -1,0 +1,13 @@
+{
+  "title": "Activity History",
+  "searchPlaceholder": "Search activity...",
+  "noData": "No activity found",
+  "columns": {
+    "time": "Time",
+    "resource": "Resource",
+    "name": "Name",
+    "action": "Action",
+    "user": "User",
+    "details": "Details"
+  }
+}

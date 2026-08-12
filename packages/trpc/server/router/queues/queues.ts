@@ -5,6 +5,7 @@ import { k8sApi } from "../../utils/k8s";
 import { isProtectedQueue, protectedQueueDeleteMessage } from "../../utils/queue-constants";
 import { validateQueueManifestSpec } from "../../utils/queue-validation";
 import { fetchQueues } from "../helpers";
+import { auditService } from "../../utils/audit";
 import {
     createQueueInputSchema,
     deleteQueueInputSchema,
@@ -88,6 +89,17 @@ export const queueRouter = router({
                 body: queueManifest,
             });
 
+            try {
+                await auditService.record({
+                    resourceType: "Queue",
+                    resourceName: queueManifest.metadata.name,
+                    action: "CREATE",
+                    details: { manifestName: queueManifest.metadata.name },
+                });
+            } catch (auditErr) {
+                console.error("Audit write failed (non-blocking):", auditErr);
+            }
+
             return {
                 message: "Queue created successfully",
                 data: response.body,
@@ -162,6 +174,21 @@ export const queueRouter = router({
                 name: name,
             });
 
+            try {
+                try {
+                    await auditService.record({
+                        resourceType: "Queue",
+                        resourceName: name,
+                        action: "UPDATE",
+                        details: { patchOperations },
+                    });
+                } catch (auditErr) {
+                    console.error("Audit write failed (non-blocking):", auditErr);
+                }
+            } catch (err) {
+                console.error("Unexpected audit error:", err);
+            }
+
             return {
                 message: `Successfully updated queue ${name}`,
                 patchResponse: response.body,
@@ -193,6 +220,21 @@ export const queueRouter = router({
             name: queueName,
             body: { propagationPolicy: "Foreground" },
         });
+
+        try {
+            try {
+                await auditService.record({
+                    resourceType: "Queue",
+                    resourceName: queueName,
+                    action: "DELETE",
+                    details: {},
+                });
+            } catch (auditErr) {
+                console.error("Audit write failed (non-blocking):", auditErr);
+            }
+        } catch (err) {
+            console.error("Unexpected audit error:", err);
+        }
 
         return {
             message: "Queue deleted successfully",

@@ -4,6 +4,7 @@ import { formatK8sApiError } from "../../utils/k8s-errors";
 import { validateJobManifest } from "../../utils/job-validation";
 import { k8sApi } from "../../utils/k8s";
 import { fetchJobs, getJobState } from "../helpers";
+import { auditService } from "../../utils/audit";
 import {
     createJobInputSchema,
     deleteJobInputSchema,
@@ -103,6 +104,18 @@ export const jobsRouter = router({
                 body: jobManifest,
             });
 
+            // record audit event (non-blocking)
+            try {
+                await auditService.record({
+                    resourceType: "Job",
+                    resourceName: jobManifest.metadata.name,
+                    action: "CREATE",
+                    details: { namespace, manifestName: jobManifest.metadata.name },
+                });
+            } catch (auditErr) {
+                console.error("Audit write failed (non-blocking):", auditErr);
+            }
+
             return {
                 message: "Job created successfully",
                 data: response.body,
@@ -143,6 +156,23 @@ export const jobsRouter = router({
             body: updatedJob,
         });
 
+        try {
+            // record audit event (non-blocking)
+            try {
+                await auditService.record({
+                    resourceType: "Job",
+                    resourceName: name,
+                    action: "UPDATE",
+                    details: { patchData },
+                });
+            } catch (auditErr) {
+                console.error("Audit write failed (non-blocking):", auditErr);
+            }
+        } catch (err) {
+            // swallow - audit should not block operation
+            console.error("Unexpected audit error:", err);
+        }
+
         return {
             message: "Job updated successfully",
             data: response.body,
@@ -159,6 +189,21 @@ export const jobsRouter = router({
             name,
             body: { propagationPolicy: "Foreground" },
         });
+
+        try {
+            try {
+                await auditService.record({
+                    resourceType: "Job",
+                    resourceName: name,
+                    action: "DELETE",
+                    details: { namespace },
+                });
+            } catch (auditErr) {
+                console.error("Audit write failed (non-blocking):", auditErr);
+            }
+        } catch (err) {
+            console.error("Unexpected audit error:", err);
+        }
 
         return {
             message: "Job deleted successfully",

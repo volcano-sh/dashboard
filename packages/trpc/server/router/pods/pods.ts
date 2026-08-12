@@ -4,6 +4,9 @@ import { k8sCoreApi } from "../../utils/k8s";
 import { fetchPods } from "../helpers";
 import { createPodInputSchema, deletePodInputSchema, getPodsInputSchema, getPodYamlInputSchema, updatePodInputSchema } from "./schema";
 
+// Note: Pods are intentionally NOT audited in Phase-1 (audit events are recorded
+// only for Jobs and Queues). This keeps the MVP scope aligned with issue #332.
+
 export const podRouter = router({
     getPods: procedure.input(getPodsInputSchema).query(async ({ input }) => {
         const {

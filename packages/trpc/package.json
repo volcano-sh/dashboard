@@ -19,6 +19,7 @@
         "@trpc/server": "^10.36.0",
         "@ts-rest/core": "^3.30.5",
         "@ts-rest/next": "^3.30.5",
+        "better-sqlite3": "^13.0.3",
         "eslint": "^9.32.0",
         "next-auth": "^5.0.0-beta.20",
         "react": "^18.3.1",
