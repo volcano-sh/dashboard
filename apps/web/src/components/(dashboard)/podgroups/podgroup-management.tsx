@@ -33,7 +33,7 @@ export type PodGroupStatus = {
     name: string;
     namespace: string;
     queue: string;
-    minMember: number;
+    minMember?: number;
     createdAt: Date;
     status: string;
     yaml?: string;
@@ -111,7 +111,7 @@ export default function PodGroupManagement() {
                         name: pg.metadata?.name || '',
                         namespace: pg.metadata?.namespace || '',
                         queue: pg.spec?.queue || '',
-                        minMember: pg.spec?.minMember || 0,
+                        minMember: pg.spec?.minMember,
                         createdAt,
                         status: pg.status?.phase || 'Unknown',
                         yaml: pg.yaml || '',
