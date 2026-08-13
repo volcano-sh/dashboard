@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input"
 import { trpc } from "@volcano/trpc/react"
 import { useFormatter, useTranslations } from "next-intl"
 import { RefreshCw, Search, X } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
 import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
@@ -74,6 +74,12 @@ export default function PodGroupManagement() {
         }
     )
 
+    const filterOptionsQuery = trpc.podgroupsRouter.getPodGroupFilters.useQuery(undefined, {
+        onError: (err) => {
+            console.error("Error fetching podgroup filters:", err);
+        },
+    })
+
     const podGroupYamlQuery = trpc.podgroupsRouter.getPodGroupYaml.useQuery(
         {
             namespace: selectedPodGroup?.namespace || "",
@@ -88,13 +94,21 @@ export default function PodGroupManagement() {
         },
     );
 
-    const availableNamespaces = podGroups ?
-        Array.from(new Set(podGroups.map(pg => pg.namespace).filter(Boolean))).sort()
-        : [];
+    const availableNamespaces = useMemo(() => {
+        const namespaces = filterOptionsQuery.data?.namespaces ?? [];
+        if (namespaceFilter && !namespaces.includes(namespaceFilter)) {
+            return [...namespaces, namespaceFilter].sort();
+        }
+        return namespaces;
+    }, [filterOptionsQuery.data?.namespaces, namespaceFilter]);
 
-    const availableStatuses = podGroups ?
-        Array.from(new Set(podGroups.map(pg => pg.status).filter(Boolean))).sort()
-        : [];
+    const availableStatuses = useMemo(() => {
+        const statuses = filterOptionsQuery.data?.statuses ?? [];
+        if (statusFilter && !statuses.includes(statusFilter)) {
+            return [...statuses, statusFilter].sort();
+        }
+        return statuses;
+    }, [filterOptionsQuery.data?.statuses, statusFilter]);
 
     const columns = usePodGroupColumns({
         availableNamespaces,
@@ -135,14 +149,17 @@ export default function PodGroupManagement() {
         setError(null)
 
         try {
-            await podGroupsQuery.refetch();
+            await Promise.all([
+                podGroupsQuery.refetch(),
+                filterOptionsQuery.refetch(),
+            ]);
         } catch (err) {
             setError(t("errors.refresh"))
             console.error(err)
         } finally {
             setLoading(false)
         }
-    }, [podGroupsQuery])
+    }, [podGroupsQuery, filterOptionsQuery])
 
     const handlePodGroupClick = useCallback(async (podGroup: PodGroupStatus) => {
         setError(null);
