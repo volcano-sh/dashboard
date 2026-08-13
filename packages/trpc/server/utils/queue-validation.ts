@@ -1,14 +1,16 @@
 type ResourcePair = { cpu: string; memory: string };
 
+// Matches a plain Kubernetes CPU quantity: whole/decimal cores, or millicores with the "m" suffix.
+const CPU_QUANTITY_PATTERN = /^(\d+(?:\.\d+)?)(m)?$/;
+
 function parseCpuToMillicores(value: string): number | null {
     const v = value.trim();
     if (!v) return null;
-    if (v.endsWith("m")) {
-        const n = Number.parseFloat(v.slice(0, -1));
-        return Number.isFinite(n) ? n : null;
-    }
-    const n = Number.parseFloat(v);
-    return Number.isFinite(n) ? n * 1000 : null;
+    const match = CPU_QUANTITY_PATTERN.exec(v);
+    if (!match) return null;
+    const amount = Number.parseFloat(match[1]!);
+    if (!Number.isFinite(amount)) return null;
+    return match[2] ? amount : amount * 1000;
 }
 
 const MEMORY_MULTIPLIERS: Record<string, number> = {
@@ -81,6 +83,16 @@ function compareMemory(deserved: string, limit: string, relation: "gte" | "lte")
     return relation === "gte" ? d >= l : d <= l;
 }
 
+// A non-empty value that fails to parse is a malformed quantity, not merely "nothing to compare".
+function checkQuantityFormat(pair: ResourcePair, fieldLabel: string, messages: string[]): void {
+    if (pair.cpu.trim() && parseCpuToMillicores(pair.cpu) === null) {
+        messages.push(`${fieldLabel} CPU is not a valid Kubernetes CPU quantity: "${pair.cpu.trim()}"`);
+    }
+    if (pair.memory.trim() && parseMemoryToBytes(pair.memory) === null) {
+        messages.push(`${fieldLabel} memory is not a valid Kubernetes memory quantity: "${pair.memory.trim()}"`);
+    }
+}
+
 function validateQueueResources(
     guarantee: ResourcePair,
     capability: ResourcePair,
@@ -88,6 +100,15 @@ function validateQueueResources(
 ): { valid: boolean; messages: string[] } {
     const messages: string[] = [];
     const d = normalizeDeservedFromGuarantee(guarantee, deserved);
+
+    // Malformed quantities are always invalid, regardless of whether there is
+    // anything to compare them against (compareCpu/compareMemory return null,
+    // not false, when a side fails to parse — that must not be read as "ok").
+    // Check the raw deserved input (not the guarantee-normalized `d`) so an
+    // empty deserved field never gets blamed for a malformed guarantee value.
+    checkQuantityFormat(guarantee, "Guarantee", messages);
+    checkQuantityFormat(capability, "Capability", messages);
+    checkQuantityFormat(deserved, "Deserved", messages);
 
     if (guarantee.cpu.trim() && !d.cpu.trim()) {
         messages.push("Deserved CPU is required when guarantee CPU is set.");
