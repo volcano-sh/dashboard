@@ -1,7 +1,7 @@
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
 import { k8sApi } from "../../utils/k8s";
-import { fetchPodGroups } from "../helpers";
+import { fetchPodGroupFilterOptions, fetchPodGroups } from "../helpers";
 import { getPodGroupsInputSchema, getPodGroupInputSchema, getPodGroupYamlInputSchema } from "./schema";
 
 export const podgroupsRouter = router({
@@ -15,6 +15,10 @@ export const podgroupsRouter = router({
         } = input;
 
         return fetchPodGroups(page, pageSize, { namespace, search, status });
+    }),
+
+    getPodGroupFilters: procedure.query(async () => {
+        return fetchPodGroupFilterOptions();
     }),
 
     getPodGroup: procedure.input(getPodGroupInputSchema).query(async ({ input }) => {
