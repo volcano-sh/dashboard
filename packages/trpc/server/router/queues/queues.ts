@@ -110,23 +110,27 @@ export const queueRouter = router({
             throw new Error(specError);
         }
 
+        let currentQueue: Record<string, unknown>;
         try {
-            await k8sApi.getClusterCustomObject({
+            const response = await k8sApi.getClusterCustomObject({
                 group: "scheduling.volcano.sh",
                 version: "v1beta1",
                 plural: "queues",
                 name: name,
             });
+            currentQueue = response.body as Record<string, unknown>;
         } catch {
             throw new Error(`Queue ${name} not found`);
         }
+
+        const currentSpec = (currentQueue.spec ?? {}) as Record<string, unknown>;
 
         const numericFields = new Set(["weight"]);
         const patchOperations: Array<{
             op: string;
             path: string;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            value: any;
+            value?: any;
         }> = [];
 
         Object.entries(updatedBody.spec).forEach(([key, value]) => {
@@ -139,11 +143,27 @@ export const queueRouter = router({
                 }
             }
 
+            // JSON Patch "replace" requires the target path to already exist;
+            // fields that aren't on the current spec yet must use "add" instead,
+            // or the k8s API server rejects the whole patch.
+            const fieldExists = Object.prototype.hasOwnProperty.call(currentSpec, key);
             patchOperations.push({
-                op: "replace",
+                op: fieldExists ? "replace" : "add",
                 path: `/spec/${key}`,
                 value: val,
             });
+        });
+
+        // Fields present on the current spec but omitted from the submitted
+        // spec were cleared by the user in the form and must be explicitly
+        // removed — otherwise they silently remain on the live queue.
+        Object.keys(currentSpec).forEach((key) => {
+            if (!Object.prototype.hasOwnProperty.call(updatedBody.spec, key)) {
+                patchOperations.push({
+                    op: "remove",
+                    path: `/spec/${key}`,
+                });
+            }
         });
 
         try {
