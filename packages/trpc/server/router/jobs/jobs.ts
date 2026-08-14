@@ -114,39 +114,48 @@ export const jobsRouter = router({
     updateJob: procedure.input(updateJobInputSchema).mutation(async ({ input }) => {
         const { namespace, name, patchData } = input;
 
-        const currentJob = await k8sApi.getNamespacedCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            namespace,
-            plural: "jobs",
-            name,
-        });
+        const jobError = validateJobManifest(patchData as Record<string, unknown>);
+        if (jobError) {
+            throw new Error(jobError);
+        }
 
-        const updatedJob = {
-            ...currentJob,
-            ...patchData,
-            metadata: {
-                ...(currentJob as any).metadata,
-                ...patchData.metadata,
-                resourceVersion: (currentJob as any).metadata?.resourceVersion,
-                uid: (currentJob as any).metadata?.uid,
-                creationTimestamp: (currentJob as any).metadata?.creationTimestamp,
-            },
-        };
+        try {
+            const currentJob = await k8sApi.getNamespacedCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
+                namespace,
+                plural: "jobs",
+                name,
+            });
 
-        const response = await k8sApi.replaceNamespacedCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            namespace,
-            plural: "jobs",
-            name,
-            body: updatedJob,
-        });
+            const updatedJob = {
+                ...currentJob,
+                ...patchData,
+                metadata: {
+                    ...(currentJob as any).metadata,
+                    ...patchData.metadata,
+                    resourceVersion: (currentJob as any).metadata?.resourceVersion,
+                    uid: (currentJob as any).metadata?.uid,
+                    creationTimestamp: (currentJob as any).metadata?.creationTimestamp,
+                },
+            };
 
-        return {
-            message: "Job updated successfully",
-            data: response.body,
-        };
+            const response = await k8sApi.replaceNamespacedCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
+                namespace,
+                plural: "jobs",
+                name,
+                body: updatedJob,
+            });
+
+            return {
+                message: "Job updated successfully",
+                data: response.body,
+            };
+        } catch (error) {
+            throw new Error(formatK8sApiError(error));
+        }
     }),
     deleteJob: procedure.input(deleteJobInputSchema).mutation(async ({ input }) => {
         const { namespace, name } = input;
