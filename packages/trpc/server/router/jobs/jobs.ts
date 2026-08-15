@@ -4,6 +4,7 @@ import { formatK8sApiError } from "../../utils/k8s-errors";
 import { validateJobManifest } from "../../utils/job-validation";
 import { k8sApi } from "../../utils/k8s";
 import { fetchJobs, getJobState } from "../helpers";
+import { getJobPodMetrics } from "../../utils/pod-reconciliation";
 import {
     createJobInputSchema,
     deleteJobInputSchema,
@@ -35,6 +36,41 @@ export const jobsRouter = router({
             name,
         });
         return response;
+    }),
+    getJobWithPodMetrics: procedure.input(getJobInputSchema).query(async ({ input }) => {
+        const { namespace, name } = input;
+        
+        const jobResponse = await k8sApi.getNamespacedCustomObject({
+            group: "batch.volcano.sh",
+            version: "v1alpha1",
+            namespace,
+            plural: "jobs",
+            name,
+        });
+
+        try {
+            const podMetrics = await getJobPodMetrics(namespace, name);
+            return {
+                ...jobResponse,
+                podMetrics,
+            };
+        } catch (error) {
+            console.error(`Error fetching pod metrics for job ${name}:`, error);
+            return {
+                ...jobResponse,
+                podMetrics: {
+                    totalPods: 0,
+                    runningPods: 0,
+                    failedPods: 0,
+                    pendingPods: 0,
+                    terminatingPods: 0,
+                    restartCount: 0,
+                    health: "Critical" as const,
+                    errorMessages: ["Failed to fetch pod metrics"],
+                    unhealthyPods: [],
+                },
+            };
+        }
     }),
     getJobYaml: procedure.input(getJobInputSchema).query(async ({ input }) => {
         const { namespace, name } = input;
