@@ -13,12 +13,11 @@ export type QueueResourceValidation = {
 export function parseCpuToMillicores(value: string): number | null {
   const v = value.trim();
   if (!v) return null;
-  if (v.endsWith("m")) {
-    const n = Number.parseFloat(v.slice(0, -1));
-    return Number.isFinite(n) ? n : null;
-  }
-  const n = Number.parseFloat(v);
-  return Number.isFinite(n) ? n * 1000 : null;
+  const match = /^(\d+(?:\.\d+)?)(m)?$/.exec(v);
+  if (!match) return null;
+  const amount = Number.parseFloat(match[1]!);
+  if (!Number.isFinite(amount)) return null;
+  return match[2] ? amount : amount * 1000;
 }
 
 const MEMORY_MULTIPLIERS: Record<string, number> = {
@@ -84,6 +83,80 @@ function compareMemory(
   return relation === "gte" ? d >= l : d <= l;
 }
 
+/** Flag any non-empty field that isn't a syntactically valid quantity, independent of relational checks. */
+function checkFormat(
+  guarantee: ResourcePair,
+  capability: ResourcePair,
+  d: ResourcePair,
+  deservedErrors: ResourceFieldErrors,
+  capabilityErrors: ResourceFieldErrors,
+  messages: string[],
+): void {
+  const checks: Array<{
+    label: string;
+    value: string;
+    kind: "cpu" | "memory";
+    errors: ResourceFieldErrors;
+    field: "cpu" | "memory";
+  }> = [
+    {
+      label: "Guarantee CPU",
+      value: guarantee.cpu,
+      kind: "cpu",
+      errors: {},
+      field: "cpu",
+    },
+    {
+      label: "Guarantee memory",
+      value: guarantee.memory,
+      kind: "memory",
+      errors: {},
+      field: "memory",
+    },
+    {
+      label: "Capability CPU",
+      value: capability.cpu,
+      kind: "cpu",
+      errors: capabilityErrors,
+      field: "cpu",
+    },
+    {
+      label: "Capability memory",
+      value: capability.memory,
+      kind: "memory",
+      errors: capabilityErrors,
+      field: "memory",
+    },
+    {
+      label: "Deserved CPU",
+      value: d.cpu,
+      kind: "cpu",
+      errors: deservedErrors,
+      field: "cpu",
+    },
+    {
+      label: "Deserved memory",
+      value: d.memory,
+      kind: "memory",
+      errors: deservedErrors,
+      field: "memory",
+    },
+  ];
+
+  for (const { label, value, kind, errors, field } of checks) {
+    if (!value.trim()) continue;
+    const parsed =
+      kind === "cpu" ? parseCpuToMillicores(value) : parseMemoryToBytes(value);
+    if (parsed === null && !errors[field]) {
+      errors[field] =
+        `"${value.trim()}" is not a valid ${kind === "cpu" ? "CPU" : "memory"} quantity`;
+      messages.push(
+        `${label} "${value.trim()}" is not a valid Kubernetes quantity`,
+      );
+    }
+  }
+}
+
 /** Validate guarantee ≤ deserved ≤ capability (Volcano scheduling rules). */
 export function validateQueueResources(
   guarantee: ResourcePair,
@@ -95,6 +168,24 @@ export function validateQueueResources(
   const messages: string[] = [];
 
   const d = normalizeDeservedFromGuarantee(guarantee, deserved);
+
+  checkFormat(
+    guarantee,
+    capability,
+    d,
+    deservedErrors,
+    capabilityErrors,
+    messages,
+  );
+
+  if (
+    deservedErrors.cpu ||
+    deservedErrors.memory ||
+    capabilityErrors.cpu ||
+    capabilityErrors.memory
+  ) {
+    return { valid: false, deservedErrors, capabilityErrors, messages };
+  }
 
   if (guarantee.cpu.trim()) {
     if (!d.cpu.trim()) {
