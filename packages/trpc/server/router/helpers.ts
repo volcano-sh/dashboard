@@ -253,3 +253,23 @@ export const fetchPodGroups = async (
         countWithFilter: true,
     });
 };
+
+export const fetchModelServings = async (
+    page: number,
+    pageSize: number,
+): Promise<PaginatedResponse<unknown>> => {
+    return fetchPaginatedK8sList(
+        page,
+        pageSize,
+        async (limit, continueToken) => {
+            const response = await k8sApi.listClusterCustomObject({
+                group: "workload.kthena.io",
+                version: "v1alpha1",
+                plural: "modelservings",
+                limit,
+                ...(continueToken && { continue: continueToken }),
+            });
+            return extractListMeta(response);
+        },
+    );
+};

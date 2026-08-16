@@ -1,0 +1,29 @@
+{
+  "title": "ModelServing 状态",
+  "filterPlaceholder": "过滤 ModelServing...",
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "replicas": "副本数 (可用/总计)",
+    "recoveryPolicy": "恢复策略",
+    "creationTime": "创建时间",
+    "status": "状态",
+    "actions": "操作",
+    "filterByNamespace": "按命名空间过滤",
+    "filterByStatus": "按状态过滤",
+    "filterByRecoveryPolicy": "按恢复策略过滤"
+  },
+  "details": {
+    "title": "ModelServing 详情: {name}",
+    "recoveryPolicy": "恢复策略:",
+    "availableReplicas": "可用副本:",
+    "totalReplicas": "总副本:"
+  },
+  "errors": {
+    "api": "ModelServing API 错误: {message}",
+    "yamlApi": "ModelServing YAML API 错误: {message}",
+    "refresh": "刷新 ModelServing 失败",
+    "fetchYaml": "获取 ModelServing YAML 失败",
+    "noYaml": "该 ModelServing 没有可用的 YAML 配置"
+  }
+}

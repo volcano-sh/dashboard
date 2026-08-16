@@ -1,0 +1,29 @@
+{
+  "title": "ModelServing Status",
+  "filterPlaceholder": "Filter ModelServings...",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "replicas": "Replicas (Available/Total)",
+    "recoveryPolicy": "Recovery Policy",
+    "creationTime": "Creation Time",
+    "status": "Status",
+    "actions": "Actions",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByStatus": "Filter by Status",
+    "filterByRecoveryPolicy": "Filter by Recovery Policy"
+  },
+  "details": {
+    "title": "ModelServing Details: {name}",
+    "recoveryPolicy": "Recovery Policy:",
+    "availableReplicas": "Available Replicas:",
+    "totalReplicas": "Total Replicas:"
+  },
+  "errors": {
+    "api": "ModelServing API error: {message}",
+    "yamlApi": "ModelServing YAML API error: {message}",
+    "refresh": "Failed to refresh ModelServings",
+    "fetchYaml": "Failed to fetch ModelServing YAML",
+    "noYaml": "No YAML configuration available for this ModelServing"
+  }
+}

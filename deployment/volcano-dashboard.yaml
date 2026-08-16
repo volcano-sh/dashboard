@@ -133,10 +133,11 @@ rules:
       - get
       - list
       - watch
+  # Kthena ModelServings
   - apiGroups:
-      - scheduling.volcano.sh
+      - workload.kthena.io
     resources:
-      - podgroups
+      - modelservings
     verbs:
       - get
       - list
