@@ -38,6 +38,13 @@ export function validateJobManifest(manifest: Record<string, any>): string | nul
 
     if (Array.isArray(spec.tasks)) {
         spec.tasks.forEach((task: any, taskIndex: number) => {
+            const containers = task?.template?.spec?.containers;
+            if (!Array.isArray(containers) || containers.length === 0) {
+                messages.push(
+                    `spec.tasks[${taskIndex}].template.spec.containers: at least one container is required`
+                );
+            }
+
             if (task?.volumes) {
                 validateVolumeList(task.volumes, `spec.tasks[${taskIndex}].volumes`, messages);
             }
