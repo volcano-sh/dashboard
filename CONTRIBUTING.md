@@ -120,7 +120,7 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ### Deploy to a local Kubernetes cluster (kind)
 
-Use this workflow to run your locally built image instead of the default `volcanosh/volcano-dashboard:latest` from the manifest. The steps below use [kind](https://kind.sigs.k8s.io/); adjust the image-load command for your environment (e.g. `minikube image load dashboard-app:dev`).
+Use this workflow to run your locally built image instead of the default `volcanosh/vc-dashboard:latest` from the manifest. The steps below use [kind](https://kind.sigs.k8s.io/); adjust the image-load command for your environment (e.g. `minikube image load dashboard-app:dev`).
 
 **1. Build the dashboard image locally**
 
@@ -147,7 +147,7 @@ kubectl apply -f deployment/volcano-dashboard.yaml
 
 **4. Point the deployment at your local image**
 
-The manifest ships with `volcanosh/volcano-dashboard:latest`. Override it without editing YAML:
+The manifest ships with `volcanosh/vc-dashboard:latest`. Override it without editing YAML:
 
 ```bash
 kubectl -n volcano-system set image deploy/volcano-dashboard \
@@ -161,7 +161,7 @@ To switch back to the published image later:
 
 ```bash
 kubectl -n volcano-system set image deploy/volcano-dashboard \
-  volcano-dashboard=volcanosh/volcano-dashboard:latest
+  volcano-dashboard=volcanosh/vc-dashboard:latest
 ```
 
 **5. Install Volcano (required for dashboard APIs)**
