@@ -1,0 +1,16 @@
+{
+  "title": "节点管理",
+  "filterPlaceholder": "按名称过滤节点...",
+  "errors": {
+    "api": "加载节点失败: {message}",
+    "refresh": "刷新节点数据失败"
+  },
+  "columns": {
+    "name": "名称",
+    "status": "状态",
+    "cpu": "CPU (可分配/容量)",
+    "memory": "内存 (可分配/容量)",
+    "os": "操作系统 / 架构",
+    "roles": "角色"
+  }
+}

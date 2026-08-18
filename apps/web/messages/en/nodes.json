@@ -1,0 +1,16 @@
+{
+  "title": "Nodes Management",
+  "filterPlaceholder": "Filter nodes by name...",
+  "errors": {
+    "api": "Failed to load nodes: {message}",
+    "refresh": "Failed to refresh node data"
+  },
+  "columns": {
+    "name": "Name",
+    "status": "Status",
+    "cpu": "CPU (Allocatable/Capacity)",
+    "memory": "Memory (Allocatable/Capacity)",
+    "os": "OS / Arch",
+    "roles": "Roles"
+  }
+}
