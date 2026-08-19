@@ -38,12 +38,27 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
         message: string
     }>({ type: null, message: "" })
 
+    const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
     React.useEffect(() => {
         if (open) {
             setYaml(initialYaml)
             setStatus({ type: null, message: "" })
+
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current)
+                closeTimeoutRef.current = null
+            }
         }
     }, [open, initialYaml])
+
+    React.useEffect(() => {
+        return () => {
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current)
+            }
+        }
+    }, [])
 
     const { mutateAsync: updateJob, isPending: isUpdating } = trpc.jobsRouter.updateJob.useMutation({
         onSuccess: () => {
@@ -52,7 +67,8 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
                 message: t("edit.success"),
             })
 
-            setTimeout(() => {
+            closeTimeoutRef.current = setTimeout(() => {
+                closeTimeoutRef.current = null
                 setOpen(false)
                 handleRefresh()
             }, 1000)
