@@ -134,6 +134,11 @@ export const jobsRouter = router({
             },
         };
 
+        const jobError = validateJobManifest(updatedJob as Record<string, unknown>);
+        if (jobError) {
+            throw new Error(jobError);
+        }
+
         const response = await k8sApi.replaceNamespacedCustomObject({
             group: "batch.volcano.sh",
             version: "v1alpha1",
