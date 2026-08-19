@@ -159,7 +159,14 @@ export default function PodManagement() {
                     const now = new Date();
                     const ageInMs = now.getTime() - createdAt.getTime();
                     const ageInDays = Math.floor(ageInMs / (1000 * 60 * 60 * 24));
-                    const age = ageInDays === 0 ? "1d" : `${ageInDays}d`;
+                    const ageInHours = Math.floor(ageInMs / (1000 * 60 * 60));
+                    const ageInMinutes = Math.floor(ageInMs / (1000 * 60));
+                    const age =
+                        ageInDays > 0
+                            ? `${ageInDays}d`
+                            : ageInHours > 0
+                                ? `${ageInHours}h`
+                                : `${Math.max(1, ageInMinutes)}m`;
 
                     return {
                         name: pod.metadata?.name || '',
