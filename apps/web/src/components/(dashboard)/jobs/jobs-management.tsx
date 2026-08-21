@@ -66,6 +66,10 @@ export default function JobsManagement() {
     }
   )
 
+  const allJobsQuery = trpc.jobsRouter.getAllJobs.useQuery(undefined, {
+    staleTime: 30000,
+  })
+
   const jobYamlQuery = trpc.jobsRouter.getJobYaml.useQuery(
     {
       namespace: selectedJob?.namespace || "",
@@ -80,16 +84,16 @@ export default function JobsManagement() {
     },
   );
 
-  const availableNamespaces = jobs ?
-    Array.from(new Set(jobs.map(job => job.namespace).filter(Boolean))).sort()
+  const availableNamespaces = allJobsQuery.data?.items ?
+    Array.from(new Set(allJobsQuery.data.items.map((job: any) => job.metadata?.namespace).filter(Boolean))).sort()
     : [];
 
-  const availableQueues = jobs ?
-    Array.from(new Set(jobs.map(job => job.queue).filter(Boolean))).sort()
+  const availableQueues = allJobsQuery.data?.items ?
+    Array.from(new Set(allJobsQuery.data.items.map((job: any) => job.spec?.queue).filter(Boolean))).sort()
     : [];
 
-  const availableStatuses = jobs ?
-    Array.from(new Set(jobs.map(job => job.status).filter(Boolean))).sort()
+  const availableStatuses = allJobsQuery.data?.items ?
+    Array.from(new Set(allJobsQuery.data.items.map((job: any) => job.status?.state?.phase || 'unknown').filter(Boolean))).sort()
     : [];
 
   const { mutateAsync: deleteJob, isPending: isDeleting } = trpc.jobsRouter.deleteJob.useMutation({
