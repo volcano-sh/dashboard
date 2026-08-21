@@ -85,12 +85,16 @@ export default function PodManagement() {
         },
     );
 
-    const availableNamespaces = pods ?
-        Array.from(new Set(pods.map(pod => pod.namespace).filter(Boolean))).sort()
+    const allPodsQuery = trpc.podRouter.getAllPods.useQuery(undefined, {
+        staleTime: 30000,
+    })
+
+    const availableNamespaces = allPodsQuery.data?.items ?
+        Array.from(new Set(allPodsQuery.data.items.map((pod: any) => pod.metadata?.namespace).filter(Boolean))).sort()
         : [];
 
-    const availableStatuses = pods ?
-        Array.from(new Set(pods.map(pod => pod.status).filter(Boolean))).sort()
+    const availableStatuses = allPodsQuery.data?.items ?
+        Array.from(new Set(allPodsQuery.data.items.map((pod: any) => pod.status?.phase?.toLowerCase() || 'unknown').filter(Boolean))).sort()
         : [];
 
     const { mutateAsync: deletePod, isPending: isDeleting } = trpc.podRouter.deletePod.useMutation({
