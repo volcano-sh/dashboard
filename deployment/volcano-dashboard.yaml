@@ -22,6 +22,9 @@ spec:
           type: RuntimeDefault
       serviceAccountName: volcano-dashboard
       containers:
+        - image: volcanosh/vc-dashboard-frontend:v0.2.0
+          imagePullPolicy: Always
+          name: frontend
         - name: volcano-dashboard
           image: volcanosh/volcano-dashboard:latest
           imagePullPolicy: IfNotPresent
@@ -43,6 +46,30 @@ spec:
               - ALL
             runAsNonRoot: true
             runAsUser: 1000
+          volumeMounts:
+            - mountPath: /var/cache/nginx
+              name: nginx-cache
+            - mountPath: /run
+              name: nginx-run
+        - image: volcanosh/vc-dashboard-backend:v0.2.0
+          imagePullPolicy: Always
+          name: backend
+          ports:
+            - containerPort: 3001
+              name: backend
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
 ---
 # Volcano Dashboard ServiceAccount
 apiVersion: v1
