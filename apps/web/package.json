@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "i18n:validate": "npx tsx scripts/validate-locales.ts"
+    "i18n:validate": "npx tsx scripts/validate-locales.ts",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.2",
