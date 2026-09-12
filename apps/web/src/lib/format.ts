@@ -8,5 +8,8 @@ export function formatDateTime(
     timeStyle: "short",
   }
 ): string {
+  if (!date || isNaN(date.getTime())) {
+    return "-";
+  }
   return new Intl.DateTimeFormat(locale, options).format(date);
 }
