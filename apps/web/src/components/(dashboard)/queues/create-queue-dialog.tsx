@@ -1,6 +1,7 @@
 "use client"
 import { dump } from "js-yaml"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import * as React from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -56,6 +57,8 @@ export function CreateQueueDialog({
   setOpen: (open: boolean) => void
   handleRefresh: () => void
 }) {
+  const t = useTranslations("queues")
+  const tc = useTranslations("common")
   const [mode, setMode] = React.useState<"form" | "yaml">("form")
   const [queueName, setQueueName] = React.useState("")
   const [weight, setWeight] = React.useState("1")
@@ -91,7 +94,7 @@ export function CreateQueueDialog({
 
   const { mutateAsync: createQueue, isPending: isCreating } = trpc.queueRouter.createQueue.useMutation({
     onSuccess: () => {
-      setStatus({ type: "success", message: "Queue created successfully!" })
+      setStatus({ type: "success", message: t("create.success") })
       setOpen(false)
       handleRefresh()
     },
@@ -100,6 +103,7 @@ export function CreateQueueDialog({
     }
   })
 
+  // Form → YAML while on Form tab (YAML stays ready when you switch views)
   React.useEffect(() => {
     if (!open || mode !== "form") return
     try {
@@ -157,7 +161,7 @@ export function CreateQueueDialog({
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Could not parse YAML into the form"
+        message: error instanceof Error ? error.message : t("create.parseFormFailed")
       })
     }
   }, [yaml])
@@ -202,7 +206,7 @@ export function CreateQueueDialog({
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Failed to create queue"
+        message: error instanceof Error ? error.message : t("create.failed")
       })
     }
   }
@@ -238,15 +242,15 @@ export function CreateQueueDialog({
         )}
       >
         <DialogHeader>
-          <DialogTitle>Create a Queue</DialogTitle>
+          <DialogTitle>{t("create.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex gap-2 border-b pb-2">
           <Button type="button" variant={mode === "form" ? "default" : "outline"} size="sm" onClick={goForm}>
-            Form
+            {t("create.formTab")}
           </Button>
           <Button type="button" variant={mode === "yaml" ? "default" : "outline"} size="sm" onClick={goYaml}>
-            YAML
+            {t("create.yamlTab")}
           </Button>
         </div>
 
@@ -272,12 +276,12 @@ export function CreateQueueDialog({
             />
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="yaml-input">Queue YAML Configuration</Label>
+              <Label htmlFor="yaml-input">{t("create.yamlLabel")}</Label>
               <Textarea
                 id="yaml-input"
                 value={yaml}
                 onChange={(e) => setYaml(e.target.value)}
-                placeholder="Enter your queue YAML configuration..."
+                placeholder={t("create.yamlPlaceholder")}
                 className="min-h-[360px] font-mono text-sm resize-none"
                 disabled={isCreating}
               />
@@ -294,10 +298,10 @@ export function CreateQueueDialog({
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isCreating}>
-            Cancel
+            {tc("actions.cancel")}
           </Button>
           <Button type="button" variant="outline" onClick={handleReset} disabled={isCreating}>
-            Reset
+            {tc("actions.reset")}
           </Button>
           <Button
             onClick={handleCreateQueue}
@@ -305,11 +309,11 @@ export function CreateQueueDialog({
           >
             {isCreating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
+                <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                {tc("actions.creating")}
               </>
             ) : (
-              "Create"
+              t("create.button")
             )}
           </Button>
         </DialogFooter>

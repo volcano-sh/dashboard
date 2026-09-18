@@ -3,6 +3,7 @@
 
 import { load, YAMLException } from "js-yaml"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import * as React from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -29,6 +30,8 @@ interface JobEditDialogProps {
 }
 
 export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamespace, initialYaml }: JobEditDialogProps) {
+    const t = useTranslations("jobs")
+    const tc = useTranslations("common")
     const [yaml, setYaml] = React.useState(initialYaml)
     const [status, setStatus] = React.useState<{
         type: "success" | "error" | null
@@ -46,7 +49,7 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
         onSuccess: () => {
             setStatus({
                 type: "success",
-                message: "Job updated successfully!",
+                message: t("edit.success"),
             })
 
             setTimeout(() => {
@@ -106,7 +109,7 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
         } catch (error) {
             setStatus({
                 type: "error",
-                message: error instanceof Error ? error.message : "Failed to update job"
+                message: error instanceof Error ? error.message : t("edit.failed")
             })
         }
     }
@@ -120,20 +123,18 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Edit Job: {jobName}</DialogTitle>
-                    <DialogDescription>
-                        The current job configuration is shown below. Make your changes and click Update to apply them.
-                    </DialogDescription>
+                    <DialogTitle>{t("edit.title", { name: jobName })}</DialogTitle>
+                    <DialogDescription>{t("edit.description")}</DialogDescription>
                 </DialogHeader>
 
                 <div className="flex-1 space-y-4 overflow-hidden">
                     <div className="space-y-2">
-                        <Label htmlFor="yaml-input">Job YAML Configuration</Label>
+                        <Label htmlFor="yaml-input">{t("create.yamlLabel")}</Label>
                         <Textarea
                             id="yaml-input"
                             value={yaml}
                             onChange={(e) => setYaml(e.target.value)}
-                            placeholder="Enter your job YAML configuration..."
+                            placeholder={t("create.yamlPlaceholder")}
                             className="min-h-[400px] font-mono text-sm resize-none"
                             disabled={isUpdating}
                         />
@@ -149,16 +150,16 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
 
                 <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={handleReset} disabled={isUpdating}>
-                        Reset
+                        {tc("actions.reset")}
                     </Button>
                     <Button onClick={handleUpdateJob} disabled={isUpdating || !yaml.trim()}>
                         {isUpdating ? (
                             <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Updating...
+                                <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                                {tc("actions.updating")}
                             </>
                         ) : (
-                            "Update Job"
+                            t("edit.button")
                         )}
                     </Button>
                 </DialogFooter>
@@ -166,4 +167,3 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
         </Dialog>
     )
 }
-

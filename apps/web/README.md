@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Internationalization
+
+Supported locales: English (`en`) and Simplified Chinese (`zh-CN`). Routes are prefixed (`/en/jobs`, `/zh-CN/jobs`). See [docs/i18n.md](docs/i18n.md) for adding locales and translation conventions.
+
+Validate message key parity:
+
+```bash
+npm run i18n:validate
+```
+
 ## Getting Started
 
 First, run the development server:

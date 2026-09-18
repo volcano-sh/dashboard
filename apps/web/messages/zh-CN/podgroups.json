@@ -1,0 +1,29 @@
+{
+  "title": "Pod 组管理",
+  "filterPlaceholder": "搜索 Pod 组...",
+  "searchPlaceholder": "搜索 Pod 组...",
+  "namespacePlaceholder": "命名空间",
+  "statusPlaceholder": "状态",
+  "allNamespaces": "全部命名空间",
+  "allStatuses": "全部状态",
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "queue": "队列",
+    "minMember": "最小成员数",
+    "creationTime": "创建时间",
+    "status": "状态",
+    "filterByNamespace": "按命名空间筛选",
+    "filterByStatus": "按状态筛选"
+  },
+  "details": {
+    "title": "Pod 组详情：{name}",
+    "minMember": "最小成员数："
+  },
+  "errors": {
+    "api": "Pod 组 API 错误：{message}",
+    "yamlApi": "Pod 组 YAML API 错误：{message}",
+    "refresh": "刷新 Pod 组失败",
+    "fetchYaml": "获取 Pod 组 YAML 失败"
+  }
+}

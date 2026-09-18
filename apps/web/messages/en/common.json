@@ -1,0 +1,41 @@
+{
+  "actions": {
+    "refresh": "Refresh",
+    "create": "Create",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "reset": "Reset",
+    "previous": "Previous",
+    "next": "Next",
+    "all": "All",
+    "columns": "Columns",
+    "update": "Update",
+    "updating": "Updating...",
+    "creating": "Creating..."
+  },
+  "loading": "Loading...",
+  "loadingChartData": "Loading chart data...",
+  "noResults": "No results.",
+  "rowsSelected": "{selected} of {total} row(s) selected.",
+  "pagination": {
+    "showing": "Showing {start} to {end} of {total} results",
+    "show": "Show:"
+  },
+  "deleteConfirm": {
+    "cannotUndo": "This action cannot be undone."
+  },
+  "details": {
+    "name": "Name:",
+    "namespace": "Namespace:",
+    "queue": "Queue:",
+    "created": "Created:",
+    "state": "State:",
+    "yamlConfiguration": "YAML Configuration"
+  },
+  "notAvailable": "N/A",
+  "metadata": {
+    "title": "Volcano",
+    "description": "Cloud native batch scheduling system for compute-intensive workloads"
+  }
+}

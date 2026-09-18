@@ -1,42 +1,49 @@
 import { Icons } from "@/components/icons";
 
 export interface NavItem {
-    title: string;
-    icon?: keyof typeof Icons;
-    href: string;
-    disable?: boolean;
+  titleKey: keyof typeof navTitleKeys;
+  icon?: keyof typeof Icons;
+  href: string;
+  disable?: boolean;
 }
 
+export const navTitleKeys = {
+  dashboard: "dashboard",
+  jobs: "jobs",
+  queues: "queues",
+  pods: "pods",
+  podgroups: "podgroups",
+} as const;
 
 export const navItems: NavItem[] = [
-    {
-        title: "Dashboard",
-        icon: "dashboard",
-        href: `/`,
-        disable: false,
-    },
-    {
-        title: "Jobs",
-        icon: "notepad",
-        href: `/jobs`,
-        disable: false
-    },
-    {
-        title: "Queues",
-        icon: "cloud",
-        href: `/queues`,
-        disable: false
-    },
-    {
-        title: "Pods",
-        icon: "waypoint",
-        href: `/pods`,
-        disable: false
-    },
-    {
-        title: "PodGroups",
-        icon: "container",
-        href: `/podgroups`,
-        disable: false
-    },
-]
+  {
+    titleKey: "dashboard",
+    icon: "dashboard",
+    href: "/",
+    disable: false,
+  },
+  {
+    titleKey: "jobs",
+    icon: "notepad",
+    href: "/jobs",
+    disable: false,
+  },
+  {
+    titleKey: "queues",
+    icon: "cloud",
+    href: "/queues",
+    disable: false,
+  },
+  {
+    titleKey: "pods",
+    icon: "waypoint",
+    href: "/pods",
+    disable: false,
+  },
+  {
+    titleKey: "podgroups",
+    icon: "container",
+    href: "/podgroups",
+    disable: false,
+  },
+];

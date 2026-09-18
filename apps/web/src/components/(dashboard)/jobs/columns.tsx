@@ -14,6 +14,7 @@ import { getStatusBadgeClass } from "@/lib/status-colors"
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Edit, Filter, Trash2 } from 'lucide-react'
 import { JobStatus } from "./jobs-management"
+import { useFormatter, useTranslations } from "next-intl"
 
 interface CreateColumnsOptions {
   availableNamespaces: string[]
@@ -28,8 +29,15 @@ export const createColumns = ({
   availableQueues,
   availableStatuses,
   onEdit,
-  onDelete
-}: CreateColumnsOptions): ColumnDef<JobStatus>[] => [
+  onDelete,
+  t,
+  tc,
+  formatDateTime,
+}: CreateColumnsOptions & {
+  t: ReturnType<typeof useTranslations<"jobs">>
+  tc: ReturnType<typeof useTranslations<"common">>
+  formatDateTime: (date: Date) => string
+}): ColumnDef<JobStatus>[] => [
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -37,8 +45,8 @@ export const createColumns = ({
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          {t("table.name")}
+          <ArrowUpDown className="ms-2 h-4 w-4" />
         </Button>
       ),
     },
@@ -46,15 +54,15 @@ export const createColumns = ({
       accessorKey: "namespace",
       header: ({ column }) => (
         <div className="flex items-center">
-          Namespace
+          {t("table.namespace")}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="ml-2 h-8 p-1">
+              <Button variant="ghost" size="sm" className="ms-2 h-8 p-1">
                 <Filter className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Filter by Namespace</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("table.filterByNamespace")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={!column.getFilterValue()}
@@ -62,7 +70,7 @@ export const createColumns = ({
                   if (checked) column.setFilterValue(undefined)
                 }}
               >
-                All
+                {tc("actions.all")}
               </DropdownMenuCheckboxItem>
               {availableNamespaces.map((namespace) => (
                 <DropdownMenuCheckboxItem
@@ -97,15 +105,15 @@ export const createColumns = ({
       accessorKey: "queue",
       header: ({ column }) => (
         <div className="flex items-center">
-          Queue
+          {t("table.queue")}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="ml-2 h-8 p-1">
+              <Button variant="ghost" size="sm" className="ms-2 h-8 p-1">
                 <Filter className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Filter by Queue</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("table.filterByQueue")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={!column.getFilterValue()}
@@ -113,7 +121,7 @@ export const createColumns = ({
                   if (checked) column.setFilterValue(undefined)
                 }}
               >
-                All
+                {tc("actions.all")}
               </DropdownMenuCheckboxItem>
               {availableQueues.map((queue) => (
                 <DropdownMenuCheckboxItem
@@ -151,31 +159,28 @@ export const createColumns = ({
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Creation Time
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          {t("table.creationTime")}
+          <ArrowUpDown className="ms-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
         const createdAt = row.getValue("createdAt") as Date
-        return new Intl.DateTimeFormat("en-US", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }).format(createdAt)
+        return formatDateTime(createdAt)
       },
     },
     {
       accessorKey: "status",
       header: ({ column }) => (
         <div className="flex items-center">
-          Status
+          {t("table.status")}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="ml-2 h-8 p-1">
+              <Button variant="ghost" size="sm" className="ms-2 h-8 p-1">
                 <Filter className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("table.filterByStatus")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={!column.getFilterValue()}
@@ -183,7 +188,7 @@ export const createColumns = ({
                   if (checked) column.setFilterValue(undefined)
                 }}
               >
-                All
+                {tc("actions.all")}
               </DropdownMenuCheckboxItem>
               {availableStatuses.map((status) => (
                 <DropdownMenuCheckboxItem
@@ -214,7 +219,7 @@ export const createColumns = ({
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("table.actions"),
       cell: ({ row }) => {
         const job = row.original
 
@@ -252,8 +257,18 @@ export const createColumns = ({
     },
   ]
 
-export const columns = createColumns({
-  availableNamespaces: [],
-  availableQueues: [],
-  availableStatuses: []
-})
+export function useJobColumns(options: CreateColumnsOptions) {
+  const t = useTranslations("jobs")
+  const tc = useTranslations("common")
+  const format = useFormatter()
+
+  const formatDateTime = (date: Date) =>
+    format.dateTime(date, { dateStyle: "medium", timeStyle: "short" })
+
+  return createColumns({
+    ...options,
+    t,
+    tc,
+    formatDateTime,
+  })
+}

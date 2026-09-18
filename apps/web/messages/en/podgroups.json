@@ -1,0 +1,29 @@
+{
+  "title": "PodGroup Management",
+  "filterPlaceholder": "Search podgroups...",
+  "searchPlaceholder": "Search podgroups...",
+  "namespacePlaceholder": "Namespace",
+  "statusPlaceholder": "Status",
+  "allNamespaces": "All Namespaces",
+  "allStatuses": "All Statuses",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "queue": "Queue",
+    "minMember": "Min Member",
+    "creationTime": "Creation Time",
+    "status": "Status",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByStatus": "Filter by Status"
+  },
+  "details": {
+    "title": "PodGroup Details: {name}",
+    "minMember": "Min Member:"
+  },
+  "errors": {
+    "api": "PodGroups API error: {message}",
+    "yamlApi": "PodGroup YAML API error: {message}",
+    "refresh": "Failed to refresh podgroups",
+    "fetchYaml": "Failed to fetch podgroup YAML"
+  }
+}

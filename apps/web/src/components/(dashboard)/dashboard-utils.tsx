@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@volcano/trpc/react";
 import { Loader2Icon, RocketIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import QueueResourcesBarChart from "./bar-chart";
 import JobStatusPieChart from "./pie-chart";
 
@@ -25,6 +26,9 @@ const DashboardCard = ({ title, value, isLoading }: { title: string; value: stri
 };
 
 const DashboardSkeleton = () => {
+  const t = useTranslations("common");
+  const td = useTranslations("dashboard");
+
   return (
     <div className="mt-4 mx-4">
       <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt-4">
@@ -45,7 +49,7 @@ const DashboardSkeleton = () => {
           <CardContent className="flex items-center justify-center h-[300px]">
             <div className="flex flex-col items-center space-y-2">
               <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-muted-foreground">Loading chart data...</p>
+              <p className="text-muted-foreground">{t("loadingChartData")}</p>
             </div>
           </CardContent>
         </Card>
@@ -57,7 +61,7 @@ const DashboardSkeleton = () => {
           <CardContent className="flex items-center justify-center h-[300px]">
             <div className="flex flex-col items-center space-y-2">
               <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-muted-foreground">Loading chart data...</p>
+              <p className="text-muted-foreground">{td("pieChart.loading")}</p>
             </div>
           </CardContent>
         </Card>
@@ -67,25 +71,25 @@ const DashboardSkeleton = () => {
 };
 
 export const DashboardUtils = () => {
+  const t = useTranslations("dashboard");
   const { data: summary, isLoading: summaryLoading } = trpc.dashboardRouter.getSummary.useQuery();
   const { data: jobStatusMetrics, isLoading: jobStatusLoading } = trpc.dashboardRouter.getJobStatusMetrics.useQuery();
   const { data: queueMetrics, isLoading: queueMetricsLoading } = trpc.dashboardRouter.getQueueMetrics.useQuery();
 
   const isLoading = summaryLoading || jobStatusLoading || queueMetricsLoading;
 
-  const categories = {
-    "Total Jobs": summary?.totalJobs || 0,
-    "Active Jobs": summary?.activeJobs || 0,
-    "Running Pods": summary?.runningPods || 0,
-    "Complete Rate": summary?.completeRate || "0%",
-  };
+  const categories = [
+    { title: t("cards.totalJobs"), value: summary?.totalJobs || 0 },
+    { title: t("cards.activeJobs"), value: summary?.activeJobs || 0 },
+    { title: t("cards.runningPods"), value: summary?.runningPods || 0 },
+    { title: t("cards.completeRate"), value: summary?.completeRate || "0%" },
+  ];
 
-  // Dynamic alert message based on job status
   const getAlertMessage = () => {
     if (isLoading) {
       return {
-        title: "Loading...",
-        description: "Fetching dashboard data from the cluster.",
+        title: t("alerts.loadingTitle"),
+        description: t("alerts.loadingDescription"),
         icon: Loader2Icon,
         variant: "default" as const
       };
@@ -96,22 +100,22 @@ export const DashboardUtils = () => {
 
     if (activeJobs > 0) {
       return {
-        title: "Jobs Running",
-        description: `${activeJobs} job${activeJobs > 1 ? 's' : ''} ${activeJobs > 1 ? 'are' : 'is'} currently running in the background. You can continue to work while we process your data.`,
+        title: t("alerts.jobsRunningTitle"),
+        description: t("alerts.jobsRunningDescription", { count: activeJobs }),
         icon: RocketIcon,
         variant: "default" as const
       };
     } else if (totalJobs > 0) {
       return {
-        title: "All Jobs Complete",
-        description: "All jobs have been completed successfully. No active jobs are currently running.",
+        title: t("alerts.allCompleteTitle"),
+        description: t("alerts.allCompleteDescription"),
         icon: RocketIcon,
         variant: "default" as const
       };
     } else {
       return {
-        title: "No Jobs Found",
-        description: "No jobs have been created yet. Create your first job to get started.",
+        title: t("alerts.noJobsTitle"),
+        description: t("alerts.noJobsDescription"),
         icon: RocketIcon,
         variant: "default" as const
       };
@@ -137,7 +141,7 @@ export const DashboardUtils = () => {
         </Alert>
       </div>
       <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt-4">
-        {Object?.entries(categories).map(([title, value], index) => (
+        {categories.map(({ title, value }, index) => (
           <DashboardCard
             key={index}
             title={title}
@@ -151,6 +155,5 @@ export const DashboardUtils = () => {
         <QueueResourcesBarChart data={queueMetrics} isLoading={queueMetricsLoading} />
       </section>
     </div>
-
   )
 }

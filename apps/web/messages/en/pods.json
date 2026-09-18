@@ -1,0 +1,48 @@
+{
+  "title": "Pod Management",
+  "createPod": "Create Pod",
+  "filterPlaceholder": "Filter pods...",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "age": "Age",
+    "status": "Status",
+    "actions": "Actions",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByStatus": "Filter by Status"
+  },
+  "details": {
+    "title": "Pod Details: {name}"
+  },
+  "delete": {
+    "title": "Delete Pod",
+    "message": "Are you sure you want to delete the pod {name} in namespace {namespace}?"
+  },
+  "errors": {
+    "api": "Pods API error: {message}",
+    "yamlApi": "Pod YAML API error: {message}",
+    "refresh": "Failed to refresh pods",
+    "fetchYaml": "Failed to fetch pod YAML",
+    "fetchYamlEdit": "Failed to fetch pod YAML for editing",
+    "noYaml": "No YAML configuration available for this pod",
+    "delete": "Failed to delete pod: {message}"
+  },
+  "create": {
+    "title": "Create Kubernetes Pod",
+    "description": "Enter your pod configuration in YAML format below.",
+    "yamlLabel": "Pod YAML Configuration",
+    "yamlPlaceholder": "Enter your pod YAML configuration...",
+    "success": "Pod created successfully!",
+    "failed": "Failed to create pod",
+    "button": "Create Pod"
+  },
+  "edit": {
+    "title": "Edit Pod: {name}",
+    "description": "The current pod configuration is shown below. Make your changes and click Update to apply them.",
+    "fieldRestriction": "Cannot update this field. Running pods only allow changes to: container images, imagePullPolicy, activeDeadlineSeconds, and tolerations. For other changes, please delete and recreate the pod.",
+    "success": "Pod updated successfully!",
+    "failed": "Failed to update pod",
+    "button": "Update Pod",
+    "yamlPlaceholder": "Enter your pod YAML configuration..."
+  }
+}

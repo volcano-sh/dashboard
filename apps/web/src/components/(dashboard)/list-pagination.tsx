@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export type ListPaginationProps = {
   page: number;
@@ -31,6 +32,7 @@ export function ListPagination({
   disabled = false,
   pageSizeOptions = [10, 20, 50, 100],
 }: ListPaginationProps) {
+  const t = useTranslations("common");
   const startItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const endItem = total === 0 ? 0 : Math.min(page * pageSize, total);
   const safeTotalPages = Math.max(1, totalPages);
@@ -38,11 +40,11 @@ export function ListPagination({
   return (
     <div className="flex items-center justify-between space-x-2 py-4">
       <div className="flex-1 text-sm text-muted-foreground">
-        Showing {startItem} to {endItem} of {total} results
+        {t("pagination.showing", { start: startItem, end: endItem, total })}
       </div>
       <div className="flex items-center space-x-2">
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Show:</span>
+          <span className="text-sm text-muted-foreground">{t("pagination.show")}</span>
           <Select
             value={pageSize.toString()}
             onValueChange={onPageSizeChange}
@@ -69,7 +71,7 @@ export function ListPagination({
             disabled={disabled || page <= 1}
           >
             <ChevronLeft className="h-4 w-4" />
-            Previous
+            {t("actions.previous")}
           </Button>
 
           <div className="flex items-center space-x-1">
@@ -106,7 +108,7 @@ export function ListPagination({
             onClick={() => onPageChange(page + 1)}
             disabled={disabled || page >= safeTotalPages || total === 0}
           >
-            Next
+            {t("actions.next")}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

@@ -1,0 +1,48 @@
+{
+  "title": "作业状态",
+  "createJob": "创建作业",
+  "filterPlaceholder": "筛选作业...",
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "queue": "队列",
+    "creationTime": "创建时间",
+    "status": "状态",
+    "actions": "操作",
+    "filterByNamespace": "按命名空间筛选",
+    "filterByQueue": "按队列筛选",
+    "filterByStatus": "按状态筛选"
+  },
+  "details": {
+    "title": "作业详情：{name}"
+  },
+  "delete": {
+    "title": "删除作业",
+    "message": "确定要删除命名空间 {namespace} 中的作业 {name} 吗？"
+  },
+  "errors": {
+    "api": "作业 API 错误：{message}",
+    "yamlApi": "作业 YAML API 错误：{message}",
+    "refresh": "刷新作业失败",
+    "fetchYaml": "获取作业 YAML 失败",
+    "fetchYamlEdit": "获取作业 YAML 用于编辑失败",
+    "noYaml": "此作业没有可用的 YAML 配置",
+    "delete": "删除作业失败：{message}"
+  },
+  "create": {
+    "title": "创建 Volcano 作业",
+    "description": "请在下方以 YAML 格式输入作业配置。",
+    "yamlLabel": "作业 YAML 配置",
+    "yamlPlaceholder": "请输入作业 YAML 配置...",
+    "success": "作业创建成功！",
+    "failed": "创建作业失败",
+    "button": "创建作业"
+  },
+  "edit": {
+    "title": "编辑作业：{name}",
+    "description": "下方显示当前作业配置。修改后点击更新以应用更改。",
+    "success": "作业更新成功！",
+    "failed": "更新作业失败",
+    "button": "更新作业"
+  }
+}

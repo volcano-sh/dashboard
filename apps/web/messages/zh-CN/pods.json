@@ -1,0 +1,48 @@
+{
+  "title": "Pod 管理",
+  "createPod": "创建 Pod",
+  "filterPlaceholder": "筛选 Pod...",
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "age": "运行时长",
+    "status": "状态",
+    "actions": "操作",
+    "filterByNamespace": "按命名空间筛选",
+    "filterByStatus": "按状态筛选"
+  },
+  "details": {
+    "title": "Pod 详情：{name}"
+  },
+  "delete": {
+    "title": "删除 Pod",
+    "message": "确定要删除命名空间 {namespace} 中的 Pod {name} 吗？"
+  },
+  "errors": {
+    "api": "Pod API 错误：{message}",
+    "yamlApi": "Pod YAML API 错误：{message}",
+    "refresh": "刷新 Pod 失败",
+    "fetchYaml": "获取 Pod YAML 失败",
+    "fetchYamlEdit": "获取 Pod YAML 用于编辑失败",
+    "noYaml": "此 Pod 没有可用的 YAML 配置",
+    "delete": "删除 Pod 失败：{message}"
+  },
+  "create": {
+    "title": "创建 Kubernetes Pod",
+    "description": "请在下方以 YAML 格式输入 Pod 配置。",
+    "yamlLabel": "Pod YAML 配置",
+    "yamlPlaceholder": "请输入 Pod YAML 配置...",
+    "success": "Pod 创建成功！",
+    "failed": "创建 Pod 失败",
+    "button": "创建 Pod"
+  },
+  "edit": {
+    "title": "编辑 Pod：{name}",
+    "description": "下方显示当前 Pod 配置。修改后点击更新以应用更改。",
+    "fieldRestriction": "无法更新此字段。运行中的 Pod 仅允许修改：容器镜像、imagePullPolicy、activeDeadlineSeconds 和 tolerations。其他更改请删除后重新创建 Pod。",
+    "success": "Pod 更新成功！",
+    "failed": "更新 Pod 失败",
+    "button": "更新 Pod",
+    "yamlPlaceholder": "请输入 Pod YAML 配置..."
+  }
+}

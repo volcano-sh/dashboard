@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "i18n:validate": "npx tsx scripts/validate-locales.ts"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.2",
@@ -26,6 +27,7 @@
     "js-yaml": "^4.1.0",
     "lucide-react": "^0.475.0",
     "next": "14.2.18",
+    "next-intl": "^3.26.5",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^2.15.1",

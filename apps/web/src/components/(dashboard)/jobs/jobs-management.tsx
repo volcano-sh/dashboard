@@ -16,8 +16,9 @@ import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { ListPagination } from "../list-pagination"
+import { useFormatter, useTranslations } from "next-intl"
 import { DataTable } from "../data-table"
-import { createColumns } from "./columns"
+import { useJobColumns } from "./columns"
 import { CreateJobDialog } from "./create-job-dialog"
 import { JobEditDialog } from "./job-edit-dialog"
 
@@ -31,6 +32,9 @@ export type JobStatus = {
 }
 
 export default function JobsManagement() {
+  const t = useTranslations("jobs")
+  const tc = useTranslations("common")
+  const format = useFormatter()
   const [jobs, setJobs] = useState<JobStatus[]>()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +62,7 @@ export default function JobsManagement() {
       keepPreviousData: true,
       onError: (err) => {
         console.error("Error fetching jobs:", err);
-        setError(`Jobs API error: ${err.message}`);
+        setError(t("errors.api", { message: err.message }));
       },
     }
   )
@@ -72,7 +76,7 @@ export default function JobsManagement() {
       enabled: false,
       onError: (err) => {
         console.error("Error fetching job YAML:", err);
-        setError(`Job YAML API error: ${err.message}`);
+        setError(t("errors.yamlApi", { message: err.message }));
       },
     },
   );
@@ -91,28 +95,13 @@ export default function JobsManagement() {
 
   const { mutateAsync: deleteJob, isPending: isDeleting } = trpc.jobsRouter.deleteJob.useMutation({
     onSuccess: async () => {
-      const deletedJobName = jobToDelete?.name
       setShowDeleteConfirm(false)
-
-      if (jobToDelete) {
-        setJobs(prevJobs =>
-          prevJobs?.filter(j =>
-            !(j.name === jobToDelete.name && j.namespace === jobToDelete.namespace)
-          )
-        )
-      }
-
       setJobToDelete(null)
       setError(null)
-
-      setTimeout(async () => {
-        await handleRefresh()
-      }, 2000)
-
-      console.log(`Job "${deletedJobName}" deleted successfully`)
+      await utils.jobsRouter.getJobs.invalidate()
     },
     onError: (error) => {
-      setError(`Failed to delete job: ${error.message}`)
+      setError(t("errors.delete", { message: error.message }))
       setShowDeleteConfirm(false)
     }
   })
@@ -127,13 +116,13 @@ export default function JobsManagement() {
       });
 
       if (!yaml) {
-        setError("No YAML configuration available for this job");
+        setError(t("errors.noYaml"));
       }
 
       setJobToEdit({ ...job, yaml: yaml || job.yaml || "" });
       setShowEditJobModal(true);
     } catch (err) {
-      setError("Failed to fetch job YAML for editing");
+      setError(t("errors.fetchYamlEdit"));
       console.error(err)
     }
   }, [utils])
@@ -156,12 +145,12 @@ export default function JobsManagement() {
     }
   }, [jobToDelete, deleteJob])
 
-  const columns = createColumns({
+  const columns = useJobColumns({
     availableNamespaces,
     availableQueues,
     availableStatuses,
     onEdit: handleEdit,
-    onDelete: handleDelete
+    onDelete: handleDelete,
   });
 
   // Use tRPC query results to update state
@@ -200,7 +189,7 @@ export default function JobsManagement() {
       ]);
       setError(null)
     } catch (err) {
-      setError("Failed to refresh jobs")
+      setError(t("errors.refresh"))
       console.error(err)
     } finally {
       setLoading(false)
@@ -216,7 +205,7 @@ export default function JobsManagement() {
       setSelectedJob({ ...job, yaml });
       setShowJobDetails(true);
     } catch (err) {
-      setError("Failed to fetch job YAML");
+      setError(t("errors.fetchYaml"));
       console.error(err)
     }
   }, [jobYamlQuery]);
@@ -246,19 +235,19 @@ export default function JobsManagement() {
   return (
     <div className="container mx-auto p-4 mt-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Jobs Status</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <div className="flex items-center">
           <Button
             onClick={handleRefresh}
             disabled={loading || isRefreshing}
-            className="flex items-center gap-2 mr-4"
+            className="flex items-center gap-2 me-4"
           >
             <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-            Refresh
+            {tc("actions.refresh")}
           </Button>
           <Button onClick={handleJobCreate} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Create Job
+            {t("createJob")}
           </Button>
         </div>
       </div>
@@ -289,6 +278,7 @@ export default function JobsManagement() {
               data={jobs || []}
               onRowClick={handleJobClick}
               disablePagination={true}
+              filterPlaceholder={t("filterPlaceholder")}
             />
           </div>
 
@@ -309,7 +299,7 @@ export default function JobsManagement() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              Job Details: {selectedJob?.name}
+              {t("details.title", { name: selectedJob?.name ?? "" })}
               {selectedJob && (
                 <Badge className={getStatusBadgeClass(selectedJob.status)}>
                   {selectedJob.status}
@@ -323,22 +313,25 @@ export default function JobsManagement() {
               {/* Job Info */}
               <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <span className="font-semibold">Name:</span> {selectedJob.name}
+                  <span className="font-semibold">{tc("details.name")}</span> {selectedJob.name}
                 </div>
                 <div>
-                  <span className="font-semibold">Namespace:</span> {selectedJob.namespace}
+                  <span className="font-semibold">{tc("details.namespace")}</span> {selectedJob.namespace}
                 </div>
                 <div>
-                  <span className="font-semibold">Queue:</span> {selectedJob.queue}
+                  <span className="font-semibold">{tc("details.queue")}</span> {selectedJob.queue}
                 </div>
                 <div>
-                  <span className="font-semibold">Created:</span> {selectedJob.createdAt.toLocaleString()}
+                  <span className="font-semibold">{tc("details.created")}</span>{" "}
+                  {format.dateTime(selectedJob.createdAt, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
                 </div>
               </div>
 
-              {/* YAML Configuration */}
               <div>
-                <h3 className="font-semibold mb-2">YAML Configuration</h3>
+                <h3 className="font-semibold mb-2">{tc("details.yamlConfiguration")}</h3>
                 <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
                   <code>{selectedJob.yaml}</code>
                 </pre>
@@ -364,11 +357,11 @@ export default function JobsManagement() {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Job</DialogTitle>
+            <DialogTitle>{t("delete.title")}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>Are you sure you want to delete the job <strong>{jobToDelete?.name}</strong> in namespace <strong>{jobToDelete?.namespace}</strong>?</p>
-            <p className="mt-2 text-sm text-gray-500">This action cannot be undone.</p>
+            <p>{t("delete.message", { name: jobToDelete?.name ?? "", namespace: jobToDelete?.namespace ?? "" })}</p>
+            <p className="mt-2 text-sm text-gray-500">{tc("deleteConfirm.cannotUndo")}</p>
           </div>
           <div className="flex justify-end gap-2">
             <Button
@@ -376,7 +369,7 @@ export default function JobsManagement() {
               onClick={() => setShowDeleteConfirm(false)}
               disabled={isDeleting}
             >
-              Cancel
+              {tc("actions.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -385,11 +378,11 @@ export default function JobsManagement() {
             >
               {isDeleting ? (
                 <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
+                  <RefreshCw className="w-4 h-4 me-2 animate-spin" />
+                  {tc("actions.deleting")}
                 </>
               ) : (
-                "Delete"
+                tc("actions.delete")
               )}
             </Button>
           </div>

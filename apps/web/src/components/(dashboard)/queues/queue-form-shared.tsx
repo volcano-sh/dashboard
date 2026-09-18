@@ -23,6 +23,7 @@ import {
   validateQueueResources
 } from "@/lib/queue-validation"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 export type { ResourcePair, ResourceFieldErrors }
 
@@ -213,7 +214,9 @@ export function ResourceCollapsible({
   disabled,
   helper,
   errors,
-  defaultOpen = false
+  defaultOpen = false,
+  cpuLabel,
+  memoryLabel,
 }: {
   title: string
   pair: ResourcePair
@@ -222,6 +225,8 @@ export function ResourceCollapsible({
   helper: string
   errors?: ResourceFieldErrors
   defaultOpen?: boolean
+  cpuLabel: string
+  memoryLabel: string
 }) {
   const [open, setOpen] = React.useState(defaultOpen)
   React.useEffect(() => {
@@ -240,7 +245,7 @@ export function ResourceCollapsible({
         <p className="text-xs text-muted-foreground">{helper}</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-xs">CPU</Label>
+            <Label className="text-xs">{cpuLabel}</Label>
             <Input
               placeholder='e.g. "2"'
               value={pair.cpu}
@@ -252,7 +257,7 @@ export function ResourceCollapsible({
             {errors?.cpu && <p className="text-xs text-destructive">{errors.cpu}</p>}
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Memory</Label>
+            <Label className="text-xs">{memoryLabel}</Label>
             <Input
               placeholder="e.g. 4Gi"
               value={pair.memory}
@@ -306,11 +311,13 @@ export function QueueFormFields({
   disabled: boolean
   resourceValidation: QueueResourceValidation
 }) {
+  const t = useTranslations("queues")
+
   return (
     <>
       <div className="space-y-2">
         <Label htmlFor="queue-name">
-          Queue Name {!nameReadOnly && <span className="text-destructive">*</span>}
+          {t("create.queueName")} {!nameReadOnly && <span className="text-destructive">*</span>}
         </Label>
         <Input
           id="queue-name"
@@ -325,7 +332,7 @@ export function QueueFormFields({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="queue-weight">
-            Weight <span className="text-destructive">*</span>
+            {t("create.weight")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="queue-weight"
@@ -337,7 +344,7 @@ export function QueueFormFields({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="queue-priority">Priority</Label>
+          <Label htmlFor="queue-priority">{t("create.priority")}</Label>
           <Input
             id="queue-priority"
             type="number"
@@ -355,42 +362,48 @@ export function QueueFormFields({
           disabled={disabled}
         />
         <Label htmlFor="reclaimable" className="text-sm font-normal cursor-pointer">
-          Reclaimable
+          {t("create.reclaimable")}
         </Label>
       </div>
 
       <ResourceCollapsible
-        title="Guarantee Resources (Optional)"
+        title={t("create.guaranteeTitle")}
         pair={guarantee}
         onChange={onGuaranteeChange}
         disabled={disabled}
-        helper="Maps to spec.guarantee.resource (cpu / memory)."
+        helper={t("create.guaranteeHelper")}
+        cpuLabel={t("create.cpu")}
+        memoryLabel={t("create.memory")}
       />
       <ResourceCollapsible
         title={
           hasCapabilityValues(capability)
-            ? "Capability Resources"
-            : "Capability Resources (Optional)"
+            ? t("create.capabilityTitleWithValues")
+            : t("create.capabilityTitle")
         }
         pair={capability}
         onChange={onCapabilityChange}
         disabled={disabled}
-        helper="Upper limit for deserved. Deserved must be ≤ capability for each resource you set."
+        helper={t("create.capabilityValidationHelper")}
         errors={resourceValidation.capabilityErrors}
         defaultOpen={hasCapabilityValues(capability)}
+        cpuLabel={t("create.cpu")}
+        memoryLabel={t("create.memory")}
       />
       <ResourceCollapsible
         title={
           hasGuaranteeValues(guarantee)
-            ? "Deserved Resources (required when guarantee is set)"
-            : "Deserved Resources (Optional)"
+            ? t("create.deservedTitleRequired")
+            : t("create.deservedTitle")
         }
         pair={deserved}
         onChange={onDeservedChange}
         disabled={disabled}
-        helper="Must be ≥ guarantee and ≤ capability for each resource you set."
+        helper={t("create.deservedValidationHelper")}
         errors={resourceValidation.deservedErrors}
         defaultOpen={hasGuaranteeValues(guarantee) || hasCapabilityValues(capability)}
+        cpuLabel={t("create.cpu")}
+        memoryLabel={t("create.memory")}
       />
       {!resourceValidation.valid && (
         <p className="text-xs text-destructive">{resourceValidation.messages[0]}</p>
