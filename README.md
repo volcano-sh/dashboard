@@ -18,6 +18,7 @@ Before installing the volcano dashboard, please ensure you have:
 - A running Kubernetes cluster
 - `kubectl` configured to access your cluster
 - [Volcano](https://github.com/volcano-sh/volcano) installed on your cluster (see [Install Volcano](#install-volcano) below if needed)
+- Optional: [Kthena](https://github.com/volcano-sh/kthena) CRDs if you want ModelServing and related inference resources. Without those CRDs the dashboard reports them as unavailable instead of failing.
 
 ### Install from the published manifest
 

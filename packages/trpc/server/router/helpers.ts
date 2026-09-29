@@ -15,7 +15,7 @@ type ListPageFn = (limit: number, continueToken?: string) => Promise<K8sListPage
  * Kubernetes list APIs have no offset — reaching page N requires advancing continue
  * tokens. Only one page of matching items is retained in memory.
  */
-async function fetchPaginatedK8sList<T>(
+export async function fetchPaginatedK8sList<T>(
     page: number,
     pageSize: number,
     listPage: ListPageFn,
@@ -94,7 +94,7 @@ async function countFilteredItems<T>(
     return total;
 }
 
-function extractListMeta(response: {
+export function extractListMeta(response: {
     items?: unknown[];
     metadata?: { _continue?: string; remainingItemCount?: number };
 }): K8sListPageResult {
