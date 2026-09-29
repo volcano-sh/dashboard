@@ -43,6 +43,17 @@
         "K8S_SERVER"
       ]
     },
+    "test": {
+      "dependsOn": [
+        "^test"
+      ],
+      "env": [
+        "PORT",
+        "NODE_ENV",
+        "K8S_SKIP_TLS_VERIFY",
+        "K8S_SERVER"
+      ]
+    },
     "dev": {
       "cache": false,
       "persistent": true,
