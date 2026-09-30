@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+    createKthenaResource,
+    deleteKthenaResource,
     getKthenaResource,
     isCrdUnavailableError,
     KTHENA_RESOURCES,
     listKthenaResources,
     mergeCrdReplacePayload,
+    replaceKthenaResource,
+    summarizeModelServingStatus,
     validateKthenaManifest,
 } from "./kthena";
 
@@ -247,5 +251,158 @@ describe("validateKthenaManifest", () => {
                 modelServing,
             ),
         ).toBe("spec is required");
+    });
+});
+
+describe("summarizeModelServingStatus", () => {
+    it("uses Available when that condition is True", () => {
+        expect(
+            summarizeModelServingStatus({
+                spec: { replicas: 2, schedulerName: "volcano" },
+                status: {
+                    replicas: 2,
+                    availableReplicas: 2,
+                    conditions: [{ type: "Available", status: "True" }],
+                },
+            }),
+        ).toEqual({
+            status: "Available",
+            replicas: 2,
+            availableReplicas: 2,
+            schedulerName: "volcano",
+        });
+    });
+
+    it("prefers UpdateInProgress over Progressing", () => {
+        expect(
+            summarizeModelServingStatus({
+                status: {
+                    conditions: [
+                        { type: "Progressing", status: "True" },
+                        { type: "UpdateInProgress", status: "True" },
+                    ],
+                },
+            }).status,
+        ).toBe("UpdateInProgress");
+    });
+
+    it("falls back to Unknown and spec replicas when status is empty", () => {
+        expect(summarizeModelServingStatus({ spec: { replicas: 3 } })).toEqual({
+            status: "Unknown",
+            replicas: 3,
+            availableReplicas: 0,
+            schedulerName: "volcano",
+        });
+    });
+});
+
+const validManifest = {
+    apiVersion: "workload.serving.volcano.sh/v1alpha1",
+    kind: "ModelServing",
+    metadata: { name: "ms-1", namespace: "ns1" },
+    spec: { replicas: 1, template: {} },
+};
+
+describe("createKthenaResource", () => {
+    it("creates the object in the manifest namespace", async () => {
+        const api = {
+            createNamespacedCustomObject: vi.fn().mockResolvedValue({ ok: true }),
+        };
+
+        await createKthenaResource(api, modelServing, validManifest);
+
+        expect(api.createNamespacedCustomObject).toHaveBeenCalledWith({
+            group: "workload.serving.volcano.sh",
+            version: "v1alpha1",
+            namespace: "ns1",
+            plural: "modelservings",
+            body: validManifest,
+        });
+    });
+
+    it("rejects an invalid manifest before calling the API", async () => {
+        const api = { createNamespacedCustomObject: vi.fn() };
+
+        await expect(
+            createKthenaResource(api, modelServing, { ...validManifest, kind: "Job" }),
+        ).rejects.toThrow('kind must be "ModelServing"');
+        expect(api.createNamespacedCustomObject).not.toHaveBeenCalled();
+    });
+});
+
+describe("replaceKthenaResource", () => {
+    it("replaces with merged server metadata", async () => {
+        const current = {
+            apiVersion: "workload.serving.volcano.sh/v1alpha1",
+            kind: "ModelServing",
+            metadata: {
+                name: "ms-1",
+                namespace: "ns1",
+                uid: "uid-1",
+                resourceVersion: "7",
+            },
+            spec: { replicas: 1 },
+            status: { replicas: 1 },
+        };
+        const api = {
+            getNamespacedCustomObject: vi.fn().mockResolvedValue(current),
+            createNamespacedCustomObject: vi.fn(),
+            replaceNamespacedCustomObject: vi.fn().mockResolvedValue({ ok: true }),
+            deleteNamespacedCustomObject: vi.fn(),
+        };
+        const patch = { ...validManifest, spec: { replicas: 4 } };
+
+        await replaceKthenaResource(api, modelServing, "ns1", "ms-1", patch);
+
+        expect(api.replaceNamespacedCustomObject).toHaveBeenCalledWith(
+            expect.objectContaining({
+                namespace: "ns1",
+                name: "ms-1",
+                body: expect.objectContaining({
+                    spec: { replicas: 4 },
+                    status: { replicas: 1 },
+                    metadata: expect.objectContaining({
+                        uid: "uid-1",
+                        resourceVersion: "7",
+                    }),
+                }),
+            }),
+        );
+    });
+
+    it("rejects a name mismatch", async () => {
+        const api = {
+            getNamespacedCustomObject: vi.fn(),
+            createNamespacedCustomObject: vi.fn(),
+            replaceNamespacedCustomObject: vi.fn(),
+            deleteNamespacedCustomObject: vi.fn(),
+        };
+
+        await expect(
+            replaceKthenaResource(api, modelServing, "ns1", "ms-1", {
+                ...validManifest,
+                metadata: { name: "other", namespace: "ns1" },
+            }),
+        ).rejects.toThrow("must match path name");
+        expect(api.getNamespacedCustomObject).not.toHaveBeenCalled();
+    });
+});
+
+describe("deleteKthenaResource", () => {
+    it("deletes with a foreground propagation policy", async () => {
+        const api = {
+            deleteNamespacedCustomObject: vi.fn().mockResolvedValue({ ok: true }),
+        };
+
+        await deleteKthenaResource(api, modelServing, "ns1", "ms-1");
+
+        expect(api.deleteNamespacedCustomObject).toHaveBeenCalledWith({
+            group: "workload.serving.volcano.sh",
+            version: "v1alpha1",
+            namespace: "ns1",
+            plural: "modelservings",
+            name: "ms-1",
+            body: { propagationPolicy: "Foreground" },
+        });
     });
 });

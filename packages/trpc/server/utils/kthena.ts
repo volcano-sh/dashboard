@@ -68,6 +68,32 @@ type NamespacedGetApi = {
     }) => Promise<unknown>;
 };
 
+type NamespacedWriteApi = NamespacedGetApi & {
+    createNamespacedCustomObject: (args: {
+        group: string;
+        version: string;
+        namespace: string;
+        plural: string;
+        body: unknown;
+    }) => Promise<unknown>;
+    replaceNamespacedCustomObject: (args: {
+        group: string;
+        version: string;
+        namespace: string;
+        plural: string;
+        name: string;
+        body: unknown;
+    }) => Promise<unknown>;
+    deleteNamespacedCustomObject: (args: {
+        group: string;
+        version: string;
+        namespace: string;
+        plural: string;
+        name: string;
+        body?: { propagationPolicy?: string };
+    }) => Promise<unknown>;
+};
+
 type K8sStatusBody = {
     details?: { name?: string };
 };
@@ -240,4 +266,144 @@ export function validateKthenaManifest(
     }
 
     return null;
+}
+
+type ModelServingCondition = { type?: string; status?: string };
+
+export type ModelServingSummary = {
+    status: "Available" | "Progressing" | "UpdateInProgress" | "Unknown";
+    replicas: number;
+    availableReplicas: number;
+    schedulerName: string;
+};
+
+function conditionIsTrue(
+    conditions: ModelServingCondition[] | undefined,
+    type: string,
+): boolean {
+    return (conditions ?? []).some(
+        (condition) => condition.type === type && condition.status === "True",
+    );
+}
+
+export function summarizeModelServingStatus(item: {
+    spec?: { replicas?: number; schedulerName?: string };
+    status?: {
+        replicas?: number;
+        availableReplicas?: number;
+        conditions?: ModelServingCondition[];
+    };
+}): ModelServingSummary {
+    const conditions = item.status?.conditions;
+    let status: ModelServingSummary["status"] = "Unknown";
+    if (conditionIsTrue(conditions, "Available")) {
+        status = "Available";
+    } else if (conditionIsTrue(conditions, "UpdateInProgress")) {
+        status = "UpdateInProgress";
+    } else if (conditionIsTrue(conditions, "Progressing")) {
+        status = "Progressing";
+    }
+
+    return {
+        status,
+        replicas: item.status?.replicas ?? item.spec?.replicas ?? 0,
+        availableReplicas: item.status?.availableReplicas ?? 0,
+        schedulerName: item.spec?.schedulerName || "volcano",
+    };
+}
+
+function metadataName(manifest: Record<string, unknown>): {
+    name: string;
+    namespace: string;
+} {
+    const metadata = manifest.metadata as { name?: string; namespace?: string } | undefined;
+    return {
+        name: metadata?.name ?? "",
+        namespace: metadata?.namespace || "default",
+    };
+}
+
+export async function createKthenaResource(
+    api: Pick<NamespacedWriteApi, "createNamespacedCustomObject">,
+    resource: KthenaResourceDef,
+    manifest: Record<string, unknown>,
+): Promise<unknown> {
+    const error = validateKthenaManifest(manifest, resource);
+    if (error) {
+        throw new Error(error);
+    }
+    const { namespace } = metadataName(manifest);
+    return api.createNamespacedCustomObject({
+        group: resource.group,
+        version: resource.version,
+        namespace,
+        plural: resource.plural,
+        body: manifest,
+    });
+}
+
+export async function replaceKthenaResource(
+    api: NamespacedWriteApi,
+    resource: KthenaResourceDef,
+    namespace: string,
+    name: string,
+    patch: Record<string, unknown>,
+): Promise<unknown> {
+    const error = validateKthenaManifest(patch, resource);
+    if (error) {
+        throw new Error(error);
+    }
+
+    const meta = patch.metadata as { name: string; namespace?: string };
+    if (meta.name !== name) {
+        throw new Error(
+            `name in manifest (${meta.name}) must match path name (${name})`,
+        );
+    }
+    const patchNamespace = meta.namespace ?? namespace;
+    if (patchNamespace !== namespace) {
+        throw new Error(
+            `namespace in manifest (${patchNamespace}) must match path namespace (${namespace})`,
+        );
+    }
+
+    const current = (await api.getNamespacedCustomObject({
+        group: resource.group,
+        version: resource.version,
+        namespace,
+        plural: resource.plural,
+        name,
+    })) as CrdObject;
+
+    const body = mergeCrdReplacePayload(current, {
+        apiVersion: typeof patch.apiVersion === "string" ? patch.apiVersion : undefined,
+        kind: typeof patch.kind === "string" ? patch.kind : undefined,
+        metadata: meta,
+        spec: patch.spec,
+    });
+
+    return api.replaceNamespacedCustomObject({
+        group: resource.group,
+        version: resource.version,
+        namespace,
+        plural: resource.plural,
+        name,
+        body,
+    });
+}
+
+export async function deleteKthenaResource(
+    api: Pick<NamespacedWriteApi, "deleteNamespacedCustomObject">,
+    resource: KthenaResourceDef,
+    namespace: string,
+    name: string,
+): Promise<unknown> {
+    return api.deleteNamespacedCustomObject({
+        group: resource.group,
+        version: resource.version,
+        namespace,
+        plural: resource.plural,
+        name,
+        body: { propagationPolicy: "Foreground" },
+    });
 }
