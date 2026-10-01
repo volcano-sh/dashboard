@@ -4,11 +4,20 @@ import { procedure, router } from "../../trpc";
 import { formatK8sApiError } from "../../utils/k8s-errors";
 import { k8sApi } from "../../utils/k8s";
 import {
+    createKthenaResource,
+    deleteKthenaResource,
     getKthenaResource,
     KTHENA_RESOURCES,
     listKthenaResources,
+    replaceKthenaResource,
 } from "../../utils/kthena";
-import { getModelServingInputSchema, getModelServingsInputSchema } from "./schema";
+import {
+    createModelServingInputSchema,
+    deleteModelServingInputSchema,
+    getModelServingInputSchema,
+    getModelServingsInputSchema,
+    updateModelServingInputSchema,
+} from "./schema";
 
 const modelServing = KTHENA_RESOURCES.modelServing;
 
@@ -52,6 +61,51 @@ export const modelServingsRouter = router({
                         sortKeys: false,
                     }),
                 };
+            } catch (error) {
+                throw new Error(formatK8sApiError(error));
+            }
+        }),
+    createModelServing: procedure
+        .input(createModelServingInputSchema)
+        .mutation(async ({ input }) => {
+            try {
+                const data = await createKthenaResource(
+                    k8sApi,
+                    modelServing,
+                    input.manifest,
+                );
+                return { message: "ModelServing created successfully", data };
+            } catch (error) {
+                throw new Error(formatK8sApiError(error));
+            }
+        }),
+    updateModelServing: procedure
+        .input(updateModelServingInputSchema)
+        .mutation(async ({ input }) => {
+            try {
+                const data = await replaceKthenaResource(
+                    k8sApi,
+                    modelServing,
+                    input.namespace,
+                    input.name,
+                    input.patchData,
+                );
+                return { message: "ModelServing updated successfully", data };
+            } catch (error) {
+                throw new Error(formatK8sApiError(error));
+            }
+        }),
+    deleteModelServing: procedure
+        .input(deleteModelServingInputSchema)
+        .mutation(async ({ input }) => {
+            try {
+                const data = await deleteKthenaResource(
+                    k8sApi,
+                    modelServing,
+                    input.namespace,
+                    input.name,
+                );
+                return { message: "ModelServing deleted successfully", data };
             } catch (error) {
                 throw new Error(formatK8sApiError(error));
             }
