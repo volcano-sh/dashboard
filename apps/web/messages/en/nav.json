@@ -7,6 +7,10 @@
     "jobs": "Jobs",
     "queues": "Queues",
     "pods": "Pods",
-    "podgroups": "PodGroups"
+    "podgroups": "PodGroups",
+    "modelservings": "ModelServing"
+  },
+  "sections": {
+    "kthena": "Kthena"
   }
 }

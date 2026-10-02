@@ -1,0 +1,53 @@
+{
+  "title": "ModelServings",
+  "createModelServing": "Create ModelServing",
+  "filterPlaceholder": "Filter ModelServings...",
+  "crdMissing": "Kthena CRDs are not installed in this cluster. Install Kthena to manage ModelServing from the dashboard. Jobs, Queues, Pods, and PodGroups still work.",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "replicas": "Replicas",
+    "available": "Available",
+    "scheduler": "Scheduler",
+    "creationTime": "Creation Time",
+    "status": "Status",
+    "actions": "Actions",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByStatus": "Filter by Status"
+  },
+  "details": {
+    "title": "ModelServing Details: {name}",
+    "replicas": "Replicas:",
+    "available": "Available:",
+    "scheduler": "Scheduler:"
+  },
+  "delete": {
+    "title": "Delete ModelServing",
+    "message": "Are you sure you want to delete the ModelServing {name} in namespace {namespace}?"
+  },
+  "errors": {
+    "api": "ModelServing API error: {message}",
+    "yamlApi": "ModelServing YAML API error: {message}",
+    "refresh": "Failed to refresh ModelServings",
+    "fetchYaml": "Failed to fetch ModelServing YAML",
+    "fetchYamlEdit": "Failed to fetch ModelServing YAML for editing",
+    "noYaml": "No YAML configuration available for this ModelServing",
+    "delete": "Failed to delete ModelServing: {message}"
+  },
+  "create": {
+    "title": "Create ModelServing",
+    "description": "Enter a ModelServing manifest in YAML format.",
+    "yamlLabel": "ModelServing YAML Configuration",
+    "yamlPlaceholder": "Enter your ModelServing YAML configuration...",
+    "success": "ModelServing created successfully!",
+    "failed": "Failed to create ModelServing",
+    "button": "Create ModelServing"
+  },
+  "edit": {
+    "title": "Edit ModelServing: {name}",
+    "description": "The current ModelServing configuration is shown below. Make your changes and click Update to apply them.",
+    "success": "ModelServing updated successfully!",
+    "failed": "Failed to update ModelServing",
+    "button": "Update ModelServing"
+  }
+}
