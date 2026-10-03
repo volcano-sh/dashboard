@@ -17,6 +17,7 @@ export const DashboardNav = ({
   const pathName = usePathname();
   const locale = useLocale();
   const t = useTranslations("nav.items");
+  const tSection = useTranslations("nav.sections");
 
   const localizedHref = (href: string) =>
     href === "/" ? `/${locale}` : `/${locale}${href}`;
@@ -24,16 +25,23 @@ export const DashboardNav = ({
   return (
     <div className={cn("pt-4", className)}>
       <div className="flex flex-col gap-1 start-0 top-0 w-full">
-        {navItems.map(({ titleKey, icon, href, disable }) => {
+        {navItems.map(({ titleKey, icon, href, disable, sectionKey }, index) => {
           const Icon = Icons[icon!] || Icons["notepad"];
           const isActive =
             href === "/"
               ? pathName === "/"
               : pathName === href || pathName.startsWith(`${href}/`);
+          const prevSection = index > 0 ? navItems[index - 1]?.sectionKey : undefined;
+          const showSection = Boolean(sectionKey) && sectionKey !== prevSection;
 
           return (
+            <div key={titleKey}>
+              {showSection && sectionKey && (
+                <div className="px-2 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {tSection(sectionKey)}
+                </div>
+              )}
             <NextLink
-              key={titleKey}
               href={localizedHref(href)}
               className={cn(
                 "flex group items-center text-sm gap-2 overflow-hidden rounded-md p-2 font-medium",
@@ -53,6 +61,7 @@ export const DashboardNav = ({
               />
               {t(titleKey)}
             </NextLink>
+            </div>
           );
         })}
       </div>

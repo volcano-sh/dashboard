@@ -5,6 +5,7 @@ export interface NavItem {
   icon?: keyof typeof Icons;
   href: string;
   disable?: boolean;
+  sectionKey?: "kthena";
 }
 
 export const navTitleKeys = {
@@ -13,6 +14,7 @@ export const navTitleKeys = {
   queues: "queues",
   pods: "pods",
   podgroups: "podgroups",
+  modelservings: "modelservings",
 } as const;
 
 export const navItems: NavItem[] = [
@@ -45,5 +47,12 @@ export const navItems: NavItem[] = [
     icon: "container",
     href: "/podgroups",
     disable: false,
+  },
+  {
+    titleKey: "modelservings",
+    icon: "cpu",
+    href: "/model-servings",
+    disable: false,
+    sectionKey: "kthena",
   },
 ];
