@@ -1,0 +1,154 @@
+{
+  "title": "调度器配置",
+  "subtitle": "在 <code>{configMap}</code> 中编辑 Volcano 调度器策略",
+  "refreshConfirm": "您有未保存的更改。刷新会从集群重新加载配置并丢弃当前编辑。是否继续？",
+  "discardConfirm": "丢弃所有未保存的更改并恢复为服务器上的配置？",
+  "loading": "正在加载调度器配置...",
+  "loadError": "加载调度器配置失败",
+  "saveBar": {
+    "unsavedChanges": "有未保存的更改",
+    "saved": "配置已保存",
+    "upToDate": "已是最新",
+    "discard": "丢弃",
+    "save": "保存配置"
+  },
+  "alerts": {
+    "saveFailed": "保存失败",
+    "headsUp": "注意",
+    "commentsWarning": "当前 ConfigMap 包含 YAML 注释；保存会重写文件并移除这些注释。"
+  },
+  "actionPipeline": {
+    "title": "动作流水线",
+    "description": "每个调度周期按顺序执行这些动作。可拖动以调整顺序。",
+    "dragToReorder": "拖动以调整顺序",
+    "recommended": "推荐",
+    "removeAction": "移除动作",
+    "empty": "尚未配置动作。请至少在下方添加一个动作。",
+    "availableActions": "可用动作"
+  },
+  "pluginTiers": {
+    "title": "插件层级",
+    "description": "插件注册调度算法。较高层级在驱逐决策中优先。点击插件可编辑其函数和参数。",
+    "tierTitle": "第 {index} 层",
+    "evaluatedFirst": "优先评估",
+    "evaluatedIfHigherPass": "较高层级通过后评估",
+    "removeTier": "移除层级",
+    "removeTierDisabled": "至少需要保留一层",
+    "addPlugin": "向第 {index} 层添加插件",
+    "addTier": "添加层级"
+  },
+  "actionConfigs": {
+    "title": "动作配置",
+    "description": "可选的按动作参数，例如 enqueue 的 overcommit-factor。",
+    "empty": "尚未配置按动作参数。",
+    "action": "动作",
+    "arguments": "参数（键=值）",
+    "removeConfig": "移除动作配置",
+    "keyPlaceholder": "键",
+    "valuePlaceholder": "值",
+    "deleteArgument": "删除参数",
+    "addArgument": "添加参数",
+    "emptyKeyWarning": "请先填写参数键，然后再添加下一项或保存。",
+    "addConfig": "添加动作配置"
+  },
+  "pendingChanges": {
+    "title": "待应用更改",
+    "description": "保存时将写入 ConfigMap 的 YAML。",
+    "noChanges": "暂无待应用更改。编辑内容会在保存前以 YAML 差异显示在此处。",
+    "viewCurrent": "查看当前配置",
+    "linesWillChange": "{count, plural, other {保存时将更改 # 行}}",
+    "unchangedLines": "⋯ {count, plural, other {# 行未更改}}"
+  },
+  "confirm": {
+    "title": "应用调度器配置？",
+    "description": "这将更新 <code>{configMap}</code>。Volcano 调度器会自动重新加载此 ConfigMap，因此更改会在整个集群范围内影响调度决策。",
+    "apply": "应用更改"
+  },
+  "plugin": {
+    "custom": "自定义",
+    "functionsOff": "{count, plural, other {# 个函数已关闭}}",
+    "argsCount": "{count, plural, other {# 个参数}}",
+    "removePlugin": "移除插件",
+    "removePluginDisabled": "每一层至少需要一个插件",
+    "label": "插件",
+    "sessionFunctions": "会话函数",
+    "sessionFunctionsHint": "未取消勾选则全部启用",
+    "arguments": "参数"
+  },
+  "actionDescriptions": {
+    "enqueue": "当集群能满足最小资源时，将 PodGroup 准入排队",
+    "allocate": "为排队中的工作负载绑定资源",
+    "backfill": "调度 BestEffort / 剩余 Pod",
+    "preempt": "驱逐低优先级任务以为高优先级任务让路",
+    "reclaim": "回收被借用的队列资源",
+    "shuffle": "重新调度 / 打乱工作负载",
+    "gangpreempt": "Gang 感知抢占",
+    "gangreclaim": "Gang 感知回收",
+    "custom": "自定义动作（不在内置注册表中）"
+  },
+  "enableFlags": {
+    "enableJobOrder": "作业排序",
+    "enableHierarchy": "层级",
+    "enableJobReady": "作业就绪",
+    "enableJobPipelined": "作业流水线",
+    "enableTaskOrder": "任务排序",
+    "enablePreemptable": "可抢占",
+    "enableReclaimable": "可回收",
+    "enablePreemptive": "抢占",
+    "enableQueueOrder": "队列排序",
+    "EnabledClusterOrder": "集群排序",
+    "enablePredicate": "谓词",
+    "enableBestNode": "最佳节点",
+    "enableNodeOrder": "节点排序",
+    "enableTargetJob": "目标作业",
+    "enableReservedNodes": "预留节点",
+    "enableJobEnqueued": "作业已入队",
+    "enabledVictim": "牺牲者",
+    "enableJobStarving": "作业饥饿",
+    "enabledOverused": "超用",
+    "enabledAllocatable": "可分配",
+    "enabledHyperNodeOrder": "超级节点排序",
+    "enabledSubJobReady": "子作业就绪",
+    "enabledSubJobPipelined": "子作业流水线",
+    "enabledSubJobOrder": "子作业排序",
+    "enabledHyperNodeGradient": "超级节点梯度"
+  },
+  "argumentLabels": {
+    "binpack": {
+      "weight": "权重",
+      "cpu": "CPU 权重",
+      "memory": "内存权重"
+    },
+    "predicate": {
+      "NodeAffinityEnable": "节点亲和性",
+      "GPUSharingEnable": "GPU 共享",
+      "CacheEnable": "缓存"
+    },
+    "overcommit-factor": "超售因子",
+    "gang": {
+      "podsfactor": "Pod 因子"
+    },
+    "drf": {
+      "hierarchyEnabled": "启用层级"
+    },
+    "nodeaffinity": {
+      "weight": "节点亲和性权重"
+    },
+    "podaffinity": {
+      "weight": "Pod 亲和性权重"
+    },
+    "leastrequested": {
+      "weight": "最少请求权重"
+    },
+    "weight": "权重",
+    "sla-waiting-time": "SLA 等待时间",
+    "usage": {
+      "weight": "权重"
+    },
+    "extender": {
+      "urlPrefix": "URL 前缀",
+      "httpTimeout": "HTTP 超时",
+      "ignorable": "可忽略"
+    }
+  }
+}
