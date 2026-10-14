@@ -1,2 +1,2 @@
-export { };
+export { modelServingRouter } from "./kthena";
 
