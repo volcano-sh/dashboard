@@ -48,10 +48,7 @@ export const queueRouter = router({
         .input(getQueuesInputSchema)
         .query(async ({ input }) => {
             const { page = 1, pageSize = 10 } = input;
-            console.log("Fetching queues with params:", {
-                page,
-                pageSize,
-            });
+
 
             return fetchQueues(page, pageSize);
         }),
