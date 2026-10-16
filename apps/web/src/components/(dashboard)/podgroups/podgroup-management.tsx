@@ -25,6 +25,7 @@ import { useFormatter, useTranslations } from "next-intl"
 import { RefreshCw, Search, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
 import { usePodGroupColumns } from "./columns"
@@ -172,23 +173,6 @@ export default function PodGroupManagement() {
         }));
     }
 
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case "running":
-                return "bg-green-100 text-green-800"
-            case "pending":
-                return "bg-yellow-100 text-yellow-800"
-            case "failed":
-                return "bg-red-100 text-red-800"
-            case "succeeded":
-                return "bg-blue-100 text-blue-800"
-            case "unknown":
-                return "bg-gray-100 text-gray-800"
-            default:
-                return "bg-gray-100 text-gray-800"
-        }
-    }
-
     const isLoading = podGroupsQuery.isLoading
     const isRefreshing = podGroupsQuery.isRefetching
 
@@ -317,7 +301,7 @@ export default function PodGroupManagement() {
                         <DialogTitle className="flex items-center gap-2">
                             {t("details.title", { name: selectedPodGroup?.name ?? "" })}
                             {selectedPodGroup && (
-                                <Badge className={getStatusColor(selectedPodGroup.status)}>
+                                <Badge className={getStatusBadgeClass(selectedPodGroup.status)}>
                                     {selectedPodGroup.status}
                                 </Badge>
                             )}
@@ -344,7 +328,7 @@ export default function PodGroupManagement() {
                                 </div>
                                 <div>
                                     <span className="font-semibold">{tc("details.state")}</span>
-                                    <Badge className={`ms-2 ${getStatusColor(selectedPodGroup.status)}`}>
+                                    <Badge className={`ms-2 ${getStatusBadgeClass(selectedPodGroup.status)}`}>
                                         {selectedPodGroup.status}
                                     </Badge>
                                 </div>

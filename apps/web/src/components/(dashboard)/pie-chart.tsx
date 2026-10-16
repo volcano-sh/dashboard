@@ -1,5 +1,6 @@
 "use client"
 
+import { getStatusChartColor } from "@/lib/status-colors"
 import { Loader2Icon } from "lucide-react"
 import { useFormatter, useTranslations } from "next-intl"
 import { Cell, Pie, PieChart } from "recharts"
@@ -18,25 +19,6 @@ interface ChartData {
 interface JobStatusPieChartProps {
     data?: { name: string; value: number }[]
     isLoading?: boolean
-}
-
-const getStatusColor = (status: string): string => {
-    switch (status.toLowerCase()) {
-        case 'completed':
-        case 'succeeded':
-            return "#22c55e"
-        case 'running':
-        case 'pending':
-        case 'inqueue':
-            return "#38bdf8"
-        case 'failed':
-        case 'error':
-            return "#e11d48"
-        case 'unknown':
-            return "#6b7280"
-        default:
-            return "#8b5cf6"
-    }
 }
 
 function PieChartSkeleton() {
@@ -79,7 +61,7 @@ export default function JobStatusPieChart({ data = [], isLoading = false }: JobS
     const chartData: ChartData[] = data.map(item => ({
         name: item.name,
         value: item.value,
-        fill: getStatusColor(item.name)
+        fill: getStatusChartColor(item.name)
     }))
 
     const totalJobs = chartData.reduce((sum, item) => sum + item.value, 0)
@@ -156,7 +138,7 @@ export default function JobStatusPieChart({ data = [], isLoading = false }: JobS
                             <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-muted-foreground w-full">
                                 <span className="me-2 mb-1 sm:mb-0">{entry.name}</span>
                                 <span className="font-medium">
-                                    {format.number(entry.value, { maximumFractionDigits: 2 })}
+                                    {Math.abs(entry.value)}
                                 </span>
                             </div>
                         </div>
