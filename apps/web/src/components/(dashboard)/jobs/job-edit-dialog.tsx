@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { validateJobManifest } from "@/lib/job-validation"
 import { trpc } from "@volcano/trpc/react"
 
 interface JobEditDialogProps {
@@ -101,10 +102,29 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
     const handleUpdateJob = async () => {
         try {
             const jobManifest = parseYamlToManifest(yaml)
+
+            if (jobManifest.metadata.name !== jobName) {
+                throw new Error(
+                    `Job name in YAML (${jobManifest.metadata.name}) must match ${jobName}`,
+                )
+            }
+
+            const manifestNamespace = jobManifest.metadata.namespace ?? jobNamespace
+            if (manifestNamespace !== jobNamespace) {
+                throw new Error(
+                    `Job namespace in YAML (${manifestNamespace}) must match ${jobNamespace}`,
+                )
+            }
+
+            const jobError = validateJobManifest(jobManifest)
+            if (jobError) {
+                throw new Error(jobError)
+            }
+
             await updateJob({
                 namespace: jobNamespace,
                 name: jobName,
-                patchData: jobManifest
+                patchData: jobManifest,
             })
         } catch (error) {
             setStatus({

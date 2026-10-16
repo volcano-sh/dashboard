@@ -114,39 +114,68 @@ export const jobsRouter = router({
     updateJob: procedure.input(updateJobInputSchema).mutation(async ({ input }) => {
         const { namespace, name, patchData } = input;
 
-        const currentJob = await k8sApi.getNamespacedCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            namespace,
-            plural: "jobs",
-            name,
-        });
+        if (patchData.metadata.name !== name) {
+            throw new Error(
+                `Job name in manifest (${patchData.metadata.name}) must match path name (${name})`,
+            );
+        }
 
-        const updatedJob = {
-            ...currentJob,
-            ...patchData,
-            metadata: {
-                ...(currentJob as any).metadata,
-                ...patchData.metadata,
-                resourceVersion: (currentJob as any).metadata?.resourceVersion,
-                uid: (currentJob as any).metadata?.uid,
-                creationTimestamp: (currentJob as any).metadata?.creationTimestamp,
-            },
-        };
+        const patchNamespace = patchData.metadata.namespace ?? namespace;
+        if (patchNamespace !== namespace) {
+            throw new Error(
+                `Job namespace in manifest (${patchNamespace}) must match path namespace (${namespace})`,
+            );
+        }
 
-        const response = await k8sApi.replaceNamespacedCustomObject({
-            group: "batch.volcano.sh",
-            version: "v1alpha1",
-            namespace,
-            plural: "jobs",
-            name,
-            body: updatedJob,
-        });
+        const jobError = validateJobManifest(patchData as Record<string, unknown>);
+        if (jobError) {
+            throw new Error(jobError);
+        }
 
-        return {
-            message: "Job updated successfully",
-            data: response.body,
-        };
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const currentJob = (await k8sApi.getNamespacedCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
+                namespace,
+                plural: "jobs",
+                name,
+            })) as any;
+
+            const updatedJob = {
+                apiVersion: patchData.apiVersion || currentJob.apiVersion,
+                kind: patchData.kind || currentJob.kind,
+                metadata: {
+                    ...currentJob.metadata,
+                    labels: patchData.metadata.labels ?? currentJob.metadata?.labels,
+                    annotations:
+                        patchData.metadata.annotations ?? currentJob.metadata?.annotations,
+                    name: currentJob.metadata?.name,
+                    namespace: currentJob.metadata?.namespace,
+                    resourceVersion: currentJob.metadata?.resourceVersion,
+                    uid: currentJob.metadata?.uid,
+                    creationTimestamp: currentJob.metadata?.creationTimestamp,
+                },
+                spec: patchData.spec,
+                status: currentJob.status,
+            };
+
+            const response = await k8sApi.replaceNamespacedCustomObject({
+                group: "batch.volcano.sh",
+                version: "v1alpha1",
+                namespace,
+                plural: "jobs",
+                name,
+                body: updatedJob,
+            });
+
+            return {
+                message: "Job updated successfully",
+                data: response,
+            };
+        } catch (error) {
+            throw new Error(formatK8sApiError(error));
+        }
     }),
     deleteJob: procedure.input(deleteJobInputSchema).mutation(async ({ input }) => {
         const { namespace, name } = input;
