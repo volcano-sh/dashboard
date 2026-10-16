@@ -142,7 +142,7 @@ export default function PodGroupManagement() {
         } finally {
             setLoading(false)
         }
-    }, [podGroupsQuery])
+    }, [podGroupsQuery, t])
 
     const handlePodGroupClick = useCallback(async (podGroup: PodGroupStatus) => {
         setError(null);
@@ -156,7 +156,7 @@ export default function PodGroupManagement() {
             setError(t("errors.fetchYaml"));
             console.error(err)
         }
-    }, [podGroupYamlQuery])
+    }, [podGroupYamlQuery, t])
 
     const handlePageSizeChange = (newPageSize: string) => {
         setPagination({

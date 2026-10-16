@@ -124,7 +124,7 @@ export default function JobsManagement() {
       setError(t("errors.fetchYamlEdit"));
       console.error(err)
     }
-  }, [utils])
+  }, [utils, t])
 
   const handleDelete = useCallback((job: JobStatus) => {
     setJobToDelete(job)
@@ -193,7 +193,7 @@ export default function JobsManagement() {
     } finally {
       setLoading(false)
     }
-  }, [jobsQuery])
+  }, [jobsQuery, t])
 
   const handleJobClick = useCallback(async (job: JobStatus) => {
     setError(null);
@@ -207,7 +207,7 @@ export default function JobsManagement() {
       setError(t("errors.fetchYaml"));
       console.error(err)
     }
-  }, [jobYamlQuery]);
+  }, [jobYamlQuery, t]);
 
   const handleJobCreate = () => {
     setShowCreateJobModal(true)

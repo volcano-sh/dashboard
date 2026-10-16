@@ -164,7 +164,7 @@ export function CreateQueueDialog({
         message: error instanceof Error ? error.message : t("create.parseFormFailed")
       })
     }
-  }, [yaml])
+  }, [yaml, t])
 
   const goYaml = React.useCallback(() => {
     try {

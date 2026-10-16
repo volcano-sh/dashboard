@@ -114,7 +114,7 @@ export default function QueueManagement() {
             setError(t("errors.fetchYamlEdit"));
             console.error(err)
         }
-    }, [utils])
+    }, [utils, t])
 
     const handleDelete = useCallback((queue: QueueStatus) => {
         if (isProtectedQueue(queue.name)) {
@@ -123,7 +123,7 @@ export default function QueueManagement() {
         }
         setQueueToDelete(queue)
         setShowDeleteConfirm(true)
-    }, [])
+    }, [t])
 
     const confirmDelete = useCallback(async () => {
         if (!queueToDelete) return
@@ -187,7 +187,7 @@ export default function QueueManagement() {
         } finally {
             setLoading(false)
         }
-    }, [queuesQuery])
+    }, [queuesQuery, t])
 
     const handleQueueClick = useCallback(async (queue: QueueStatus) => {
         setError(null);
@@ -201,7 +201,7 @@ export default function QueueManagement() {
             setError(t("errors.fetchYaml"));
             console.error(err)
         }
-    }, [queueYamlQuery])
+    }, [queueYamlQuery, t])
 
     const handleCreateQueue = () => {
         setShowCreateQueueModal(true)
