@@ -28,6 +28,63 @@ interface QueueResourcesBarChartProps {
 
 const CHART_HEIGHT_PX = 300
 
+// Kubernetes quantity suffixes (case-sensitive), split by exponent style:
+// binary (IEC) suffixes are powers of 1024, decimal (SI) suffixes are powers of 1000.
+const BINARY_SUFFIXES: Record<string, number> = {
+  Ki: 1024,
+  Mi: 1024 ** 2,
+  Gi: 1024 ** 3,
+  Ti: 1024 ** 4,
+  Pi: 1024 ** 5,
+  Ei: 1024 ** 6,
+}
+
+const DECIMAL_SUFFIXES: Record<string, number> = {
+  n: 1e-9,
+  u: 1e-6,
+  m: 1e-3,
+  k: 1e3,
+  K: 1e3,
+  M: 1e6,
+  G: 1e9,
+  T: 1e12,
+  P: 1e15,
+  E: 1e18,
+}
+
+const GIBIBYTE = 1024 ** 3
+
+/**
+ * Parse a Kubernetes resource quantity into the chart's display unit:
+ * memory in GiB, CPU in cores, pod counts as plain numbers.
+ * A bare number is bytes for memory (e.g. "8589934592" = 8Gi) and cores for CPU.
+ */
+const parseResourceValue = (value: string | number | undefined, unit: "memory" | "cpu" | "count"): number => {
+  if (value === undefined || value === null || value === "") return 0
+  const str = String(value).trim()
+
+  const match = str.match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)([a-zA-Zµ]*)$/)
+  if (!match) {
+    const fallback = Number.parseFloat(str)
+    return Number.isFinite(fallback) ? fallback : 0
+  }
+
+  const n = Number.parseFloat(match[1])
+  if (!Number.isFinite(n)) return 0
+  const suffix = match[2] ?? ""
+
+  if (suffix === "") {
+    return unit === "memory" ? n / GIBIBYTE : n
+  }
+  if (suffix in BINARY_SUFFIXES) {
+    return unit === "memory" ? (n * BINARY_SUFFIXES[suffix]) / GIBIBYTE : n
+  }
+  if (suffix in DECIMAL_SUFFIXES) {
+    return unit === "memory" ? (n * DECIMAL_SUFFIXES[suffix]) / GIBIBYTE : n * DECIMAL_SUFFIXES[suffix]
+  }
+  return n
+}
+
 function BarChartSkeleton() {
   const t = useTranslations("dashboard")
 
@@ -51,44 +108,21 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
   const t = useTranslations("dashboard")
   const [selectedResource, setSelectedResource] = useState("")
 
-  const parseResourceValue = (value: string | number | undefined): number => {
-    if (value === undefined || value === null || value === "") return 0
-    const str = String(value).trim()
-    if (str === "0") return 0
-
-    if (str.endsWith("m")) {
-      return Number.parseFloat(str.slice(0, -1)) / 1000
-    }
-
-    if (/Gi$/i.test(str)) {
-      return Number.parseFloat(str)
-    }
-    if (/Mi$/i.test(str)) {
-      return Number.parseFloat(str) / 1024
-    }
-    if (/Ki$/i.test(str)) {
-      return Number.parseFloat(str) / (1024 * 1024)
-    }
-
-    const n = Number.parseFloat(str)
-    return Number.isFinite(n) ? n : 0
-  };
-
   const transformedData = useMemo(() => {
     return data.map(queue => ({
       metadata: { name: queue.name },
       status: {
         allocated: {
-          cpu: parseResourceValue(queue.cpu),
-          memory: parseResourceValue(queue.memory),
-          pods: parseResourceValue(queue.pods),
+          cpu: parseResourceValue(queue.cpu, "cpu"),
+          memory: parseResourceValue(queue.memory, "memory"),
+          pods: parseResourceValue(queue.pods, "count"),
         },
       },
       spec: {
         capability: {
-          cpu: parseResourceValue(queue.cpuCapability),
-          memory: parseResourceValue(queue.memoryCapability),
-          pods: parseResourceValue(queue.podsCapability),
+          cpu: parseResourceValue(queue.cpuCapability, "cpu"),
+          memory: parseResourceValue(queue.memoryCapability, "memory"),
+          pods: parseResourceValue(queue.podsCapability, "count"),
         },
       },
     }))
