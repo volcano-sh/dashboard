@@ -141,6 +141,34 @@ rules:
       - get
       - list
       - watch
+  # Kthena workload CRDs (ModelBooster, ModelServing)
+  - apiGroups:
+      - workload.serving.volcano.sh
+    resources:
+      - modelboosters
+      - modelservings
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
+      - patch
+  # Kthena networking CRDs (ModelRoute, ModelServer)
+  - apiGroups:
+      - networking.serving.volcano.sh
+    resources:
+      - modelroutes
+      - modelservers
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
+      - patch
 ---
 # Volcano Dashboard Service
 apiVersion: v1

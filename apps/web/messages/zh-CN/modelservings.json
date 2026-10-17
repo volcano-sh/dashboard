@@ -1,0 +1,53 @@
+{
+  "title": "ModelServing",
+  "createModelServing": "创建 ModelServing",
+  "filterPlaceholder": "筛选 ModelServing...",
+  "crdMissing": "当前集群未安装 Kthena CRD。安装 Kthena 后即可在仪表盘中管理 ModelServing。作业、队列、Pod 和 Pod 组仍然可用。",
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "replicas": "副本",
+    "available": "可用",
+    "scheduler": "调度器",
+    "creationTime": "创建时间",
+    "status": "状态",
+    "actions": "操作",
+    "filterByNamespace": "按命名空间筛选",
+    "filterByStatus": "按状态筛选"
+  },
+  "details": {
+    "title": "ModelServing 详情：{name}",
+    "replicas": "副本：",
+    "available": "可用：",
+    "scheduler": "调度器："
+  },
+  "delete": {
+    "title": "删除 ModelServing",
+    "message": "确定要删除命名空间 {namespace} 中的 ModelServing {name} 吗？"
+  },
+  "errors": {
+    "api": "ModelServing API 错误：{message}",
+    "yamlApi": "ModelServing YAML API 错误：{message}",
+    "refresh": "刷新 ModelServing 失败",
+    "fetchYaml": "获取 ModelServing YAML 失败",
+    "fetchYamlEdit": "获取用于编辑的 ModelServing YAML 失败",
+    "noYaml": "该 ModelServing 没有可用的 YAML 配置",
+    "delete": "删除 ModelServing 失败：{message}"
+  },
+  "create": {
+    "title": "创建 ModelServing",
+    "description": "在下方以 YAML 格式输入 ModelServing 配置。",
+    "yamlLabel": "ModelServing YAML 配置",
+    "yamlPlaceholder": "输入 ModelServing YAML 配置...",
+    "success": "ModelServing 创建成功！",
+    "failed": "创建 ModelServing 失败",
+    "button": "创建 ModelServing"
+  },
+  "edit": {
+    "title": "编辑 ModelServing：{name}",
+    "description": "下方显示当前配置。修改后点击更新即可生效。",
+    "success": "ModelServing 更新成功！",
+    "failed": "更新 ModelServing 失败",
+    "button": "更新 ModelServing"
+  }
+}
