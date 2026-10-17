@@ -20,6 +20,7 @@ import { DataTable } from "../data-table"
 import { useJobColumns } from "./columns"
 import { CreateJobDialog } from "./create-job-dialog"
 import { JobEditDialog } from "./job-edit-dialog"
+import { getResourceSeverity, getSeverityBadgeClass } from "@/lib/resource-health"
 
 export type JobStatus = {
   name: string;
@@ -27,6 +28,7 @@ export type JobStatus = {
   queue: string;
   createdAt: Date;
   status: string;
+  severity: "healthy" | "warning" | "critical";
   yaml?: string; // For job details modal
 }
 
@@ -156,14 +158,18 @@ export default function JobsManagement() {
   useEffect(() => {
     if (jobsQuery.data) {
       // Transform the API response to match our JobStatus type
-      const transformedJobs: JobStatus[] = (jobsQuery.data.items || []).map((job: any) => ({
-        name: job.metadata?.name || '',
-        namespace: job.metadata?.namespace || '',
-        queue: job.spec?.queue || '',
-        createdAt: new Date(job.metadata?.creationTimestamp || Date.now()),
-        status: job.status?.state?.phase || 'unknown',
-        yaml: job.yaml || '',
-      }));
+      const transformedJobs: JobStatus[] = (jobsQuery.data.items || []).map((job: any) => {
+        const status = job.status?.state?.phase || 'unknown';
+        return {
+          name: job.metadata?.name || '',
+          namespace: job.metadata?.namespace || '',
+          queue: job.spec?.queue || '',
+          createdAt: new Date(job.metadata?.creationTimestamp || Date.now()),
+          status,
+          severity: getResourceSeverity(status),
+          yaml: job.yaml || '',
+        };
+      });
 
       setJobs(transformedJobs);
     }
@@ -227,21 +233,7 @@ export default function JobsManagement() {
     }));
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "failed":
-      case "Terminated":
-        return "bg-red-100 text-red-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "running":
-        return "bg-blue-100 text-blue-800"
-      case "completed":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+  const getStatusColor = (status: string) => getSeverityBadgeClass(getResourceSeverity(status))
 
   // Check if any query is loading
   const isLoading = jobsQuery.isLoading
@@ -294,6 +286,11 @@ export default function JobsManagement() {
               onRowClick={handleJobClick}
               disablePagination={true}
               filterPlaceholder={t("filterPlaceholder")}
+              getRowClassName={(row) => {
+                if (row.severity === "critical") return "bg-red-50/70 hover:bg-red-100"
+                if (row.severity === "warning") return "bg-yellow-50/70 hover:bg-yellow-100"
+                return ""
+              }}
             />
           </div>
 

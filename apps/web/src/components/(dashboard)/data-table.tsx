@@ -38,6 +38,7 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
   disablePagination?: boolean;
   filterPlaceholder?: string;
+  getRowClassName?: (row: TData) => string;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,6 +47,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   disablePagination = false,
   filterPlaceholder,
+  getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations("common");
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -136,7 +138,10 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                  className={[
+                    onRowClick ? "cursor-pointer hover:bg-muted/50" : "",
+                    getRowClassName ? getRowClassName(row.original) : "",
+                  ].filter(Boolean).join(" ")}
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (

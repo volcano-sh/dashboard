@@ -2,10 +2,58 @@
 import { procedure, router } from "../../trpc";
 import { k8sApi, k8sCoreApi } from "../../utils/k8s";
 
+const getNormalizedJobStatus = (job: any) => {
+    const state = job.status?.state?.phase || job.status?.state || "Unknown";
+    return state;
+};
+
+const getNormalizedPodStatus = (pod: any) => {
+    return pod.status?.phase || "Unknown";
+};
+
+const getResourceHealthSummary = (resources: Array<{ status?: string | null }> = []) => {
+    const counts = { healthy: 0, warning: 0, critical: 0 };
+
+    resources.forEach((resource) => {
+        const status = String(resource.status ?? "unknown").trim().toLowerCase();
+        let severity: "healthy" | "warning" | "critical" = "warning";
+
+        if (status.includes("fail") || status.includes("error") || status.includes("terminate") || status.includes("crash") || status.includes("evict")) {
+            severity = "critical";
+        } else if (status.includes("running") || status.includes("complete") || status.includes("succeed") || status.includes("ready") || status.includes("active")) {
+            severity = "healthy";
+        } else if (status.includes("pending") || status.includes("waiting") || status.includes("queue") || status.includes("inqueue") || status.includes("unknown")) {
+            severity = "warning";
+        }
+
+        counts[severity] += 1;
+    });
+
+    const total = resources.length;
+    const score = total === 0 ? 100 : Math.round((counts.healthy / total) * 100);
+    let severity: "healthy" | "warning" | "critical" = "healthy";
+    if (counts.critical > 0) {
+        severity = "critical";
+    } else if (counts.warning > 0) {
+        severity = "warning";
+    }
+
+    return {
+        total,
+        healthy: counts.healthy,
+        warning: counts.warning,
+        critical: counts.critical,
+        score,
+        severity,
+        label: severity === "critical" ? "Critical" : severity === "warning" ? "Warning" : "Healthy",
+        warningCount: counts.warning,
+        failureCount: counts.critical,
+    };
+};
+
 // Helper function to get summary statistics
 const getSummary = async () => {
     try {
-        // Get all jobs
         const jobsResponse = await k8sApi.listClusterCustomObject({
             group: "batch.volcano.sh",
             version: "v1alpha1",
@@ -13,23 +61,25 @@ const getSummary = async () => {
         });
         const jobs = jobsResponse.items || [];
 
-        // Get all pods
         const podsResponse = await k8sCoreApi.listPodForAllNamespaces();
         const pods = podsResponse.items || [];
 
-        // Calculate metrics
         const totalJobs = jobs.length;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const activeJobs = jobs.filter((job: any) => {
-            const state = job.status?.state?.phase || job.status?.state || "Unknown";
+            const state = getNormalizedJobStatus(job);
             return ["Running", "Pending", "Inqueue"].includes(state);
         }).length;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const runningPods = pods.filter((pod: any) =>
-            pod.status?.phase === "Running"
+            getNormalizedPodStatus(pod) === "Running"
         ).length;
 
+        const jobHealth = getResourceHealthSummary(
+            jobs.map((job: any) => ({ status: getNormalizedJobStatus(job) }))
+        );
+        const podHealth = getResourceHealthSummary(
+            pods.map((pod: any) => ({ status: getNormalizedPodStatus(pod) }))
+        );
 
         const completeRate = totalJobs > 0
             ? `${Math.round(((totalJobs - activeJobs) / totalJobs) * 100)}%`
@@ -40,6 +90,14 @@ const getSummary = async () => {
             activeJobs,
             runningPods,
             completeRate,
+            warningJobs: jobHealth.warningCount,
+            failedJobs: jobHealth.failureCount,
+            warningPods: podHealth.warningCount,
+            failedPods: podHealth.failureCount,
+            jobHealth,
+            podHealth,
+            jobHealthStatus: jobHealth.label,
+            podHealthStatus: podHealth.label,
         };
     } catch (error) {
         console.error("Error fetching summary:", error);
@@ -48,6 +106,14 @@ const getSummary = async () => {
             activeJobs: 0,
             runningPods: 0,
             completeRate: "0%",
+            warningJobs: 0,
+            failedJobs: 0,
+            warningPods: 0,
+            failedPods: 0,
+            jobHealth: { total: 0, healthy: 0, warning: 0, critical: 0, score: 100, severity: "healthy", label: "Healthy", warningCount: 0, failureCount: 0 },
+            podHealth: { total: 0, healthy: 0, warning: 0, critical: 0, score: 100, severity: "healthy", label: "Healthy", warningCount: 0, failureCount: 0 },
+            jobHealthStatus: "Healthy",
+            podHealthStatus: "Healthy",
         };
     }
 };

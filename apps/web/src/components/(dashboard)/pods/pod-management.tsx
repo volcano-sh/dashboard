@@ -22,14 +22,14 @@ import { DataTable } from "../data-table"
 import { usePodColumns } from "./columns"
 import { CreatePodDialog } from "./pod-create-dialog"
 import { PodEditDialog } from "./pod-edit-dialog"
-
-
+import { getResourceSeverity, getSeverityBadgeClass } from "@/lib/resource-health"
 
 export type PodStatus = {
     name: string;
     namespace: string;
     createdAt: Date;
     status: string;
+    severity: "healthy" | "warning" | "critical";
     age: string;
     yaml?: string;
 }
@@ -160,12 +160,14 @@ export default function PodManagement() {
                     const ageInMs = now.getTime() - createdAt.getTime();
                     const ageInDays = Math.floor(ageInMs / (1000 * 60 * 60 * 24));
                     const age = ageInDays === 0 ? "1d" : `${ageInDays}d`;
+                    const status = pod.status?.phase?.toLowerCase() || 'unknown';
 
                     return {
                         name: pod.metadata?.name || '',
                         namespace: pod.metadata?.namespace || '',
                         createdAt,
-                        status: pod.status?.phase?.toLowerCase() || 'unknown',
+                        status,
+                        severity: getResourceSeverity(status),
                         age,
                         yaml: pod.yaml || '',
                     };
@@ -229,22 +231,7 @@ export default function PodManagement() {
         }));
     }
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "running":
-                return "bg-green-100 text-green-800"
-            case "pending":
-                return "bg-yellow-100 text-yellow-800"
-            case "failed":
-                return "bg-red-100 text-red-800"
-            case "succeeded":
-                return "bg-blue-100 text-blue-800"
-            case "unknown":
-                return "bg-gray-100 text-gray-800"
-            default:
-                return "bg-gray-100 text-gray-800"
-        }
-    }
+    const getStatusColor = (status: string) => getSeverityBadgeClass(getResourceSeverity(status))
 
     const isLoading = podsQuery.isLoading
     const isRefreshing = podsQuery.isRefetching

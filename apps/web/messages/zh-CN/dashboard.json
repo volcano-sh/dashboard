@@ -4,6 +4,12 @@
     "totalJobs": "作业总数",
     "activeJobs": "活跃作业",
     "runningPods": "运行中 Pod",
+    "completeRate": "完成率",
+    "warning": "警告",
+    "failure": "失败",
+    "healthScore": "健康评分",
+    "jobHealth": "作业健康状态",
+    "podHealth": "Pod 健康状态"
     "completeRate": "完成率"
   },
   "alerts": {

@@ -14,6 +14,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Edit, Filter, Trash2 } from 'lucide-react'
 import { useTranslations } from "next-intl"
 import { PodStatus } from "./pod-management"
+import { getResourceSeverity, getSeverityBadgeClass } from "@/lib/resource-health"
 
 interface CreateColumnsOptions {
     availableNamespaces: string[]
@@ -134,25 +135,38 @@ export const createColumns = ({
             cell: ({ row }) => {
                 const status = row.getValue("status") as string
                 return (
-                    <Badge
-                        className={
-                            status === "running"
-                                ? "bg-green-100 text-green-800"
-                                : status === "pending"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : status === "failed"
-                                        ? "bg-red-100 text-red-800"
-                                        : status === "succeeded"
-                                            ? "bg-blue-100 text-blue-800"
-                                            : "bg-gray-100 text-gray-800"
-                        }
-                    >
+                    <Badge className={getSeverityBadgeClass(getResourceSeverity(status))}>
                         {status}
                     </Badge>
                 )
             },
             filterFn: (row, columnId, filterValue) => {
                 return row.getValue(columnId) === filterValue
+            },
+        },
+        {
+            accessorKey: "severity",
+            id: "severity",
+            header: ({ column }) => (
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Health
+                    <ArrowUpDown className="ms-2 h-4 w-4" />
+                </Button>
+            ),
+            cell: ({ row }) => {
+                const severity = (row.getValue("severity") as string) || "healthy";
+                return (
+                    <Badge className={getSeverityBadgeClass(severity)}>
+                        {severity.charAt(0).toUpperCase() + severity.slice(1)}
+                    </Badge>
+                );
+            },
+            sortingFn: (rowA, rowB) => {
+                const order = { healthy: 0, warning: 1, critical: 2 };
+                return (order[rowA.original.severity] ?? 0) - (order[rowB.original.severity] ?? 0);
+            },
+            filterFn: (row, columnId, filterValue) => {
+                return row.getValue(columnId) === filterValue;
             },
         },
         {

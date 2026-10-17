@@ -4,6 +4,12 @@
     "totalJobs": "Total Jobs",
     "activeJobs": "Active Jobs",
     "runningPods": "Running Pods",
+    "completeRate": "Complete Rate",
+    "warning": "Warning",
+    "failure": "Failure",
+    "healthScore": "Health Score",
+    "jobHealth": "Job Health",
+    "podHealth": "Pod Health"
     "completeRate": "Complete Rate"
   },
   "alerts": {
