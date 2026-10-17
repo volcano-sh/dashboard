@@ -5,30 +5,49 @@ interface K8sStatusBody {
     code?: number;
 }
 
-function parseK8sStatusBody(body: unknown): K8sStatusBody | null {
+interface ApiExceptionLike {
+    code?: number;
+    statusCode?: number;
+    body?: unknown;
+    response?: { statusCode?: number; body?: unknown };
+}
+
+export function parseK8sStatusBody(body: unknown): K8sStatusBody | null {
     if (!body) return null;
     if (typeof body === "object") return body as K8sStatusBody;
     if (typeof body === "string") {
+        const trimmed = body.trim();
+        if (!trimmed) return null;
         try {
-            return JSON.parse(body) as K8sStatusBody;
+            const parsed: unknown = JSON.parse(trimmed);
+            if (typeof parsed === "object" && parsed !== null) {
+                return parsed as K8sStatusBody;
+            }
         } catch {
-            return null;
+            return { message: trimmed };
         }
+        return { message: trimmed };
     }
     return null;
 }
 
-function isApiException(error: unknown): error is { code: number; body: unknown } {
-    return (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        typeof (error as { code: unknown }).code === "number"
-    );
+export function getErrorCode(error: unknown): number | null {
+    if (typeof error !== "object" || error === null) return null;
+    const err = error as ApiExceptionLike;
+    if (typeof err.code === "number") return err.code;
+    if (typeof err.statusCode === "number") return err.statusCode;
+    if (typeof err.response?.statusCode === "number") return err.response.statusCode;
+    return null;
+}
+
+export function getErrorBody(error: unknown): unknown {
+    if (typeof error !== "object" || error === null) return undefined;
+    const err = error as ApiExceptionLike;
+    return err.body ?? err.response?.body;
 }
 
 /** Parse Volcano validatequeue webhook constraint messages into plain language. */
-function formatVolcanoQueueConstraint(message: string): string | null {
+export function formatVolcanoQueueConstraint(message: string): string | null {
     const capLte = message.match(
         /deserved\[(\w+)\]=([^:]+?)\s+must be\s*<=\s*capability\[\1\]=(\S+)/i
     );
@@ -76,7 +95,7 @@ function formatVolcanoQueueConstraint(message: string): string | null {
     return null;
 }
 
-function formatAdmissionWebhookMessage(message: string): string {
+export function formatAdmissionWebhookMessage(message: string): string {
     const deniedPrefix = /admission webhook[^:]*denied the request:\s*/i;
     let detail = message.replace(deniedPrefix, "").trim();
 
@@ -99,22 +118,23 @@ function formatAdmissionWebhookMessage(message: string): string {
 
 /** Turn Kubernetes client ApiException errors into short, user-facing messages. */
 export function formatK8sApiError(error: unknown): string {
-    if (!isApiException(error)) {
+    const code = getErrorCode(error);
+    if (code === null) {
         return error instanceof Error ? error.message : "An unexpected error occurred";
     }
 
-    const status = parseK8sStatusBody(error.body);
+    const status = parseK8sStatusBody(getErrorBody(error));
     const resourceName = status?.details?.name;
     const resourceKind = status?.details?.kind?.toLowerCase() ?? "resource";
 
-    if (error.code === 409 && status?.reason === "AlreadyExists") {
+    if (code === 409) {
         if (resourceName) {
             return `A ${resourceKind} named "${resourceName}" already exists. Choose a different name or delete the existing one.`;
         }
         return status?.message ?? "This resource already exists.";
     }
 
-    if (error.code === 404) {
+    if (code === 404) {
         if (resourceName) {
             return `${resourceKind} "${resourceName}" was not found.`;
         }
@@ -128,5 +148,25 @@ export function formatK8sApiError(error: unknown): string {
         return status.message;
     }
 
-    return error instanceof Error ? error.message : "Kubernetes API request failed";
+    if (code === 401) {
+        return "Unauthorized: Authentication failed with the Kubernetes cluster.";
+    }
+
+    if (code === 403) {
+        return "Forbidden: Insufficient permissions to perform this Kubernetes action.";
+    }
+
+    if (code === 500) {
+        return "Kubernetes API server encountered an internal server error.";
+    }
+
+    if (code === 503) {
+        return "Kubernetes API service is temporarily unavailable.";
+    }
+
+    if (error instanceof Error && error.name !== "ApiException" && !error.message.startsWith("HTTP-Code:")) {
+        return error.message;
+    }
+
+    return `Kubernetes API request failed (HTTP ${code}).`;
 }
