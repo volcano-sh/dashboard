@@ -41,7 +41,6 @@ async function fetchPaginatedK8sList<T>(
 
         if (
             isFirstRequest &&
-            page === 1 &&
             !countWithFilter &&
             response.remainingItemCount !== undefined
         ) {

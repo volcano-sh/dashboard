@@ -3,7 +3,7 @@ type ResourcePair = { cpu: string; memory: string };
 function parseCpuToMillicores(value: string): number | null {
     const v = value.trim();
     if (!v) return null;
-    if (v.endsWith("m")) {
+    if (v.toLowerCase().endsWith("m")) {
         const n = Number.parseFloat(v.slice(0, -1));
         return Number.isFinite(n) ? n : null;
     }
