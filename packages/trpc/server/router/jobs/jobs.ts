@@ -69,9 +69,8 @@ export const jobsRouter = router({
             status: {
                 state: job.status?.state || getJobState(job),
                 phase:
-                    job.status?.phase || job.spec?.minAvailable
-                        ? "Running"
-                        : "Unknown",
+                    job.status?.phase ||
+                    (job.spec?.minAvailable ? "Running" : "Unknown"),
             },
         }));
 
