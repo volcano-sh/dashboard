@@ -274,6 +274,7 @@ export type ModelServingSummary = {
     status: "Available" | "Progressing" | "UpdateInProgress" | "Unknown";
     replicas: number;
     availableReplicas: number;
+    updatedReplicas: number;
     schedulerName: string;
 };
 
@@ -291,6 +292,7 @@ export function summarizeModelServingStatus(item: {
     status?: {
         replicas?: number;
         availableReplicas?: number;
+        updatedReplicas?: number;
         conditions?: ModelServingCondition[];
     };
 }): ModelServingSummary {
@@ -308,6 +310,7 @@ export function summarizeModelServingStatus(item: {
         status,
         replicas: item.status?.replicas ?? item.spec?.replicas ?? 0,
         availableReplicas: item.status?.availableReplicas ?? 0,
+        updatedReplicas: item.status?.updatedReplicas ?? 0,
         schedulerName: item.spec?.schedulerName || "volcano",
     };
 }

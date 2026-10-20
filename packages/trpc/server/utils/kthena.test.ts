@@ -269,8 +269,17 @@ describe("summarizeModelServingStatus", () => {
             status: "Available",
             replicas: 2,
             availableReplicas: 2,
+            updatedReplicas: 0,
             schedulerName: "volcano",
         });
+    });
+
+    it("includes updatedReplicas from status", () => {
+        expect(
+            summarizeModelServingStatus({
+                status: { replicas: 2, availableReplicas: 1, updatedReplicas: 2 },
+            }).updatedReplicas,
+        ).toBe(2);
     });
 
     it("prefers UpdateInProgress over Progressing", () => {
@@ -291,6 +300,7 @@ describe("summarizeModelServingStatus", () => {
             status: "Unknown",
             replicas: 3,
             availableReplicas: 0,
+            updatedReplicas: 0,
             schedulerName: "volcano",
         });
     });
