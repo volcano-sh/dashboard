@@ -105,6 +105,31 @@ export function PodEditDialog({ open, setOpen, handleRefresh, podName, podNamesp
                 throw new Error('Invalid spec: must be an object')
             }
 
+            // Validate containers
+            if (!parsed.spec.containers || !Array.isArray(parsed.spec.containers)) {
+                throw new Error('Pod spec must include containers array')
+            }
+
+            if (parsed.spec.containers.length === 0) {
+                throw new Error('Pod spec must include at least one container')
+            }
+
+            // Validate each container
+            for (let i = 0; i < parsed.spec.containers.length; i++) {
+                const container = parsed.spec.containers[i]
+                if (!container || typeof container !== 'object') {
+                    throw new Error(`Container at index ${i} must be an object`)
+                }
+
+                if (!container.name || typeof container.name !== 'string') {
+                    throw new Error(`Container at index ${i} must have a name`)
+                }
+
+                if (!container.image || typeof container.image !== 'string') {
+                    throw new Error(`Container at index ${i} must have an image`)
+                }
+            }
+
             return parsed
         } catch (error) {
             if (error instanceof YAMLException) {
