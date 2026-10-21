@@ -13,7 +13,7 @@ import {
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Edit, Filter, Trash2 } from "lucide-react"
 import { useFormatter, useTranslations } from "next-intl"
-import { ModelServingStatus, modelServingStatusColor } from "./modelservings-management"
+import { ModelServingStatus, modelServingStatusColor } from "./types"
 
 interface CreateColumnsOptions {
   availableNamespaces: string[]
@@ -103,6 +103,10 @@ export const createColumns = ({
     {
       accessorKey: "availableReplicas",
       header: t("table.available"),
+    },
+    {
+      accessorKey: "updatedReplicas",
+      header: t("table.updated"),
     },
     {
       accessorKey: "schedulerName",

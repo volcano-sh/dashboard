@@ -8,6 +8,7 @@
     "namespace": "命名空间",
     "replicas": "副本",
     "available": "可用",
+    "updated": "已更新",
     "scheduler": "调度器",
     "creationTime": "创建时间",
     "status": "状态",
@@ -19,7 +20,14 @@
     "title": "ModelServing 详情：{name}",
     "replicas": "副本：",
     "available": "可用：",
-    "scheduler": "调度器："
+    "updated": "已更新：",
+    "scheduler": "调度器：",
+    "conditions": "条件",
+    "conditionType": "类型",
+    "conditionStatus": "状态",
+    "conditionReason": "原因",
+    "conditionMessage": "消息",
+    "noConditions": "无"
   },
   "delete": {
     "title": "删除 ModelServing",

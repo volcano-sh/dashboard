@@ -8,6 +8,7 @@
     "namespace": "Namespace",
     "replicas": "Replicas",
     "available": "Available",
+    "updated": "Updated",
     "scheduler": "Scheduler",
     "creationTime": "Creation Time",
     "status": "Status",
@@ -19,7 +20,14 @@
     "title": "ModelServing Details: {name}",
     "replicas": "Replicas:",
     "available": "Available:",
-    "scheduler": "Scheduler:"
+    "updated": "Updated:",
+    "scheduler": "Scheduler:",
+    "conditions": "Conditions",
+    "conditionType": "Type",
+    "conditionStatus": "Status",
+    "conditionReason": "Reason",
+    "conditionMessage": "Message",
+    "noConditions": "None"
   },
   "delete": {
     "title": "Delete ModelServing",

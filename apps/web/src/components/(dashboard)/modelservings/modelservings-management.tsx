@@ -20,55 +20,11 @@ import { DataTable } from "../data-table"
 import { useModelServingColumns } from "./columns"
 import { CreateModelServingDialog } from "./create-modelserving-dialog"
 import { ModelServingEditDialog } from "./modelserving-edit-dialog"
-
-export type ModelServingStatus = {
-  name: string
-  namespace: string
-  replicas: number
-  availableReplicas: number
-  schedulerName: string
-  createdAt: Date
-  status: string
-  yaml?: string
-}
-
-export function modelServingStatusColor(status: string) {
-  switch (status) {
-    case "Available":
-      return "bg-green-100 text-green-800"
-    case "Progressing":
-      return "bg-blue-100 text-blue-800"
-    case "UpdateInProgress":
-      return "bg-yellow-100 text-yellow-800"
-    default:
-      return "bg-gray-100 text-gray-800"
-  }
-}
-
-function summarizeModelServing(item: any): Pick<
+import {
   ModelServingStatus,
-  "status" | "replicas" | "availableReplicas" | "schedulerName"
-> {
-  const conditions = item.status?.conditions ?? []
-  const isTrue = (type: string) =>
-    conditions.some((condition: any) => condition.type === type && condition.status === "True")
-
-  let status = "Unknown"
-  if (isTrue("Available")) {
-    status = "Available"
-  } else if (isTrue("UpdateInProgress")) {
-    status = "UpdateInProgress"
-  } else if (isTrue("Progressing")) {
-    status = "Progressing"
-  }
-
-  return {
-    status,
-    replicas: item.status?.replicas ?? item.spec?.replicas ?? 0,
-    availableReplicas: item.status?.availableReplicas ?? 0,
-    schedulerName: item.spec?.schedulerName || "volcano",
-  }
-}
+  modelServingStatusColor,
+  summarizeModelServing,
+} from "./types"
 
 export default function ModelServingsManagement() {
   const t = useTranslations("modelservings")
@@ -351,6 +307,9 @@ export default function ModelServingsManagement() {
                   <span className="font-semibold">{t("details.available")}</span> {selectedItem.availableReplicas}
                 </div>
                 <div>
+                  <span className="font-semibold">{t("details.updated")}</span> {selectedItem.updatedReplicas}
+                </div>
+                <div>
                   <span className="font-semibold">{t("details.scheduler")}</span> {selectedItem.schedulerName}
                 </div>
                 <div>
@@ -360,6 +319,36 @@ export default function ModelServingsManagement() {
                     timeStyle: "short",
                   })}
                 </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">{t("details.conditions")}</h3>
+                {selectedItem.conditions.length === 0 ? (
+                  <p className="text-sm text-gray-500">{t("details.noConditions")}</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-left">
+                        <tr>
+                          <th className="px-3 py-2 font-semibold">{t("details.conditionType")}</th>
+                          <th className="px-3 py-2 font-semibold">{t("details.conditionStatus")}</th>
+                          <th className="px-3 py-2 font-semibold">{t("details.conditionReason")}</th>
+                          <th className="px-3 py-2 font-semibold">{t("details.conditionMessage")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedItem.conditions.map((condition, index) => (
+                          <tr key={`${condition.type ?? "condition"}-${index}`} className="border-t">
+                            <td className="px-3 py-2">{condition.type || tc("notAvailable")}</td>
+                            <td className="px-3 py-2">{condition.status || tc("notAvailable")}</td>
+                            <td className="px-3 py-2">{condition.reason || tc("notAvailable")}</td>
+                            <td className="px-3 py-2">{condition.message || tc("notAvailable")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               <div>
