@@ -71,19 +71,6 @@ export default function PodManagement() {
     )
 
 
-    const podYamlQuery = trpc.podRouter.getPodYaml.useQuery(
-        {
-            namespace: selectedPod?.namespace || "",
-            name: selectedPod?.name || ""
-        },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching pod YAML:", err);
-                setError(t("errors.yamlApi", { message: err.message }));
-            },
-        },
-    );
 
     const availableNamespaces = pods ?
         Array.from(new Set(pods.map(pod => pod.namespace).filter(Boolean))).sort()
@@ -201,15 +188,15 @@ export default function PodManagement() {
         setError(null);
 
         try {
-            const response = await podYamlQuery.refetch();
-            const yaml = response.data || pod.yaml || "";
+            const data = await utils.podRouter.getPodYaml.fetch({ namespace: pod.namespace, name: pod.name });
+            const yaml = data || pod.yaml || "";
             setSelectedPod({ ...pod, yaml });
             setShowPodDetails(true);
         } catch (err) {
             setError(t("errors.fetchYaml"));
             console.error(err)
         }
-    }, [podYamlQuery])
+    }, [utils])
 
     const handlePodCreate = () => {
         setShowCreatePodModal(true)

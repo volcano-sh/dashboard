@@ -1,9 +1,10 @@
 import { z } from "zod";
 
+import { k8sIdentifierSchema } from "../identifier";
 import { paginationInputSchema } from "../pagination";
 
 export const getQueueInputSchema = z.object({
-    name: z.string(),
+    name: k8sIdentifierSchema,
 });
 
 export const getQueuesInputSchema = paginationInputSchema.extend({});
@@ -21,12 +22,12 @@ export const createQueueInputSchema = z.object({
 });
 
 export const updateQueueInputSchema = z.object({
-    name: z.string(),
+    name: k8sIdentifierSchema,
     updatedBody: z.object({
         spec: z.any(),
     }),
 });
 
 export const deleteQueueInputSchema = z.object({
-    name: z.string(),
+    name: k8sIdentifierSchema,
 });

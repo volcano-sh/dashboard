@@ -43,6 +43,7 @@ export default function PodGroupManagement() {
     const t = useTranslations("podgroups")
     const tc = useTranslations("common")
     const format = useFormatter()
+    const utils = trpc.useUtils()
     const [podGroups, setPodGroups] = useState<PodGroupStatus[]>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -74,19 +75,6 @@ export default function PodGroupManagement() {
         }
     )
 
-    const podGroupYamlQuery = trpc.podgroupsRouter.getPodGroupYaml.useQuery(
-        {
-            namespace: selectedPodGroup?.namespace || "",
-            name: selectedPodGroup?.name || ""
-        },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching podgroup YAML:", err);
-                setError(t("errors.yamlApi", { message: err.message }));
-            },
-        },
-    );
 
     const availableNamespaces = podGroups ?
         Array.from(new Set(podGroups.map(pg => pg.namespace).filter(Boolean))).sort()
@@ -148,15 +136,15 @@ export default function PodGroupManagement() {
         setError(null);
 
         try {
-            const response = await podGroupYamlQuery.refetch();
-            const yaml = response.data || podGroup.yaml || "";
+            const data = await utils.podgroupsRouter.getPodGroupYaml.fetch({ namespace: podGroup.namespace, name: podGroup.name });
+            const yaml = data || podGroup.yaml || "";
             setSelectedPodGroup({ ...podGroup, yaml });
             setShowPodGroupDetails(true);
         } catch (err) {
             setError(t("errors.fetchYaml"));
             console.error(err)
         }
-    }, [podGroupYamlQuery])
+    }, [utils])
 
     const handlePageSizeChange = (newPageSize: string) => {
         setPagination({
