@@ -7,6 +7,7 @@
     "jobs": "作业",
     "queues": "队列",
     "pods": "Pod",
-    "podgroups": "Pod 组"
+    "podgroups": "Pod 组",
+    "scheduler": "调度器"
   }
 }

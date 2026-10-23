@@ -7,6 +7,7 @@
     "jobs": "Jobs",
     "queues": "Queues",
     "pods": "Pods",
-    "podgroups": "PodGroups"
+    "podgroups": "PodGroups",
+    "scheduler": "Scheduler"
   }
 }

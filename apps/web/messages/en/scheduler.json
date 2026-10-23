@@ -1,0 +1,154 @@
+{
+  "title": "Scheduler Configuration",
+  "subtitle": "Edit the volcano scheduler policy in <code>{configMap}</code>",
+  "refreshConfirm": "You have unsaved changes. Refreshing reloads the configuration from the cluster and discards your edits. Continue?",
+  "discardConfirm": "Discard all unsaved changes and restore the server configuration?",
+  "loading": "Loading scheduler configuration...",
+  "loadError": "Failed to load scheduler configuration",
+  "saveBar": {
+    "unsavedChanges": "Unsaved changes",
+    "saved": "Configuration saved",
+    "upToDate": "Everything up to date",
+    "discard": "Discard",
+    "save": "Save configuration"
+  },
+  "alerts": {
+    "saveFailed": "Save failed",
+    "headsUp": "Heads up",
+    "commentsWarning": "The current ConfigMap contains YAML comments; saving rewrites the file and removes them."
+  },
+  "actionPipeline": {
+    "title": "Action Pipeline",
+    "description": "Actions run in order on every scheduling cycle. Drag to reorder.",
+    "dragToReorder": "Drag to reorder",
+    "recommended": "recommended",
+    "removeAction": "Remove action",
+    "empty": "No actions configured. Add at least one action below.",
+    "availableActions": "Available actions"
+  },
+  "pluginTiers": {
+    "title": "Plugin Tiers",
+    "description": "Plugins register the scheduling algorithms. Higher tiers take precedence for eviction decisions. Click a plugin to edit its functions and arguments.",
+    "tierTitle": "Tier {index}",
+    "evaluatedFirst": "evaluated first",
+    "evaluatedIfHigherPass": "evaluated if higher tiers pass",
+    "removeTier": "Remove tier",
+    "removeTierDisabled": "At least one tier is required",
+    "addPlugin": "Add plugin to tier {index}",
+    "addTier": "Add tier"
+  },
+  "actionConfigs": {
+    "title": "Action Configurations",
+    "description": "Optional per-action arguments, e.g. overcommit-factor for enqueue.",
+    "empty": "No per-action arguments configured.",
+    "action": "Action",
+    "arguments": "Arguments (key=value)",
+    "removeConfig": "Remove action configuration",
+    "keyPlaceholder": "key",
+    "valuePlaceholder": "value",
+    "deleteArgument": "Delete argument",
+    "addArgument": "Add argument",
+    "emptyKeyWarning": "Fill in the argument key before adding another or saving.",
+    "addConfig": "Add action configuration"
+  },
+  "pendingChanges": {
+    "title": "Pending Changes",
+    "description": "YAML that will be written to the ConfigMap on save.",
+    "noChanges": "No pending changes. Edits will show up here as a YAML diff before you save.",
+    "viewCurrent": "View current configuration",
+    "linesWillChange": "{count, plural, one {# line will change on save} other {# lines will change on save}}",
+    "unchangedLines": "⋯ {count, plural, one {# unchanged line} other {# unchanged lines}}"
+  },
+  "confirm": {
+    "title": "Apply scheduler configuration?",
+    "description": "This updates <code>{configMap}</code>. The Volcano scheduler reloads this ConfigMap automatically, so changes affect scheduling decisions cluster-wide.",
+    "apply": "Apply changes"
+  },
+  "plugin": {
+    "custom": "custom",
+    "functionsOff": "{count, plural, one {# function off} other {# functions off}}",
+    "argsCount": "{count, plural, one {# arg} other {# args}}",
+    "removePlugin": "Remove plugin",
+    "removePluginDisabled": "A tier needs at least one plugin",
+    "label": "Plugin",
+    "sessionFunctions": "Session functions",
+    "sessionFunctionsHint": "all enabled unless unchecked",
+    "arguments": "Arguments"
+  },
+  "actionDescriptions": {
+    "enqueue": "Admit PodGroups to inqueue if cluster can satisfy min resources",
+    "allocate": "Bind resources to in-queue workloads",
+    "backfill": "Schedule BestEffort / leftover pods",
+    "preempt": "Evict lower-priority tasks for higher-priority ones",
+    "reclaim": "Reclaim borrowed queue resources",
+    "shuffle": "Reschedule / shuffle workloads",
+    "gangpreempt": "Gang-aware preemption",
+    "gangreclaim": "Gang-aware reclaim",
+    "custom": "Custom action (not in the built-in registry)"
+  },
+  "enableFlags": {
+    "enableJobOrder": "Job order",
+    "enableHierarchy": "Hierarchy",
+    "enableJobReady": "Job ready",
+    "enableJobPipelined": "Job pipelined",
+    "enableTaskOrder": "Task order",
+    "enablePreemptable": "Preemptable",
+    "enableReclaimable": "Reclaimable",
+    "enablePreemptive": "Preemptive",
+    "enableQueueOrder": "Queue order",
+    "EnabledClusterOrder": "Cluster order",
+    "enablePredicate": "Predicate",
+    "enableBestNode": "Best node",
+    "enableNodeOrder": "Node order",
+    "enableTargetJob": "Target job",
+    "enableReservedNodes": "Reserved nodes",
+    "enableJobEnqueued": "Job enqueued",
+    "enabledVictim": "Victim",
+    "enableJobStarving": "Job starving",
+    "enabledOverused": "Overused",
+    "enabledAllocatable": "Allocatable",
+    "enabledHyperNodeOrder": "Hyper node order",
+    "enabledSubJobReady": "Sub-job ready",
+    "enabledSubJobPipelined": "Sub-job pipelined",
+    "enabledSubJobOrder": "Sub-job order",
+    "enabledHyperNodeGradient": "Hyper node gradient"
+  },
+  "argumentLabels": {
+    "binpack": {
+      "weight": "Weight",
+      "cpu": "CPU weight",
+      "memory": "Memory weight"
+    },
+    "predicate": {
+      "NodeAffinityEnable": "Node affinity",
+      "GPUSharingEnable": "GPU sharing",
+      "CacheEnable": "Cache"
+    },
+    "overcommit-factor": "Overcommit factor",
+    "gang": {
+      "podsfactor": "Pods factor"
+    },
+    "drf": {
+      "hierarchyEnabled": "Hierarchy enabled"
+    },
+    "nodeaffinity": {
+      "weight": "Node affinity weight"
+    },
+    "podaffinity": {
+      "weight": "Pod affinity weight"
+    },
+    "leastrequested": {
+      "weight": "Least requested weight"
+    },
+    "weight": "Weight",
+    "sla-waiting-time": "SLA waiting time",
+    "usage": {
+      "weight": "Weight"
+    },
+    "extender": {
+      "urlPrefix": "URL prefix",
+      "httpTimeout": "HTTP timeout",
+      "ignorable": "Ignorable"
+    }
+  }
+}
