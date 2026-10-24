@@ -1,8 +1,13 @@
 import yaml from "js-yaml";
 
 import { procedure, router } from "../../trpc";
+import { extractListMeta, fetchNamespacedPods } from "../helpers";
 import { formatK8sApiError } from "../../utils/k8s-errors";
 import { k8sApi } from "../../utils/k8s";
+import {
+    modelServingLabelSelector,
+    resolveModelServingRelated,
+} from "../../utils/kthena-related";
 import {
     createKthenaResource,
     deleteKthenaResource,
@@ -34,6 +39,49 @@ export const modelServingsRouter = router({
             const { namespace, name } = input;
             try {
                 return await getKthenaResource(k8sApi, modelServing, namespace, name);
+            } catch (error) {
+                throw new Error(formatK8sApiError(error));
+            }
+        }),
+    getModelServingRelated: procedure
+        .input(getModelServingInputSchema)
+        .query(async ({ input }) => {
+            const { namespace, name } = input;
+            try {
+                const result = await getKthenaResource(
+                    k8sApi,
+                    modelServing,
+                    namespace,
+                    name,
+                );
+                if (!result.crdAvailable || !result.item) {
+                    return {
+                        crdAvailable: false,
+                        pods: [],
+                        podGroups: [],
+                        queue: null,
+                    };
+                }
+
+                const pods = await fetchNamespacedPods(
+                    namespace,
+                    modelServingLabelSelector(name),
+                );
+                const podGroupList = await k8sApi.listNamespacedCustomObject({
+                    group: "scheduling.volcano.sh",
+                    version: "v1beta1",
+                    namespace,
+                    plural: "podgroups",
+                });
+
+                const related = resolveModelServingRelated({
+                    namespace,
+                    name,
+                    modelServing: result.item,
+                    pods,
+                    podGroups: extractListMeta(podGroupList).items,
+                });
+                return { crdAvailable: true, ...related };
             } catch (error) {
                 throw new Error(formatK8sApiError(error));
             }

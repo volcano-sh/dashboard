@@ -196,6 +196,17 @@ export const fetchPods = async (
     );
 };
 
+export async function fetchNamespacedPods(
+    namespace: string,
+    labelSelector?: string,
+): Promise<unknown[]> {
+    const response = await k8sCoreApi.listNamespacedPod({
+        namespace,
+        ...(labelSelector && { labelSelector }),
+    });
+    return response.items ?? [];
+}
+
 type PodGroupLike = {
     metadata?: { name?: string; deletionTimestamp?: unknown };
     status?: { phase?: string };
