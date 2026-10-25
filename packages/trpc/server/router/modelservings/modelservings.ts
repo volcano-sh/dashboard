@@ -60,6 +60,7 @@ export const modelServingsRouter = router({
                         pods: [],
                         podGroups: [],
                         queue: null,
+                        owner: null,
                     };
                 }
 

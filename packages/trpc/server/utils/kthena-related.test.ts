@@ -5,6 +5,9 @@ import {
     isOwnedByModelServing,
     matchesModelServingLabel,
     modelServingLabelSelector,
+    resolveModelBoosterRelated,
+    resolveModelRouteRelated,
+    resolveModelServerRelated,
     resolveModelServingRelated,
 } from "./kthena-related";
 
@@ -75,6 +78,7 @@ describe("resolveModelServingRelated", () => {
             pods: [],
             podGroups: [],
             queue: null,
+            owner: null,
         });
     });
 
@@ -117,6 +121,121 @@ describe("resolveModelServingRelated", () => {
             pods: [{ name: "pod-a", namespace: "ns1" }],
             podGroups: [{ name: "pg-a", namespace: "ns1" }],
             queue: "inference",
+            owner: null,
+        });
+    });
+
+    it("includes the owning ModelBooster", () => {
+        expect(
+            resolveModelServingRelated({
+                namespace: "ns1",
+                name: "ms-1",
+                modelServing: {
+                    metadata: {
+                        namespace: "ns1",
+                        ownerReferences: [{ kind: "ModelBooster", name: "demo" }],
+                    },
+                },
+            }).owner,
+        ).toEqual({ name: "demo", namespace: "ns1" });
+    });
+});
+
+describe("resolveModelBoosterRelated", () => {
+    it("keeps only children owned by this booster", () => {
+        expect(
+            resolveModelBoosterRelated({
+                namespace: "ns1",
+                name: "demo",
+                modelServings: [
+                    {
+                        metadata: {
+                            name: "ms-1",
+                            ownerReferences: [{ kind: "ModelBooster", name: "demo" }],
+                        },
+                    },
+                    {
+                        metadata: {
+                            name: "ms-other",
+                            ownerReferences: [{ kind: "ModelBooster", name: "other" }],
+                        },
+                    },
+                ],
+                modelServers: [
+                    {
+                        metadata: {
+                            name: "srv-1",
+                            ownerReferences: [{ kind: "ModelBooster", name: "demo" }],
+                        },
+                    },
+                ],
+                modelRoutes: [],
+            }),
+        ).toEqual({
+            modelServings: [{ name: "ms-1", namespace: "ns1" }],
+            modelServers: [{ name: "srv-1", namespace: "ns1" }],
+            modelRoutes: [],
+        });
+    });
+});
+
+describe("resolveModelServerRelated", () => {
+    it("matches pods by workloadSelector and routes that target this server", () => {
+        expect(
+            resolveModelServerRelated({
+                namespace: "ns1",
+                name: "srv-1",
+                modelServer: {
+                    spec: { workloadSelector: { matchLabels: { app: "vllm" } } },
+                },
+                pods: [
+                    { metadata: { name: "pod-a", labels: { app: "vllm" } } },
+                    { metadata: { name: "pod-b", labels: { app: "other" } } },
+                ],
+                modelRoutes: [
+                    {
+                        metadata: { name: "route-a" },
+                        spec: {
+                            rules: [{ targetModels: [{ modelServerName: "srv-1" }] }],
+                        },
+                    },
+                    {
+                        metadata: { name: "route-b" },
+                        spec: {
+                            rules: [{ targetModels: [{ modelServerName: "other" }] }],
+                        },
+                    },
+                ],
+            }),
+        ).toEqual({
+            pods: [{ name: "pod-a", namespace: "ns1" }],
+            modelRoutes: [{ name: "route-a", namespace: "ns1" }],
+        });
+    });
+});
+
+describe("resolveModelRouteRelated", () => {
+    it("lists target ModelServers and parentRefs as text", () => {
+        expect(
+            resolveModelRouteRelated({
+                namespace: "ns1",
+                modelRoute: {
+                    spec: {
+                        parentRefs: [{ kind: "Gateway", name: "kthena-gw", namespace: "ns1" }],
+                        rules: [
+                            {
+                                targetModels: [
+                                    { modelServerName: "srv-1" },
+                                    { externalModelProviderName: "ext" },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            }),
+        ).toEqual({
+            modelServers: [{ name: "srv-1", namespace: "ns1" }],
+            parentRefs: ["Gateway ns1/kthena-gw"],
         });
     });
 });
