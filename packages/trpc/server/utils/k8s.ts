@@ -1,72 +1,68 @@
 import { CoreV1Api, CustomObjectsApi, KubeConfig } from "@kubernetes/client-node";
 
-const kc = new KubeConfig();
+function createKubeConfig(): KubeConfig {
+    const kc = new KubeConfig();
 
-try {
-    kc.loadFromDefault();
+    try {
+        kc.loadFromDefault();
 
-    const skipTLSVerify = process.env.K8S_SKIP_TLS_VERIFY === "true";
-    const serverOverride = process.env.K8S_SERVER?.trim();
+        const skipTLSVerify = process.env.K8S_SKIP_TLS_VERIFY === "true";
+        const serverOverride = process.env.K8S_SERVER?.trim();
 
-    if (skipTLSVerify || serverOverride) {
-        const clusters = kc.getClusters().map((cluster) => ({
-            ...cluster,
-            ...(serverOverride && { server: serverOverride }),
-            ...(skipTLSVerify && { skipTLSVerify: true }),
-        }));
+        if (skipTLSVerify || serverOverride) {
+            const clusters = kc.getClusters().map((cluster) => ({
+                ...cluster,
+                ...(serverOverride && { server: serverOverride }),
+                ...(skipTLSVerify && { skipTLSVerify: true }),
+            }));
 
-        kc.loadFromOptions({
-            clusters,
-            users: kc.getUsers(),
-            contexts: kc.getContexts(),
-            currentContext: kc.getCurrentContext(),
-        });
+            kc.loadFromOptions({
+                clusters,
+                users: kc.getUsers(),
+                contexts: kc.getContexts(),
+                currentContext: kc.getCurrentContext(),
+            });
+        }
+    } catch (error) {
+        console.warn("Warning: Could not load Kubernetes config:", error);
     }
-} catch (error) {
-    console.warn("Warning: Could not load Kubernetes config:", error);
+
+    return kc;
 }
 
-/**
- * Build-time / no-cluster fallback. Next.js evaluates /api/trpc during
- * `next build`, so makeApiClient must not throw at module import when there
- * is no kubeconfig current-context.
- */
-function createUnavailableClientProxy<T extends object>(name: string): T {
+let k8sApiClient: CustomObjectsApi | undefined;
+let k8sCoreApiClient: CoreV1Api | undefined;
+
+function ensureClients(): void {
+    if (k8sApiClient && k8sCoreApiClient) {
+        return;
+    }
+
+    const kc = createKubeConfig();
+    // makeApiClient throws "No active cluster!" when kubeconfig is missing
+    // (e.g. during `next build` page-data collection). Defer until first use.
+    k8sApiClient = kc.makeApiClient(CustomObjectsApi);
+    k8sCoreApiClient = kc.makeApiClient(CoreV1Api);
+}
+
+function lazyClient<T extends object>(getClient: () => T): T {
     return new Proxy({} as T, {
-        get(_target, prop) {
-            if (prop === "then") {
-                return undefined;
-            }
-            return () => {
-                throw new Error(
-                    `No active Kubernetes cluster configured (${name}). Set a current context with \`kubectl config use-context <name>\` or provide an in-cluster config.`
-                );
-            };
+        get(_target, prop, receiver) {
+            const client = getClient();
+            const value = Reflect.get(client as object, prop, receiver);
+            return typeof value === "function" ? value.bind(client) : value;
         },
     });
 }
 
-function createCoreApi(): CoreV1Api {
-    try {
-        if (kc.getCurrentCluster()) {
-            return kc.makeApiClient(CoreV1Api);
-        }
-    } catch (error) {
-        console.warn("Warning: Could not create CoreV1Api client:", error);
-    }
-    return createUnavailableClientProxy<CoreV1Api>("CoreV1Api");
-}
+/** Lazily initialized so importing the tRPC router does not require a kubeconfig. */
+export const k8sApi = lazyClient(() => {
+    ensureClients();
+    return k8sApiClient!;
+});
 
-function createCustomObjectsApi(): CustomObjectsApi {
-    try {
-        if (kc.getCurrentCluster()) {
-            return kc.makeApiClient(CustomObjectsApi);
-        }
-    } catch (error) {
-        console.warn("Warning: Could not create CustomObjectsApi client:", error);
-    }
-    return createUnavailableClientProxy<CustomObjectsApi>("CustomObjectsApi");
-}
-
-export const k8sApi = createCustomObjectsApi();
-export const k8sCoreApi = createCoreApi();
+/** Lazily initialized so importing the tRPC router does not require a kubeconfig. */
+export const k8sCoreApi = lazyClient(() => {
+    ensureClients();
+    return k8sCoreApiClient!;
+});
