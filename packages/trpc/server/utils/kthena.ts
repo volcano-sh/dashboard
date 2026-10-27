@@ -58,6 +58,19 @@ type ClusterListApi = {
     }>;
 };
 
+type NamespacedListApi = {
+    listNamespacedCustomObject: (args: {
+        group: string;
+        version: string;
+        namespace: string;
+        plural: string;
+        labelSelector?: string;
+    }) => Promise<{
+        items?: unknown[];
+        metadata?: { _continue?: string; remainingItemCount?: number };
+    }>;
+};
+
 type NamespacedGetApi = {
     getNamespacedCustomObject: (args: {
         group: string;
@@ -165,6 +178,27 @@ export async function listKthenaResources(
     }
 }
 
+export async function listNamespacedKthenaResources(
+    api: NamespacedListApi,
+    resource: KthenaResourceDef,
+    namespace: string,
+): Promise<{ crdAvailable: boolean; items: unknown[] }> {
+    try {
+        const response = await api.listNamespacedCustomObject({
+            group: resource.group,
+            version: resource.version,
+            namespace,
+            plural: resource.plural,
+        });
+        return { crdAvailable: true, items: extractListMeta(response).items };
+    } catch (error) {
+        if (isCrdUnavailableError(error)) {
+            return { crdAvailable: false, items: [] };
+        }
+        throw error;
+    }
+}
+
 export async function getKthenaResource(
     api: NamespacedGetApi,
     resource: KthenaResourceDef,
@@ -265,6 +299,34 @@ export function validateKthenaManifest(
         return "spec is required";
     }
 
+    const spec = manifest.spec as Record<string, unknown>;
+
+    if (resource.kind === "ModelRoute") {
+        const modelName = typeof spec.modelName === "string" ? spec.modelName : "";
+        const loraAdapters = spec.loraAdapters;
+        if (
+            !modelName &&
+            (!Array.isArray(loraAdapters) || loraAdapters.length === 0)
+        ) {
+            return "spec.modelName or spec.loraAdapters is required";
+        }
+    }
+
+    if (resource.kind === "ModelServer") {
+        if (!spec.inferenceEngine || typeof spec.inferenceEngine !== "string") {
+            return "spec.inferenceEngine is required";
+        }
+        if (!spec.workloadSelector || typeof spec.workloadSelector !== "object") {
+            return "spec.workloadSelector is required";
+        }
+    }
+
+    if (resource.kind === "ModelBooster") {
+        if (!spec.backend || typeof spec.backend !== "object") {
+            return "spec.backend is required";
+        }
+    }
+
     return null;
 }
 
@@ -312,6 +374,75 @@ export function summarizeModelServingStatus(item: {
         availableReplicas: item.status?.availableReplicas ?? 0,
         updatedReplicas: item.status?.updatedReplicas ?? 0,
         schedulerName: item.spec?.schedulerName || "volcano",
+    };
+}
+
+export type ModelBoosterSummary = {
+    status: "Active" | "Failed" | "Initialized" | "Unknown";
+    backendType: string;
+    replicas: number;
+};
+
+export function summarizeModelBoosterStatus(item: {
+    spec?: { backend?: { type?: string; replicas?: number } };
+    status?: { conditions?: ModelServingCondition[] };
+}): ModelBoosterSummary {
+    const conditions = item.status?.conditions;
+    let status: ModelBoosterSummary["status"] = "Unknown";
+    if (conditionIsTrue(conditions, "Failed")) {
+        status = "Failed";
+    } else if (conditionIsTrue(conditions, "Active")) {
+        status = "Active";
+    } else if (conditionIsTrue(conditions, "Initialized")) {
+        status = "Initialized";
+    }
+
+    return {
+        status,
+        backendType: item.spec?.backend?.type || "",
+        replicas: item.spec?.backend?.replicas ?? 0,
+    };
+}
+
+export type ModelServerSummary = {
+    inferenceEngine: string;
+    port: number;
+    protocol: string;
+};
+
+export function summarizeModelServer(item: {
+    spec?: {
+        inferenceEngine?: string;
+        workloadPort?: { port?: number; protocol?: string };
+    };
+}): ModelServerSummary {
+    return {
+        inferenceEngine: item.spec?.inferenceEngine || "",
+        port: item.spec?.workloadPort?.port ?? 0,
+        protocol: item.spec?.workloadPort?.protocol || "http",
+    };
+}
+
+export type ModelRouteSummary = {
+    modelName: string;
+    ruleCount: number;
+    firstModelServerName: string;
+};
+
+export function summarizeModelRoute(item: {
+    spec?: {
+        modelName?: string;
+        rules?: { targetModels?: { modelServerName?: string }[] }[];
+    };
+}): ModelRouteSummary {
+    const rules = item.spec?.rules ?? [];
+    const firstServer =
+        rules[0]?.targetModels?.find((target) => target.modelServerName)?.modelServerName ||
+        "";
+    return {
+        modelName: item.spec?.modelName || "",
+        ruleCount: rules.length,
+        firstModelServerName: firstServer,
     };
 }
 

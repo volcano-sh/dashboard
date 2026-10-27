@@ -9,6 +9,9 @@ import {
     listKthenaResources,
     mergeCrdReplacePayload,
     replaceKthenaResource,
+    summarizeModelBoosterStatus,
+    summarizeModelRoute,
+    summarizeModelServer,
     summarizeModelServingStatus,
     validateKthenaManifest,
 } from "./kthena";
@@ -252,6 +255,48 @@ describe("validateKthenaManifest", () => {
             ),
         ).toBe("spec is required");
     });
+
+    it("requires ModelRoute modelName or loraAdapters", () => {
+        expect(
+            validateKthenaManifest(
+                {
+                    apiVersion: "networking.serving.volcano.sh/v1alpha1",
+                    kind: "ModelRoute",
+                    metadata: { name: "r1" },
+                    spec: { rules: [] },
+                },
+                KTHENA_RESOURCES.modelRoute,
+            ),
+        ).toBe("spec.modelName or spec.loraAdapters is required");
+    });
+
+    it("requires ModelServer inferenceEngine and workloadSelector", () => {
+        expect(
+            validateKthenaManifest(
+                {
+                    apiVersion: "networking.serving.volcano.sh/v1alpha1",
+                    kind: "ModelServer",
+                    metadata: { name: "s1" },
+                    spec: { inferenceEngine: "vLLM" },
+                },
+                KTHENA_RESOURCES.modelServer,
+            ),
+        ).toBe("spec.workloadSelector is required");
+    });
+
+    it("requires ModelBooster backend", () => {
+        expect(
+            validateKthenaManifest(
+                {
+                    apiVersion: "workload.serving.volcano.sh/v1alpha1",
+                    kind: "ModelBooster",
+                    metadata: { name: "b1" },
+                    spec: { name: "demo" },
+                },
+                KTHENA_RESOURCES.modelBooster,
+            ),
+        ).toBe("spec.backend is required");
+    });
 });
 
 describe("summarizeModelServingStatus", () => {
@@ -302,6 +347,63 @@ describe("summarizeModelServingStatus", () => {
             availableReplicas: 0,
             updatedReplicas: 0,
             schedulerName: "volcano",
+        });
+    });
+});
+
+describe("summarizeModelBoosterStatus", () => {
+    it("prefers Failed over Active", () => {
+        expect(
+            summarizeModelBoosterStatus({
+                spec: { backend: { type: "vLLM", replicas: 2 } },
+                status: {
+                    conditions: [
+                        { type: "Active", status: "True" },
+                        { type: "Failed", status: "True" },
+                    ],
+                },
+            }),
+        ).toEqual({
+            status: "Failed",
+            backendType: "vLLM",
+            replicas: 2,
+        });
+    });
+});
+
+describe("summarizeModelServer", () => {
+    it("reads engine, port, and protocol", () => {
+        expect(
+            summarizeModelServer({
+                spec: {
+                    inferenceEngine: "vLLM",
+                    workloadPort: { port: 8000, protocol: "http" },
+                },
+            }),
+        ).toEqual({
+            inferenceEngine: "vLLM",
+            port: 8000,
+            protocol: "http",
+        });
+    });
+});
+
+describe("summarizeModelRoute", () => {
+    it("counts rules and the first modelServerName", () => {
+        expect(
+            summarizeModelRoute({
+                spec: {
+                    modelName: "demo",
+                    rules: [
+                        { targetModels: [{ modelServerName: "srv-1" }] },
+                        { targetModels: [{ modelServerName: "srv-2" }] },
+                    ],
+                },
+            }),
+        ).toEqual({
+            modelName: "demo",
+            ruleCount: 2,
+            firstModelServerName: "srv-1",
         });
     });
 });
