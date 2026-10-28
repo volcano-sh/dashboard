@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { k8sIdentifierSchema } from "../identifier";
 import { paginationInputSchema } from "../pagination";
 
 export const getPodGroupsInputSchema = paginationInputSchema.extend({
@@ -9,12 +10,12 @@ export const getPodGroupsInputSchema = paginationInputSchema.extend({
 });
 
 export const getPodGroupInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
 });
 
 export const getPodGroupYamlInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
 });
 

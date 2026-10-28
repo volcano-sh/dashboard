@@ -1,12 +1,13 @@
 import { z } from "zod";
 
+import { k8sIdentifierSchema } from "../identifier";
 import { paginationInputSchema } from "../pagination";
 
 export const getJobsInputSchema = paginationInputSchema.extend({});
 
 export const getJobInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
 });
 
 export const createJobInputSchema = z.object({
@@ -22,12 +23,12 @@ export const createJobInputSchema = z.object({
 });
 
 export const updateJobInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
     patchData: z.any(),
 });
 
 export const deleteJobInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
 });

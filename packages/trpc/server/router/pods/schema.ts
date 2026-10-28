@@ -1,12 +1,13 @@
 import { z } from "zod";
 
+import { k8sIdentifierSchema } from "../identifier";
 import { paginationInputSchema } from "../pagination";
 
 export const getPodsInputSchema = paginationInputSchema.extend({});
 
 export const getPodYamlInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
 });
 
 export const createPodInputSchema = z.object({
@@ -22,12 +23,12 @@ export const createPodInputSchema = z.object({
 });
 
 export const deletePodInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
 });
 
 export const updatePodInputSchema = z.object({
-    namespace: z.string(),
-    name: z.string(),
+    namespace: k8sIdentifierSchema,
+    name: k8sIdentifierSchema,
     patchData: z.any(),
 });
