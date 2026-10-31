@@ -33,6 +33,19 @@
     "state": "State:",
     "yamlConfiguration": "YAML Configuration"
   },
+  "related": {
+    "title": "Related resources",
+    "none": "None",
+    "pods": "Pods",
+    "podGroups": "PodGroups",
+    "queue": "Queue",
+    "owner": "Owner",
+    "modelServings": "ModelServings",
+    "modelBoosters": "ModelBoosters",
+    "modelServers": "ModelServers",
+    "modelRoutes": "ModelRoutes",
+    "parentRefs": "Parent refs"
+  },
   "notAvailable": "N/A",
   "metadata": {
     "title": "Volcano",

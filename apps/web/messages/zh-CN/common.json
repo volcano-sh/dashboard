@@ -33,6 +33,19 @@
     "state": "状态：",
     "yamlConfiguration": "YAML 配置"
   },
+  "related": {
+    "title": "关联资源",
+    "none": "无",
+    "pods": "Pod",
+    "podGroups": "Pod 组",
+    "queue": "队列",
+    "owner": "所有者",
+    "modelServings": "ModelServing",
+    "modelBoosters": "ModelBooster",
+    "modelServers": "ModelServer",
+    "modelRoutes": "ModelRoute",
+    "parentRefs": "父引用"
+  },
   "notAvailable": "无",
   "metadata": {
     "title": "Volcano",
