@@ -25,6 +25,7 @@ import { useFormatter, useTranslations } from "next-intl"
 import { RefreshCw, Search, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { useDeepLinkDetail } from "@/hooks/use-deep-link-detail"
 import { ListPagination } from "../list-pagination"
 import { DataTable } from "../data-table"
 import { usePodGroupColumns } from "./columns"
@@ -51,6 +52,7 @@ export default function PodGroupManagement() {
     const [searchTerm, setSearchTerm] = useState("")
     const [namespaceFilter, setNamespaceFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
+    const utils = trpc.useUtils()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -73,20 +75,6 @@ export default function PodGroupManagement() {
             },
         }
     )
-
-    const podGroupYamlQuery = trpc.podgroupsRouter.getPodGroupYaml.useQuery(
-        {
-            namespace: selectedPodGroup?.namespace || "",
-            name: selectedPodGroup?.name || ""
-        },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching podgroup YAML:", err);
-                setError(t("errors.yamlApi", { message: err.message }));
-            },
-        },
-    );
 
     const availableNamespaces = podGroups ?
         Array.from(new Set(podGroups.map(pg => pg.namespace).filter(Boolean))).sort()
@@ -148,15 +136,28 @@ export default function PodGroupManagement() {
         setError(null);
 
         try {
-            const response = await podGroupYamlQuery.refetch();
-            const yaml = response.data || podGroup.yaml || "";
-            setSelectedPodGroup({ ...podGroup, yaml });
+            const yaml = await utils.podgroupsRouter.getPodGroupYaml.fetch({
+                namespace: podGroup.namespace,
+                name: podGroup.name,
+            });
+            setSelectedPodGroup({ ...podGroup, yaml: yaml || podGroup.yaml || "" });
             setShowPodGroupDetails(true);
         } catch (err) {
             setError(t("errors.fetchYaml"));
             console.error(err)
         }
-    }, [podGroupYamlQuery])
+    }, [utils, t])
+
+    useDeepLinkDetail((namespace, name) => {
+        void handlePodGroupClick({
+            name,
+            namespace,
+            queue: "",
+            minMember: 0,
+            createdAt: new Date(),
+            status: "Unknown",
+        })
+    })
 
     const handlePageSizeChange = (newPageSize: string) => {
         setPagination({

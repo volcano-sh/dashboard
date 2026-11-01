@@ -11,12 +11,15 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { useDeepLinkDetail } from "@/hooks/use-deep-link-detail"
+import { kthenaHref, relatedRefsToItems } from "@/lib/kthena-links"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { ListPagination } from "../list-pagination"
-import { useFormatter, useTranslations } from "next-intl"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
 import { DataTable } from "../data-table"
+import { RelatedLinks } from "../kthena/related-links"
 import { useModelServingColumns } from "./columns"
 import { CreateModelServingDialog } from "./create-modelserving-dialog"
 import { ModelServingEditDialog } from "./modelserving-edit-dialog"
@@ -29,6 +32,8 @@ import {
 export default function ModelServingsManagement() {
   const t = useTranslations("modelservings")
   const tc = useTranslations("common")
+  const tr = useTranslations("common.related")
+  const locale = useLocale()
   const format = useFormatter()
   const [items, setItems] = useState<ModelServingStatus[]>()
   const [loading, setLoading] = useState(false)
@@ -40,6 +45,7 @@ export default function ModelServingsManagement() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [itemToEdit, setItemToEdit] = useState<ModelServingStatus | null>(null)
   const [itemToDelete, setItemToDelete] = useState<ModelServingStatus | null>(null)
+  const [relatedGroups, setRelatedGroups] = useState<{ title: string; items: { text: string; href?: string }[] }[]>([])
 
   const utils = trpc.useUtils()
 
@@ -184,12 +190,36 @@ export default function ModelServingsManagement() {
       })
       const yaml = result?.yaml || item.yaml || ""
       setSelectedItem({ ...item, yaml })
+      const related = await utils.modelServingsRouter.getModelServingRelated.fetch({
+        namespace: item.namespace,
+        name: item.name,
+      })
+      setRelatedGroups([
+        { title: tr("owner"), items: related.owner ? [{ text: `${related.owner.namespace}/${related.owner.name}`, href: kthenaHref(locale, "/model-boosters", related.owner) }] : [] },
+        { title: tr("pods"), items: relatedRefsToItems(locale, "/pods", related.pods) },
+        { title: tr("podGroups"), items: relatedRefsToItems(locale, "/podgroups", related.podGroups) },
+        { title: tr("queue"), items: related.queue ? [{ text: related.queue, href: kthenaHref(locale, "/queues", { name: related.queue }) }] : [] },
+      ])
       setShowDetails(true)
     } catch (err) {
       setError(t("errors.fetchYaml"))
       console.error(err)
     }
-  }, [utils, t])
+  }, [utils, t, tr, locale])
+
+  useDeepLinkDetail((namespace, name) => {
+    void handleRowClick({
+      name,
+      namespace,
+      replicas: 0,
+      availableReplicas: 0,
+      updatedReplicas: 0,
+      schedulerName: "volcano",
+      createdAt: new Date(),
+      status: "Unknown",
+      conditions: [],
+    })
+  })
 
   const handleCreate = () => {
     setShowCreateModal(true)
@@ -350,6 +380,8 @@ export default function ModelServingsManagement() {
                   </div>
                 )}
               </div>
+
+              <RelatedLinks groups={relatedGroups} />
 
               <div>
                 <h3 className="font-semibold mb-2">{tc("details.yamlConfiguration")}</h3>

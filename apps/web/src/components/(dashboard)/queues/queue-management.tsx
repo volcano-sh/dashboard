@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePaginationClamp } from "@/hooks/use-pagination-clamp"
+import { useDeepLinkDetail } from "@/hooks/use-deep-link-detail"
 import { trpc } from "@volcano/trpc/react"
 import { Plus, RefreshCw } from "lucide-react"
 import { useFormatter, useTranslations } from "next-intl"
@@ -142,17 +143,6 @@ export default function QueueManagement() {
         onDelete: handleDelete
     })
 
-    const queueYamlQuery = trpc.queueRouter.getQueueYaml.useQuery(
-        { name: selectedQueue?.name || "" },
-        {
-            enabled: false,
-            onError: (err) => {
-                console.error("Error fetching queue YAML:", err);
-                setError(t("errors.yamlApi", { message: err.message }));
-            },
-        },
-    );
-
     useEffect(() => {
         if (queuesQuery.data) {
             const transformedQueues: QueueStatus[] = (queuesQuery.data.items || []).map((queue: any) => ({
@@ -193,15 +183,25 @@ export default function QueueManagement() {
         setError(null);
 
         try {
-            const response = await queueYamlQuery.refetch();
-            const yaml = response.data || queue.yaml || "";
-            setSelectedQueue({ ...queue, yaml });
+            const yaml = await utils.queueRouter.getQueueYaml.fetch({
+                name: queue.name,
+            });
+            setSelectedQueue({ ...queue, yaml: yaml || queue.yaml || "" });
             setShowQueueDetails(true);
         } catch (err) {
             setError(t("errors.fetchYaml"));
             console.error(err)
         }
-    }, [queueYamlQuery])
+    }, [utils, t])
+
+    useDeepLinkDetail((_namespace, name) => {
+        void handleQueueClick({
+            name,
+            createdAt: new Date(),
+            state: "Unknown",
+            parent: "",
+        })
+    })
 
     const handleCreateQueue = () => {
         setShowCreateQueueModal(true)
