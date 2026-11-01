@@ -77,11 +77,15 @@ function normalizePlugin(plugin: Record<string, unknown>): PluginOption {
 
 export function rawYamlToSchedulerConfig(raw: RawSchedulerYaml): SchedulerConfig {
     const actions = normalizeActions(raw.actions);
-    const tiers = (raw.tiers ?? []).map((tier) => ({
-        plugins: (tier.plugins ?? []).map((plugin) =>
-            normalizePlugin(plugin as Record<string, unknown>)
-        ),
-    }));
+    const tiers = (raw.tiers ?? [])
+        .filter((tier) => tier != null && typeof tier === "object")
+        .map((tier) => ({
+            plugins: (tier.plugins ?? [])
+                .filter((p) => p != null && typeof p === "object")
+                .map((plugin) =>
+                    normalizePlugin(plugin as Record<string, unknown>)
+                ),
+        }));
 
     const config: SchedulerConfig = {
         actions,
@@ -90,14 +94,14 @@ export function rawYamlToSchedulerConfig(raw: RawSchedulerYaml): SchedulerConfig
 
     if (raw.configurations?.length) {
         config.configurations = raw.configurations
-            .filter((c) => c.name)
+            .filter((c) => c != null && typeof c === "object" && Boolean(c.name))
             .map((c) => ({
                 name: String(c.name),
                 arguments: normalizeArguments(c.arguments) ?? {},
             }));
     }
 
-    if (raw.metrics && Object.keys(raw.metrics).length > 0) {
+    if (raw.metrics && typeof raw.metrics === "object" && Object.keys(raw.metrics).length > 0) {
         config.metrics = raw.metrics;
     }
 
@@ -160,7 +164,13 @@ export function validateSchedulerConfig(config: SchedulerConfig): SchedulerConfi
 
     // Stock Volcano refuses to reload configs with unknown action names, so
     // treat those as errors. Unknown plugins stay warnings (custom plugins OK).
+    const seenActions = new Set<string>();
     for (const action of config.actions) {
+        if (seenActions.has(action)) {
+            warnings.push(`Action "${action}" is duplicated in the action pipeline`);
+        }
+        seenActions.add(action);
+
         if (!isKnownAction(action)) {
             errors.push(
                 `Action "${action}" is not in the built-in registry; saving may break scheduler reload`
@@ -208,8 +218,22 @@ export function validateSchedulerConfig(config: SchedulerConfig): SchedulerConfi
         }
     }
 
+    const seenConfigurations = new Set<string>();
     for (const configuration of config.configurations ?? []) {
-        for (const key of Object.keys(configuration.arguments)) {
+        if (seenConfigurations.has(configuration.name)) {
+            errors.push(
+                `Action configuration for "${configuration.name}" is duplicated`
+            );
+        }
+        seenConfigurations.add(configuration.name);
+
+        if (!config.actions.includes(configuration.name)) {
+            warnings.push(
+                `Action configuration "${configuration.name}" configures an action that is not in the action pipeline`
+            );
+        }
+
+        for (const key of Object.keys(configuration.arguments ?? {})) {
             if (!key.trim()) {
                 errors.push(
                     `Action configuration "${configuration.name}" has an argument with an empty key`
@@ -238,8 +262,8 @@ export function validateSchedulerConfig(config: SchedulerConfig): SchedulerConfi
  * the O(n*m) table is negligible.
  */
 export function diffSchedulerYaml(before: string, after: string): string[] {
-    const a = before.replace(/\r\n/g, "\n").split("\n");
-    const b = after.replace(/\r\n/g, "\n").split("\n");
+    const a = before.trim() === "" ? [] : before.replace(/\r\n/g, "\n").split("\n");
+    const b = after.trim() === "" ? [] : after.replace(/\r\n/g, "\n").split("\n");
     const n = a.length;
     const m = b.length;
 
