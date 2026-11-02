@@ -10,7 +10,7 @@ import JobStatusPieChart from "./pie-chart";
 
 const DashboardCard = ({ title, value, isLoading }: { title: string; value: string | number; isLoading?: boolean }) => {
   return (
-    <Card className="flex flex-row items-center justify-between border rounded-lg p-2 cursor-pointer hover:shadow-md transition-shadow" >
+    <Card className="flex flex-row items-center justify-between border rounded-lg p-2 hover:shadow-md transition-shadow">
       <CardHeader>
         <CardTitle className="text-xl font-medium text-gray-500">{title}</CardTitle>
         {isLoading ? (
@@ -41,7 +41,7 @@ const DashboardSkeleton = () => {
           </Card>
         ))}
       </section>
-      <section className="grid gap-2 grid-col-1 md:grid-cols-2 mt-4 w-full">
+      <section className="grid gap-2 grid-cols-1 md:grid-cols-2 items-start mt-4 w-full">
         <Card className="w-full p-4 h-full">
           <CardHeader className="items-center pb-0">
             <Skeleton className="h-6 w-24" />

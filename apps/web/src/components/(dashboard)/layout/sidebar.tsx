@@ -14,7 +14,7 @@ export default function Sidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        "relative h-screen w-[240px] bg-neutral-100 max-w-full border-r bg-card flex-none flex flex-col",
+        "relative h-screen w-[240px] max-w-full border-r bg-card flex-none flex flex-col",
         className
       )}
     >
@@ -34,7 +34,7 @@ export default function Sidebar({ className }: { className?: string }) {
           <div className="mt-3 space-y-1">
             <DashboardNav
               navItems={navItems}
-              className="hidden md:flex md:col-span-3"
+              className="w-full"
             />
           </div>
         </div>
