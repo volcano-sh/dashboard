@@ -184,7 +184,7 @@ export const createColumns = ({
                                 <TooltipContent>
                                     <p>
                                       {isDeleteDisabled
-                                        ? t("errors.rootQueue", { name: queue.name })
+                                        ? t("errors.rootQueue", { name: queue.name?.trim() || "system" })
                                         : t("delete.deleteTooltip")}
                                     </p>
                                 </TooltipContent>
