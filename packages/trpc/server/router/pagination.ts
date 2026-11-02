@@ -22,12 +22,14 @@ export function buildPaginatedResponse<T>(
     pageSize: number,
     total: number,
 ): PaginatedResponse<T> {
-    const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+    const safeTotal = Math.max(0, total);
+    const safePageSize = pageSize > 0 ? pageSize : 10;
+    const totalPages = safeTotal === 0 ? 0 : Math.ceil(safeTotal / safePageSize);
     return {
         items,
         page,
-        pageSize,
-        total,
+        pageSize: safePageSize,
+        total: safeTotal,
         totalPages,
         hasMore: page < totalPages,
     };

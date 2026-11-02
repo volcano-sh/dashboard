@@ -50,7 +50,7 @@ export function ListPagination({
             onValueChange={onPageSizeChange}
             disabled={disabled}
           >
-            <SelectTrigger className="w-20">
+            <SelectTrigger className="w-20" aria-label={t("pagination.show")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -69,44 +69,50 @@ export function ListPagination({
             size="sm"
             onClick={() => onPageChange(page - 1)}
             disabled={disabled || page <= 1}
+            aria-label={t("actions.previous")}
           >
             <ChevronLeft className="h-4 w-4" />
             {t("actions.previous")}
           </Button>
 
-          <div className="flex items-center space-x-1">
-            {Array.from({ length: Math.min(5, safeTotalPages) }, (_, i) => {
-              let pageNum: number;
-              if (safeTotalPages <= 5) {
-                pageNum = i + 1;
-              } else if (page <= 3) {
-                pageNum = i + 1;
-              } else if (page >= safeTotalPages - 2) {
-                pageNum = safeTotalPages - 4 + i;
-              } else {
-                pageNum = page - 2 + i;
-              }
+          {totalPages > 0 && (
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, safeTotalPages) }, (_, i) => {
+                let pageNum: number;
+                if (safeTotalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (page <= 3) {
+                  pageNum = i + 1;
+                } else if (page >= safeTotalPages - 2) {
+                  pageNum = safeTotalPages - 4 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
 
-              return (
-                <Button
-                  key={pageNum}
-                  variant={page === pageNum ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onPageChange(pageNum)}
-                  disabled={disabled || total === 0}
-                  className="w-8 h-8"
-                >
-                  {pageNum}
-                </Button>
-              );
-            })}
-          </div>
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={page === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => onPageChange(pageNum)}
+                    disabled={disabled}
+                    aria-label={String(pageNum)}
+                    aria-current={page === pageNum ? "page" : undefined}
+                    className="w-8 h-8"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
 
           <Button
             variant="outline"
             size="sm"
             onClick={() => onPageChange(page + 1)}
             disabled={disabled || page >= safeTotalPages || total === 0}
+            aria-label={t("actions.next")}
           >
             {t("actions.next")}
             <ChevronRight className="h-4 w-4" />
