@@ -175,7 +175,7 @@ export function PodEditDialog({ open, setOpen, handleRefresh, podName, podNamesp
 
                 <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={handleReset} disabled={isUpdating}>
-                        Reset
+                        {tc("actions.reset")}
                     </Button>
                     <Button onClick={handleUpdatePod} disabled={isUpdating || !yaml.trim()}>
                         {isUpdating ? (

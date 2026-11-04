@@ -188,7 +188,7 @@ export function CreatePodDialog({ open, setOpen, handleRefresh }: { open: boolea
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={handleReset} disabled={isCreating}>
-            Reset
+            {tc("actions.reset")}
           </Button>
           <Button onClick={handleCreatePod} disabled={isCreating || !yaml.trim()}>
             {isCreating ? (

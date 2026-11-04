@@ -52,8 +52,8 @@ export function QueueEditDialog({
   const [guarantee, setGuarantee] = React.useState<ResourcePair>(() => emptyResource())
   const [capability, setCapability] = React.useState<ResourcePair>(() => emptyResource())
   const [deserved, setDeserved] = React.useState<ResourcePair>(() => emptyResource())
-    const t = useTranslations("queues")
-    const tc = useTranslations("common")
+  const t = useTranslations("queues")
+  const tc = useTranslations("common")
   const [yaml, setYaml] = React.useState(initialYaml)
   const [status, setStatus] = React.useState<{
     type: "success" | "error" | null
@@ -146,10 +146,10 @@ export function QueueEditDialog({
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Could not parse YAML into the form"
+        message: error instanceof Error ? error.message : t("create.parseFormFailed")
       })
     }
-  }, [yaml, loadFromYaml])
+  }, [yaml, loadFromYaml, t])
 
   const goYaml = React.useCallback(() => {
     try {
@@ -242,18 +242,18 @@ export function QueueEditDialog({
         )}
       >
         <DialogHeader>
-          <DialogTitle>Edit Queue: {queueName}</DialogTitle>
+          <DialogTitle>{t("edit.title", { name: queueName })}</DialogTitle>
           <DialogDescription>
-            Update queue settings using the form or YAML editor.
+            {t("edit.description")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-2 border-b pb-2">
           <Button type="button" variant={mode === "form" ? "default" : "outline"} size="sm" onClick={goForm}>
-            Form
+            {t("create.formTab")}
           </Button>
           <Button type="button" variant={mode === "yaml" ? "default" : "outline"} size="sm" onClick={goYaml}>
-            YAML
+            {t("create.yamlTab")}
           </Button>
         </div>
 
@@ -301,10 +301,10 @@ export function QueueEditDialog({
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isUpdating}>
-            Cancel
+            {tc("actions.cancel")}
           </Button>
           <Button type="button" variant="outline" onClick={handleReset} disabled={isUpdating}>
-            Reset
+            {tc("actions.reset")}
           </Button>
           <Button
             onClick={handleUpdateQueue}
