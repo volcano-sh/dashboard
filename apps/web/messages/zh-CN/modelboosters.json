@@ -1,0 +1,51 @@
+{
+  "title": "ModelBooster",
+  "createResource": "创建 ModelBooster",
+  "filterPlaceholder": "筛选 ModelBooster...",
+  "crdMissing": "当前集群未安装 Kthena CRD。安装 Kthena 后即可在仪表盘中管理 ModelBooster。",
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "backend": "后端",
+    "replicas": "副本",
+    "creationTime": "创建时间",
+    "status": "状态",
+    "actions": "操作",
+    "filterByNamespace": "按命名空间筛选",
+    "filterByStatus": "按状态筛选"
+  },
+  "details": {
+    "title": "ModelBooster 详情：{name}",
+    "backend": "后端：",
+    "replicas": "副本："
+  },
+  "delete": {
+    "title": "删除 ModelBooster",
+    "message": "确定要删除命名空间 {namespace} 中的 ModelBooster {name} 吗？"
+  },
+  "errors": {
+    "api": "ModelBooster API 错误：{message}",
+    "yamlApi": "ModelBooster YAML API 错误：{message}",
+    "refresh": "刷新 ModelBooster 失败",
+    "fetchYaml": "获取 ModelBooster YAML 失败",
+    "fetchYamlEdit": "获取用于编辑的 ModelBooster YAML 失败",
+    "noYaml": "该 ModelBooster 没有可用的 YAML 配置",
+    "delete": "删除 ModelBooster 失败：{message}"
+  },
+  "create": {
+    "title": "创建 ModelBooster",
+    "description": "在下方以 YAML 格式输入 ModelBooster 配置。",
+    "yamlLabel": "ModelBooster YAML 配置",
+    "yamlPlaceholder": "输入 ModelBooster YAML 配置...",
+    "success": "ModelBooster 创建成功！",
+    "failed": "创建 ModelBooster 失败",
+    "button": "创建 ModelBooster"
+  },
+  "edit": {
+    "title": "编辑 ModelBooster：{name}",
+    "description": "下方显示当前配置。修改后点击更新即可生效。",
+    "success": "ModelBooster 更新成功！",
+    "failed": "更新 ModelBooster 失败",
+    "button": "更新 ModelBooster"
+  }
+}

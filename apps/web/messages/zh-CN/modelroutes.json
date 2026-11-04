@@ -1,0 +1,53 @@
+{
+  "title": "ModelRoute",
+  "createResource": "创建 ModelRoute",
+  "filterPlaceholder": "筛选 ModelRoute...",
+  "crdMissing": "当前集群未安装 Kthena CRD。安装 Kthena 后即可在仪表盘中管理 ModelRoute。",
+  "table": {
+    "name": "名称",
+    "namespace": "命名空间",
+    "modelName": "模型",
+    "rules": "规则",
+    "modelServer": "ModelServer",
+    "creationTime": "创建时间",
+    "status": "状态",
+    "actions": "操作",
+    "filterByNamespace": "按命名空间筛选",
+    "filterByStatus": "按状态筛选"
+  },
+  "details": {
+    "title": "ModelRoute 详情：{name}",
+    "modelName": "模型：",
+    "rules": "规则：",
+    "modelServer": "ModelServer："
+  },
+  "delete": {
+    "title": "删除 ModelRoute",
+    "message": "确定要删除命名空间 {namespace} 中的 ModelRoute {name} 吗？"
+  },
+  "errors": {
+    "api": "ModelRoute API 错误：{message}",
+    "yamlApi": "ModelRoute YAML API 错误：{message}",
+    "refresh": "刷新 ModelRoute 失败",
+    "fetchYaml": "获取 ModelRoute YAML 失败",
+    "fetchYamlEdit": "获取用于编辑的 ModelRoute YAML 失败",
+    "noYaml": "该 ModelRoute 没有可用的 YAML 配置",
+    "delete": "删除 ModelRoute 失败：{message}"
+  },
+  "create": {
+    "title": "创建 ModelRoute",
+    "description": "在下方以 YAML 格式输入 ModelRoute 配置。",
+    "yamlLabel": "ModelRoute YAML 配置",
+    "yamlPlaceholder": "输入 ModelRoute YAML 配置...",
+    "success": "ModelRoute 创建成功！",
+    "failed": "创建 ModelRoute 失败",
+    "button": "创建 ModelRoute"
+  },
+  "edit": {
+    "title": "编辑 ModelRoute：{name}",
+    "description": "下方显示当前配置。修改后点击更新即可生效。",
+    "success": "ModelRoute 更新成功！",
+    "failed": "更新 ModelRoute 失败",
+    "button": "更新 ModelRoute"
+  }
+}

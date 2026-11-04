@@ -15,6 +15,9 @@ export const navTitleKeys = {
   pods: "pods",
   podgroups: "podgroups",
   modelservings: "modelservings",
+  modelboosters: "modelboosters",
+  modelservers: "modelservers",
+  modelroutes: "modelroutes",
 } as const;
 
 export const navItems: NavItem[] = [
@@ -52,6 +55,27 @@ export const navItems: NavItem[] = [
     titleKey: "modelservings",
     icon: "cpu",
     href: "/model-servings",
+    disable: false,
+    sectionKey: "kthena",
+  },
+  {
+    titleKey: "modelboosters",
+    icon: "zap",
+    href: "/model-boosters",
+    disable: false,
+    sectionKey: "kthena",
+  },
+  {
+    titleKey: "modelservers",
+    icon: "server",
+    href: "/model-servers",
+    disable: false,
+    sectionKey: "kthena",
+  },
+  {
+    titleKey: "modelroutes",
+    icon: "route",
+    href: "/model-routes",
     disable: false,
     sectionKey: "kthena",
   },

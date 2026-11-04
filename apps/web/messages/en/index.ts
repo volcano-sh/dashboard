@@ -6,6 +6,9 @@ import queues from "./queues.json";
 import pods from "./pods.json";
 import podgroups from "./podgroups.json";
 import modelservings from "./modelservings.json";
+import modelboosters from "./modelboosters.json";
+import modelservers from "./modelservers.json";
+import modelroutes from "./modelroutes.json";
 
 const messages = {
   common,
@@ -16,6 +19,9 @@ const messages = {
   pods,
   podgroups,
   modelservings,
+  modelboosters,
+  modelservers,
+  modelroutes,
 };
 
 export default messages;

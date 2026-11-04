@@ -8,7 +8,10 @@
     "queues": "队列",
     "pods": "Pod",
     "podgroups": "Pod 组",
-    "modelservings": "ModelServing"
+    "modelservings": "ModelServing",
+    "modelboosters": "ModelBooster",
+    "modelservers": "ModelServer",
+    "modelroutes": "ModelRoute"
   },
   "sections": {
     "kthena": "Kthena"

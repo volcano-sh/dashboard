@@ -1,0 +1,53 @@
+{
+  "title": "ModelServers",
+  "createResource": "Create ModelServer",
+  "filterPlaceholder": "Filter ModelServers...",
+  "crdMissing": "Kthena CRDs are not installed in this cluster. Install Kthena to manage ModelServer from the dashboard.",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "engine": "Engine",
+    "port": "Port",
+    "protocol": "Protocol",
+    "creationTime": "Creation Time",
+    "status": "Status",
+    "actions": "Actions",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByStatus": "Filter by Status"
+  },
+  "details": {
+    "title": "ModelServer Details: {name}",
+    "engine": "Engine:",
+    "port": "Port:",
+    "protocol": "Protocol:"
+  },
+  "delete": {
+    "title": "Delete ModelServer",
+    "message": "Are you sure you want to delete the ModelServer {name} in namespace {namespace}?"
+  },
+  "errors": {
+    "api": "ModelServer API error: {message}",
+    "yamlApi": "ModelServer YAML API error: {message}",
+    "refresh": "Failed to refresh ModelServers",
+    "fetchYaml": "Failed to fetch ModelServer YAML",
+    "fetchYamlEdit": "Failed to fetch ModelServer YAML for editing",
+    "noYaml": "No YAML configuration available for this ModelServer",
+    "delete": "Failed to delete ModelServer: {message}"
+  },
+  "create": {
+    "title": "Create ModelServer",
+    "description": "Enter a ModelServer manifest in YAML format.",
+    "yamlLabel": "ModelServer YAML Configuration",
+    "yamlPlaceholder": "Enter your ModelServer YAML configuration...",
+    "success": "ModelServer created successfully!",
+    "failed": "Failed to create ModelServer",
+    "button": "Create ModelServer"
+  },
+  "edit": {
+    "title": "Edit ModelServer: {name}",
+    "description": "The current ModelServer configuration is shown below. Make your changes and click Update to apply them.",
+    "success": "ModelServer updated successfully!",
+    "failed": "Failed to update ModelServer",
+    "button": "Update ModelServer"
+  }
+}

@@ -1,4 +1,4 @@
-import { Cloud, Container, Cpu, HomeIcon, LucideIcon, NotepadText, Waypoints } from "lucide-react";
+import { Cloud, Container, Cpu, GitBranch, HomeIcon, LucideIcon, NotepadText, Server, Waypoints, Zap } from "lucide-react";
 
 export type Icon = LucideIcon
 
@@ -9,4 +9,7 @@ export const Icons = {
     waypoint: Waypoints,
     container: Container,
     cpu: Cpu,
+    zap: Zap,
+    server: Server,
+    route: GitBranch,
 }

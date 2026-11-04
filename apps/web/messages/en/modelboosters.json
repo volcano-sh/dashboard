@@ -1,0 +1,51 @@
+{
+  "title": "ModelBoosters",
+  "createResource": "Create ModelBooster",
+  "filterPlaceholder": "Filter ModelBoosters...",
+  "crdMissing": "Kthena CRDs are not installed in this cluster. Install Kthena to manage ModelBooster from the dashboard.",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "backend": "Backend",
+    "replicas": "Replicas",
+    "creationTime": "Creation Time",
+    "status": "Status",
+    "actions": "Actions",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByStatus": "Filter by Status"
+  },
+  "details": {
+    "title": "ModelBooster Details: {name}",
+    "backend": "Backend:",
+    "replicas": "Replicas:"
+  },
+  "delete": {
+    "title": "Delete ModelBooster",
+    "message": "Are you sure you want to delete the ModelBooster {name} in namespace {namespace}?"
+  },
+  "errors": {
+    "api": "ModelBooster API error: {message}",
+    "yamlApi": "ModelBooster YAML API error: {message}",
+    "refresh": "Failed to refresh ModelBoosters",
+    "fetchYaml": "Failed to fetch ModelBooster YAML",
+    "fetchYamlEdit": "Failed to fetch ModelBooster YAML for editing",
+    "noYaml": "No YAML configuration available for this ModelBooster",
+    "delete": "Failed to delete ModelBooster: {message}"
+  },
+  "create": {
+    "title": "Create ModelBooster",
+    "description": "Enter a ModelBooster manifest in YAML format.",
+    "yamlLabel": "ModelBooster YAML Configuration",
+    "yamlPlaceholder": "Enter your ModelBooster YAML configuration...",
+    "success": "ModelBooster created successfully!",
+    "failed": "Failed to create ModelBooster",
+    "button": "Create ModelBooster"
+  },
+  "edit": {
+    "title": "Edit ModelBooster: {name}",
+    "description": "The current ModelBooster configuration is shown below. Make your changes and click Update to apply them.",
+    "success": "ModelBooster updated successfully!",
+    "failed": "Failed to update ModelBooster",
+    "button": "Update ModelBooster"
+  }
+}

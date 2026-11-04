@@ -1,0 +1,53 @@
+{
+  "title": "ModelRoutes",
+  "createResource": "Create ModelRoute",
+  "filterPlaceholder": "Filter ModelRoutes...",
+  "crdMissing": "Kthena CRDs are not installed in this cluster. Install Kthena to manage ModelRoute from the dashboard.",
+  "table": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "modelName": "Model",
+    "rules": "Rules",
+    "modelServer": "ModelServer",
+    "creationTime": "Creation Time",
+    "status": "Status",
+    "actions": "Actions",
+    "filterByNamespace": "Filter by Namespace",
+    "filterByStatus": "Filter by Status"
+  },
+  "details": {
+    "title": "ModelRoute Details: {name}",
+    "modelName": "Model:",
+    "rules": "Rules:",
+    "modelServer": "ModelServer:"
+  },
+  "delete": {
+    "title": "Delete ModelRoute",
+    "message": "Are you sure you want to delete the ModelRoute {name} in namespace {namespace}?"
+  },
+  "errors": {
+    "api": "ModelRoute API error: {message}",
+    "yamlApi": "ModelRoute YAML API error: {message}",
+    "refresh": "Failed to refresh ModelRoutes",
+    "fetchYaml": "Failed to fetch ModelRoute YAML",
+    "fetchYamlEdit": "Failed to fetch ModelRoute YAML for editing",
+    "noYaml": "No YAML configuration available for this ModelRoute",
+    "delete": "Failed to delete ModelRoute: {message}"
+  },
+  "create": {
+    "title": "Create ModelRoute",
+    "description": "Enter a ModelRoute manifest in YAML format.",
+    "yamlLabel": "ModelRoute YAML Configuration",
+    "yamlPlaceholder": "Enter your ModelRoute YAML configuration...",
+    "success": "ModelRoute created successfully!",
+    "failed": "Failed to create ModelRoute",
+    "button": "Create ModelRoute"
+  },
+  "edit": {
+    "title": "Edit ModelRoute: {name}",
+    "description": "The current ModelRoute configuration is shown below. Make your changes and click Update to apply them.",
+    "success": "ModelRoute updated successfully!",
+    "failed": "Failed to update ModelRoute",
+    "button": "Update ModelRoute"
+  }
+}

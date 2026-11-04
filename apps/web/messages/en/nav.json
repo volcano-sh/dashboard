@@ -8,7 +8,10 @@
     "queues": "Queues",
     "pods": "Pods",
     "podgroups": "PodGroups",
-    "modelservings": "ModelServing"
+    "modelservings": "ModelServing",
+    "modelboosters": "ModelBooster",
+    "modelservers": "ModelServer",
+    "modelroutes": "ModelRoute"
   },
   "sections": {
     "kthena": "Kthena"
