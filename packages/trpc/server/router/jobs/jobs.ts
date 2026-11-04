@@ -122,15 +122,19 @@ export const jobsRouter = router({
             name,
         });
 
+        const currentMetadata = (currentJob as Record<string, unknown>).metadata as
+            | Record<string, unknown>
+            | undefined;
+
         const updatedJob = {
             ...currentJob,
             ...patchData,
             metadata: {
-                ...(currentJob as any).metadata,
+                ...currentMetadata,
                 ...patchData.metadata,
-                resourceVersion: (currentJob as any).metadata?.resourceVersion,
-                uid: (currentJob as any).metadata?.uid,
-                creationTimestamp: (currentJob as any).metadata?.creationTimestamp,
+                resourceVersion: currentMetadata?.resourceVersion,
+                uid: currentMetadata?.uid,
+                creationTimestamp: currentMetadata?.creationTimestamp,
             },
         };
 
