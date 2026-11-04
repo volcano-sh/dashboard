@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { validateJobManifest } from "@/lib/job-validation"
 import { trpc } from "@volcano/trpc/react"
 
 interface JobEditDialogProps {
@@ -87,6 +88,11 @@ export function JobEditDialog({ open, setOpen, handleRefresh, jobName, jobNamesp
 
             if (!parsed.spec || typeof parsed.spec !== 'object') {
                 throw new Error('Invalid spec: must be an object')
+            }
+
+            const jobError = validateJobManifest(parsed)
+            if (jobError) {
+                throw new Error(jobError)
             }
 
             return parsed
