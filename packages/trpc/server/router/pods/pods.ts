@@ -1,3 +1,4 @@
+import type { V1Container, V1PodSpec } from "@kubernetes/client-node";
 import yaml from "js-yaml";
 import { procedure, router } from "../../trpc";
 import { k8sCoreApi } from "../../utils/k8s";
@@ -68,13 +69,14 @@ export const podRouter = router({
 
         // For pods, we can only update specific fields per Kubernetes restrictions
         // Extract only the allowed changes from patchData
-        const updatedSpec: any = {
+        const updatedSpec: V1PodSpec = {
             ...currentPod.spec,
+            containers: currentPod.spec?.containers ?? [],
         };
 
         // Update container images and imagePullPolicy if provided
         if (patchData.spec?.containers) {
-            updatedSpec.containers = currentPod.spec?.containers?.map((container: any, index: number) => {
+            updatedSpec.containers = currentPod.spec?.containers?.map((container: V1Container, index: number) => {
                 const patchContainer = patchData.spec.containers[index];
                 if (!patchContainer) return container;
 
@@ -83,11 +85,11 @@ export const podRouter = router({
                     ...(patchContainer.image && { image: patchContainer.image }),
                     ...(patchContainer.imagePullPolicy && { imagePullPolicy: patchContainer.imagePullPolicy }),
                 };
-            });
+            }) ?? [];
         }
 
         if (patchData.spec?.initContainers && currentPod.spec?.initContainers) {
-            updatedSpec.initContainers = currentPod.spec.initContainers.map((container: any, index: number) => {
+            updatedSpec.initContainers = currentPod.spec.initContainers.map((container: V1Container, index: number) => {
                 const patchContainer = patchData.spec.initContainers?.[index];
                 return patchContainer?.image ? { ...container, image: patchContainer.image } : container;
             });
