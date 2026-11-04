@@ -4,6 +4,49 @@ import { k8sCoreApi } from "../../utils/k8s";
 import { fetchPods } from "../helpers";
 import { createPodInputSchema, deletePodInputSchema, getPodsInputSchema, getPodYamlInputSchema, updatePodInputSchema } from "./schema";
 
+type ContainerLike = { name?: string; image?: string; imagePullPolicy?: string };
+
+/**
+ * Merges submitted container fields into the existing containers by `name`,
+ * not array position. Kubernetes containers have stable identity through
+ * `name`; `spec.containers` ordering carries no identity meaning, so a
+ * user-submitted list with a different order must not be zipped positionally
+ * against the existing list (see issue #372).
+ *
+ * Existing containers not present in `submitted` are returned unchanged.
+ * Submitted entries with no matching existing container are ignored, same as
+ * the previous out-of-range behavior for extra positional entries.
+ */
+export function mergeContainersByName<T extends ContainerLike>(
+    existing: T[] | undefined,
+    submitted: ContainerLike[] | undefined,
+    fields: Array<"image" | "imagePullPolicy">,
+): T[] {
+    if (!existing) return [];
+    if (!submitted) return existing;
+
+    const submittedByName = new Map<string, ContainerLike>();
+    for (const container of submitted) {
+        if (container?.name) {
+            submittedByName.set(container.name, container);
+        }
+    }
+
+    return existing.map((container) => {
+        const patchContainer = container.name ? submittedByName.get(container.name) : undefined;
+        if (!patchContainer) return container;
+
+        const updates: Partial<ContainerLike> = {};
+        for (const field of fields) {
+            if (patchContainer[field]) {
+                updates[field] = patchContainer[field];
+            }
+        }
+
+        return { ...container, ...updates };
+    });
+}
+
 export const podRouter = router({
     getPods: procedure.input(getPodsInputSchema).query(async ({ input }) => {
         const {
@@ -72,25 +115,21 @@ export const podRouter = router({
             ...currentPod.spec,
         };
 
-        // Update container images and imagePullPolicy if provided
+        // Update container images and imagePullPolicy if provided, matched by name (not position)
         if (patchData.spec?.containers) {
-            updatedSpec.containers = currentPod.spec?.containers?.map((container: any, index: number) => {
-                const patchContainer = patchData.spec.containers[index];
-                if (!patchContainer) return container;
-
-                return {
-                    ...container,
-                    ...(patchContainer.image && { image: patchContainer.image }),
-                    ...(patchContainer.imagePullPolicy && { imagePullPolicy: patchContainer.imagePullPolicy }),
-                };
-            });
+            updatedSpec.containers = mergeContainersByName(
+                currentPod.spec?.containers,
+                patchData.spec.containers,
+                ["image", "imagePullPolicy"],
+            );
         }
 
         if (patchData.spec?.initContainers && currentPod.spec?.initContainers) {
-            updatedSpec.initContainers = currentPod.spec.initContainers.map((container: any, index: number) => {
-                const patchContainer = patchData.spec.initContainers?.[index];
-                return patchContainer?.image ? { ...container, image: patchContainer.image } : container;
-            });
+            updatedSpec.initContainers = mergeContainersByName(
+                currentPod.spec.initContainers,
+                patchData.spec.initContainers,
+                ["image"],
+            );
         }
 
         if (patchData.spec?.activeDeadlineSeconds !== undefined) {
