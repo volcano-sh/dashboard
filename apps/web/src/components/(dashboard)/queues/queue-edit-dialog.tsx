@@ -222,7 +222,8 @@ export function QueueEditDialog({
     setGuarantee(next)
     setDeserved((prev) => ({
       cpu: prev.cpu.trim() ? prev.cpu : next.cpu,
-      memory: prev.memory.trim() ? prev.memory : next.memory
+      memory: prev.memory.trim() ? prev.memory : next.memory,
+      extra: prev.extra
     }))
   }, [])
 

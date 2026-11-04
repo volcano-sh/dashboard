@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "i18n:validate": "npx tsx scripts/validate-locales.ts"
+    "i18n:validate": "npx tsx scripts/validate-locales.ts",
+    "verify:queue-resources": "npx tsx scripts/verify-queue-extended-resources.ts"
   },
     "dependencies": {
         "@dnd-kit/core": "^6.3.1",

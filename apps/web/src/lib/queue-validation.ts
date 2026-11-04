@@ -1,4 +1,4 @@
-export type ResourcePair = { cpu: string; memory: string }
+export type ResourcePair = { cpu: string; memory: string; extra?: Record<string, string> }
 
 export type ResourceFieldErrors = { cpu?: string; memory?: string }
 
@@ -57,7 +57,8 @@ export function normalizeDeservedFromGuarantee(
 ): ResourcePair {
   return {
     cpu: deserved.cpu.trim() || guarantee.cpu.trim(),
-    memory: deserved.memory.trim() || guarantee.memory.trim()
+    memory: deserved.memory.trim() || guarantee.memory.trim(),
+    extra: deserved.extra
   }
 }
 
@@ -153,12 +154,16 @@ function emptyCapability(): ResourcePair {
   return { cpu: "", memory: "" }
 }
 
+function hasExtraValues(pair: ResourcePair): boolean {
+  return Boolean(pair.extra && Object.keys(pair.extra).length > 0)
+}
+
 export function hasGuaranteeValues(guarantee: ResourcePair): boolean {
-  return Boolean(guarantee.cpu.trim() || guarantee.memory.trim())
+  return Boolean(guarantee.cpu.trim() || guarantee.memory.trim() || hasExtraValues(guarantee))
 }
 
 export function hasCapabilityValues(capability: ResourcePair): boolean {
-  return Boolean(capability.cpu.trim() || capability.memory.trim())
+  return Boolean(capability.cpu.trim() || capability.memory.trim() || hasExtraValues(capability))
 }
 
 function resourcePairFromSpecBlock(
