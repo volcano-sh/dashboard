@@ -74,6 +74,8 @@ export function QueueEditDialog({
     return parsed
   }, [])
 
+  const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
   React.useEffect(() => {
     if (open && initialYaml) {
       setYaml(initialYaml)
@@ -84,13 +86,27 @@ export function QueueEditDialog({
       } catch {
         setMode("yaml")
       }
+
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+        closeTimeoutRef.current = null
+      }
     }
   }, [open, initialYaml, loadFromYaml])
+
+  React.useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const { mutateAsync: updateQueue, isPending: isUpdating } = trpc.queueRouter.updateQueue.useMutation({
     onSuccess: () => {
       setStatus({ type: "success", message: t("edit.success") })
-      setTimeout(() => {
+      closeTimeoutRef.current = setTimeout(() => {
+        closeTimeoutRef.current = null
         setOpen(false)
         handleRefresh()
       }, 1000)

@@ -38,12 +38,27 @@ export function PodEditDialog({ open, setOpen, handleRefresh, podName, podNamesp
         message: string
     }>({ type: null, message: "" })
 
+    const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
     React.useEffect(() => {
         if (open) {
             setYaml(initialYaml)
             setStatus({ type: null, message: "" })
+
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current)
+                closeTimeoutRef.current = null
+            }
         }
     }, [open, initialYaml])
+
+    React.useEffect(() => {
+        return () => {
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current)
+            }
+        }
+    }, [])
 
     const { mutateAsync: updatePod, isPending: isUpdating } = trpc.podRouter.updatePod.useMutation({
         onSuccess: () => {
@@ -52,7 +67,8 @@ export function PodEditDialog({ open, setOpen, handleRefresh, podName, podNamesp
                 message: t("edit.success"),
             })
 
-            setTimeout(() => {
+            closeTimeoutRef.current = setTimeout(() => {
+                closeTimeoutRef.current = null
                 setOpen(false)
                 handleRefresh()
             }, 1000)
