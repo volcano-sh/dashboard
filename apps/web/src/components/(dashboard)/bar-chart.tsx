@@ -4,10 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { parseMemoryToBytes } from "@/lib/queue-validation"
 import { Loader2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useEffect, useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+
+const BYTES_PER_GI = 1024 ** 3
 
 interface QueueMetrics {
   name: string
@@ -51,23 +54,22 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
   const t = useTranslations("dashboard")
   const [selectedResource, setSelectedResource] = useState("")
 
-  const parseResourceValue = (value: string | number | undefined): number => {
+  const parseResourceValue = (value: string | number | undefined, kind: "cpu" | "memory" | "count"): number => {
     if (value === undefined || value === null || value === "") return 0
     const str = String(value).trim()
     if (str === "0") return 0
 
-    if (str.endsWith("m")) {
-      return Number.parseFloat(str.slice(0, -1)) / 1000
+    if (kind === "cpu") {
+      if (str.endsWith("m")) {
+        return Number.parseFloat(str.slice(0, -1)) / 1000
+      }
+      const n = Number.parseFloat(str)
+      return Number.isFinite(n) ? n : 0
     }
 
-    if (/Gi$/i.test(str)) {
-      return Number.parseFloat(str)
-    }
-    if (/Mi$/i.test(str)) {
-      return Number.parseFloat(str) / 1024
-    }
-    if (/Ki$/i.test(str)) {
-      return Number.parseFloat(str) / (1024 * 1024)
+    if (kind === "memory") {
+      const bytes = parseMemoryToBytes(str)
+      return bytes === null ? 0 : bytes / BYTES_PER_GI
     }
 
     const n = Number.parseFloat(str)
@@ -79,16 +81,16 @@ const QueueResourcesBarChart = ({ data = [], isLoading = false }: QueueResources
       metadata: { name: queue.name },
       status: {
         allocated: {
-          cpu: parseResourceValue(queue.cpu),
-          memory: parseResourceValue(queue.memory),
-          pods: parseResourceValue(queue.pods),
+          cpu: parseResourceValue(queue.cpu, "cpu"),
+          memory: parseResourceValue(queue.memory, "memory"),
+          pods: parseResourceValue(queue.pods, "count"),
         },
       },
       spec: {
         capability: {
-          cpu: parseResourceValue(queue.cpuCapability),
-          memory: parseResourceValue(queue.memoryCapability),
-          pods: parseResourceValue(queue.podsCapability),
+          cpu: parseResourceValue(queue.cpuCapability, "cpu"),
+          memory: parseResourceValue(queue.memoryCapability, "memory"),
+          pods: parseResourceValue(queue.podsCapability, "count"),
         },
       },
     }))
