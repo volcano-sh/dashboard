@@ -372,6 +372,7 @@ export function QueueFormFields({
         onChange={onGuaranteeChange}
         disabled={disabled}
         helper={t("create.guaranteeHelper")}
+        errors={resourceValidation.guaranteeErrors}
         cpuLabel={t("create.cpu")}
         memoryLabel={t("create.memory")}
       />
