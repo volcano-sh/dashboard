@@ -96,11 +96,11 @@ async function countFilteredItems<T>(
 
 function extractListMeta(response: {
     items?: unknown[];
-    metadata?: { _continue?: string; remainingItemCount?: number };
+    metadata?: { _continue?: string; continue?: string; remainingItemCount?: number };
 }): K8sListPageResult {
     return {
         items: response.items ?? [],
-        continueToken: response.metadata?._continue,
+        continueToken: response.metadata?._continue ?? response.metadata?.continue,
         remainingItemCount: response.metadata?.remainingItemCount,
     };
 }
@@ -252,4 +252,46 @@ export const fetchPodGroups = async (
         filter: matchesFilters,
         countWithFilter: true,
     });
+};
+
+type PodGroupFilterItem = {
+    metadata?: { namespace?: string; deletionTimestamp?: unknown };
+    status?: { phase?: string };
+};
+
+export const fetchPodGroupFilterOptions = async (): Promise<{
+    namespaces: string[];
+    statuses: string[];
+}> => {
+    const namespaces = new Set<string>();
+    const statuses = new Set<string>();
+    let continueToken: string | undefined;
+
+    do {
+        const response = await k8sApi.listClusterCustomObject({
+            group: "scheduling.volcano.sh",
+            version: "v1beta1",
+            plural: "podgroups",
+            limit: LIST_CHUNK_LIMIT,
+            ...(continueToken && { _continue: continueToken }),
+        });
+        const page = extractListMeta(response);
+
+        for (const item of page.items as PodGroupFilterItem[]) {
+            if (item.metadata?.deletionTimestamp) continue;
+            if (item.metadata?.namespace) {
+                namespaces.add(item.metadata.namespace);
+            }
+            if (item.status?.phase) {
+                statuses.add(item.status.phase);
+            }
+        }
+
+        continueToken = page.continueToken;
+    } while (continueToken);
+
+    return {
+        namespaces: Array.from(namespaces).sort(),
+        statuses: Array.from(statuses).sort(),
+    };
 };
