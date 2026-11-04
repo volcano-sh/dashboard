@@ -126,7 +126,7 @@ export default function PodManagement() {
             setError(t("errors.fetchYamlEdit"));
             console.error(err)
         }
-    }, [utils])
+    }, [utils, t])
 
     const handleDelete = useCallback((pod: PodStatus) => {
         setPodToDelete(pod)
@@ -196,7 +196,7 @@ export default function PodManagement() {
         } finally {
             setLoading(false)
         }
-    }, [podsQuery])
+    }, [podsQuery, t])
 
     const handlePodClick = useCallback(async (pod: PodStatus) => {
         setError(null);
@@ -210,7 +210,7 @@ export default function PodManagement() {
             setError(t("errors.fetchYaml"));
             console.error(err)
         }
-    }, [podYamlQuery])
+    }, [podYamlQuery, t])
 
     const handlePodCreate = () => {
         setShowCreatePodModal(true)
