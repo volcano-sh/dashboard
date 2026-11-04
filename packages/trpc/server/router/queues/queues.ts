@@ -140,7 +140,7 @@ export const queueRouter = router({
             }
 
             patchOperations.push({
-                op: "replace",
+                op: "add",
                 path: `/spec/${key}`,
                 value: val,
             });
