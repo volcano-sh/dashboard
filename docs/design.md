@@ -1,39 +1,84 @@
-### 1. Backend Architecture
+# Volcano Dashboard Design
 
-- Build backend server using Node.js and Express.js, listening on a specific port
-- Utilize OpenAPI Generator to generate JavaScript-based API client code from Kubernetes (k8s) API specifications
-- Implement seamless communication between local and Volcano-deployed K8s clusters
-- Provide RESTful API interfaces to support retrieval of resources such as Jobs, Queues, Nodes, etc.
+## Overview
 
-### 2. Frontend Technology Stack
+Volcano Dashboard is a full-stack web application for viewing and managing
+Kubernetes and Volcano resources. It is organized as an npm workspace managed by
+Turborepo, with a Next.js application for both the user interface and API.
 
-- Adopt React.js framework to build a Single Page Application (SPA)
-- Use Material-UI component library to design a modern, responsive user interface
-- Implement dynamic rendering and frontend route management through React Router
+## Architecture
 
-### 3. Data Flow and Interaction
+```text
+Browser → Next.js UI → tRPC API → Kubernetes client → Kubernetes API
+```
 
-- Frontend sends requests to the backend as needed via API to obtain the latest cluster resource data
-- Backend retrieves Volcano-related resource information from the local Kubernetes cluster and returns it to the frontend
-- Frontend receives data and dynamically updates the UI without requiring a full page refresh
+The browser renders React components and sends type-safe requests to the tRPC
+endpoint at `/api/trpc`. The API runs in the same Next.js process and uses the
+official Kubernetes Node.js client to communicate with the cluster. There is no
+separate Express server or database; Kubernetes is the source of truth.
 
-### 4. User Interface Layout
+## Technology Stack
 
-- Adopt a two-column design:
-  - Left side for navigation bar
-  - Right side for content display area
-- Left navigation bar includes four main functional options:
-  1. Dashboard
-  2. Queue
-  3. Job
-  4. Node
-- Right content area dynamically displays corresponding resource information based on user selection
+- **Application:** Next.js, React, and TypeScript
+- **API and validation:** tRPC and Zod
+- **Data fetching and caching:** TanStack Query
+- **Kubernetes integration:** `@kubernetes/client-node`
+- **User interface:** Tailwind CSS and Radix UI
+- **Charts:** Recharts
+- **Workspace tooling:** npm workspaces and Turborepo
 
-### 5. Main Functional Modules
+## Code Organization
 
-| Module | Functionality Description |
-|--------|---------------------------|
-| Dashboard | Provides cluster resource overview |
-| Queue | Displays and manages Volcano queue resources |
-| Job | Shows all Volcano jobs and their statuses (e.g., Running, Failed, Pending, Completed, etc.) |
-| Node | Displays cluster node information and resource usage |
+- `apps/web` contains the Next.js pages, dashboard and shared UI components,
+  and the `/api/trpc` route handler.
+- `packages/trpc` contains the typed clients, domain routers, Zod schemas,
+  validation helpers, and Kubernetes client configuration.
+- `deployment` contains the production Dockerfile and Kubernetes manifests for
+  the Deployment, Service, ServiceAccount, and RBAC resources.
+
+## Main Modules
+
+| Module | Function |
+| --- | --- |
+| Dashboard | Displays cluster, workload, and queue metrics |
+| Jobs | Lists and manages Volcano Jobs |
+| Queues | Lists and manages Volcano Queues |
+| Pods | Lists and manages Kubernetes Pods |
+| PodGroups | Lists and inspects Volcano PodGroups |
+
+Resource lists support pagination, and resource details can be displayed as
+YAML.
+
+## Data Flow
+
+1. A user opens a dashboard page or performs an action in the browser.
+2. The React client sends a typed tRPC query or mutation to `/api/trpc`.
+3. The tRPC router validates the input and calls the Kubernetes API through
+   `@kubernetes/client-node`.
+4. Kubernetes authenticates the configured identity and applies RBAC rules.
+5. The API returns the result, TanStack Query updates its cache, and React
+   refreshes the affected interface.
+
+Volcano Jobs use `batch.volcano.sh/v1alpha1`. Queues and PodGroups use
+`scheduling.volcano.sh/v1beta1`, while Pods use the core Kubernetes API.
+
+## Deployment
+
+During local development, the Kubernetes client loads credentials from the
+default kubeconfig. `K8S_SERVER` can override the API server address, and
+`K8S_SKIP_TLS_VERIFY=true` can be used with self-signed local clusters.
+
+In Kubernetes, a single container serves both the web interface and the tRPC
+API. The pod uses its ServiceAccount to access the Kubernetes API, and the
+associated RBAC rules determine which cluster operations are permitted.
+
+## Security and Access
+
+The application currently has no application-level authentication. Access to
+cluster resources depends on the Kubernetes identity configured for the server
+and the permissions granted to that identity through Kubernetes RBAC.
+
+The UI and tRPC API implement Pod creation, updates, and deletion, but the
+standard deployment grants Pods only `get`, `list`, and `watch` permissions.
+These mutations are rejected in-cluster unless an administrator extends the
+dashboard's RBAC permissions.
