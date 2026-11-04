@@ -282,6 +282,8 @@ export default function QueueManagement() {
                             onRowClick={handleQueueClick}
                             disablePagination={true}
                             filterPlaceholder={t("filterPlaceholder")}
+                            storageKey="queues"
+                            searchPlaceholder="Search queues..."
                         />
                     </div>
 
