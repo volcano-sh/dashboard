@@ -18,10 +18,7 @@ export const jobsRouter = router({
             page = 1,
             pageSize = 10,
         } = input;
-        console.log("Fetching jobs with params:", {
-            page,
-            pageSize,
-        });
+
 
         return fetchJobs(page, pageSize);
     }),

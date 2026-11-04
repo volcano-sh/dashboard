@@ -10,10 +10,7 @@ export const podRouter = router({
             page = 1,
             pageSize = 10,
         } = input;
-        console.log("Fetching pods with params:", {
-            page,
-            pageSize,
-        });
+
 
         return fetchPods(page, pageSize);
     }),
