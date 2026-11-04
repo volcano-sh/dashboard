@@ -179,24 +179,28 @@ export const queueRouter = router({
             throw new Error(protectedQueueDeleteMessage(queueName));
         }
 
-        await k8sApi.getClusterCustomObject({
-            group: "scheduling.volcano.sh",
-            version: "v1beta1",
-            plural: "queues",
-            name: queueName,
-        });
+        try {
+            await k8sApi.getClusterCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "queues",
+                name: queueName,
+            });
 
-        const response = await k8sApi.deleteClusterCustomObject({
-            group: "scheduling.volcano.sh",
-            version: "v1beta1",
-            plural: "queues",
-            name: queueName,
-            body: { propagationPolicy: "Foreground" },
-        });
+            const response = await k8sApi.deleteClusterCustomObject({
+                group: "scheduling.volcano.sh",
+                version: "v1beta1",
+                plural: "queues",
+                name: queueName,
+                body: { propagationPolicy: "Foreground" },
+            });
 
-        return {
-            message: "Queue deleted successfully",
-            data: response.body,
-        };
+            return {
+                message: "Queue deleted successfully",
+                data: response.body,
+            };
+        } catch (error) {
+            throw new Error(formatK8sApiError(error));
+        }
     }),
 });
