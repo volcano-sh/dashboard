@@ -3,6 +3,41 @@ import { buildPaginatedResponse, type PaginatedResponse } from "./pagination";
 
 const LIST_CHUNK_LIMIT = 250;
 
+/**
+ * Kubernetes list APIs have no cheap "count" endpoint — the only way to know
+ * how many items match is to walk the entire list. Doing that on every page
+ * request (see fetchPaginatedK8sList below) means a paginated table with a
+ * handful of visible rows still costs O(total items in the cluster) per
+ * request. A few seconds of staleness on a displayed total is not
+ * noticeable in a UI, so it's cached briefly instead of recomputed every
+ * time.
+ */
+const TOTAL_COUNT_CACHE_TTL_MS = 20_000;
+const totalCountCache = new Map<string, { total: number; expiresAt: number }>();
+
+function getCachedTotal(cacheKey: string): number | undefined {
+    const entry = totalCountCache.get(cacheKey);
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+        totalCountCache.delete(cacheKey);
+        return undefined;
+    }
+    return entry.total;
+}
+
+function setCachedTotal(cacheKey: string, total: number): void {
+    totalCountCache.set(cacheKey, { total, expiresAt: Date.now() + TOTAL_COUNT_CACHE_TTL_MS });
+}
+
+/** Call after a create/delete mutation so the next list request recomputes a fresh total. */
+export function invalidateTotalCount(cacheKeyPrefix: string): void {
+    Array.from(totalCountCache.keys()).forEach((key) => {
+        if (key === cacheKeyPrefix || key.startsWith(`${cacheKeyPrefix}:`)) {
+            totalCountCache.delete(key);
+        }
+    });
+}
+
 type K8sListPageResult = {
     items: unknown[];
     continueToken?: string;
@@ -23,10 +58,13 @@ async function fetchPaginatedK8sList<T>(
         filter?: (item: T) => boolean;
         /** When true, walk all chunks to count filter matches (post-list filters). */
         countWithFilter?: boolean;
+        /** Cache key for the expensive total-count walk. Omit to always recompute. */
+        cacheKey?: string;
     } = {},
 ): Promise<PaginatedResponse<T>> {
     const filter = options.filter ?? (() => true);
     const countWithFilter = options.countWithFilter ?? false;
+    const cacheKey = options.cacheKey;
     const skipTarget = (page - 1) * pageSize;
 
     let continueToken: string | undefined;
@@ -65,13 +103,21 @@ async function fetchPaginatedK8sList<T>(
         }
     }
 
+    const cachedTotal = cacheKey ? getCachedTotal(cacheKey) : undefined;
+
     let total: number;
-    if (countWithFilter) {
+    if (cachedTotal !== undefined) {
+        total = cachedTotal;
+    } else if (countWithFilter) {
         total = await countFilteredItems(listPage, filter);
     } else if (totalFromFirstChunk !== undefined) {
         total = totalFromFirstChunk;
     } else {
         total = await countFilteredItems(listPage, filter);
+    }
+
+    if (cacheKey && cachedTotal === undefined) {
+        setCachedTotal(cacheKey, total);
     }
 
     return buildPaginatedResponse(pageItems, page, pageSize, total);
@@ -123,6 +169,7 @@ export const fetchJobs = async (
             });
             return extractListMeta(response);
         },
+        { cacheKey: "jobs" },
     );
 };
 
@@ -170,6 +217,7 @@ export const fetchQueues = async (
             });
             return extractListMeta(response);
         },
+        { cacheKey: "queues" },
     );
 };
 
@@ -192,6 +240,7 @@ export const fetchPods = async (
         {
             filter: (pod) => !(pod as PodLike).metadata?.deletionTimestamp,
             countWithFilter: true,
+            cacheKey: "pods",
         },
     );
 };
@@ -251,5 +300,6 @@ export const fetchPodGroups = async (
     return fetchPaginatedK8sList(page, pageSize, listPage, {
         filter: matchesFilters,
         countWithFilter: true,
+        cacheKey: `podgroups:${namespace}:${search}:${status}`,
     });
 };
