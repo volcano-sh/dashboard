@@ -231,7 +231,10 @@ export function QueueEditDialog({
     [guarantee, capability, deserved]
   )
 
-  const formDisabled = !weight.trim() || (mode === "form" && !resourceValidation.valid)
+  const formDisabled =
+    !weight.trim() ||
+    !priority.trim() ||
+    (mode === "form" && !resourceValidation.valid)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

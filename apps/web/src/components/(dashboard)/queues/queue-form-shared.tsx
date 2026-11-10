@@ -51,12 +51,14 @@ export function buildSpecFromForm(input: {
     throw new Error("Weight must be a non-negative integer")
   }
   const priority = parseInt(input.priority, 10)
-  const pri = Number.isNaN(priority) ? 100 : priority
+  if (Number.isNaN(priority) || priority < 0) {
+    throw new Error("Priority must be a non-negative integer")
+  }
 
   const spec: any = {
     weight,
     reclaimable: input.reclaimable,
-    priority: pri
+    priority
   }
 
   const g = resourcePairToSpec(input.guarantee)
@@ -344,10 +346,13 @@ export function QueueFormFields({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="queue-priority">{t("create.priority")}</Label>
+          <Label htmlFor="queue-priority">
+            {t("create.priority")} <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="queue-priority"
             type="number"
+            min={0}
             value={priority}
             onChange={(e) => onPriorityChange(e.target.value)}
             disabled={disabled}

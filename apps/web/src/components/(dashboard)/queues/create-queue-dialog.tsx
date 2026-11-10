@@ -231,7 +231,10 @@ export function CreateQueueDialog({
   )
 
   const formDisabled =
-    !queueName.trim() || !weight.trim() || (mode === "form" && !resourceValidation.valid)
+    !queueName.trim() ||
+    !weight.trim() ||
+    !priority.trim() ||
+    (mode === "form" && !resourceValidation.valid)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
