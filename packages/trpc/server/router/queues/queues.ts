@@ -121,7 +121,7 @@ export const queueRouter = router({
             throw new Error(`Queue ${name} not found`);
         }
 
-        const numericFields = new Set(["weight"]);
+        const numericFields = new Set(["weight", "priority"]);
         const patchOperations: Array<{
             op: string;
             path: string;
